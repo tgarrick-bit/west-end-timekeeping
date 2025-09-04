@@ -1,0 +1,476 @@
+/* COPY THIS ENTIRE FILE */
+/* Clean, professional CSS that won't break deployment */
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  
+  /* Loading State */
+  .loadingContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    gap: 16px;
+  }
+  
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Notification Messages */
+  .message {
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-weight: 500;
+    animation: slideDown 0.3s ease;
+  }
+  
+  .message.success {
+    background-color: #10b981;
+    color: white;
+  }
+  
+  .message.error {
+    background-color: #ef4444;
+    color: white;
+  }
+  
+  @keyframes slideDown {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  /* Summary Card - THE HERO SECTION */
+  .summaryCard {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  }
+  
+  .summaryHeader h1 {
+    font-size: 28px;
+    font-weight: bold;
+    margin: 0 0 24px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .alertIcon {
+    font-size: 32px;
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  
+  .statsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 24px;
+  }
+  
+  .statItem {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 16px;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+  }
+  
+  .statIcon {
+    font-size: 32px;
+  }
+  
+  .statLabel {
+    font-size: 14px;
+    opacity: 0.9;
+    margin: 0 0 4px 0;
+  }
+  
+  .statValue {
+    font-size: 28px;
+    font-weight: bold;
+    margin: 0;
+  }
+  
+  /* Actions Bar */
+  .actionsBar {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    position: sticky;
+    top: 20px;
+    z-index: 10;
+  }
+  
+  .actionButtons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .filters {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  
+  /* Buttons */
+  .btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    font-size: 14px;
+  }
+  
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  .btnPrimary {
+    background: #10b981;
+    color: white;
+  }
+  
+  .btnPrimary:hover:not(:disabled) {
+    background: #059669;
+  }
+  
+  .btnOutline {
+    background: white;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+  }
+  
+  .btnOutline:hover:not(:disabled) {
+    background: #f9fafb;
+    border-color: #9ca3af;
+  }
+  
+  .btnLarge {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  
+  .btnSmall {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  
+  /* Search and Filter */
+  .searchInput {
+    padding: 10px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    width: 250px;
+    font-size: 14px;
+  }
+  
+  .searchInput:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .filterSelect {
+    padding: 10px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+  }
+  
+  /* Week Cards */
+  .weeksList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .weekCard {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  
+  .weekHeader {
+    padding: 20px;
+    background: #f9fafb;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+  }
+  
+  .weekHeader:hover {
+    background: #f3f4f6;
+  }
+  
+  .weekInfo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  .expandIcon {
+    font-size: 12px;
+    color: #6b7280;
+  }
+  
+  .weekInfo h3 {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+  }
+  
+  .weekSummary {
+    margin: 0;
+    font-size: 14px;
+    color: #6b7280;
+  }
+  
+  /* Week Items */
+  .weekItems {
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .itemRow {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+  }
+  
+  .itemRow:hover {
+    background: #f9fafb;
+  }
+  
+  .itemRow.selected {
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+  }
+  
+  .itemRow:last-child {
+    border-bottom: none;
+  }
+  
+  .itemLeft {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+  }
+  
+  .checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+  
+  .itemInfo {
+    flex: 1;
+  }
+  
+  .itemHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  
+  .employeeName {
+    font-weight: 600;
+    color: #111827;
+  }
+  
+  .itemDetails {
+    margin: 0;
+    font-size: 14px;
+    color: #6b7280;
+  }
+  
+  /* Badges */
+  .badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+  
+  .badge.timesheet {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+  
+  .badge.expense {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  
+  .urgentBadge {
+    background: #fee2e2;
+    color: #dc2626;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  /* Item Right Side */
+  .itemRight {
+    text-align: right;
+  }
+  
+  .itemAmount {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+  }
+  
+  .itemDate {
+    margin: 0;
+    font-size: 12px;
+    color: #9ca3af;
+  }
+  
+  /* Empty State */
+  .emptyState {
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .emptyIcon {
+    font-size: 64px;
+    display: block;
+    margin-bottom: 16px;
+  }
+  
+  .emptyState h3 {
+    font-size: 24px;
+    color: #111827;
+    margin: 0 0 8px 0;
+  }
+  
+  .emptyState p {
+    color: #6b7280;
+    margin: 0;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .container {
+      padding: 16px;
+    }
+  
+    .summaryCard {
+      padding: 20px;
+    }
+  
+    .summaryHeader h1 {
+      font-size: 20px;
+    }
+  
+    .statsGrid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+  
+    .actionsBar {
+      flex-direction: column;
+      align-items: stretch;
+      position: static;
+    }
+  
+    .actionButtons {
+      justify-content: stretch;
+    }
+  
+    .filters {
+      flex-direction: column;
+    }
+  
+    .searchInput {
+      width: 100%;
+    }
+  
+    .filterSelect {
+      width: 100%;
+    }
+  
+    .weekHeader {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+  
+    .itemRow {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+  
+    .itemRight {
+      text-align: left;
+      width: 100%;
+    }
+  }
