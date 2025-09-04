@@ -1,71 +1,48 @@
-// Save this as: /components/auth/ProtectedRoute.tsx
-
 'use client';
 
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useAuth } from '@/contexts/AuthContext';
+import type { UserRole } from '@/types';
 
-interface ProtectedRouteProps {
+type Props = {
+  allowedRoles: UserRole[];
   children: React.ReactNode;
-  requiredRole?: string;
+};
+
+// Coerce anything into a valid UserRole; fallback to 'employee'
+function toUserRole(role: unknown): UserRole {
+  const r = typeof role === 'string' ? role : '';
+  const valid = ['employee', 'manager', 'admin', 'client_approver', 'payroll'] as const;
+  return (valid as readonly string[]).includes(r as any) ? (r as UserRole) : 'employee';
 }
 
-export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+export default function ProtectedRoute({ allowedRoles, children }: Props) {
+  const { user, appUser, isLoading } = useAuth();
   const router = useRouter();
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [isAuthorized, setIsAuthorized] = React.useState(false);
-  const supabase = createClientComponentClient();
+
+  // prefer appUser.role, then user.role, then fallback
+  const role: UserRole = toUserRole((appUser as any)?.role ?? (user as any)?.role);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          router.push('/auth/login');
-          return;
-        }
+    if (isLoading) return;
 
-        if (requiredRole) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
+    // Not logged in → send to login
+    if (!user) {
+      router.replace('/auth/login');
+      return;
+    }
 
-          if (profile?.role !== requiredRole) {
-            router.push('/dashboard');
-            return;
-          }
-        }
+    // Logged in but role not allowed → unauthorized
+    if (!allowedRoles.includes(role)) {
+      router.replace('/unauthorized');
+    }
+  }, [isLoading, user, role, allowedRoles, router]);
 
-        setIsAuthorized(true);
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        router.push('/auth/login');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, [router, requiredRole, supabase]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e31c79] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthorized) {
-    return null;
-  }
+  // While loading or redirecting, render nothing
+  if (isLoading) return null;
+  if (!user) return null;
+  if (!allowedRoles.includes(role)) return null;
 
   return <>{children}</>;
 }

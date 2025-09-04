@@ -1,4 +1,11 @@
-import { Notification } from '@/types/notifications';
+// src/lib/emailService.ts
+// Demo-safe EmailService used across client and server.
+// - No top-level nodemailer import (avoids bundling in client).
+// - Uses dynamic import on the server only.
+// - Exposes a named `emailService` singleton for NotificationProvider.
+// - Falls back to console logging if SMTP is not configured.
+
+import type { Notification } from '@/types/notifications';
 
 export interface EmailConfig {
   smtpHost?: string;
@@ -23,12 +30,12 @@ export class EmailService {
   private constructor(config?: Partial<EmailConfig>) {
     this.config = {
       smtpHost: process.env.SMTP_HOST,
-      smtpPort: parseInt(process.env.SMTP_PORT || '587'),
+      smtpPort: parseInt(process.env.SMTP_PORT || '587', 10),
       smtpUser: process.env.SMTP_USER,
       smtpPassword: process.env.SMTP_PASSWORD,
       fromEmail: process.env.FROM_EMAIL || 'noreply@westendworkforce.com',
       fromName: process.env.FROM_NAME || 'West End Workforce',
-      ...config
+      ...config,
     };
   }
 
@@ -39,50 +46,45 @@ export class EmailService {
     return EmailService.instance;
   }
 
+  /** Safe init for both client/server. */
   async initialize(config?: Partial<EmailConfig>): Promise<void> {
-    if (config) {
-      this.config = { ...this.config, ...config };
-    }
+    if (config) this.config = { ...this.config, ...config };
 
-    // On client side, just mark as initialized
+    // Client: mark initialized; real sending will go through API
     if (typeof window !== 'undefined') {
-      console.log('EmailService: Client-side initialization');
       this.isInitialized = true;
       return;
     }
 
-    // On server side, try to initialize SMTP
+    // Server: try to verify SMTP config (optional for demo)
     try {
-      // Dynamic import for server-side only
       const nodemailer = await import('nodemailer');
-      
-      // Create SMTP transporter
-      const transporter = nodemailer.default.createTransporter({
+      const transporter = nodemailer.createTransport({
         host: this.config.smtpHost,
         port: this.config.smtpPort,
         secure: false,
-        auth: {
+        auth: this.config.smtpUser && this.config.smtpPassword ? {
           user: this.config.smtpUser,
           pass: this.config.smtpPassword,
-        },
+        } : undefined,
       });
 
-      // Verify connection
       await transporter.verify();
       this.isInitialized = true;
-      console.log('Email service initialized successfully');
-    } catch (error) {
-      console.error('Failed to initialize email service:', error);
-      // Don't throw error - allow graceful degradation
-      this.isInitialized = false;
+      // eslint-disable-next-line no-console
+      console.log('EmailService: SMTP verified');
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('EmailService: SMTP verify failed (ok for demo):', err);
+      this.isInitialized = false; // we’ll degrade gracefully
     }
   }
 
-  getEmailTemplate(notificationType: string, customData?: Record<string, any>): EmailTemplate {
-    const baseTemplate = {
+  getEmailTemplate(notificationType: string, _customData?: Record<string, any>): EmailTemplate {
+    const base: EmailTemplate = {
       subject: 'West End Workforce Notification',
       htmlContent: '<p>You have a new notification from West End Workforce.</p>',
-      textContent: 'You have a new notification from West End Workforce.'
+      textContent: 'You have a new notification from West End Workforce.',
     };
 
     switch (notificationType) {
@@ -94,7 +96,7 @@ export class EmailService {
             <p>Don't forget to submit your timesheet for this period.</p>
             <p>Log in to your account to complete your timesheet.</p>
           `,
-          textContent: 'Timesheet Reminder: Don\'t forget to submit your timesheet for this period.'
+          textContent: `Timesheet Reminder: Don't forget to submit your timesheet for this period.`,
         };
       case 'shift_assignment':
         return {
@@ -104,62 +106,83 @@ export class EmailService {
             <p>You have been assigned a new shift.</p>
             <p>Please check your schedule for details.</p>
           `,
-          textContent: 'New Shift Assignment: You have been assigned a new shift. Please check your schedule for details.'
+          textContent: 'New Shift Assignment: You have been assigned a new shift. Please check your schedule for details.',
         };
       default:
-        return baseTemplate;
+        return base;
     }
   }
 
+  /**
+   * Demo-friendly send:
+   * - In the browser: call our API route (non-blocking demo).
+   * - On the server: if SMTP is configured, send directly; else log and succeed.
+   */
   async sendEmailNotification(
     toEmail: string,
     notification: Notification,
     customData?: Record<string, any>
   ): Promise<boolean> {
-    try {
-      if (!this.isInitialized) {
-        console.warn('Email service not initialized');
+    const template = this.getEmailTemplate(notification.type, customData);
+
+    if (typeof window !== 'undefined') {
+      // Client -> API
+      try {
+        const res = await fetch('/api/notifications/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: toEmail,
+            subject: template.subject,
+            html: template.htmlContent,
+            text: template.textContent,
+            notification,
+            customData,
+            fromEmail: this.config.fromEmail,
+            fromName: this.config.fromName,
+          }),
+        });
+        return res.ok;
+      } catch (err) {
+        console.error('Email API error:', err);
         return false;
       }
+    }
 
-      const template = this.getEmailTemplate(notification.type, customData);
-      
-      // On client side, just log the email
-      if (typeof window !== 'undefined') {
-        console.log('Sending email:', {
-          to: toEmail,
+    // Server path
+    try {
+      if (!this.isInitialized) {
+        // Degrade gracefully for demo
+        console.log('[EmailService:noop]', {
+          toEmail,
           subject: template.subject,
-          from: `${this.config.fromName} <${this.config.fromEmail}>`
+          from: `${this.config.fromName} <${this.config.fromEmail}>`,
         });
         return true;
       }
 
-      // On server side, send via API
-      try {
-        const response = await fetch('/api/notifications/send-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            to: toEmail,
-            notification,
-            customData
-          }),
-        });
+      const nodemailer = await import('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: this.config.smtpHost,
+        port: this.config.smtpPort,
+        secure: false,
+        auth: this.config.smtpUser && this.config.smtpPassword ? {
+          user: this.config.smtpUser,
+          pass: this.config.smtpPassword,
+        } : undefined,
+      });
 
-        if (response.ok) {
-          return true;
-        } else {
-          console.error('Failed to send email via API');
-          return false;
-        }
-      } catch (error) {
-        console.error('Error sending email via API:', error);
-        return false;
-      }
-    } catch (error) {
-      console.error('Failed to send email notification:', error);
+      await transporter.sendMail({
+        to: toEmail,
+        from: `${this.config.fromName} <${this.config.fromEmail}>`,
+        subject: template.subject,
+        html: template.htmlContent,
+        text: template.textContent,
+      });
+
+      return true;
+    } catch (err) {
+      console.error('Email send failed:', err);
       return false;
     }
   }
@@ -168,69 +191,41 @@ export class EmailService {
     toEmails: string[],
     notification: Notification,
     customData?: Record<string, any>
-  ): Promise<{ success: string[], failed: string[] }> {
-    const results = { success: [] as string[], failed: [] as string[] };
-
+  ): Promise<{ success: string[]; failed: string[] }> {
+    const result = { success: [] as string[], failed: [] as string[] };
     for (const email of toEmails) {
-      try {
-        const success = await this.sendEmailNotification(email, notification, customData);
-        if (success) {
-          results.success.push(email);
-        } else {
-          results.failed.push(email);
-        }
-      } catch (error) {
-        console.error(`Failed to send email to ${email}:`, error);
-        results.failed.push(email);
-      }
+      const ok = await this.sendEmailNotification(email, notification, customData);
+      (ok ? result.success : result.failed).push(email);
     }
-
-    return results;
+    return result;
   }
 
   async testEmailConfiguration(): Promise<{ success: boolean; message: string }> {
+    if (typeof window !== 'undefined') {
+      return { success: true, message: 'Email service available in client mode' };
+    }
     try {
-      if (typeof window !== 'undefined') {
-        console.log('EmailService: Testing configuration in client mode');
-        return { 
-          success: true, 
-          message: 'Email service available in client mode' 
-        };
-      }
-
-      // On server side, test SMTP configuration
-      try {
-        const nodemailer = await import('nodemailer');
-        
-        const transporter = nodemailer.default.createTransporter({
-          host: this.config.smtpHost,
-          port: this.config.smtpPort,
-          secure: false,
-          auth: {
-            user: this.config.smtpUser,
-            pass: this.config.smtpPassword,
-          },
-        });
-
-        await transporter.verify();
-        return { 
-          success: true, 
-          message: 'Email configuration is valid' 
-        };
-      } catch (error) {
-        return { 
-          success: false, 
-          message: `Test failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
-        };
-      }
-    } catch (error) {
-      console.error('Email configuration test failed:', error);
-      return { 
-        success: false, 
-        message: `Test failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
-      };
+      const nodemailer = await import('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: this.config.smtpHost,
+        port: this.config.smtpPort,
+        secure: false,
+        auth: this.config.smtpUser && this.config.smtpPassword ? {
+          user: this.config.smtpUser,
+          pass: this.config.smtpPassword,
+        } : undefined,
+      });
+      await transporter.verify();
+      return { success: true, message: 'Email configuration is valid' };
+    } catch (err: any) {
+      return { success: false, message: `Test failed: ${err?.message ?? 'Unknown error'}` };
     }
   }
 }
 
+// Named singleton (what the app imports)
+export const emailService = EmailService.getInstance();
+
+// Optional default export (not strictly needed)
 export default EmailService;
+

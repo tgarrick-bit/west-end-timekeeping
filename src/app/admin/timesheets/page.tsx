@@ -19,7 +19,7 @@ import {
   Filter
 } from 'lucide-react';
 
-interface Timecard {
+interface Timesheet {
   id: string;
   employee_id: string;
   employee?: {
@@ -28,33 +28,21 @@ interface Timecard {
     email: string;
     department?: string;
     client_id?: string;
-    client?: {
-      name: string;
-      code: string;
-    };
   };
-  work_date: string;
-  start_time: string;
-  end_time: string;
-  break_minutes: number;
-  total_hours: number;
-  project_id?: string;
-  project?: {
-    name: string;
-    code: string;
-  };
-  description?: string;
-  status: 'pending' | 'approved' | 'rejected';
-  submitted_at: string;
+  week_ending: string;
+  total_hours?: number;
+  status: 'draft' | 'submitted' | 'approved' | 'rejected';
+  submitted_at?: string;
   approved_at?: string;
   approved_by?: string;
-  rejection_reason?: string;
+  comments?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface ClientGroup {
   client_id: string;
   client_name: string;
-  client_code: string;
   employees: EmployeeTimesheets[];
   totalPending: number;
   totalApproved: number;
@@ -68,7 +56,7 @@ interface EmployeeTimesheets {
   employee_name: string;
   employee_email: string;
   department?: string;
-  timecards: Timecard[];
+  timesheets: Timesheet[];
   totalHours: number;
   hasSubmitted: boolean;
 }
@@ -77,7 +65,7 @@ export default function AdminTimesheets() {
   const [clientGroups, setClientGroups] = useState<ClientGroup[]>([]);
   const [selectedWeek, setSelectedWeek] = useState(new Date());
   const [loading, setLoading] = useState(true);
-  const [selectedTimecard, setSelectedTimecard] = useState<Timecard | null>(null);
+  const [selectedTimesheet, setSelectedTimesheet] = useState<Timesheet | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'missing'>('all');
   
@@ -100,15 +88,16 @@ export default function AdminTimesheets() {
   const fetchTimesheets = async () => {
     try {
       const { sunday, saturday } = getWeekDates(selectedWeek);
+      const weekEndingDate = saturday.toISOString().split('T')[0];
       
       // Fetch all clients
       const { data: clients } = await supabase
         .from('clients')
-        .select('id, name, code')
-        .eq('active', true)
+        .select('id, name')
+        .eq('is_active', true)
         .order('name');
 
-      // Fetch all employees with their clients
+      // Fetch all employees with their client assignments
       const { data: employees } = await supabase
         .from('employees')
         .select(`
@@ -117,38 +106,27 @@ export default function AdminTimesheets() {
           last_name,
           email,
           department,
-          client_id,
-          client:client_id (
-            name,
-            code
-          )
+          client_id
         `)
-        .eq('status', 'active');
+        .eq('is_active', true);
 
-      // Fetch all timecards for the week
-      const { data: timecards } = await supabase
-        .from('timecards')
+      // Fetch all timesheets for the week
+      const { data: timesheets } = await supabase
+        .from('timesheets')
         .select(`
           *,
-          employee:employee_id (
+          employee:employees!employee_id (
             first_name,
             last_name,
             email,
             department,
-            client_id,
-            client:client_id (
-              name,
-              code
-            )
-          ),
-          project:project_id (
-            name,
-            code
+            client_id
           )
         `)
-        .gte('work_date', sunday.toISOString().split('T')[0])
-        .lte('work_date', saturday.toISOString().split('T')[0])
-        .order('work_date', { ascending: true });
+        .eq('week_ending', weekEndingDate)
+        .order('created_at', { ascending: true });
+
+      console.log('Fetched timesheets:', timesheets); // Debug log
 
       // Group by client
       const groups: ClientGroup[] = [];
@@ -161,23 +139,23 @@ export default function AdminTimesheets() {
         let missingCount = 0;
 
         for (const employee of clientEmployees) {
-          const empTimecards = timecards?.filter(tc => tc.employee_id === employee.id) || [];
-          const totalHours = empTimecards.reduce((sum, tc) => sum + tc.total_hours, 0);
-          const hasSubmitted = empTimecards.length > 0;
+          const empTimesheets = timesheets?.filter(ts => ts.employee_id === employee.id) || [];
+          const totalHours = empTimesheets.reduce((sum, ts) => sum + (ts.total_hours || 0), 0);
+          const hasSubmitted = empTimesheets.length > 0 && empTimesheets.some(ts => ts.status !== 'draft');
 
           if (!hasSubmitted) {
             missingCount++;
           }
 
-          totalPending += empTimecards.filter(tc => tc.status === 'pending').length;
-          totalApproved += empTimecards.filter(tc => tc.status === 'approved').length;
+          totalPending += empTimesheets.filter(ts => ts.status === 'submitted').length;
+          totalApproved += empTimesheets.filter(ts => ts.status === 'approved').length;
 
           employeeTimesheets.push({
             employee_id: employee.id,
-            employee_name: `${employee.first_name} ${employee.last_name}`,
+            employee_name: `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || 'Unknown',
             employee_email: employee.email,
             department: employee.department,
-            timecards: empTimecards,
+            timesheets: empTimesheets,
             totalHours,
             hasSubmitted
           });
@@ -187,7 +165,6 @@ export default function AdminTimesheets() {
           groups.push({
             client_id: client.id,
             client_name: client.name,
-            client_code: client.code,
             employees: employeeTimesheets,
             totalPending,
             totalApproved,
@@ -196,6 +173,49 @@ export default function AdminTimesheets() {
             expanded: false
           });
         }
+      }
+
+      // Also add employees without clients
+      const unassignedEmployees = employees?.filter(emp => !emp.client_id) || [];
+      if (unassignedEmployees.length > 0) {
+        const employeeTimesheets: EmployeeTimesheets[] = [];
+        let totalPending = 0;
+        let totalApproved = 0;
+        let missingCount = 0;
+
+        for (const employee of unassignedEmployees) {
+          const empTimesheets = timesheets?.filter(ts => ts.employee_id === employee.id) || [];
+          const totalHours = empTimesheets.reduce((sum, ts) => sum + (ts.total_hours || 0), 0);
+          const hasSubmitted = empTimesheets.length > 0 && empTimesheets.some(ts => ts.status !== 'draft');
+
+          if (!hasSubmitted) {
+            missingCount++;
+          }
+
+          totalPending += empTimesheets.filter(ts => ts.status === 'submitted').length;
+          totalApproved += empTimesheets.filter(ts => ts.status === 'approved').length;
+
+          employeeTimesheets.push({
+            employee_id: employee.id,
+            employee_name: `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || 'Unknown',
+            employee_email: employee.email,
+            department: employee.department,
+            timesheets: empTimesheets,
+            totalHours,
+            hasSubmitted
+          });
+        }
+
+        groups.push({
+          client_id: 'unassigned',
+          client_name: 'Unassigned Employees',
+          employees: employeeTimesheets,
+          totalPending,
+          totalApproved,
+          totalEmployees: unassignedEmployees.length,
+          missingCount,
+          expanded: false
+        });
       }
 
       setClientGroups(groups);
@@ -216,62 +236,65 @@ export default function AdminTimesheets() {
     );
   };
 
-  const handleApproveTimecard = async (timecardId: string) => {
+  const handleApproveTimesheet = async (timesheetId: string) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       await supabase
-        .from('timecards')
+        .from('timesheets')
         .update({ 
           status: 'approved',
           approved_at: new Date().toISOString(),
-          approved_by: 'admin@westendworkforce.com'
+          approved_by: user?.email || 'admin'
         })
-        .eq('id', timecardId);
+        .eq('id', timesheetId);
       
       fetchTimesheets();
       setShowModal(false);
     } catch (error) {
-      console.error('Error approving timecard:', error);
+      console.error('Error approving timesheet:', error);
     }
   };
 
-  const handleRejectTimecard = async (timecardId: string, reason: string) => {
+  const handleRejectTimesheet = async (timesheetId: string, reason: string) => {
     try {
       await supabase
-        .from('timecards')
+        .from('timesheets')
         .update({ 
           status: 'rejected',
-          rejection_reason: reason
+          comments: reason
         })
-        .eq('id', timecardId);
+        .eq('id', timesheetId);
       
       fetchTimesheets();
       setShowModal(false);
     } catch (error) {
-      console.error('Error rejecting timecard:', error);
+      console.error('Error rejecting timesheet:', error);
     }
   };
 
   const handleBulkApprove = async (clientId: string) => {
-    if (!confirm('Approve all pending timecards for this client?')) return;
+    if (!confirm('Approve all pending timesheets for this client?')) return;
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       const client = clientGroups.find(g => g.client_id === clientId);
       if (!client) return;
 
-      const pendingTimecards = client.employees
-        .flatMap(emp => emp.timecards)
-        .filter(tc => tc.status === 'pending');
+      const pendingTimesheets = client.employees
+        .flatMap(emp => emp.timesheets)
+        .filter(ts => ts.status === 'submitted');
 
       await Promise.all(
-        pendingTimecards.map(tc =>
+        pendingTimesheets.map(ts =>
           supabase
-            .from('timecards')
+            .from('timesheets')
             .update({ 
               status: 'approved',
               approved_at: new Date().toISOString(),
-              approved_by: 'admin@westendworkforce.com'
+              approved_by: user?.email || 'admin'
             })
-            .eq('id', tc.id)
+            .eq('id', ts.id)
         )
       );
 
@@ -283,20 +306,19 @@ export default function AdminTimesheets() {
 
   const exportToCSV = () => {
     const { sunday, saturday } = getWeekDates(selectedWeek);
-    const headers = ['Client', 'Employee', 'Department', 'Date', 'Hours', 'Project', 'Status'];
+    const headers = ['Client', 'Employee', 'Department', 'Week Ending', 'Hours', 'Status'];
     const rows: string[][] = [];
 
     clientGroups.forEach(group => {
       group.employees.forEach(emp => {
-        emp.timecards.forEach(tc => {
+        emp.timesheets.forEach(ts => {
           rows.push([
             group.client_name,
             emp.employee_name,
             emp.department || '',
-            tc.work_date,
-            tc.total_hours.toString(),
-            tc.project?.name || '',
-            tc.status
+            ts.week_ending,
+            (ts.total_hours || 0).toString(),
+            ts.status
           ]);
         });
       });
@@ -311,7 +333,7 @@ export default function AdminTimesheets() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `timesheets_${sunday.toISOString().split('T')[0]}_to_${saturday.toISOString().split('T')[0]}.csv`;
+    a.download = `timesheets_week_${saturday.toISOString().split('T')[0]}.csv`;
     a.click();
   };
 
@@ -326,7 +348,7 @@ export default function AdminTimesheets() {
     
     const filteredEmployees = group.employees.filter(emp => {
       if (filterStatus === 'pending') {
-        return emp.timecards.some(tc => tc.status === 'pending');
+        return emp.timesheets.some(ts => ts.status === 'submitted');
       } else if (filterStatus === 'missing') {
         return !emp.hasSubmitted;
       }
@@ -340,7 +362,7 @@ export default function AdminTimesheets() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading timesheets...</p>
         </div>
       </div>
@@ -348,11 +370,14 @@ export default function AdminTimesheets() {
   }
 
   const { sunday, saturday } = getWeekDates(selectedWeek);
+  const totalPendingCount = clientGroups.reduce((sum, g) => sum + g.totalPending, 0);
+  const totalMissingCount = clientGroups.reduce((sum, g) => sum + g.missingCount, 0);
+  const totalApprovedCount = clientGroups.reduce((sum, g) => sum + g.totalApproved, 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header style={{ backgroundColor: '#05202e' }} className="text-white">
+      <header className="bg-gray-900 text-white">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -380,7 +405,7 @@ export default function AdminTimesheets() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Controls Bar */}
-        <div className="bg-white rounded-lg shadow-sm mb-6 p-4" style={{ borderWidth: '1px', borderColor: '#05202e' }}>
+        <div className="bg-white rounded-lg shadow-sm mb-6 p-4 border border-gray-200">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="flex items-center gap-4">
               <button
@@ -407,7 +432,7 @@ export default function AdminTimesheets() {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value as any)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">All Employees</option>
                 <option value="pending">Pending Only</option>
@@ -426,7 +451,7 @@ export default function AdminTimesheets() {
 
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-6" style={{ borderWidth: '1px', borderColor: '#05202e' }}>
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Clients</p>
@@ -435,35 +460,29 @@ export default function AdminTimesheets() {
               <Building2 className="h-8 w-8 text-gray-400" />
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6" style={{ borderWidth: '1px', borderColor: '#e31c79' }}>
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-yellow-400">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Pending Approval</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {clientGroups.reduce((sum, g) => sum + g.totalPending, 0)}
-                </p>
+                <p className="text-2xl font-bold text-yellow-600">{totalPendingCount}</p>
               </div>
               <Clock className="h-8 w-8 text-yellow-500" />
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6" style={{ borderWidth: '1px', borderColor: '#e31c79' }}>
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-red-400">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Missing Timesheets</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {clientGroups.reduce((sum, g) => sum + g.missingCount, 0)}
-                </p>
+                <p className="text-2xl font-bold text-red-600">{totalMissingCount}</p>
               </div>
               <AlertCircle className="h-8 w-8 text-red-500" />
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6" style={{ borderWidth: '1px', borderColor: '#05202e' }}>
+          <div className="bg-white rounded-lg shadow-sm p-6 border border-green-400">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Approved</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {clientGroups.reduce((sum, g) => sum + g.totalApproved, 0)}
-                </p>
+                <p className="text-2xl font-bold text-green-600">{totalApprovedCount}</p>
               </div>
               <Check className="h-8 w-8 text-green-500" />
             </div>
@@ -472,150 +491,159 @@ export default function AdminTimesheets() {
 
         {/* Client Groups */}
         <div className="space-y-4">
-          {filteredGroups.map((group) => (
-            <div 
-              key={group.client_id} 
-              className="bg-white rounded-lg shadow-sm overflow-hidden"
-              style={{ borderWidth: '1px', borderColor: group.totalPending > 0 ? '#e31c79' : '#05202e' }}
-            >
-              {/* Client Header */}
+          {filteredGroups.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+              <p className="text-gray-500">No timesheets found for this week.</p>
+            </div>
+          ) : (
+            filteredGroups.map((group) => (
               <div 
-                className="p-4 cursor-pointer hover:bg-gray-50"
-                onClick={() => toggleClientExpanded(group.client_id)}
+                key={group.client_id} 
+                className="bg-white rounded-lg shadow-sm overflow-hidden border"
+                style={{ borderColor: group.totalPending > 0 ? '#facc15' : '#e5e7eb' }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {group.expanded ? (
-                      <ChevronDown className="h-5 w-5 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="h-5 w-5 text-gray-400" />
-                    )}
-                    <Building2 className="h-5 w-5 text-blue-500" />
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {group.client_name} ({group.client_code})
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        {group.totalEmployees} employees
-                      </p>
+                {/* Client Header */}
+                <div 
+                  className="p-4 cursor-pointer hover:bg-gray-50"
+                  onClick={() => toggleClientExpanded(group.client_id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {group.expanded ? (
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <ChevronRight className="h-5 w-5 text-gray-400" />
+                      )}
+                      <Building2 className="h-5 w-5 text-blue-500" />
+                      <div>
+                        <h3 className="font-semibold text-gray-900">
+                          {group.client_name}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {group.totalEmployees} employees
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {group.missingCount > 0 && (
+                        <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded">
+                          {group.missingCount} missing
+                        </span>
+                      )}
+                      {group.totalPending > 0 && (
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded">
+                          {group.totalPending} pending
+                        </span>
+                      )}
+                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">
+                        {group.totalApproved} approved
+                      </span>
+                      {group.totalPending > 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleBulkApprove(group.client_id);
+                          }}
+                          className="px-3 py-1 text-xs text-white bg-blue-600 rounded hover:bg-blue-700"
+                        >
+                          Approve All
+                        </button>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    {group.missingCount > 0 && (
-                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded">
-                        {group.missingCount} missing
-                      </span>
-                    )}
-                    {group.totalPending > 0 && (
-                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded">
-                        {group.totalPending} pending
-                      </span>
-                    )}
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">
-                      {group.totalApproved} approved
-                    </span>
-                    {group.totalPending > 0 && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleBulkApprove(group.client_id);
-                        }}
-                        className="px-3 py-1 text-xs text-white rounded hover:opacity-90"
-                        style={{ backgroundColor: '#e31c79' }}
-                      >
-                        Approve All
-                      </button>
-                    )}
-                  </div>
                 </div>
-              </div>
 
-              {/* Employee List */}
-              {group.expanded && (
-                <div className="border-t">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Employee
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Department
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Total Hours
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {group.employees.map((employee) => (
-                        <tr key={employee.employee_id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4">
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">
-                                {employee.employee_name}
-                              </p>
-                              <p className="text-xs text-gray-500">{employee.employee_email}</p>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-900">
-                            {employee.department || '-'}
-                          </td>
-                          <td className="px-6 py-4">
-                            {!employee.hasSubmitted ? (
-                              <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded">
-                                Not Submitted
-                              </span>
-                            ) : employee.timecards.some(tc => tc.status === 'pending') ? (
-                              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded">
-                                Pending Review
-                              </span>
-                            ) : (
-                              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">
-                                Approved
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-900">
-                            {employee.totalHours.toFixed(1)} hrs
-                          </td>
-                          <td className="px-6 py-4">
-                            {employee.timecards.length > 0 && (
-                              <button
-                                onClick={() => {
-                                  setSelectedTimecard(employee.timecards[0]);
-                                  setShowModal(true);
-                                }}
-                                className="text-sm text-blue-600 hover:text-blue-800"
-                              >
-                                View Details
-                              </button>
-                            )}
-                          </td>
+                {/* Employee List */}
+                {group.expanded && (
+                  <div className="border-t">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Employee
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Department
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Total Hours
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          ))}
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {group.employees.map((employee) => (
+                          <tr key={employee.employee_id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4">
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                  {employee.employee_name}
+                                </p>
+                                <p className="text-xs text-gray-500">{employee.employee_email}</p>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900">
+                              {employee.department || '-'}
+                            </td>
+                            <td className="px-6 py-4">
+                              {!employee.hasSubmitted ? (
+                                <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded">
+                                  Not Submitted
+                                </span>
+                              ) : employee.timesheets.some(ts => ts.status === 'submitted') ? (
+                                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded">
+                                  Pending Review
+                                </span>
+                              ) : employee.timesheets.some(ts => ts.status === 'approved') ? (
+                                <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">
+                                  Approved
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded">
+                                  Draft
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900">
+                              {employee.totalHours.toFixed(1)} hrs
+                            </td>
+                            <td className="px-6 py-4">
+                              {employee.timesheets.length > 0 && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedTimesheet(employee.timesheets[0]);
+                                    setShowModal(true);
+                                  }}
+                                  className="text-sm text-blue-600 hover:text-blue-800"
+                                >
+                                  View Details
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
 
-      {/* Timecard Detail Modal */}
-      {showModal && selectedTimecard && (
+      {/* Timesheet Detail Modal */}
+      {showModal && selectedTimesheet && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Timecard Details</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Timesheet Details</h2>
                 <button
                   onClick={() => setShowModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg"
@@ -630,42 +658,41 @@ export default function AdminTimesheets() {
                 <div>
                   <p className="text-sm text-gray-600">Employee</p>
                   <p className="font-medium">
-                    {selectedTimecard.employee?.first_name} {selectedTimecard.employee?.last_name}
+                    {selectedTimesheet.employee?.first_name} {selectedTimesheet.employee?.last_name}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Date</p>
-                  <p className="font-medium">{selectedTimecard.work_date}</p>
+                  <p className="text-sm text-gray-600">Week Ending</p>
+                  <p className="font-medium">{selectedTimesheet.week_ending}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Hours</p>
-                  <p className="font-medium">{selectedTimecard.total_hours} hours</p>
+                  <p className="text-sm text-gray-600">Total Hours</p>
+                  <p className="font-medium">{selectedTimesheet.total_hours || 0} hours</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Project</p>
-                  <p className="font-medium">{selectedTimecard.project?.name || 'N/A'}</p>
+                  <p className="text-sm text-gray-600">Status</p>
+                  <p className="font-medium capitalize">{selectedTimesheet.status}</p>
                 </div>
               </div>
 
-              {selectedTimecard.description && (
+              {selectedTimesheet.comments && (
                 <div className="mb-6">
-                  <p className="text-sm text-gray-600 mb-1">Description</p>
-                  <p className="text-gray-900">{selectedTimecard.description}</p>
+                  <p className="text-sm text-gray-600 mb-1">Comments</p>
+                  <p className="text-gray-900">{selectedTimesheet.comments}</p>
                 </div>
               )}
 
-              {selectedTimecard.status === 'pending' && (
+              {selectedTimesheet.status === 'submitted' && (
                 <div className="flex justify-end gap-3">
                   <button
-                    onClick={() => handleRejectTimecard(selectedTimecard.id, 'Please review hours')}
+                    onClick={() => handleRejectTimesheet(selectedTimesheet.id, 'Please review and resubmit')}
                     className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     Reject
                   </button>
                   <button
-                    onClick={() => handleApproveTimecard(selectedTimecard.id)}
-                    className="px-4 py-2 text-white rounded-lg hover:opacity-90"
-                    style={{ backgroundColor: '#e31c79' }}
+                    onClick={() => handleApproveTimesheet(selectedTimesheet.id)}
+                    className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
                   >
                     Approve
                   </button>

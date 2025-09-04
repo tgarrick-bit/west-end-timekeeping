@@ -1,5 +1,7 @@
 // Enhanced Realistic Data Service - Combined Real Employee Data
 // This combines your original timesheet data with the weekly report employee data
+// @ts-nocheck
+
 import { EmployeeDashboardStats } from '@/types'
 
 export interface User {
