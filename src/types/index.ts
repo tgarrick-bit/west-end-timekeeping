@@ -37,6 +37,7 @@ export interface Project {
   description?: string | null;  // <-- add
   start_date?: string | null;    // <-- add (YYYY-MM-DD)
   end_date?: string | null; 
+  status?: ProjectStatus;
   created_at?: string;
   updated_at?: string;
 }
