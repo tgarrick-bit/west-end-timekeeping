@@ -1,135 +1,133 @@
-// Standalone type definitions for the application
-// No dependency on supabase types file
+// src/types/index.ts
 
-// Define UserRole type
-export type UserRole = 'admin' | 'manager' | 'employee';
+// ---- Roles -------------------------------------------------
+export type UserRole =
+  | 'employee'
+  | 'manager'
+  | 'admin'
+  | 'client_approver'
+  | 'payroll';
 
-// Define Employee interface based on your database schema
-export interface Employee {
+// ---- Core user/employee ------------------------------------
+export interface User {
   id: string;
   email: string;
-  first_name?: string;
-  last_name?: string;
-  role: string;
-  department?: string;
-  is_active: boolean;
-  hourly_rate?: number;
-  created_at?: string;
-  updated_at?: string;
-  phone?: string;
-  hire_date?: string;
-  is_exempt?: boolean;
-  state?: string;
-  employee_id?: string;
-  client_id?: string;
-}
-
-// Define Client interface based on your database schema
-export interface Client {
-  id: string;
-  name: string;
-  contact_person: string;  // Required for component compatibility
-  contact_email: string;   // Required for component compatibility
-  contact_phone: string;   // Required for component compatibility
-  time_tracking_method: 'detailed' | 'simple';  // Required, no undefined
-  is_active: boolean;
+  first_name?: string | null;
+  last_name?: string | null;
+  role: UserRole;
+  client_id?: string | null;
+  manager_id?: string | null;
+  is_active?: boolean | null;
   created_at?: string;
   updated_at?: string;
 }
 
-// ClientFormData interface for form handling
-export interface ClientFormData {
-  name: string;
-  contact_person: string;
-  contact_email: string;
-  contact_phone: string;
-  time_tracking_method: 'detailed' | 'simple';
-  is_active: boolean;
+export interface Employee extends User {
+  department?: string | null;
+  state?: string | null;
 }
 
-// Define Project interface - COMPLETE VERSION
+// ---- Projects ----------------------------------------------
 export interface Project {
   id: string;
   name: string;
   code?: string;
-  client_id: string;  // Required for ProjectManagement component
-  description?: string;
-  start_date: string;
-  end_date?: string | null;
-  budget?: number | null;
-  status: 'active' | 'completed' | 'on-hold';
-  is_active: boolean;
+  client_id?: string | null;
+  is_active?: boolean | null;
   created_at?: string;
   updated_at?: string;
 }
 
-// Define User interface
-export interface User {
-  id: string;
-  email: string;
-  first_name?: string;
-  last_name?: string;
-  role: string;
-  is_active: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
+// ---- Timesheets --------------------------------------------
+export type TimesheetStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'paid';
 
-// Define ProjectAssignment interface
-export interface ProjectAssignment {
-  id: string;
-  project_id: string;
-  user_id: string;
-  role?: string;
-  is_active: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
-
-// Define Timesheet interface
 export interface Timesheet {
   id: string;
-  employee_id: string;
-  week_ending: string;
-  total_hours?: number;
-  status: 'draft' | 'submitted' | 'approved' | 'rejected';
-  submitted_at?: string;
-  approved_at?: string;
-  approved_by?: string;
-  comments?: string;
+  employee_id: string; // a.k.a. user_id in some schemas
+  week_ending?: string;       // if your table has week_ending
+  week_start_date?: string;   // or week_start_date
+  total_hours?: number | null;
+  status?: TimesheetStatus;
   created_at?: string;
   updated_at?: string;
 }
 
-// Define TimesheetEntry interface
-export interface TimesheetEntry {
+// ---- Time entries ------------------------------------------
+/**
+ * This interface is intentionally permissive so it works
+ * with both “minutes” and “total_minutes” schemas, and with
+ * either “entry_date” or “date”.
+ */
+export interface TimeEntry {
   id: string;
   timesheet_id: string;
-  date: string;
-  hours: number;
-  project_id?: string;
-  description?: string;
+  project_id?: string | null;
+  task_id?: string | null;
+
+  // date fields (your DB might use one or the other)
+  entry_date?: string; // YYYY-MM-DD
+  date?: string;       // YYYY-MM-DD
+
+  // duration fields
+  total_minutes?: number | null;
+  minutes?: number | null;
+  hours?: number | null; // some UI code references hours
+
+  // optional details
+  start_time?: string | null; // HH:MM:SS
+  end_time?: string | null;   // HH:MM:SS
+  notes?: string | null;
+  billable?: boolean | null;
+  status?: string | null;
+
   created_at?: string;
   updated_at?: string;
 }
 
-// Define Expense interface
-export interface Expense {
+// ---- Expenses ----------------------------------------------
+export type ExpenseStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'paid';
+
+export interface ExpenseReport {
   id: string;
   employee_id: string;
-  expense_date: string;
-  amount: number;
-  category: string;
-  description?: string;
-  status: 'draft' | 'submitted' | 'approved' | 'rejected';
-  submitted_at?: string;
-  approved_at?: string;
-  approved_by?: string;
-  receipt_url?: string;
-  project_id?: string;
-  comments?: string;
+  report_number?: string;
+  report_name?: string;
+  status?: ExpenseStatus;
+  submission_date?: string;
+  total_amount?: number | null;
+  project_code?: string | null;
+  department?: string | null;
   created_at?: string;
   updated_at?: string;
 }
+
+export interface ExpenseItem {
+  id: string;
+  expense_report_id?: string; // sometimes named report_id
+  report_id?: string;
+
+  date: string; // YYYY-MM-DD
+  amount?: number | null;
+  total_amount?: number | null; // some UIs sum into report total
+  category?: string | null;
+  description?: string | null;
+  receipt_url?: string | null;
+  project_id?: string | null;
+
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ---- Convenience bundles -----------------------------------
+export interface PagedResult<T> {
+  items: T[];
+  total: number;
+}
+
+export interface ApprovalSummary {
+  timesheets_pending: number;
+  expenses_pending: number;
+}
+
 
 
