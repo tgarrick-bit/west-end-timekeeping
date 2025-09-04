@@ -34,6 +34,9 @@ export interface Project {
   code?: string;
   client_id?: string | null;
   is_active?: boolean | null;
+  description?: string | null;  // <-- add
+  start_date?: string | null;    // <-- add (YYYY-MM-DD)
+  end_date?: string | null; 
   created_at?: string;
   updated_at?: string;
 }
