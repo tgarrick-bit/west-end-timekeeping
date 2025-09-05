@@ -1,14 +1,15 @@
+// src/app/api/manager/contractors/[id]/page.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { 
-  User, 
-  Clock, 
-  DollarSign, 
-  Building2, 
-  Mail, 
+import {
+  User as UserIcon,
+  Clock,
+  DollarSign,
+  Building2,
+  Mail,
   Phone,
   ArrowLeft,
   LogOut,
@@ -39,10 +40,34 @@ interface ContractorDetail {
   notes?: string
 }
 
+/** Accepts any shape your auth returns and makes a nice display name. */
+function getUserLabel(u?: {
+  email?: string | null
+  first_name?: string | null
+  last_name?: string | null
+} | null) {
+  if (!u) return ''
+  const first = u.first_name ?? ''
+  const last = u.last_name ?? ''
+  const full = `${first} ${last}`.trim()
+  return full || (u.email ?? '')
+}
+
 export default function ContractorDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { user, signOut } = useAuth()
+
+  // Be robust to different AuthContext shapes (user/appUser, logout/signOut)
+  const auth = useAuth() as any
+  const user = (auth?.user ?? auth?.appUser ?? null) as
+    | { email?: string | null; first_name?: string | null; last_name?: string | null }
+    | null
+
+  const signOut =
+    (auth?.logout as (() => Promise<void>) | undefined) ??
+    (auth?.signOut as (() => Promise<void>) | undefined) ??
+    (async () => {})
+
   const [contractor, setContractor] = useState<ContractorDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -51,7 +76,7 @@ export default function ContractorDetailPage() {
 
   useEffect(() => {
     // Simulate loading contractor data
-    setTimeout(() => {
+    const t = setTimeout(() => {
       const mockContractor: ContractorDetail = {
         id: '1',
         name: contractorId === 'emp1' ? 'Mike Chen' : 'Sarah Johnson',
@@ -61,28 +86,31 @@ export default function ContractorDetailPage() {
         status: 'active',
         hourlyRate: contractorId === 'emp1' ? 95 : 110,
         totalHours: contractorId === 'emp1' ? 156.5 : 142.0,
-        totalAmount: contractorId === 'emp1' ? 14867.50 : 15620.00,
+        totalAmount: contractorId === 'emp1' ? 14867.5 : 15620.0,
         lastActive: '2025-01-19',
-        projects: contractorId === 'emp1' 
-          ? ['ABC Corp - Tech Infrastructure', 'ABC Corp - System Maintenance']
-          : ['ABC Corp - Software Development', 'ABC Corp - API Integration'],
+        projects:
+          contractorId === 'emp1'
+            ? ['ABC Corp - Tech Infrastructure', 'ABC Corp - System Maintenance']
+            : ['ABC Corp - Software Development', 'ABC Corp - API Integration'],
         employeeId: contractorId,
         startDate: '2024-06-01',
-        skills: contractorId === 'emp1' 
-          ? ['Network Administration', 'System Security', 'Cloud Infrastructure', 'DevOps']
-          : ['Full-Stack Development', 'React/Node.js', 'API Design', 'Database Design'],
-        notes: contractorId === 'emp1' 
-          ? 'Excellent technical skills, very reliable, great communication with stakeholders.'
-          : 'Strong problem-solving abilities, quick learner, excellent team player.'
+        skills:
+          contractorId === 'emp1'
+            ? ['Network Administration', 'System Security', 'Cloud Infrastructure', 'DevOps']
+            : ['Full-Stack Development', 'React/Node.js', 'API Design', 'Database Design'],
+        notes:
+          contractorId === 'emp1'
+            ? 'Excellent technical skills, very reliable, great communication with stakeholders.'
+            : 'Strong problem-solving abilities, quick learner, excellent team player.'
       }
       setContractor(mockContractor)
       setIsLoading(false)
-    }, 1000)
+    }, 500)
+    return () => clearTimeout(t)
   }, [contractorId])
 
   const handleContact = (method: 'email' | 'phone') => {
     if (!contractor) return
-    
     if (method === 'email') {
       window.open(`mailto:${contractor.email}`)
     } else if (method === 'phone' && contractor.phone) {
@@ -111,7 +139,7 @@ export default function ContractorDetailPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e31c79] mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e31c79] mx-auto" />
           <p className="mt-2 text-gray-600">Loading Contractor Details...</p>
         </div>
       </div>
@@ -123,7 +151,7 @@ export default function ContractorDetailPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600">Contractor not found</p>
-          <button 
+          <button
             onClick={() => router.back()}
             className="mt-4 bg-[#e31c79] text-white px-4 py-2 rounded-lg hover:bg-[#c41a6b] transition-colors"
           >
@@ -138,16 +166,18 @@ export default function ContractorDetailPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#05202E] transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      <div
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#05202E] transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-700">
           <div className="flex items-center">
             <span className="text-white font-semibold text-lg">Manager Portal</span>
@@ -185,7 +215,7 @@ export default function ContractorDetailPage() {
 
         <div className="absolute bottom-0 w-full p-4 border-t border-gray-700">
           <div className="text-white text-sm">
-            <p className="font-medium truncate">{user ? `${user.first_name} ${user.last_name}` : ''}</p>
+            <p className="font-medium truncate">{getUserLabel(user)}</p>
             <p className="text-gray-300 text-xs">Manager</p>
           </div>
         </div>
@@ -193,7 +223,7 @@ export default function ContractorDetailPage() {
 
       {/* Main content */}
       <div className="lg:pl-64">
-        {/* Top header - EXACTLY matching Admin Dashboard */}
+        {/* Top header */}
         <header className="bg-white shadow-sm border-b border-gray-200">
           <div className="flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex items-center">
@@ -232,7 +262,7 @@ export default function ContractorDetailPage() {
         <main className="p-4 sm:p-6 lg:p-8">
           <div className="space-y-6">
             {/* Back Button */}
-            <button 
+            <button
               onClick={() => router.back()}
               className="flex items-center space-x-2 text-[#e31c79] hover:text-[#c41a6b] transition-colors"
             >
@@ -244,7 +274,7 @@ export default function ContractorDetailPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center space-x-4">
                 <div className="w-20 h-20 bg-[#e31c79] bg-opacity-10 rounded-full flex items-center justify-center">
-                  <User className="w-10 h-10 text-[#e31c79]" />
+                  <UserIcon className="w-10 h-10 text-[#e31c79]" />
                 </div>
                 <div className="flex-1">
                   <h1 className="text-3xl font-bold text-[#232020]">{contractor.name}</h1>
@@ -272,7 +302,7 @@ export default function ContractorDetailPage() {
               </div>
             </div>
 
-            {/* Statistics - EXACTLY matching Admin Dashboard */}
+            {/* Statistics */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center">
@@ -285,7 +315,7 @@ export default function ContractorDetailPage() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center">
                   <div className="p-3 rounded-full bg-[#465079]">
@@ -297,7 +327,7 @@ export default function ContractorDetailPage() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center">
                   <div className="p-3 rounded-full bg-green-500">
@@ -305,11 +335,13 @@ export default function ContractorDetailPage() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-[#465079]">Total Amount</p>
-                    <p className="text-2xl font-semibold text-[#232020]">${contractor.totalAmount.toLocaleString()}</p>
+                    <p className="text-2xl font-semibold text-[#232020]">
+                      ${contractor.totalAmount.toLocaleString()}
+                    </p>
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center">
                   <div className="p-3 rounded-full bg-orange-500">
@@ -362,17 +394,25 @@ export default function ContractorDetailPage() {
                   )}
                   <div>
                     <span className="text-sm font-medium text-[#465079]">Start Date:</span>
-                    <p className="text-[#232020]">{new Date(contractor.startDate).toLocaleDateString()}</p>
+                    <p className="text-[#232020]">
+                      {new Date(contractor.startDate).toLocaleDateString()}
+                    </p>
                   </div>
                   <div>
                     <span className="text-sm font-medium text-[#465079]">Last Active:</span>
-                    <p className="text-[#232020]">{new Date(contractor.lastActive).toLocaleDateString()}</p>
+                    <p className="text-[#232020]">
+                      {new Date(contractor.lastActive).toLocaleDateString()}
+                    </p>
                   </div>
                   <div>
                     <span className="text-sm font-medium text-[#465079]">Status:</span>
-                    <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                      contractor.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span
+                      className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                        contractor.status === 'active'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
                       {contractor.status.charAt(0).toUpperCase() + contractor.status.slice(1)}
                     </span>
                   </div>
@@ -384,7 +424,7 @@ export default function ContractorDetailPage() {
                 <h2 className="text-xl font-semibold text-[#232020] mb-4">Skills & Expertise</h2>
                 <div className="flex flex-wrap gap-2">
                   {contractor.skills.map((skill, index) => (
-                    <span 
+                    <span
                       key={index}
                       className="px-3 py-1 bg-[#e31c79] bg-opacity-10 text-[#e31c79] text-sm rounded-full"
                     >
@@ -421,3 +461,4 @@ export default function ContractorDetailPage() {
     </div>
   )
 }
+

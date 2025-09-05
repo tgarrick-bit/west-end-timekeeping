@@ -1,3 +1,4 @@
+// src/components/TimesheetModal.tsx
 'use client';
 
 import React from 'react';
@@ -22,16 +23,16 @@ interface TimesheetDetail {
   employee_department?: string | null;
   week_ending: string;
   total_hours: number;
-  total_overtime?: number;  // From admin page
-  overtime_hours?: number;  // Alternative field name
-  total_amount?: number;    // From admin page
+  total_overtime?: number;
+  overtime_hours?: number;
+  total_amount?: number;
   status: 'draft' | 'submitted' | 'approved' | 'rejected';
   submitted_at?: string | null;
   approved_at?: string | null;
   approved_by?: string | null;
   approved_by_name?: string | null;
   notes?: string | null;
-  entries?: TimesheetEntry[];  // Made optional to handle missing data
+  entries?: TimesheetEntry[];
 }
 
 interface TimesheetModalProps {
@@ -49,74 +50,69 @@ export default function TimesheetModal({
   timesheet,
   onApprove,
   onReject,
-  processing = false
+  processing = false,
 }: TimesheetModalProps) {
   if (!isOpen || !timesheet) return null;
 
-  // Get status badge color
   const getStatusColor = () => {
     switch (timesheet.status) {
-      case 'submitted': return 'bg-yellow-100 text-yellow-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'submitted':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-  // Get entries and ensure they're an array
   const entries = Array.isArray(timesheet.entries) ? timesheet.entries : [];
-  
-  // Sort entries by date
+
   const sortedEntries = [...entries].sort((a, b) => {
     const dateA = a.date ? new Date(a.date).getTime() : 0;
     const dateB = b.date ? new Date(b.date).getTime() : 0;
-    
+
     if (isNaN(dateA) && isNaN(dateB)) return 0;
     if (isNaN(dateA)) return 1;
     if (isNaN(dateB)) return -1;
-    
+
     return dateA - dateB;
   });
 
-  // Calculate totals from entries
   const calculatedTotalHours = sortedEntries.reduce((sum, entry) => {
     const hours = parseFloat(String(entry.hours)) || 0;
     return sum + hours;
   }, 0);
-  
-  // Use calculated hours if we have entries, otherwise use the stored total
-  const totalHours = sortedEntries.length > 0 ? calculatedTotalHours : (timesheet.total_hours || 0);
-  
-  // Calculate regular and overtime
+
+  const totalHours =
+    sortedEntries.length > 0 ? calculatedTotalHours : timesheet.total_hours || 0;
+
   const totalRegular = Math.min(40, totalHours);
-  // Use total_overtime from admin page, or overtime_hours, or calculate it
-  const totalOvertime = timesheet.total_overtime ?? timesheet.overtime_hours ?? Math.max(0, totalHours - 40);
-  
-  // Calculate estimated total
-  const hourlyRate = 75; // Default hourly rate
+  const totalOvertime =
+    timesheet.total_overtime ??
+    timesheet.overtime_hours ??
+    Math.max(0, totalHours - 40);
+
+  const hourlyRate = 75;
   const regularAmount = totalRegular * hourlyRate;
   const overtimeAmount = totalOvertime * hourlyRate * 1.5;
-  const estimatedTotal = timesheet.total_amount || (regularAmount + overtimeAmount);
-
-  console.log('TimesheetModal Data:', {
-    timesheet_id: timesheet.id,
-    entries_count: sortedEntries.length,
-    total_hours: totalHours,
-    entries: sortedEntries
-  });
+  const estimatedTotal =
+    timesheet.total_amount ?? regularAmount + overtimeAmount;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-        {/* Header - Blue background with white text */}
+        {/* Header */}
         <div className="sticky top-0 bg-[#05202e] text-white px-6 py-4 z-10">
           <div className="flex justify-between items-start">
             <div className="flex-1">
-              <h2 className="text-xl font-bold text-white">
-                Timecard Details
-              </h2>
-              <span className={`inline-flex mt-2 px-2 py-1 text-xs font-semibold rounded ${getStatusColor()}`}>
-                {timesheet.status.charAt(0).toUpperCase() + timesheet.status.slice(1)}
+              <h2 className="text-xl font-bold text-white">Timecard Details</h2>
+              <span
+                className={`inline-flex mt-2 px-2 py-1 text-xs font-semibold rounded ${getStatusColor()}`}
+              >
+                {timesheet.status.charAt(0).toUpperCase() +
+                  timesheet.status.slice(1)}
               </span>
             </div>
             <button
@@ -131,21 +127,27 @@ export default function TimesheetModal({
           <div className="mt-4 flex flex-wrap gap-4 text-sm">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-white/70" />
-              <span className="font-medium text-lg text-white">{timesheet.employee_name}</span>
+              <span className="font-medium text-lg text-white">
+                {timesheet.employee_name}
+              </span>
             </div>
             {timesheet.employee_department && (
               <div className="flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-white/70" />
-                <span className="text-white/90">{timesheet.employee_department}</span>
+                <span className="text-white/90">
+                  {timesheet.employee_department}
+                </span>
               </div>
             )}
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-white/70" />
-              <span className="text-white/90">Week ending {
-                timesheet.week_ending && !isNaN(new Date(timesheet.week_ending).getTime())
+              <span className="text-white/90">
+                Week ending{' '}
+                {timesheet.week_ending &&
+                !isNaN(new Date(timesheet.week_ending).getTime())
                   ? format(new Date(timesheet.week_ending), 'EEE, MMM dd, yyyy')
-                  : timesheet.week_ending
-              }</span>
+                  : timesheet.week_ending}
+              </span>
             </div>
           </div>
         </div>
@@ -155,19 +157,27 @@ export default function TimesheetModal({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white p-4 rounded-lg border">
               <p className="text-sm font-medium text-gray-500">Regular Hours</p>
-              <p className="text-2xl font-bold text-gray-900">{totalRegular.toFixed(1)}h</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {totalRegular.toFixed(1)}h
+              </p>
             </div>
             <div className="bg-white p-4 rounded-lg border">
               <p className="text-sm font-medium text-gray-500">Overtime Hours</p>
-              <p className="text-2xl font-bold text-gray-900">{totalOvertime.toFixed(1)}h</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {totalOvertime.toFixed(1)}h
+              </p>
             </div>
             <div className="bg-white p-4 rounded-lg border">
               <p className="text-sm font-medium text-gray-500">Total Hours</p>
-              <p className="text-2xl font-bold text-gray-900">{totalHours.toFixed(1)}h</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {totalHours.toFixed(1)}h
+              </p>
             </div>
             <div className="bg-white p-4 rounded-lg border">
               <p className="text-sm font-medium text-gray-500">Estimated Total</p>
-              <p className="text-2xl font-bold text-green-600">${estimatedTotal.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-green-600">
+                ${estimatedTotal.toFixed(2)}
+              </p>
             </div>
           </div>
         </div>
@@ -181,10 +191,13 @@ export default function TimesheetModal({
 
           {sortedEntries.length === 0 ? (
             <div className="text-center py-8 bg-gray-50 rounded-lg">
-              <p className="text-gray-500">No time entries found for this timecard</p>
+              <p className="text-gray-500">
+                No time entries found for this timecard
+              </p>
               {timesheet.total_hours > 0 && (
                 <p className="text-sm text-gray-400 mt-2">
-                  (Timesheet shows {timesheet.total_hours.toFixed(1)} total hours but entries may not be loaded)
+                  (Timesheet shows {timesheet.total_hours.toFixed(1)} total hours
+                  but entries may not be loaded)
                 </p>
               )}
             </div>
@@ -215,45 +228,50 @@ export default function TimesheetModal({
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {sortedEntries.map((entry, index) => {
-                    // Calculate running total to determine overtime
-                    const previousEntries = sortedEntries.slice(0, index);
-                    const runningTotal = previousEntries.reduce((sum, e) => {
-                      const hours = parseFloat(String(e.hours)) || 0;
-                      return sum + hours;
+                    // Running totals to split regular/overtime
+                    const prior = sortedEntries.slice(0, index);
+                    const runningTotal = prior.reduce((sum, e) => {
+                      const hrs = parseFloat(String(e.hours)) || 0;
+                      return sum + hrs;
                     }, 0);
+
                     const entryHours = parseFloat(String(entry.hours)) || 0;
-                    const regularHours = Math.max(0, Math.min(entryHours, Math.max(0, 40 - runningTotal)));
+                    const regularHours = Math.max(
+                      0,
+                      Math.min(entryHours, Math.max(0, 40 - runningTotal))
+                    );
                     const overtimeHours = Math.max(0, entryHours - regularHours);
+
                     const regularAmount = regularHours * hourlyRate;
                     const overtimeAmount = overtimeHours * hourlyRate * 1.5;
                     const totalAmount = regularAmount + overtimeAmount;
-                    
-                    // Safe date formatting
-                    let currentDate = '';
-                    let showDate = false;
-                    
-                    try {
-                      if (entry.date) {
-                        const date = new Date(entry.date);
-                        if (!isNaN(date.getTime())) {
-                          currentDate = format(date, 'EEE, MMM dd, yyyy');
-                          showDate = index === 0 || 
-                            (sortedEntries[index - 1].date && 
-                             format(new Date(sortedEntries[index - 1].date), 'yyyy-MM-dd') !== 
-                             format(date, 'yyyy-MM-dd'));
-                        }
+
+                    // Safe date formatting & grouping
+                    let currentDateStr = 'Invalid Date';
+                    let showDate = index === 0;
+
+                    if (entry.date) {
+                      const d = new Date(entry.date);
+                      if (!isNaN(d.getTime())) {
+                        currentDateStr = format(d, 'EEE, MMM dd, yyyy');
+
+                        const prevRaw = sortedEntries[index - 1]?.date;
+                        const prevValid =
+                          prevRaw && !isNaN(new Date(prevRaw).getTime())
+                            ? format(new Date(prevRaw), 'yyyy-MM-dd')
+                            : null;
+                        const currKey = format(d, 'yyyy-MM-dd');
+
+                        showDate = index === 0 || prevValid !== currKey;
                       }
-                    } catch (error) {
-                      currentDate = entry.date || 'Invalid Date';
-                      showDate = index === 0;
                     }
-                    
+
                     return (
                       <tr key={entry.id || index} className="hover:bg-gray-50">
                         <td className="px-4 py-3 whitespace-nowrap text-sm">
                           {showDate && (
                             <div className="font-medium text-gray-900">
-                              {currentDate}
+                              {currentDateStr}
                             </div>
                           )}
                         </td>
@@ -280,7 +298,7 @@ export default function TimesheetModal({
                       </tr>
                     );
                   })}
-                  
+
                   {/* Total Row */}
                   <tr className="bg-gray-50 font-semibold">
                     <td colSpan={2} className="px-4 py-3 text-right text-gray-900">

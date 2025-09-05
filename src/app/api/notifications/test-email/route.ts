@@ -1,106 +1,104 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { emailService } from '@/lib/emailService';
+// src/app/api/notifications/test-email/route.ts
+import { NextResponse } from 'next/server'
+import { EmailService } from '@/lib/emailService'
 
-// POST /api/notifications/test-email - Test email configuration
-export async function POST(request: NextRequest) {
+// POST /api/notifications/test-email
+export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { toEmail, testType = 'configuration' } = body;
+    const body = await request.json().catch(() => ({}))
+    const { toEmail, testType = 'configuration' } = body as {
+      toEmail?: string
+      testType?: 'configuration' | 'notification'
+    }
+
+    const svc = EmailService.getInstance()
 
     if (testType === 'configuration') {
-      // Test email service configuration
-      const result = await emailService.testEmailConfiguration();
-      
-      if (result.success) {
-        return NextResponse.json({
-          success: true,
+      const result = await svc.testEmailConfiguration()
+      return NextResponse.json(
+        {
+          success: result.success,
           message: result.message,
-          type: 'configuration'
-        });
-      } else {
-        return NextResponse.json({
-          success: false,
-          message: result.message,
-          type: 'configuration'
-        }, { status: 500 });
-      }
-    } else if (testType === 'notification') {
-      // Test sending a notification email
+          type: 'configuration',
+        },
+        { status: result.success ? 200 : 500 }
+      )
+    }
+
+    if (testType === 'notification') {
       if (!toEmail) {
         return NextResponse.json(
           { error: 'Email address is required for notification test' },
           { status: 400 }
-        );
+        )
       }
 
-      // Create a test notification
+      // Minimal test notification payload (shape doesn’t need to be exact for a test)
       const testNotification = {
         id: 'test-notification',
-        type: 'timesheet_submitted' as const,
+        type: 'timesheet_submitted',
         title: 'Test Notification',
-        message: 'This is a test notification email to verify the email service is working correctly.',
-        priority: 'medium' as const,
+        message:
+          'This is a test notification email to verify the email service is working correctly.',
+        priority: 'medium',
         userId: 'test-user',
         isRead: false,
         isEmailSent: false,
-        createdAt: new Date()
-      };
+        createdAt: new Date(),
+      } as any
 
-      const success = await emailService.sendEmailNotification(
-        toEmail,
-        testNotification,
-        {
-          employeeName: 'Test Employee',
-          managerName: 'Test Manager',
-          period: 'Test Period',
-          totalHours: '40',
-          approvalUrl: '#'
-        }
-      );
+      const ok = await svc.sendEmailNotification(toEmail, testNotification, {
+        employeeName: 'Test Employee',
+        managerName: 'Test Manager',
+        period: 'Test Period',
+        totalHours: '40',
+        approvalUrl: '#',
+      })
 
-      if (success) {
-        return NextResponse.json({
-          success: true,
-          message: `Test notification email sent successfully to ${toEmail}`,
-          type: 'notification'
-        });
-      } else {
-        return NextResponse.json({
-          success: false,
-          message: 'Failed to send test notification email',
-          type: 'notification'
-        }, { status: 500 });
-      }
-    } else {
       return NextResponse.json(
-        { error: 'Invalid test type. Use "configuration" or "notification"' },
-        { status: 400 }
-      );
+        {
+          success: ok,
+          message: ok
+            ? `Test notification email sent successfully to ${toEmail}`
+            : 'Failed to send test notification email',
+          type: 'notification',
+        },
+        { status: ok ? 200 : 500 }
+      )
     }
-  } catch (error) {
-    console.error('Error testing email service:', error);
+
+    return NextResponse.json(
+      { error: 'Invalid test type. Use "configuration" or "notification"' },
+      { status: 400 }
+    )
+  } catch (err) {
+    console.error('Error testing email service:', err)
     return NextResponse.json(
       { error: 'Failed to test email service' },
       { status: 500 }
-    );
+    )
   }
 }
 
-// GET /api/notifications/test-email - Get email service status
+// GET /api/notifications/test-email
+// Returns the same configuration check as a quick status endpoint
 export async function GET() {
   try {
-    const status = emailService.getStatus();
-    
-    return NextResponse.json({
-      success: true,
-      status,
-      message: 'Email service status retrieved successfully'
-    });
-  } catch (error) {
-    console.error('Error getting email service status:', error);
+    const svc = EmailService.getInstance()
+    const result = await svc.testEmailConfiguration()
+    return NextResponse.json(
+      {
+        success: result.success,
+        message: result.message,
+        type: 'configuration',
+      },
+      { status: result.success ? 200 : 500 }
+    )
+  } catch (err) {
+    console.error('Error getting email service status:', err)
     return NextResponse.json(
       { error: 'Failed to get email service status' },
       { status: 500 }
-    );
+    )
   }
 }
