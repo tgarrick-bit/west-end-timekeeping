@@ -2,47 +2,52 @@
 
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { Project } from '@/types';
+import type { Project, TimeEntry } from '@/types';
 
-type ExpenseCategory = { id: string; name: string };
+type Task = { id: string; code?: string; name: string };
 
-const CATEGORIES: ExpenseCategory[] = [
-  { id: 'travel', name: 'Travel' },
-  { id: 'meals', name: 'Meals' },
-  { id: 'supplies', name: 'Supplies' },
-  { id: 'other', name: 'Other' },
+const DEFAULT_TASKS: Task[] = [
+  { id: 'gen', code: 'GEN', name: 'General' },
+  { id: 'meet', code: 'MTG', name: 'Meetings' },
+  { id: 'dev', code: 'DEV', name: 'Development' },
 ];
 
-export default function QuickExpenseEntry() {
+export default function QuickTimeEntry() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<Task[]>(DEFAULT_TASKS);
+
   const [projectId, setProjectId] = useState<string>('');
+  const [taskId, setTaskId] = useState<string>(DEFAULT_TASKS[0].id);
   const [date, setDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
-  const [amount, setAmount] = useState<number>(0);
-  const [category, setCategory] = useState<string>(CATEGORIES[0].id);
-  const [description, setDescription] = useState<string>('');
+  const [hours, setHours] = useState<number>(0);
+  const [notes, setNotes] = useState<string>('');
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from('projects').select('id, name').eq('is_active', true).order('name');
       setProjects((data || []) as Project[]);
+      // If you have a tasks table, fetch it here instead of DEFAULT_TASKS
+      setTasks(DEFAULT_TASKS);
     })();
   }, []);
 
   const save = async () => {
-    if (!date || !amount) return;
+    const total_minutes = Math.round(hours * 60);
 
-    // Adjust to your actual schema fields
-    await supabase.from('expense_items').insert({
+    const payload: Partial<TimeEntry> = {
       project_id: projectId || null,
-      date,
-      amount,
-      category,
-      description: description || null,
-    });
+      entry_date: date,
+      total_minutes,
+      notes: notes || null,
+      task_id: taskId || null,
+    };
 
-    setAmount(0);
-    setCategory(CATEGORIES[0].id);
-    setDescription('');
+    await supabase.from('time_entries').insert(payload);
+
+    setProjectId('');
+    setTaskId(DEFAULT_TASKS[0].id);
+    setHours(0);
+    setNotes('');
   };
 
   return (
@@ -63,6 +68,21 @@ export default function QuickExpenseEntry() {
         </div>
 
         <div>
+          <label className="block text-sm mb-1">Task</label>
+          <select
+            className="border rounded px-3 py-2 w-full"
+            value={taskId}
+            onChange={(e) => setTaskId(e.target.value)}
+          >
+            {tasks.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.code ? `${t.code} - ${t.name}` : t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
           <label className="block text-sm mb-1">Date</label>
           <input
             type="date"
@@ -73,37 +93,22 @@ export default function QuickExpenseEntry() {
         </div>
 
         <div>
-          <label className="block text-sm mb-1">Amount</label>
+          <label className="block text-sm mb-1">Hours</label>
           <input
             type="number"
-            step="0.01"
+            step="0.1"
             className="border rounded px-3 py-2 w-full"
-            value={amount}
-            onChange={(e) => setAmount(parseFloat(e.target.value || '0'))}
+            value={hours}
+            onChange={(e) => setHours(parseFloat(e.target.value || '0'))}
           />
         </div>
 
-        <div>
-          <label className="block text-sm mb-1">Category</label>
-          <select
-            className="border rounded px-3 py-2 w-full"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
         <div className="md:col-span-2">
-          <label className="block text-sm mb-1">Description</label>
+          <label className="block text-sm mb-1">Notes</label>
           <input
             className="border rounded px-3 py-2 w-full"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
             placeholder="Optional"
           />
         </div>
@@ -111,7 +116,7 @@ export default function QuickExpenseEntry() {
 
       <div className="pt-2">
         <button className="px-4 py-2 rounded bg-blue-600 text-white" onClick={save}>
-          Save Expense
+          Save Time
         </button>
       </div>
     </div>
