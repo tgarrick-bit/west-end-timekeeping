@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 // GET /api/notifications/test-email - Get email service status
 export async function GET() {
   try {
-    const status = emailService.getStatus();
+    return NextResponse.json({ ok: true });
     
     return NextResponse.json({
       success: true,

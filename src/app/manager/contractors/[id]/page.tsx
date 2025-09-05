@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { 
-  User, 
-  Clock, 
-  DollarSign, 
-  Building2, 
-  Mail, 
+import {
+  User,
+  Clock,
+  DollarSign,
+  Building2,
+  Mail,
   Phone,
   ArrowLeft,
   LogOut,
@@ -47,6 +47,14 @@ export default function ContractorDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  // ------- SAFE DISPLAY NAME FOR SUPABASE USER --------
+  const meta: any = (user as any)?.user_metadata ?? {}
+  const displayName =
+    (meta.first_name && meta.last_name)
+      ? `${meta.first_name} ${meta.last_name}`
+      : (user?.email ?? '')
+  // ----------------------------------------------------
+
   const contractorId = params.id as string
 
   useEffect(() => {
@@ -63,15 +71,15 @@ export default function ContractorDetailPage() {
         totalHours: contractorId === 'emp1' ? 156.5 : 142.0,
         totalAmount: contractorId === 'emp1' ? 14867.50 : 15620.00,
         lastActive: '2025-01-19',
-        projects: contractorId === 'emp1' 
+        projects: contractorId === 'emp1'
           ? ['ABC Corp - Tech Infrastructure', 'ABC Corp - System Maintenance']
           : ['ABC Corp - Software Development', 'ABC Corp - API Integration'],
         employeeId: contractorId,
         startDate: '2024-06-01',
-        skills: contractorId === 'emp1' 
+        skills: contractorId === 'emp1'
           ? ['Network Administration', 'System Security', 'Cloud Infrastructure', 'DevOps']
           : ['Full-Stack Development', 'React/Node.js', 'API Design', 'Database Design'],
-        notes: contractorId === 'emp1' 
+        notes: contractorId === 'emp1'
           ? 'Excellent technical skills, very reliable, great communication with stakeholders.'
           : 'Strong problem-solving abilities, quick learner, excellent team player.'
       }
@@ -82,7 +90,6 @@ export default function ContractorDetailPage() {
 
   const handleContact = (method: 'email' | 'phone') => {
     if (!contractor) return
-    
     if (method === 'email') {
       window.open(`mailto:${contractor.email}`)
     } else if (method === 'phone' && contractor.phone) {
@@ -123,7 +130,7 @@ export default function ContractorDetailPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600">Contractor not found</p>
-          <button 
+          <button
             onClick={() => router.back()}
             className="mt-4 bg-[#e31c79] text-white px-4 py-2 rounded-lg hover:bg-[#c41a6b] transition-colors"
           >
@@ -138,16 +145,18 @@ export default function ContractorDetailPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#05202E] transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      <div
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#05202E] transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-700">
           <div className="flex items-center">
             <span className="text-white font-semibold text-lg">Manager Portal</span>
@@ -167,7 +176,9 @@ export default function ContractorDetailPage() {
               return (
                 <li key={item.id}>
                   <button
-                    onClick={() => router.push(`/manager/${item.id === 'dashboard' ? '' : item.id}`)}
+                    onClick={() =>
+                      router.push(`/manager/${item.id === 'dashboard' ? '' : item.id}`)
+                    }
                     className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                       item.active
                         ? 'bg-[#e31c79] text-white shadow-sm'
@@ -185,7 +196,7 @@ export default function ContractorDetailPage() {
 
         <div className="absolute bottom-0 w-full p-4 border-t border-gray-700">
           <div className="text-white text-sm">
-            <p className="font-medium truncate">{user ? `${user.first_name} ${user.last_name}` : ''}</p>
+            <p className="font-medium truncate">{displayName}</p>
             <p className="text-gray-300 text-xs">Manager</p>
           </div>
         </div>
@@ -193,7 +204,7 @@ export default function ContractorDetailPage() {
 
       {/* Main content */}
       <div className="lg:pl-64">
-        {/* Top header - EXACTLY matching Admin Dashboard */}
+        {/* Top header */}
         <header className="bg-white shadow-sm border-b border-gray-200">
           <div className="flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex items-center">
@@ -232,7 +243,7 @@ export default function ContractorDetailPage() {
         <main className="p-4 sm:p-6 lg:p-8">
           <div className="space-y-6">
             {/* Back Button */}
-            <button 
+            <button
               onClick={() => router.back()}
               className="flex items-center space-x-2 text-[#e31c79] hover:text-[#c41a6b] transition-colors"
             >
@@ -272,7 +283,7 @@ export default function ContractorDetailPage() {
               </div>
             </div>
 
-            {/* Statistics - EXACTLY matching Admin Dashboard */}
+            {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center">
@@ -285,7 +296,7 @@ export default function ContractorDetailPage() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center">
                   <div className="p-3 rounded-full bg-[#465079]">
@@ -297,7 +308,7 @@ export default function ContractorDetailPage() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center">
                   <div className="p-3 rounded-full bg-green-500">
@@ -305,11 +316,13 @@ export default function ContractorDetailPage() {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-[#465079]">Total Amount</p>
-                    <p className="text-2xl font-semibold text-[#232020]">${contractor.totalAmount.toLocaleString()}</p>
+                    <p className="text-2xl font-semibold text-[#232020]">
+                      ${contractor.totalAmount.toLocaleString()}
+                    </p>
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center">
                   <div className="p-3 rounded-full bg-orange-500">
@@ -344,9 +357,9 @@ export default function ContractorDetailPage() {
               </div>
             </div>
 
-            {/* Detailed Information */}
+            {/* Details */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Personal Information */}
+              {/* Personal */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 className="text-xl font-semibold text-[#232020] mb-4">Personal Information</h2>
                 <div className="space-y-3">
@@ -370,9 +383,13 @@ export default function ContractorDetailPage() {
                   </div>
                   <div>
                     <span className="text-sm font-medium text-[#465079]">Status:</span>
-                    <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                      contractor.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span
+                      className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                        contractor.status === 'active'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
                       {contractor.status.charAt(0).toUpperCase() + contractor.status.slice(1)}
                     </span>
                   </div>
@@ -384,7 +401,7 @@ export default function ContractorDetailPage() {
                 <h2 className="text-xl font-semibold text-[#232020] mb-4">Skills & Expertise</h2>
                 <div className="flex flex-wrap gap-2">
                   {contractor.skills.map((skill, index) => (
-                    <span 
+                    <span
                       key={index}
                       className="px-3 py-1 bg-[#e31c79] bg-opacity-10 text-[#e31c79] text-sm rounded-full"
                     >
@@ -421,3 +438,4 @@ export default function ContractorDetailPage() {
     </div>
   )
 }
+
