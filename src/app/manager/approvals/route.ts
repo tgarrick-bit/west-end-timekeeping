@@ -38,7 +38,14 @@ const mockData: Record<string, EmployeeApprovalData> = {
       { id: 'ts4', date: '2025-08-19', hours: 7.5, description: 'Database optimization', amount: 600 }
     ],
     expenses: [
-      { id: 'ex1', date: '2025-08-19', amount: 245.8, description: 'Client dinner meeting', category: 'Meals & Entertainment', receipt_url: '/receipts/dinner-receipt.jpg' }
+      {
+        id: 'ex1',
+        date: '2025-08-19',
+        amount: 245.8,
+        description: 'Client dinner meeting',
+        category: 'Meals & Entertainment',
+        receipt_url: '/receipts/dinner-receipt.jpg'
+      }
     ]
   },
   emp3: {
@@ -48,7 +55,14 @@ const mockData: Record<string, EmployeeApprovalData> = {
       { id: 'ts6', date: '2025-08-19', hours: 8, description: 'Database queries and optimization', amount: 560 }
     ],
     expenses: [
-      { id: 'ex2', date: '2025-08-18', amount: 156.3, description: 'Travel expenses for client meeting', category: 'Transportation', receipt_url: '/receipts/travel-receipt.jpg' }
+      {
+        id: 'ex2',
+        date: '2025-08-18',
+        amount: 156.3,
+        description: 'Travel expenses for client meeting',
+        category: 'Transportation',
+        receipt_url: '/receipts/travel-receipt.jpg'
+      }
     ]
   }
 };
@@ -60,7 +74,10 @@ export async function GET(req: NextRequest) {
   const type = searchParams.get('type') ?? '';
 
   if (!employee || !type) {
-    return NextResponse.json({ error: 'Missing parameters: employee and type are required' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Missing parameters: employee and type are required' },
+      { status: 400 }
+    );
   }
 
   const employeeData = mockData[employee];
@@ -69,9 +86,34 @@ export async function GET(req: NextRequest) {
   }
 
   const data =
-    type === 'timesheet' ? (employeeData.timesheets ?? [])
-    : type === 'expense' ? (employeeData.expenses ?? [])
-    : null;
+    type === 'timesheet'
+      ? (employeeData.timesheets ?? [])
+      : type === 'expense'
+      ? (employeeData.expenses ?? [])
+      : null;
 
   if (!data) {
-    return NextResponse.json({ error: 'Invalid type. Use "timesheet" or "expense"' }, { status: 400
+    return NextResponse.json(
+      { error: 'Invalid type. Use "timesheet" or "expense"' },
+      { status: 400 }
+    );
+  }
+
+  return NextResponse.json({
+    success: true,
+    employee: { id: employee, name: employeeData.name },
+    type,
+    data,
+    count: data.length
+  });
+}
+
+export async function POST(req: NextRequest) {
+  let body: unknown = null;
+  try {
+    body = await req.json();
+  } catch {
+    body = null;
+  }
+  return NextResponse.json({ ok: true, received: body });
+}
