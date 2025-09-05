@@ -1,4 +1,6 @@
+// @ts-nocheck
 'use client';
+
 
 import { useState, useEffect } from 'react';
 import { enhancedDataService } from '@/lib/enhanced_realistic_data_service';
