@@ -229,6 +229,13 @@ export default function LoginPage() {
     }
   };
 
+  // Quick fill helper for demo accounts
+  const quickFillCredentials = (demoEmail: string) => {
+    setEmail(demoEmail);
+    setPassword('TestDemo123!');
+    setError(null);
+  };
+
   // Load remembered email on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -374,25 +381,73 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Test Accounts */}
+          {/* Test Accounts - UPDATED */}
           <div className="mt-6 pt-6 border-t border-gray-200">
             <div className="bg-gray-50 rounded-md p-4">
-              <p className="text-xs font-semibold text-gray-700 mb-2">Demo Accounts:</p>
-              <div className="space-y-1 text-xs text-gray-600">
-                <div className="flex justify-between">
-                  <span>Admin:</span>
-                  <span className="font-mono">admin@westend-test.com</span>
+              <p className="text-xs font-semibold text-gray-700 mb-3">Demo Accounts for Testing:</p>
+              <div className="space-y-2">
+                {/* Admin Account */}
+                <div className="flex items-center justify-between">
+                  <div className="text-xs">
+                    <span className="font-semibold text-gray-700">Admin:</span>
+                    <span className="ml-2 font-mono text-gray-600">admin@westend-test.com</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => quickFillCredentials('admin@westend-test.com')}
+                    className="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded transition-colors"
+                  >
+                    Use
+                  </button>
                 </div>
-                <div className="flex justify-between">
-                  <span>Manager:</span>
-                  <span className="font-mono">manager@westend-test.com</span>
+
+                {/* Manager A Account */}
+                <div className="flex items-center justify-between">
+                  <div className="text-xs">
+                    <span className="font-semibold text-gray-700">Manager A:</span>
+                    <span className="ml-2 font-mono text-gray-600">manager.a@westend-test.com</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => quickFillCredentials('manager.a@westend-test.com')}
+                    className="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded transition-colors"
+                  >
+                    Use
+                  </button>
                 </div>
-                <div className="flex justify-between">
-                  <span>Employee:</span>
-                  <span className="font-mono">employee@westend-test.com</span>
+
+                {/* Manager B Account */}
+                <div className="flex items-center justify-between">
+                  <div className="text-xs">
+                    <span className="font-semibold text-gray-700">Manager B:</span>
+                    <span className="ml-2 font-mono text-gray-600">manager.b@westend-test.com</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => quickFillCredentials('manager.b@westend-test.com')}
+                    className="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded transition-colors"
+                  >
+                    Use
+                  </button>
                 </div>
-                <div className="mt-2 pt-2 border-t border-gray-200">
-                  <span className="text-gray-500">Password for all: TestDemo123!</span>
+
+                {/* Employee Account */}
+                <div className="flex items-center justify-between">
+                  <div className="text-xs">
+                    <span className="font-semibold text-gray-700">Employee:</span>
+                    <span className="ml-2 font-mono text-gray-600">employee@westend-test.com</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => quickFillCredentials('employee@westend-test.com')}
+                    className="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded transition-colors"
+                  >
+                    Use
+                  </button>
+                </div>
+
+                <div className="mt-3 pt-2 border-t border-gray-200">
+                  <p className="text-xs text-gray-500">Password for all accounts: <span className="font-mono font-semibold">TestDemo123!</span></p>
                 </div>
               </div>
             </div>

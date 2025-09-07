@@ -16,6 +16,17 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 
+interface Employee {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  department?: string;
+  hourly_rate?: number;
+  role: string;
+  manager_id?: string;
+}
+
 interface Timesheet {
   id: string;
   employee_id: string;
@@ -26,6 +37,7 @@ interface Timesheet {
     department?: string;
     client_id?: string;
     hourly_rate?: number;
+    manager_id?: string;
   };
   week_ending: string;
   total_hours?: number;
@@ -70,12 +82,14 @@ interface TimecardEntry {
 
 export default function AdminTimesheets() {
   const [allTimesheets, setAllTimesheets] = useState<Timesheet[]>([]);
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [managers, setManagers] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTimecard, setSelectedTimecard] = useState<TimecardDetail | null>(null);
   const [processing, setProcessing] = useState(false);
   const [filterStatus, setFilterStatus] = useState<'all' | 'draft' | 'submitted' | 'approved' | 'rejected'>('all');
   const [filterWeek, setFilterWeek] = useState<string>('all');
+  const [filterManager, setFilterManager] = useState<string>('all');
   
   const supabase = createClientComponentClient();
   const router = useRouter();
@@ -96,10 +110,25 @@ export default function AdminTimesheets() {
 
       setEmployees(employeeData || []);
       
-      // Fetch ALL timesheets
+      // Extract managers from employees
+      const managersData = employeeData?.filter(emp => emp.role === 'manager') || [];
+      setManagers(managersData);
+      
+      // Fetch ALL timesheets with employee details including manager_id
       const { data: timesheetData, error: tsError } = await supabase
         .from('timesheets')
-        .select('*')
+        .select(`
+          *,
+          employee:employees!timesheets_employee_id_fkey (
+            id,
+            first_name,
+            last_name,
+            email,
+            department,
+            hourly_rate,
+            manager_id
+          )
+        `)
         .order('week_ending', { ascending: false });
 
       if (tsError) {
@@ -209,8 +238,8 @@ export default function AdminTimesheets() {
       employee_department: employee?.department,
       week_ending: timesheet.week_ending,
       total_hours: totalHours,
-      total_overtime: calculatedOvertime,  // Calculate overtime instead of using stored value
-      total_amount: (totalHours * hourlyRate) + (calculatedOvertime * hourlyRate * 0.5),  // Include overtime in total amount
+      total_overtime: calculatedOvertime,
+      total_amount: (totalHours * hourlyRate) + (calculatedOvertime * hourlyRate * 0.5),
       status: timesheet.status,
       submitted_at: timesheet.submitted_at || null,
       approved_at: timesheet.approved_at,
@@ -224,7 +253,7 @@ export default function AdminTimesheets() {
           project_id: e.project_id || undefined,
           project_name: e.projects?.name || 'General Work',
           project_code: e.projects?.code || undefined,
-          hours: parseFloat(e.hours) || 0,  // Ensure hours is a number
+          hours: parseFloat(e.hours) || 0,
           overtime_hours: undefined,
           description: e.description || undefined
         };
@@ -240,24 +269,20 @@ export default function AdminTimesheets() {
   };
 
   const exportToCSV = () => {
-    const headers = ['Week Ending', 'Employee', 'Department', 'Hours', 'Status'];
+    const headers = ['Week Ending', 'Employee', 'Department', 'Manager', 'Hours', 'Status'];
     const rows: string[][] = [];
 
-    // Export only filtered data
-    const dataToExport = filterWeek === 'all' 
-      ? allTimesheets 
-      : allTimesheets.filter(ts => ts.week_ending === filterWeek);
-    
-    const filteredData = dataToExport.filter(ts => 
-      filterStatus === 'all' || ts.status === filterStatus
-    );
+    // Apply all filters
+    const dataToExport = getFullyFilteredTimesheets();
 
-    filteredData.forEach(ts => {
+    dataToExport.forEach(ts => {
       const emp = getEmployeeInfo(ts.employee_id);
+      const manager = getManagerName(ts.employee?.manager_id || '');
       rows.push([
         ts.week_ending,
         emp.name,
         emp.department,
+        manager,
         (ts.total_hours || 0).toString(),
         ts.status
       ]);
@@ -276,9 +301,37 @@ export default function AdminTimesheets() {
     a.click();
   };
 
-  // Group timesheets by week
+  // Get fully filtered timesheets based on all filters
+  const getFullyFilteredTimesheets = () => {
+    let filtered = [...allTimesheets];
+
+    // Filter by manager
+    if (filterManager !== 'all') {
+      if (filterManager === 'unassigned') {
+        filtered = filtered.filter(ts => !ts.employee?.manager_id);
+      } else {
+        filtered = filtered.filter(ts => ts.employee?.manager_id === filterManager);
+      }
+    }
+
+    // Filter by week
+    if (filterWeek !== 'all') {
+      filtered = filtered.filter(ts => ts.week_ending === filterWeek);
+    }
+
+    // Filter by status
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(ts => ts.status === filterStatus);
+    }
+
+    return filtered;
+  };
+
+  // Group timesheets by week (after filtering)
   const groupedByWeek = new Map<string, Timesheet[]>();
-  allTimesheets.forEach(ts => {
+  const filteredData = getFullyFilteredTimesheets();
+  
+  filteredData.forEach(ts => {
     const week = ts.week_ending;
     if (!groupedByWeek.has(week)) {
       groupedByWeek.set(week, []);
@@ -291,27 +344,14 @@ export default function AdminTimesheets() {
     new Date(b[0]).getTime() - new Date(a[0]).getTime()
   );
 
-  // Get unique weeks for dropdown
-  const availableWeeks = sortedWeeks.map(([week]) => week);
-
-  // Filter weeks based on selection
-  const filteredWeeks = filterWeek === 'all' 
-    ? sortedWeeks 
-    : sortedWeeks.filter(([week]) => week === filterWeek);
-
-  // Apply status filters
-  const getFilteredTimesheets = (timesheets: Timesheet[]) => {
-    if (filterStatus === 'all') {
-      return timesheets;
-    }
-    return timesheets.filter(ts => ts.status === filterStatus);
-  };
+  // Get unique weeks for dropdown (from all timesheets, not filtered)
+  const availableWeeks = [...new Set(allTimesheets.map(ts => ts.week_ending))].sort((a, b) => 
+    new Date(b).getTime() - new Date(a).getTime()
+  );
 
   // Calculate stats based on filtered data
   const getFilteredStats = () => {
-    const relevantTimesheets = filterWeek === 'all' 
-      ? allTimesheets 
-      : allTimesheets.filter(ts => ts.week_ending === filterWeek);
+    const relevantTimesheets = getFullyFilteredTimesheets();
     
     // Get unique employees in filtered timesheets
     const uniqueEmployees = new Set(relevantTimesheets.map(ts => ts.employee_id));
@@ -328,17 +368,6 @@ export default function AdminTimesheets() {
 
   const stats = getFilteredStats();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading all timesheets...</p>
-        </div>
-      </div>
-    );
-  }
-
   const getEmployeeInfo = (employeeId: string) => {
     const employee = employees.find(e => e.id === employeeId);
     return {
@@ -349,6 +378,12 @@ export default function AdminTimesheets() {
     };
   };
 
+  const getManagerName = (managerId: string) => {
+    if (!managerId) return 'Unassigned';
+    const manager = managers.find(m => m.id === managerId);
+    return manager ? `${manager.first_name} ${manager.last_name}` : 'Unknown';
+  };
+
   // Format week display
   const formatWeekDisplay = (weekEnding: string) => {
     const weekDate = new Date(weekEnding);
@@ -356,6 +391,17 @@ export default function AdminTimesheets() {
     weekStart.setDate(weekDate.getDate() - 6);
     return `${format(weekStart, 'MMM d')} - ${format(weekDate, 'MMM d, yyyy')}`;
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading all timesheets...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -392,18 +438,23 @@ export default function AdminTimesheets() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Controls Bar with Week Filter */}
+        {/* Controls Bar with All Filters */}
         <div className="bg-white rounded-lg shadow-sm mb-6 p-4 border border-gray-200">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex flex-col gap-4">
             <div className="text-sm text-gray-600">
-              Showing {filterWeek === 'all' ? `${sortedWeeks.length} weeks` : '1 week'} of timesheet data
+              Showing {sortedWeeks.length} weeks of timesheet data
               {filterStatus !== 'all' && (
                 <span className="ml-2 font-medium">
                   (Status: {filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)})
                 </span>
               )}
+              {filterManager !== 'all' && (
+                <span className="ml-2 font-medium">
+                  (Manager: {getManagerName(filterManager)})
+                </span>
+              )}
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <select
                 value={filterWeek}
                 onChange={(e) => setFilterWeek(e.target.value)}
@@ -416,6 +467,7 @@ export default function AdminTimesheets() {
                   </option>
                 ))}
               </select>
+              
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value as any)}
@@ -427,6 +479,21 @@ export default function AdminTimesheets() {
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
               </select>
+              
+              <select
+                value={filterManager}
+                onChange={(e) => setFilterManager(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">All Managers</option>
+                {managers.map(manager => (
+                  <option key={manager.id} value={manager.id}>
+                    {manager.first_name} {manager.last_name}
+                  </option>
+                ))}
+                <option value="unassigned">Unassigned</option>
+              </select>
+              
               <button
                 onClick={exportToCSV}
                 className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
@@ -480,15 +547,12 @@ export default function AdminTimesheets() {
 
         {/* Timesheets by Week */}
         <div className="space-y-6">
-          {filteredWeeks.length === 0 ? (
+          {sortedWeeks.length === 0 ? (
             <div className="bg-white rounded-lg shadow-sm p-8 text-center">
               <p className="text-gray-500">No timesheets found for the selected filters.</p>
             </div>
           ) : (
-            filteredWeeks.map(([weekEnding, weekTimesheets]) => {
-              const filteredTimesheets = getFilteredTimesheets(weekTimesheets);
-              if (filteredTimesheets.length === 0) return null;
-              
+            sortedWeeks.map(([weekEnding, weekTimesheets]) => {
               const weekDate = new Date(weekEnding);
               const weekStart = new Date(weekDate);
               weekStart.setDate(weekDate.getDate() - 6);
@@ -505,7 +569,7 @@ export default function AdminTimesheets() {
                         </h2>
                       </div>
                       <span className="text-sm text-gray-500">
-                        {filteredTimesheets.length} timesheets
+                        {weekTimesheets.length} timesheets
                       </span>
                     </div>
                   </div>
@@ -522,6 +586,9 @@ export default function AdminTimesheets() {
                             Department
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Manager
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Hours
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -533,8 +600,9 @@ export default function AdminTimesheets() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredTimesheets.map((timesheet) => {
+                        {weekTimesheets.map((timesheet) => {
                           const empInfo = getEmployeeInfo(timesheet.employee_id);
+                          const managerName = getManagerName(timesheet.employee?.manager_id || '');
                           return (
                             <tr key={timesheet.id} className="hover:bg-gray-50">
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -547,6 +615,9 @@ export default function AdminTimesheets() {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {empInfo.department}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {managerName}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {timesheet.total_hours || 0} hrs
