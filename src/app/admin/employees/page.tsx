@@ -8,6 +8,59 @@ import {
   Mail, Phone, Calendar, DollarSign, UserCheck, Building2
 } from 'lucide-react';
 
+const US_STATES = [
+  { value: 'AL', label: 'Alabama' },
+  { value: 'AK', label: 'Alaska' },
+  { value: 'AZ', label: 'Arizona' },
+  { value: 'AR', label: 'Arkansas' },
+  { value: 'CA', label: 'California' },
+  { value: 'CO', label: 'Colorado' },
+  { value: 'CT', label: 'Connecticut' },
+  { value: 'DE', label: 'Delaware' },
+  { value: 'FL', label: 'Florida' },
+  { value: 'GA', label: 'Georgia' },
+  { value: 'HI', label: 'Hawaii' },
+  { value: 'ID', label: 'Idaho' },
+  { value: 'IL', label: 'Illinois' },
+  { value: 'IN', label: 'Indiana' },
+  { value: 'IA', label: 'Iowa' },
+  { value: 'KS', label: 'Kansas' },
+  { value: 'KY', label: 'Kentucky' },
+  { value: 'LA', label: 'Louisiana' },
+  { value: 'ME', label: 'Maine' },
+  { value: 'MD', label: 'Maryland' },
+  { value: 'MA', label: 'Massachusetts' },
+  { value: 'MI', label: 'Michigan' },
+  { value: 'MN', label: 'Minnesota' },
+  { value: 'MS', label: 'Mississippi' },
+  { value: 'MO', label: 'Missouri' },
+  { value: 'MT', label: 'Montana' },
+  { value: 'NE', label: 'Nebraska' },
+  { value: 'NV', label: 'Nevada' },
+  { value: 'NH', label: 'New Hampshire' },
+  { value: 'NJ', label: 'New Jersey' },
+  { value: 'NM', label: 'New Mexico' },
+  { value: 'NY', label: 'New York' },
+  { value: 'NC', label: 'North Carolina' },
+  { value: 'ND', label: 'North Dakota' },
+  { value: 'OH', label: 'Ohio' },
+  { value: 'OK', label: 'Oklahoma' },
+  { value: 'OR', label: 'Oregon' },
+  { value: 'PA', label: 'Pennsylvania' },
+  { value: 'RI', label: 'Rhode Island' },
+  { value: 'SC', label: 'South Carolina' },
+  { value: 'SD', label: 'South Dakota' },
+  { value: 'TN', label: 'Tennessee' },
+  { value: 'TX', label: 'Texas' },
+  { value: 'UT', label: 'Utah' },
+  { value: 'VT', label: 'Vermont' },
+  { value: 'VA', label: 'Virginia' },
+  { value: 'WA', label: 'Washington' },
+  { value: 'WV', label: 'West Virginia' },
+  { value: 'WI', label: 'Wisconsin' },
+  { value: 'WY', label: 'Wyoming' }
+];
+
 interface Employee {
   id: string;
   first_name: string;
@@ -23,10 +76,20 @@ interface Employee {
   state?: string;
   employee_id?: string;
   client_id?: string;
+  manager_id?: string;
+  mybase_payroll_id?: string;
+}
+
+interface Manager {
+  id: string;
+  first_name: string;
+  last_name: string;
+  department?: string;
 }
 
 export default function EmployeeManagement() {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [managers, setManagers] = useState<Manager[]>([]);
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -51,6 +114,8 @@ export default function EmployeeManagement() {
     is_exempt: false,
     state: 'CA',
     employee_id: '',
+    mybase_payroll_id: '',  // Added
+    manager_id: '',         // Added
     password: '' // Only for new employees
   });
 
@@ -83,6 +148,7 @@ export default function EmployeeManagement() {
       }
 
       await fetchEmployees();
+      await fetchManagers();  // Added
     } catch (err) {
       console.error('Error:', err);
       setError('Failed to load data');
@@ -105,6 +171,23 @@ export default function EmployeeManagement() {
       setError('Failed to load employees');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Added function to fetch managers
+  const fetchManagers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id, first_name, last_name, department')
+        .in('role', ['manager', 'admin', 'time_approver'])
+        .eq('is_active', true)
+        .order('first_name');
+
+      if (error) throw error;
+      setManagers(data || []);
+    } catch (error) {
+      console.error('Error fetching managers:', error);
     }
   };
 
@@ -217,6 +300,8 @@ export default function EmployeeManagement() {
       is_exempt: employee.is_exempt || false,
       state: employee.state || 'CA',
       employee_id: employee.employee_id || '',
+      mybase_payroll_id: employee.mybase_payroll_id || '',  // Added
+      manager_id: employee.manager_id || '',                // Added
       password: ''
     });
     setShowEditModal(true);
@@ -236,6 +321,8 @@ export default function EmployeeManagement() {
       is_exempt: false,
       state: 'CA',
       employee_id: '',
+      mybase_payroll_id: '',  // Added
+      manager_id: '',         // Added
       password: ''
     });
   };
@@ -370,7 +457,7 @@ export default function EmployeeManagement() {
                         {employee.first_name} {employee.last_name}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {employee.employee_id || 'No ID'}
+                        {employee.mybase_payroll_id || employee.employee_id || 'No ID'}
                       </div>
                     </div>
                   </td>
@@ -382,6 +469,7 @@ export default function EmployeeManagement() {
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                       ${employee.role === 'admin' ? 'bg-purple-100 text-purple-800' :
                         employee.role === 'manager' ? 'bg-blue-100 text-blue-800' :
+                        employee.role === 'time_approver' ? 'bg-orange-100 text-orange-800' :
                         'bg-gray-100 text-gray-800'}`}>
                       {employee.role}
                     </span>
@@ -487,6 +575,22 @@ export default function EmployeeManagement() {
                   />
                 </div>
 
+                {/* CRITICAL: MyBase Payroll ID */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    MyBase Payroll ID <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.mybase_payroll_id}
+                    onChange={(e) => setFormData({...formData, mybase_payroll_id: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    placeholder="Must match MyBase Pay"
+                    required
+                  />
+                  <p className="text-xs text-red-600 mt-1">Critical for payroll exports</p>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                   <select
@@ -497,6 +601,7 @@ export default function EmployeeManagement() {
                     <option value="employee">Employee</option>
                     <option value="manager">Manager</option>
                     <option value="admin">Admin</option>
+                    <option value="time_approver">Time Approver</option>
                   </select>
                 </div>
 
@@ -508,6 +613,28 @@ export default function EmployeeManagement() {
                     onChange={(e) => setFormData({...formData, department: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   />
+                </div>
+
+                {/* CRITICAL: Time Approver */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Time Approver <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.manager_id}
+                    onChange={(e) => setFormData({...formData, manager_id: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    required
+                  >
+                    <option value="">Select Time Approver</option>
+                    {managers.map(manager => (
+                      <option key={manager.id} value={manager.id}>
+                        {manager.first_name} {manager.last_name} 
+                        {manager.department ? ` - ${manager.department}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">Timesheets will appear on this approver's dashboard</p>
                 </div>
 
                 <div>
@@ -538,11 +665,12 @@ export default function EmployeeManagement() {
                     onChange={(e) => setFormData({...formData, state: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   >
-                    <option value="CA">California</option>
-                    <option value="TX">Texas</option>
-                    <option value="NY">New York</option>
-                    <option value="FL">Florida</option>
-                    <option value="Other">Other</option>
+                    <option value="">Select State</option>
+                    {US_STATES.map(state => (
+                      <option key={state.value} value={state.value}>
+                        {state.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 

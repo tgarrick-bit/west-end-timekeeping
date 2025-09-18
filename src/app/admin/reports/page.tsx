@@ -1,349 +1,315 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { 
+  Clock, 
   FileText,
-  Download,
-  Calendar,
-  Filter,
-  TrendingUp,
-  DollarSign,
-  Clock,
-  Users,
+  CheckCircle,
+  XCircle,
+  LogOut,
   AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  Printer,
-  Mail,
-  FileSpreadsheet,
-  LogOut
-} from 'lucide-react';
+  ChevronDown,
+  Settings,
+  RotateCw
+} from 'lucide-react'
 
-interface ReportType {
-  id: string;
-  name: string;
-  description: string;
-  icon: any;
-  color: string;
+interface Employee {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  employee_id: string
+  department: string | null
+  hourly_rate: number
+  manager_id: string | null
 }
 
-interface PayrollData {
-  employee_id: string;
-  employee_name: string;
-  employee_type: string;
-  regular_hours: number;
-  overtime_hours: number;
-  total_hours: number;
-  hourly_rate: number;
-  regular_pay: number;
-  overtime_pay: number;
-  total_pay: number;
-  client: string;
-  department: string;
-  period_start: string;
-  period_end: string;
+interface Timesheet {
+  id: string
+  employee_id: string
+  week_ending: string
+  total_hours: number
+  overtime_hours: number
+  status: 'draft' | 'submitted' | 'approved' | 'rejected'
+  submitted_at: string | null
+  approved_at: string | null
+  approved_by: string | null
+  comments: string | null
+  created_at: string
+  updated_at: string
 }
 
-export default function ReportsPage() {
-  const [selectedReport, setSelectedReport] = useState<string>('payroll');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [selectedClient, setSelectedClient] = useState('all');
-  const [selectedDepartment, setSelectedDepartment] = useState('all');
-  const [payrollData, setPayrollData] = useState<PayrollData[]>([]);
-  const [clients, setClients] = useState<any[]>([]);
-  const [departments, setDepartments] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [userEmail, setUserEmail] = useState<string>('');
-  const [reportSummary, setReportSummary] = useState({
-    totalEmployees: 0,
-    totalHours: 0,
-    totalRegularHours: 0,
-    totalOvertimeHours: 0,
-    totalPay: 0,
-    averageHoursPerEmployee: 0
-  });
+interface Expense {
+  id: string
+  employee_id: string
+  expense_date: string
+  amount: number
+  category: string
+  description: string | null
+  status: 'draft' | 'submitted' | 'approved' | 'rejected'
+  submitted_at: string | null
+  approved_at: string | null
+  approved_by: string | null
+  rejection_reason: string | null
+}
 
-  const supabase = createClientComponentClient();
-  const router = useRouter();
+type Submission = {
+  id: string
+  type: 'timesheet' | 'expense'
+  employee?: Employee
+  date: string
+  amount: number
+  hours?: number
+  status: string
+  description?: string
+  category?: string
+  overtime_hours?: number
+  week_range?: string
+}
 
-  const reportTypes: ReportType[] = [
-    {
-      id: 'payroll',
-      name: 'Payroll Export',
-      description: 'Export timesheet data for payroll processing',
-      icon: FileSpreadsheet,
-      color: 'bg-green-500'
-    },
-    {
-      id: 'billing',
-      name: 'Client Billing',
-      description: 'Generate billing reports for clients',
-      icon: DollarSign,
-      color: 'bg-blue-500'
-    },
-    {
-      id: 'utilization',
-      name: 'Employee Utilization',
-      description: 'Track employee hours and productivity',
-      icon: TrendingUp,
-      color: 'bg-purple-500'
-    },
-    {
-      id: 'missing',
-      name: 'Missing Timesheets',
-      description: 'Identify employees who haven\'t submitted',
-      icon: AlertCircle,
-      color: 'bg-yellow-500'
-    },
-    {
-      id: 'overtime',
-      name: 'Overtime Analysis',
-      description: 'Review overtime hours by employee and department',
-      icon: Clock,
-      color: 'bg-red-500'
-    },
-    {
-      id: 'project',
-      name: 'Project Summary',
-      description: 'Hours and costs by project',
-      icon: FileText,
-      color: 'bg-indigo-500'
-    }
-  ];
+export default function ManagerPage() {
+  const router = useRouter()
+  const { user, employee } = useAuth()
+  const supabase = createClientComponentClient()
+  
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [statusFilter, setStatusFilter] = useState<string>('submitted')
+  const [sortBy, setSortBy] = useState<'user' | 'project'>('user')
+  const [managerId, setManagerId] = useState<string | null>(null)
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+  const [activeTab, setActiveTab] = useState<'all' | 'approved' | 'unapproved' | 'unsubmitted'>('unapproved')
 
   useEffect(() => {
-    // Get user email
-    const getUserEmail = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) setUserEmail(user.email || '');
-    };
-    getUserEmail();
-
-    // Set default date range (current pay period)
-    const today = new Date();
-    const sunday = new Date(today);
-    sunday.setDate(today.getDate() - today.getDay());
-    const saturday = new Date(sunday);
-    saturday.setDate(sunday.getDate() + 6);
-
-    setStartDate(sunday.toISOString().split('T')[0]);
-    setEndDate(saturday.toISOString().split('T')[0]);
-
-    fetchClients();
-    fetchDepartments();
-  }, []);
+    fetchManagerId()
+  }, [])
 
   useEffect(() => {
-    if (startDate && endDate) {
-      generateReport();
+    if (managerId) {
+      loadSubmissions()
     }
-  }, [selectedReport, startDate, endDate, selectedClient, selectedDepartment]);
+  }, [managerId, statusFilter, activeTab])
 
-  const fetchClients = async () => {
-    try {
-      const { data } = await supabase
-        .from('clients')
-        .select('id, name')
-        .eq('is_active', true);
-      
-      setClients(data || []);
-    } catch (error) {
-      console.error('Error fetching clients:', error);
+  const fetchManagerId = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      setManagerId(user.id)
     }
-  };
+  }
 
-  const fetchDepartments = async () => {
+  const loadSubmissions = async () => {
+    if (!managerId) return
+    
+    setIsLoading(true)
+    
     try {
-      const { data } = await supabase
+      const { data: allEmployees } = await supabase
         .from('employees')
-        .select('department')
-        .not('department', 'is', null);
-      
-      const uniqueDepts = [...new Set(data?.map(d => d.department) || [])];
-      setDepartments(uniqueDepts);
-    } catch (error) {
-      console.error('Error fetching departments:', error);
-    }
-  };
+        .select('*')
 
-  const generateReport = async () => {
-    setLoading(true);
-    try {
-      // Using timesheets table instead of timecards
-      const query = supabase
-        .from('timesheets')
-        .select(`
-          *,
-          employee:employees!employee_id (
-            first_name,
-            last_name,
-            hourly_rate,
-            department,
-            client_id
-          )
-        `)
-        .gte('week_ending', startDate)
-        .lte('week_ending', endDate)
-        .eq('status', 'approved');
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      // Process data for payroll report
-      const processedData: PayrollData[] = [];
-      const employeeTotals: { [key: string]: PayrollData } = {};
-
-      data?.forEach(timesheet => {
-        const employeeId = timesheet.employee_id;
-        const employee = timesheet.employee;
+      if (allEmployees) {
+        setEmployees(allEmployees)
+        const employeeIds = allEmployees.map(e => e.id)
         
-        if (!employeeTotals[employeeId]) {
-          employeeTotals[employeeId] = {
-            employee_id: employeeId,
-            employee_name: `${employee.first_name || ''} ${employee.last_name || ''}`,
-            employee_type: 'W2', // Default, you may need to add this field to employees table
-            regular_hours: 0,
-            overtime_hours: 0,
-            total_hours: 0,
-            hourly_rate: employee.hourly_rate || 0,
-            regular_pay: 0,
-            overtime_pay: 0,
-            total_pay: 0,
-            client: 'Unassigned', // Will need to join with clients table
-            department: employee.department || 'Unassigned',
-            period_start: startDate,
-            period_end: endDate
-          };
+        let allSubmissions: Submission[] = []
+
+        let actualStatusFilter = statusFilter
+        if (activeTab === 'unsubmitted') {
+          actualStatusFilter = 'draft'
+        } else if (activeTab === 'unapproved') {
+          actualStatusFilter = 'submitted'
+        } else if (activeTab === 'approved') {
+          actualStatusFilter = 'approved'
         }
 
-        const totalHours = timesheet.total_hours || 0;
-        const regularHours = Math.min(totalHours, 40);
-        const overtimeHours = Math.max(0, totalHours - 40);
+        let timesheetQuery = supabase
+          .from('timesheets')
+          .select('*')
+          .in('employee_id', employeeIds)
+          
+        if (activeTab !== 'all' && actualStatusFilter !== 'all') {
+          timesheetQuery = timesheetQuery.eq('status', actualStatusFilter)
+        }
 
-        employeeTotals[employeeId].regular_hours += regularHours;
-        employeeTotals[employeeId].overtime_hours += overtimeHours;
-        employeeTotals[employeeId].total_hours += totalHours;
-      });
+        const { data: timesheets } = await timesheetQuery
 
-      // Calculate pay
-      Object.values(employeeTotals).forEach(employee => {
-        employee.regular_pay = employee.regular_hours * employee.hourly_rate;
-        employee.overtime_pay = employee.overtime_hours * employee.hourly_rate * 1.5;
-        employee.total_pay = employee.regular_pay + employee.overtime_pay;
-        processedData.push(employee);
-      });
+        if (timesheets) {
+          const timesheetSubmissions = timesheets.map(t => {
+            const weekEnd = new Date(t.week_ending)
+            const weekStart = new Date(weekEnd)
+            weekStart.setDate(weekStart.getDate() - 6)
+            
+            const formatDate = (date: Date) => {
+              const month = date.toLocaleDateString('en-US', { month: 'short' })
+              const day = date.getDate().toString().padStart(2, '0')
+              return `${month} ${day}`
+            }
+            
+            return {
+              id: t.id,
+              type: 'timesheet' as const,
+              employee: allEmployees.find(e => e.id === t.employee_id),
+              date: t.week_ending,
+              amount: (t.total_hours || 0) * (allEmployees.find(e => e.id === t.employee_id)?.hourly_rate || 0),
+              hours: t.total_hours,
+              overtime_hours: t.overtime_hours,
+              status: t.status,
+              week_range: `${formatDate(weekStart)} - ${formatDate(weekEnd)}, ${weekEnd.getFullYear()}`,
+              description: `Week ending ${weekEnd.toLocaleDateString()}`
+            }
+          })
+          allSubmissions = [...allSubmissions, ...timesheetSubmissions]
+        }
 
-      // Apply department filter if needed
-      let filteredData = processedData;
-      if (selectedDepartment !== 'all') {
-        filteredData = processedData.filter(d => d.department === selectedDepartment);
+        let expenseQuery = supabase
+          .from('expenses')
+          .select('*')
+          .in('employee_id', employeeIds)
+          
+        if (activeTab !== 'all' && actualStatusFilter !== 'all') {
+          expenseQuery = expenseQuery.eq('status', actualStatusFilter)
+        }
+
+        const { data: expenses } = await expenseQuery
+
+        if (expenses) {
+          const expenseSubmissions = expenses.map(e => ({
+            id: e.id,
+            type: 'expense' as const,
+            employee: allEmployees.find(emp => emp.id === e.employee_id),
+            date: e.expense_date,
+            amount: e.amount,
+            status: e.status,
+            description: e.description,
+            category: e.category
+          }))
+          allSubmissions = [...allSubmissions, ...expenseSubmissions]
+        }
+
+        allSubmissions.sort((a, b) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        )
+
+        setSubmissions(allSubmissions)
       }
-
-      setPayrollData(filteredData);
-
-      // Calculate summary
-      const summary = {
-        totalEmployees: filteredData.length,
-        totalHours: filteredData.reduce((sum, d) => sum + d.total_hours, 0),
-        totalRegularHours: filteredData.reduce((sum, d) => sum + d.regular_hours, 0),
-        totalOvertimeHours: filteredData.reduce((sum, d) => sum + d.overtime_hours, 0),
-        totalPay: filteredData.reduce((sum, d) => sum + d.total_pay, 0),
-        averageHoursPerEmployee: 0
-      };
-      summary.averageHoursPerEmployee = summary.totalEmployees > 0 
-        ? summary.totalHours / summary.totalEmployees 
-        : 0;
-
-      setReportSummary(summary);
-
     } catch (error) {
-      console.error('Error generating report:', error);
+      console.error('Error loading submissions:', error)
     } finally {
-      setLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/auth/login');
-  };
+  const handleApprove = async (submission: Submission) => {
+    const table = submission.type === 'timesheet' ? 'timesheets' : 'expenses'
+    
+    const { error } = await supabase
+      .from(table)
+      .update({ 
+        status: 'approved',
+        approved_at: new Date().toISOString(),
+        approved_by: managerId
+      })
+      .eq('id', submission.id)
 
-  const exportToExcel = () => {
-    const headers = [
-      'Employee Name',
-      'Employee Type',
-      'Client',
-      'Department',
-      'Regular Hours',
-      'Overtime Hours',
-      'Total Hours',
-      'Hourly Rate',
-      'Regular Pay',
-      'Overtime Pay',
-      'Total Pay'
-    ];
+    if (!error) {
+      loadSubmissions()
+    }
+  }
 
-    const csvContent = [
-      headers.join(','),
-      ...payrollData.map(row => [
-        row.employee_name,
-        row.employee_type,
-        row.client,
-        row.department,
-        row.regular_hours,
-        row.overtime_hours,
-        row.total_hours,
-        row.hourly_rate,
-        row.regular_pay.toFixed(2),
-        row.overtime_pay.toFixed(2),
-        row.total_pay.toFixed(2)
-      ].join(','))
-    ].join('\n');
+  const handleReject = async (submission: Submission) => {
+    const reason = prompt('Please provide a reason for rejection:')
+    if (!reason) return
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `payroll_${startDate}_to_${endDate}.csv`;
-    a.click();
-  };
+    const table = submission.type === 'timesheet' ? 'timesheets' : 'expenses'
+    const reasonField = submission.type === 'timesheet' ? 'comments' : 'rejection_reason'
+    
+    const { error } = await supabase
+      .from(table)
+      .update({ 
+        status: 'rejected',
+        approved_at: new Date().toISOString(),
+        approved_by: managerId,
+        [reasonField]: reason
+      })
+      .eq('id', submission.id)
+
+    if (!error) {
+      loadSubmissions()
+    }
+  }
+
+  const handleBulkApprove = async () => {
+    for (const submissionId of selectedItems) {
+      const submission = submissions.find(s => s.id === submissionId)
+      if (submission && submission.status === 'submitted') {
+        await handleApprove(submission)
+      }
+    }
+    setSelectedItems(new Set())
+  }
+
+  const toggleItemSelection = (id: string) => {
+    const newSelected = new Set(selectedItems)
+    if (newSelected.has(id)) {
+      newSelected.delete(id)
+    } else {
+      newSelected.add(id)
+    }
+    setSelectedItems(newSelected)
+  }
+
+  const selectAllVisible = () => {
+    const visibleIds = new Set(
+      submissions
+        .filter(s => s.type === 'timesheet' && s.status === 'submitted')
+        .map(s => s.id)
+    )
+    setSelectedItems(visibleIds)
+  }
+
+  const timesheetPendingCount = submissions.filter(s => s.status === 'submitted' && s.type === 'timesheet').length
+  const expensePendingCount = submissions.filter(s => s.status === 'submitted' && s.type === 'expense').length
+  const approvedCount = submissions.filter(s => s.status === 'approved').length
+  const approvedTimesheetCount = submissions.filter(s => s.status === 'approved' && s.type === 'timesheet').length
+  const approvedExpenseCount = submissions.filter(s => s.status === 'approved' && s.type === 'expense').length
+  
+  const filteredSubmissions = submissions
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e31c79] mx-auto"></div>
+          <p className="mt-3 text-gray-600">Loading submissions...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="shadow-lg" style={{ backgroundColor: '#33393c' }}>
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/admin')}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <ChevronLeft className="h-5 w-5 text-white" />
-              </button>
-              <Image 
-                src="/WE-logo-SEPT2024v3-WHT.png" 
-                alt="West End Workforce" 
-                width={150}
-                height={40}
-                className="h-10 w-auto"
-                priority
-              />
-              <div className="border-l border-gray-500 pl-3 ml-1">
-                <h1 className="text-xl font-semibold text-white">Reports &amp; Export</h1>
-                <p className="text-xs text-gray-300">Generate reports and export data</p>
+      <header className="bg-gray-900 shadow-lg">
+        <div className="max-w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/10 p-2 rounded-lg">
+                <Clock className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold text-white">West End Workforce</h1>
+                <span className="text-xs text-gray-300">Approval Management</span>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-200">{userEmail}</span>
-              <button 
-                onClick={handleSignOut}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-200 hover:text-white transition-colors"
+              <span className="text-sm text-gray-200">{user?.email}</span>
+              <button
+                onClick={async () => { await supabase.auth.signOut(); router.push('/auth/login'); }}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-200 hover:text-white"
               >
                 <LogOut className="h-4 w-4" />
                 Sign Out
@@ -353,280 +319,547 @@ export default function ReportsPage() {
         </div>
       </header>
 
-      <div className="flex">
-        {/* Sidebar - Report Types */}
-        <div className="w-64 bg-white border-r min-h-screen p-4">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
-            Report Types
-          </h2>
-          <div className="space-y-2">
-            {reportTypes.map((report) => (
-              <button
-                key={report.id}
-                onClick={() => setSelectedReport(report.id)}
-                className={`w-full text-left p-3 rounded-lg transition-colors flex items-start gap-3 ${
-                  selectedReport === report.id
-                    ? 'text-white'
-                    : 'hover:bg-gray-50'
-                }`}
-                style={selectedReport === report.id ? { backgroundColor: '#33393c' } : {}}
-              >
-                <div className={`p-2 rounded-lg ${
-                  selectedReport === report.id ? 'bg-white/20' : report.color
-                } text-white`}>
-                  <report.icon className="h-4 w-4" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">{report.name}</p>
-                  <p className={`text-xs mt-1 ${
-                    selectedReport === report.id ? 'text-gray-300' : 'text-gray-500'
-                  }`}>
-                    {report.description}
-                  </p>
-                </div>
-              </button>
-            ))}
+      {/* Page Title */}
+      <div className="bg-white border-b">
+        <div className="max-w-full px-4 sm:px-6 lg:px-8">
+          <div className="py-4">
+            <h1 className="text-2xl font-semibold text-gray-900">Review</h1>
           </div>
         </div>
+      </div>
 
-        {/* Main Content */}
-        <div className="flex-1 p-6">
-          {/* Filters */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-            <h2 className="text-lg font-semibold mb-4" style={{ color: '#33393c' }}>Report Parameters</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e31c79] focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e31c79] focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Client
-                </label>
-                <select
-                  value={selectedClient}
-                  onChange={(e) => setSelectedClient(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e31c79] focus:border-transparent"
-                >
-                  <option value="all">All Clients</option>
-                  {clients.map(client => (
-                    <option key={client.id} value={client.id}>{client.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Department
-                </label>
-                <select
-                  value={selectedDepartment}
-                  onChange={(e) => setSelectedDepartment(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e31c79] focus:border-transparent"
-                >
-                  <option value="all">All Departments</option>
-                  {departments.map(dept => (
-                    <option key={dept} value={dept}>{dept}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Report Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <p className="text-xs text-gray-500 mb-1">Total Employees</p>
-              <p className="text-2xl font-bold" style={{ color: '#33393c' }}>{reportSummary.totalEmployees}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <p className="text-xs text-gray-500 mb-1">Total Hours</p>
-              <p className="text-2xl font-bold" style={{ color: '#33393c' }}>{reportSummary.totalHours.toFixed(1)}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <p className="text-xs text-gray-500 mb-1">Regular Hours</p>
-              <p className="text-2xl font-bold text-blue-600">{reportSummary.totalRegularHours.toFixed(1)}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <p className="text-xs text-gray-500 mb-1">Overtime Hours</p>
-              <p className="text-2xl font-bold text-orange-600">{reportSummary.totalOvertimeHours.toFixed(1)}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <p className="text-xs text-gray-500 mb-1">Total Payroll</p>
-              <p className="text-2xl font-bold text-green-600">${reportSummary.totalPay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <p className="text-xs text-gray-500 mb-1">Avg Hours/Employee</p>
-              <p className="text-2xl font-bold text-purple-600">{reportSummary.averageHoursPerEmployee.toFixed(1)}</p>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold" style={{ color: '#33393c' }}>Payroll Details</h3>
-            <div className="flex gap-2">
-              <button
-                onClick={() => window.print()}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
-              >
-                <Printer className="h-4 w-4" />
-                Print
+      {/* Navigation Tabs - Add this after the Page Title section */}
+      <div className="bg-gray-100 border-b">
+        <div className="max-w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-8">
+            <button 
+              onClick={() => router.push('/manager')}
+              className="py-3 text-sm font-medium text-gray-900 border-b-2 border-[#e31c79]"
+            >
+              Review
+            </button>
+            <div className="relative group">
+              <button className="py-3 text-sm font-medium text-gray-600 hover:text-gray-900">
+                Reports
               </button>
-              <button
-                onClick={exportToExcel}
-                className="px-4 py-2 text-white rounded-lg flex items-center gap-2 transition-opacity hover:opacity-90"
-                style={{ backgroundColor: '#e31c79' }}
-              >
-                <Download className="h-4 w-4" />
-                Export to Excel
-              </button>
-            </div>
-          </div>
-
-          {/* Data Table */}
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            {loading ? (
-              <div className="p-8 text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e31c79] mx-auto"></div>
-                <p className="mt-4 text-gray-600">Generating report...</p>
-              </div>
-            ) : payrollData.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Employee
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Type
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Client
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Department
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Regular
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        OT
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total Hrs
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Rate
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total Pay
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {payrollData.map((row) => (
-                      <tr key={row.employee_id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          <p className="text-sm font-medium text-gray-900">{row.employee_name}</p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            row.employee_type === 'W2' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : 'bg-purple-100 text-purple-800'
-                          }`}>
-                            {row.employee_type}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          {row.client}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          {row.department}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-right text-gray-900">
-                          {row.regular_hours.toFixed(1)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-right text-orange-600">
-                          {row.overtime_hours.toFixed(1)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-right font-medium text-gray-900">
-                          {row.total_hours.toFixed(1)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-right text-gray-900">
-                          ${row.hourly_rate.toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-right font-semibold text-green-600">
-                          ${row.total_pay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="bg-gray-50 border-t-2 border-gray-300">
-                    <tr>
-                      <td colSpan={4} className="px-6 py-3 text-sm font-semibold text-gray-900">
-                        Totals
-                      </td>
-                      <td className="px-6 py-3 text-sm text-right font-semibold text-gray-900">
-                        {reportSummary.totalRegularHours.toFixed(1)}
-                      </td>
-                      <td className="px-6 py-3 text-sm text-right font-semibold text-orange-600">
-                        {reportSummary.totalOvertimeHours.toFixed(1)}
-                      </td>
-                      <td className="px-6 py-3 text-sm text-right font-semibold text-gray-900">
-                        {reportSummary.totalHours.toFixed(1)}
-                      </td>
-                      <td className="px-6 py-3"></td>
-                      <td className="px-6 py-3 text-sm text-right font-bold text-green-600">
-                        ${reportSummary.totalPay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            ) : (
-              <div className="p-8 text-center text-gray-500">
-                <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>No data available for the selected parameters</p>
-                <p className="text-sm mt-2">Try adjusting your date range or filters</p>
-              </div>
-            )}
-          </div>
-
-          {/* Export Format Note */}
-          <div className="mt-6 rounded-lg p-4" style={{ backgroundColor: '#e5ddd8', borderColor: '#e31c79', borderWidth: '1px', borderStyle: 'solid' }}>
-            <div className="flex">
-              <AlertCircle className="h-5 w-5 mt-0.5 mr-3 flex-shrink-0" style={{ color: '#e31c79' }} />
-              <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-1">Export Format</h4>
-                <p className="text-sm text-gray-700">
-                  This report exports in a format compatible with Tracker payroll system. 
-                  The CSV file includes all necessary fields for direct import including employee IDs, 
-                  hours breakdown, and calculated pay amounts.
-                </p>
+              <div className="absolute left-0 mt-0 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="py-2">
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                    Time Reports
+                  </div>
+                  <a href="/manager/reports/time-by-project" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    Time by Project
+                  </a>
+                  <a href="/manager/reports/time-by-employee" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    Time by Employee
+                  </a>
+                  <a href="/manager/reports/time-by-class" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    Time by Class
+                  </a>
+                  <a href="/manager/reports/time-by-approver" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    Time by Approver
+                  </a>
+                  <a href="/manager/reports/time-missing" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    Time Missing
+                  </a>
+                  
+                  <div className="border-t my-2"></div>
+                  
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                    Expense Reports
+                  </div>
+                  <a href="/manager/reports/expenses-by-employee" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    Expenses by Employee
+                  </a>
+                  <a href="/manager/reports/expenses-by-project" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    Expenses by Project
+                  </a>
+                  <a href="/manager/reports/expenses-by-approver" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    Expenses by Approver
+                  </a>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Controls */}
+      <div className="bg-white border-b">
+        <div className="max-w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-3">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-700">Time Detail Level:</span>
+                <select 
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'user' | 'project')}
+                  className="text-sm px-3 py-1 border border-gray-300 rounded"
+                >
+                  <option value="user">By User</option>
+                  <option value="project">By Project</option>
+                </select>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-700">Time Project:</span>
+                <select className="text-sm px-3 py-1 border border-gray-300 rounded">
+                  <option value="all">- All -</option>
+                </select>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-700">User Class:</span>
+                <select className="text-sm px-3 py-1 border border-gray-300 rounded">
+                  <option value="all">- All -</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-700">Items per Page:</span>
+              <select className="text-sm border rounded px-2 py-1">
+                <option>100</option>
+                <option>50</option>
+                <option>25</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="bg-gray-50 border-b">
+        <div className="max-w-full px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm font-semibold text-gray-700">Time Summary</span>
+              <div className="mt-1 flex items-center space-x-8 text-sm">
+                <span>Approved: <strong>{approvedTimesheetCount}</strong></span>
+                <span>Unapproved: <strong className="text-[#e31c79]">{timesheetPendingCount}</strong></span>
+                {timesheetPendingCount > 0 && (
+                  <span className="text-blue-600 font-medium">
+                    {timesheetPendingCount} Warning{timesheetPendingCount > 1 ? 's' : ''}!
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-sm font-semibold text-gray-700">Expense Summary</span>
+              <div className="mt-1 flex items-center justify-end space-x-8 text-sm">
+                <span>Approved: <strong>{approvedExpenseCount}</strong></span>
+                <span>Unapproved: <strong className="text-[#e31c79]">{expensePendingCount}</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-gray-100">
+        <div className="max-w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-0">
+            <button 
+              onClick={() => { setActiveTab('all'); setStatusFilter('all'); }}
+              className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                activeTab === 'all' 
+                  ? 'bg-white text-gray-900 border-[#e31c79]' 
+                  : 'bg-gray-200 text-gray-600 border-gray-300 hover:bg-gray-100'
+              }`}
+            >
+              All
+            </button>
+            <button 
+              onClick={() => { setActiveTab('approved'); setStatusFilter('approved'); }}
+              className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                activeTab === 'approved' 
+                  ? 'bg-white text-gray-900 border-[#e31c79]' 
+                  : 'bg-gray-200 text-gray-600 border-gray-300 hover:bg-gray-100'
+              }`}
+            >
+              Approved
+            </button>
+            <button 
+              onClick={() => { setActiveTab('unapproved'); setStatusFilter('submitted'); }}
+              className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                activeTab === 'unapproved' 
+                  ? 'bg-white text-gray-900 border-[#e31c79]' 
+                  : 'bg-gray-200 text-gray-600 border-gray-300 hover:bg-gray-100'
+              }`}
+            >
+              Unapproved
+            </button>
+            <button 
+              onClick={() => { setActiveTab('unsubmitted'); setStatusFilter('draft'); }}
+              className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                activeTab === 'unsubmitted' 
+                  ? 'bg-white text-gray-900 border-[#e31c79]' 
+                  : 'bg-gray-200 text-gray-600 border-gray-300 hover:bg-gray-100'
+              }`}
+            >
+              Unsubmitted Timecards
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="max-w-full px-4 sm:px-6 lg:px-8 py-4">
+        <div className="bg-white rounded shadow-sm">
+          
+          {/* All Tab Content */}
+          {activeTab === 'all' && (
+            <div>
+              <div className="p-4">
+                <h2 className="text-lg font-semibold mb-4">All</h2>
+              </div>
+
+              {/* Timecards Section */}
+              <div className="border-b">
+                <div className="bg-[#05202E] px-4 py-2 flex justify-between items-center">
+                  <h3 className="text-sm font-semibold text-white">Timecards</h3>
+                  <div className="flex items-center space-x-2 text-xs text-gray-300">
+                    <span>1 - {filteredSubmissions.filter(s => s.type === 'timesheet').length} of {filteredSubmissions.filter(s => s.type === 'timesheet').length}</span>
+                  </div>
+                </div>
+                
+                {filteredSubmissions.filter(s => s.type === 'timesheet').length === 0 ? (
+                  <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
+                    None
+                  </div>
+                ) : (
+                  <>
+                    <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b">
+                      <input type="checkbox" className="mr-4" />
+                      <div className="w-8"></div>
+                      <div className="flex-1">User</div>
+                      <div className="w-32 text-center">Comments</div>
+                      <div className="w-24 text-right">Hours</div>
+                      <div className="w-32 text-center">Approval</div>
+                    </div>
+                    
+                    {filteredSubmissions.filter(s => s.type === 'timesheet').map((submission, index) => (
+                      <div key={submission.id} className={`px-4 py-3 flex items-center ${
+                        index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                      } hover:bg-gray-100 border-b`}>
+                        <input 
+                          type="checkbox"
+                          checked={selectedItems.has(submission.id)}
+                          onChange={() => toggleItemSelection(submission.id)}
+                          className="mr-4"
+                        />
+                        <div className="w-8"></div>
+                        <div className="flex-1">
+                          <div className="text-sm">
+                            <span className="font-medium">Week: </span>
+                            <span className="ml-1">{submission.week_range}</span>
+                          </div>
+                          <div className="text-sm text-gray-600 mt-0.5">
+                            {submission.employee?.first_name} {submission.employee?.last_name}
+                          </div>
+                        </div>
+                        <div className="w-32 text-center"></div>
+                        <div className="w-24 text-right font-medium text-sm">
+                          {submission.hours?.toFixed(2) || '0.00'}
+                        </div>
+                        <div className="w-32 text-center">
+                          <span className={`text-xs ${
+                            submission.status === 'approved' ? 'text-green-600' :
+                            submission.status === 'submitted' ? 'text-gray-600' :
+                            submission.status === 'rejected' ? 'text-red-600' :
+                            'text-gray-500'
+                          }`}>
+                            {submission.status === 'submitted' ? 'Pending' : 
+                             submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+
+              {/* Expenses Section */}
+              <div className="mt-4">
+                <div className="bg-[#e31c79] px-4 py-2">
+                  <h3 className="text-sm font-semibold text-white">Expenses</h3>
+                </div>
+                <div className="bg-gray-50 px-4 py-8 text-center text-gray-500">
+                  None
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Approved Tab Content */}
+          {activeTab === 'approved' && (
+            <div>
+              <div className="p-4">
+                <h2 className="text-lg font-semibold mb-4">Approved</h2>
+              </div>
+
+              {/* Timecards Section */}
+              <div className="border-b">
+                <div className="bg-[#05202E] px-4 py-2">
+                  <h3 className="text-sm font-semibold text-white">Timecards</h3>
+                </div>
+                
+                {filteredSubmissions.filter(s => s.type === 'timesheet' && s.status === 'approved').length === 0 ? (
+                  <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
+                    None
+                  </div>
+                ) : (
+                  <>
+                    <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b">
+                      <input type="checkbox" className="mr-4" />
+                      <div className="w-8"></div>
+                      <div className="flex-1">User</div>
+                      <div className="w-32 text-center">Comments</div>
+                      <div className="w-24 text-right">Hours</div>
+                      <div className="w-32 text-center">Approval</div>
+                    </div>
+                    
+                    {filteredSubmissions.filter(s => s.type === 'timesheet' && s.status === 'approved').map((submission, index) => (
+                      <div key={submission.id} className={`px-4 py-3 flex items-center ${
+                        index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                      } hover:bg-gray-100 border-b`}>
+                        <input 
+                          type="checkbox"
+                          className="mr-4"
+                        />
+                        <div className="w-8"></div>
+                        <div className="flex-1">
+                          <div className="text-sm">
+                            <span className="font-medium">Week: </span>
+                            <span className="ml-1">{submission.week_range}</span>
+                          </div>
+                          <div className="text-sm text-gray-600 mt-0.5">
+                            {submission.employee?.first_name} {submission.employee?.last_name}
+                          </div>
+                        </div>
+                        <div className="w-32 text-center"></div>
+                        <div className="w-24 text-right font-medium text-sm">
+                          {submission.hours?.toFixed(2) || '0.00'}
+                        </div>
+                        <div className="w-32 text-center">
+                          <span className="text-xs text-green-600">Approved</span>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+
+              {/* Expenses Section */}
+              <div className="mt-4">
+                <div className="bg-[#e31c79] px-4 py-2">
+                  <h3 className="text-sm font-semibold text-white">Expenses</h3>
+                </div>
+                <div className="bg-gray-50 px-4 py-8 text-center text-gray-500">
+                  None
+                </div>
+              </div>
+
+              {/* Bottom Section */}
+              <div className="p-4 mt-8 bg-gray-50 rounded">
+                <div className="flex justify-between items-center">
+                  <div className="flex space-x-16">
+                    <div>
+                      <div className="text-sm font-semibold mb-2">1. Confirm Selection</div>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex">
+                          <span className="text-gray-600 w-40">Approved Time</span>
+                          <span>Selected <strong>0</strong> of <strong>{approvedTimesheetCount}</strong></span>
+                        </div>
+                        <div className="flex">
+                          <span className="text-gray-600 w-40">Unapproved Time</span>
+                          <span>Selected <strong>0</strong> of <strong>0</strong></span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="text-sm font-semibold mb-2">2. Review Selected</div>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex">
+                          <span className="text-gray-600 w-40">Approved Expense</span>
+                          <span>Selected <strong>0</strong> of <strong>{approvedExpenseCount}</strong></span>
+                        </div>
+                        <div className="flex">
+                          <span className="text-gray-600 w-40">Unapproved Expense</span>
+                          <span>Selected <strong>0</strong> of <strong>0</strong></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    disabled
+                    className="px-6 py-2 rounded font-medium bg-gray-300 text-gray-500 cursor-not-allowed flex items-center"
+                  >
+                    Approve for Accounting
+                    <span className="ml-2">→</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Unapproved Tab Content */}
+          {activeTab === 'unapproved' && (
+            <div>
+              <div className="p-4">
+                <h2 className="text-lg font-semibold mb-4">Unapproved</h2>
+              </div>
+
+              {/* Timecards Section */}
+              <div className="border-b">
+                <div className="bg-[#05202E] px-4 py-2 flex justify-between items-center">
+                  <h3 className="text-sm font-semibold text-white">Timecards</h3>
+                  <div className="flex items-center space-x-2 text-xs text-gray-300">
+                    <span>1 - {timesheetPendingCount} of {timesheetPendingCount}</span>
+                  </div>
+                </div>
+                
+                {timesheetPendingCount === 0 ? (
+                  <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
+                    None
+                  </div>
+                ) : (
+                  <>
+                    <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b">
+                      <input 
+                        type="checkbox" 
+                        className="mr-4" 
+                        onChange={(e) => e.target.checked ? selectAllVisible() : setSelectedItems(new Set())} 
+                      />
+                      <div className="w-8"></div>
+                      <div className="flex-1">User</div>
+                      <div className="w-32 text-center">Comments</div>
+                      <div className="w-24 text-right">Hours</div>
+                      <div className="w-32 text-center">Approval</div>
+                    </div>
+                    
+                    {filteredSubmissions.filter(s => s.type === 'timesheet' && s.status === 'submitted').map((submission, index) => (
+                      <div key={submission.id} className={`px-4 py-3 flex items-center ${
+                        index % 2 === 0 ? 'bg-yellow-50' : 'bg-white'
+                      } hover:bg-yellow-100 border-b`}>
+                        <input 
+                          type="checkbox"
+                          checked={selectedItems.has(submission.id)}
+                          onChange={() => toggleItemSelection(submission.id)}
+                          className="mr-4"
+                        />
+                        <div className="w-8"></div>
+                        <div className="flex-1">
+                          <div className="text-sm">
+                            <span className="font-medium">Week: </span>
+                            <span className="ml-1">{submission.week_range}</span>
+                          </div>
+                          <div className="text-sm text-gray-600 mt-0.5">
+                            {submission.employee?.first_name} {submission.employee?.last_name}
+                          </div>
+                        </div>
+                        <div className="w-32 text-center"></div>
+                        <div className="w-24 text-right font-medium text-sm">
+                          {submission.hours?.toFixed(2) || '0.00'}
+                        </div>
+                        <div className="w-32 text-center flex items-center justify-center space-x-2">
+                          <span className="text-gray-600 text-xs">Pending</span>
+                          <button className="p-0.5">
+                            <Settings className="h-4 w-4 text-gray-400" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {timesheetPendingCount > 0 && (
+                      <div className="bg-gray-100 px-4 py-2 flex justify-between items-center">
+                        <label className="flex items-center space-x-2">
+                          <input type="checkbox" className="rounded" />
+                          <span className="text-sm text-gray-700 font-medium">Send Approval Reminders</span>
+                        </label>
+                        <span className="text-sm font-bold">
+                          Total: {filteredSubmissions.filter(s => s.type === 'timesheet' && s.status === 'submitted')
+                            .reduce((sum, s) => sum + (s.hours || 0), 0).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Expenses Section */}
+              <div className="mt-4">
+                <div className="bg-[#e31c79] px-4 py-2">
+                  <h3 className="text-sm font-semibold text-white">Expenses</h3>
+                </div>
+                <div className="bg-gray-50 px-4 py-8 text-center text-gray-500">
+                  None
+                </div>
+              </div>
+
+              {/* Bottom Action Section */}
+              <div className="p-4 mt-8 bg-gray-50 rounded">
+                <div className="flex justify-between items-center">
+                  <div className="flex space-x-16">
+                    <div>
+                      <div className="text-sm font-semibold mb-2">1. Confirm Selection</div>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex">
+                          <span className="text-gray-600 w-40">Approved Time</span>
+                          <span>Selected <strong>0</strong> of <strong>0</strong></span>
+                        </div>
+                        <div className="flex">
+                          <span className="text-gray-600 w-40">Unapproved Time</span>
+                          <span>Selected <strong>{selectedItems.size}</strong> of <strong>{timesheetPendingCount}</strong></span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="text-sm font-semibold mb-2">2. Review Selected</div>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex">
+                          <span className="text-gray-600 w-40">Approved Expense</span>
+                          <span>Selected <strong>0</strong> of <strong>0</strong></span>
+                        </div>
+                        <div className="flex">
+                          <span className="text-gray-600 w-40">Unapproved Expense</span>
+                          <span>Selected <strong>0</strong> of <strong>0</strong></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    onClick={handleBulkApprove}
+                    disabled={selectedItems.size === 0}
+                    className={`px-6 py-2 rounded font-medium flex items-center ${
+                      selectedItems.size === 0 
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                        : 'bg-green-600 text-white hover:bg-green-700'
+                    }`}
+                  >
+                    Approve for Accounting
+                    <span className="ml-2">→</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Unsubmitted Tab */}
+          {activeTab === 'unsubmitted' && (
+            <div className="p-4">
+              <h2 className="text-lg font-semibold mb-4">Unsubmitted Timecards</h2>
+              <div className="text-center py-12 text-gray-500">
+                None
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
-  );
+  )
 }
