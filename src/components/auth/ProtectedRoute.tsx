@@ -1,20 +1,21 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import type { UserRole } from '@/types';
 
-type Props = {
-  allowedRoles: UserRole[];
+type UserRole = 'employee' | 'manager' | 'admin' | 'time_approver';
+
+interface Props {
   children: React.ReactNode;
-};
+  allowedRoles?: UserRole[];
+}
 
-// Coerce anything into a valid UserRole; fallback to 'employee'
-function toUserRole(role: unknown): UserRole {
-  const r = typeof role === 'string' ? role : '';
-  const valid = ['employee', 'manager', 'admin', 'client_approver', 'payroll'] as const;
-  return (valid as readonly string[]).includes(r as any) ? (r as UserRole) : 'employee';
+function toUserRole(role?: string | null): UserRole {
+  if (role === 'admin' || role === 'manager' || role === 'time_approver') {
+    return role;
+  }
+  return 'employee';
 }
 
 export default function ProtectedRoute({ allowedRoles, children }: Props) {
@@ -25,24 +26,35 @@ export default function ProtectedRoute({ allowedRoles, children }: Props) {
   const role: UserRole = toUserRole((employee as any)?.role ?? (user as any)?.role);
 
   useEffect(() => {
-    if (isLoading) return;
-
     // Not logged in → send to login
     if (!user) {
       router.replace('/auth/login');
       return;
     }
 
-    // Logged in but role not allowed → unauthorized
-    if (!allowedRoles.includes(role)) {
-      router.replace('/unauthorized');
+    // If specific roles are required, check them
+    if (allowedRoles && allowedRoles.length > 0) {
+      if (!allowedRoles.includes(role)) {
+        // Not authorized for this page, redirect to appropriate dashboard
+        if (role === 'admin') {
+          router.replace('/admin');
+        } else if (role === 'manager') {
+          router.replace('/manager');
+        } else {
+          router.replace('/dashboard');
+        }
+      }
     }
-  }, [isLoading, user, role, allowedRoles, router]);
+  }, [user, employee, role, allowedRoles, router]);
 
-  // While loading or redirecting, render nothing
-  if (isLoading) return null;
-  if (!user) return null;
-  if (!allowedRoles.includes(role)) return null;
+  // Don't render children until we confirm user is authorized
+  if (!user) {
+    return null;
+  }
+
+  if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(role)) {
+    return null;
+  }
 
   return <>{children}</>;
 }
