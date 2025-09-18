@@ -61,7 +61,7 @@ interface ReportData {
 
 export default function ReportsPage() {
   const router = useRouter()
-  const { appUser } = useAuth()
+  const { user, employee } = useAuth()
   const [reportData, setReportData] = useState<ReportData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedReport, setSelectedReport] = useState<string>('overview')
@@ -278,7 +278,7 @@ export default function ReportsPage() {
           </div>
           <div className="text-right">
             <p className="text-sm text-gray-500">Manager ID</p>
-            <p className="font-mono text-gray-900">{appUser?.id}</p>
+            <p className="font-mono text-gray-900">{employee?.id}</p>
           </div>
         </div>
       </div>

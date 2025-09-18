@@ -34,7 +34,7 @@ interface FinancialData {
 
 export default function ManagerFinancialPage() {
   const router = useRouter()
-  const { appUser } = useAuth()
+  const { user, employee } = useAuth()
   const [financialData, setFinancialData] = useState<FinancialData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedPeriod, setSelectedPeriod] = useState('current_month')
