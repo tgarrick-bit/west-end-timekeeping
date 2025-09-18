@@ -16,6 +16,7 @@ interface Employee {
   hourly_rate?: number;
   overtime_rate?: number;
   is_active: boolean;
+  manager_id?: string;
 }
 
 interface AuthContextType {
