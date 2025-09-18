@@ -26,7 +26,7 @@ interface StatCard {
 }
 
 export function DashboardStats() {
-  const { appUser } = useAuth();
+  const { user, employee } = useAuth();
 
   const [stats, setStats] = useState<LocalStats>({
     totalHoursThisWeek: 0,
@@ -37,18 +37,18 @@ export function DashboardStats() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (appUser) {
+    if (employee) {
       fetchStats();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appUser?.id]); // only refetch when the logged-in user changes
+  }, [employee?.id]); // only refetch when the logged-in user changes
 
   const fetchStats = async () => {
-    if (!appUser) return;
+    if (!employee) return;
 
     try {
       setLoading(true);
-      const role = (appUser.role as Role | undefined) ?? 'employee';
+      const role = (employee.role as Role | undefined) ?? 'employee';
 
       if (role === 'employee') {
         await fetchEmployeeStats();
@@ -70,7 +70,7 @@ export function DashboardStats() {
   };
 
   const fetchEmployeeStats = async () => {
-    if (!appUser) return;
+    if (!employee) return;
 
     const { start: weekStart, end: weekEnd } = getWeekDates();
     const { start: monthStart, end: monthEnd } = getMonthDates();
@@ -79,7 +79,7 @@ export function DashboardStats() {
     const { data: timeEntries } = await supabase
       .from('time_entries')
       .select('total_hours')
-      .eq('user_id', appUser.id)
+      .eq('user_id', employee.id)
       .gte('date', weekStart.toISOString().split('T')[0])
       .lte('date', weekEnd.toISOString().split('T')[0]);
 
@@ -87,7 +87,7 @@ export function DashboardStats() {
     const { data: expenses } = await supabase
       .from('expense_items')
       .select('amount')
-      .eq('user_id', appUser.id)
+      .eq('user_id', employee.id)
       .gte('date', monthStart.toISOString().split('T')[0])
       .lte('date', monthEnd.toISOString().split('T')[0]);
 
@@ -95,7 +95,7 @@ export function DashboardStats() {
     const { data: approvals } = await supabase
       .from('approvals')
       .select('*')
-      .or(`timesheet_id.eq.${appUser.id},expense_report_id.eq.${appUser.id}`)
+      .or(`timesheet_id.eq.${employee.id},expense_report_id.eq.${employee.id}`)
       .eq('status', 'pending');
 
     const hours =
@@ -118,12 +118,12 @@ export function DashboardStats() {
   };
 
   const fetchClientApproverStats = async () => {
-    if (!appUser) return;
+    if (!employee) return;
 
     const { data: approvals } = await supabase
       .from('approvals')
       .select('*')
-      .eq('approver_id', appUser.id)
+      .eq('approver_id', employee.id)
       .eq('status', 'pending');
 
     setStats({
@@ -182,7 +182,7 @@ export function DashboardStats() {
   };
 
   const getStatCards = (): StatCard[] => {
-    const role = (appUser?.role as Role | undefined) ?? 'employee';
+    const role = (employee?.role as Role | undefined) ?? 'employee';
 
     if (role === 'employee') {
       return [

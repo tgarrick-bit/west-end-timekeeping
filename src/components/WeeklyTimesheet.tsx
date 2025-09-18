@@ -20,7 +20,7 @@ interface Project {
 
 export default function WeeklyTimesheet() {
   const { notifyTimesheetSubmitted } = useNotifications();
-  const { appUser } = useAuth();
+  const { user, employee } = useAuth();
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
@@ -118,13 +118,13 @@ export default function WeeklyTimesheet() {
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     // Notify manager about timesheet submission
-    if (appUser?.manager_id) {
+    if (employee?.manager_id) {
       const weekStart = weekDates[0].toISOString().split('T')[0];
       const weekEnd = weekDates[6].toISOString().split('T')[0];
       const totalHours = getWeekTotal();
       notifyTimesheetSubmitted(
-        appUser.manager_id,
-        `${appUser.first_name} ${appUser.last_name}` || 'Employee',
+        employee.manager_id,
+        `${employee.first_name} ${employee.last_name}` || 'Employee',
         `${weekStart} - ${weekEnd}`
       );
     }

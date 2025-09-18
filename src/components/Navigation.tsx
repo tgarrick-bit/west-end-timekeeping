@@ -21,12 +21,12 @@ import {
 
 
 export function Navigation() {
-  const { appUser, signOut } = useAuth()
+  const { employee, signOut } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-  if (!appUser) return null
+  if (!employee) return null
 
-  const navigationItems = getNavigationItems(appUser.role)
+  const navigationItems = getNavigationItems(employee.role)
 
   const handleSignOut = async () => {
     await signOut()
@@ -64,7 +64,7 @@ export function Navigation() {
           <div className="hidden md:flex items-center space-x-4">
             <div className="text-sm">
               <span className="text-gray-300">Welcome,</span>
-                              <span className="ml-1 font-medium">{`${appUser.first_name} ${appUser.last_name}`}</span>
+                              <span className="ml-1 font-medium">{`${employee.first_name} ${employee.last_name}`}</span>
             </div>
             <button
               onClick={handleSignOut}
@@ -108,7 +108,7 @@ export function Navigation() {
             ))}
             <div className="border-t border-gray-600 pt-4 mt-4">
               <div className="px-3 py-2 text-sm text-gray-300">
-                Welcome, {`${appUser.first_name} ${appUser.last_name}`}
+                Welcome, {`${employee.first_name} ${employee.last_name}`}
               </div>
               <button
                 onClick={handleSignOut}

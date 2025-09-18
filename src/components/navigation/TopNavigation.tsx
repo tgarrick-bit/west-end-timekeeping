@@ -26,10 +26,10 @@ type MaybeNamed = {
 };
 
 export default function TopNavigation() {
-  const { user, appUser } = useAuth();
+  const { user, employee } = useAuth();
 
-  // Prefer appUser profile fields, fallback to user
-  const profile: MaybeNamed = (appUser as MaybeNamed) ?? (user as MaybeNamed) ?? {};
+  // Prefer employee profile fields, fallback to user
+  const profile: MaybeNamed = (employee as MaybeNamed) ?? (user as MaybeNamed) ?? {};
   const first = profile.first_name ?? '';
   const last = profile.last_name ?? '';
   const emailInitial = (user?.email?.[0] ?? '').toUpperCase();

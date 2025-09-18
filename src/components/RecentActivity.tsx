@@ -17,30 +17,30 @@ interface ActivityItem {
 }
 
 export function RecentActivity() {
-  const { appUser } = useAuth()
+  const { user, employee } = useAuth()
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (appUser) {
+    if (employee) {
       fetchRecentActivity()
     }
-  }, [appUser])
+  }, [employee])
 
   const fetchRecentActivity = async () => {
-    if (!appUser) return
+    if (!employee) return
 
     try {
       setLoading(true)
       const allActivities: ActivityItem[] = []
 
-      if (appUser.role === 'employee') {
+      if (employee.role === 'employee') {
         await fetchEmployeeActivity(allActivities)
-      } else if (appUser.role === 'client_approver') {
+      } else if (employee.role === 'client_approver') {
         await fetchClientApproverActivity(allActivities)
-      } else if (appUser.role === 'admin') {
+      } else if (employee.role === 'admin') {
         await fetchAdminActivity(allActivities)
-      } else if (appUser.role === 'payroll') {
+      } else if (employee.role === 'payroll') {
         await fetchPayrollActivity(allActivities)
       }
 
@@ -58,13 +58,13 @@ export function RecentActivity() {
   }
 
   const fetchEmployeeActivity = async (allActivities: ActivityItem[]) => {
-    if (!appUser) return
+    if (!employee) return
     
     // Fetch recent time entries
     const { data: timeEntries } = await supabase
       .from('time_entries')
       .select('*')
-      .eq('user_id', appUser.id)
+      .eq('user_id', employee.id)
       .order('created_at', { ascending: false })
       .limit(5)
 
@@ -87,7 +87,7 @@ export function RecentActivity() {
     const { data: expenses } = await supabase
       .from('expense_items')
       .select('*')
-      .eq('user_id', appUser.id)
+      .eq('user_id', employee.id)
       .order('created_at', { ascending: false })
       .limit(5)
 
@@ -108,7 +108,7 @@ export function RecentActivity() {
   }
 
   const fetchClientApproverActivity = async (allActivities: ActivityItem[]) => {
-    if (!appUser) return
+    if (!employee) return
     
     // Fetch recent approvals for client's projects
     const { data: approvals } = await supabase
@@ -119,7 +119,7 @@ export function RecentActivity() {
         expense_reports (user_id, month, year),
         users (first_name, last_name)
       `)
-      .eq('approver_id', appUser.id)
+      .eq('approver_id', employee.id)
       .order('created_at', { ascending: false })
       .limit(10)
 

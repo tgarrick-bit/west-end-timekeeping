@@ -18,11 +18,11 @@ function toUserRole(role: unknown): UserRole {
 }
 
 export default function ProtectedRoute({ allowedRoles, children }: Props) {
-  const { user, appUser, isLoading } = useAuth();
+  const { user, employee, isLoading } = useAuth();
   const router = useRouter();
 
-  // prefer appUser.role, then user.role, then fallback
-  const role: UserRole = toUserRole((appUser as any)?.role ?? (user as any)?.role);
+  // prefer employee.role, then user.role, then fallback
+  const role: UserRole = toUserRole((employee as any)?.role ?? (user as any)?.role);
 
   useEffect(() => {
     if (isLoading) return;
