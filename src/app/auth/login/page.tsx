@@ -381,7 +381,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Test Accounts - UPDATED */}
+          {/* Demo Accounts */}
           <div className="mt-6 pt-6 border-t border-gray-200">
             <div className="bg-gray-50 rounded-md p-4">
               <p className="text-xs font-semibold text-gray-700 mb-3">Demo Accounts for Testing:</p>
@@ -401,30 +401,15 @@ export default function LoginPage() {
                   </button>
                 </div>
 
-                {/* Manager A Account */}
+                {/* Manager Account */}
                 <div className="flex items-center justify-between">
                   <div className="text-xs">
-                    <span className="font-semibold text-gray-700">Manager A:</span>
-                    <span className="ml-2 font-mono text-gray-600">manager.a@westend-test.com</span>
+                    <span className="font-semibold text-gray-700">Manager:</span>
+                    <span className="ml-2 font-mono text-gray-600">manager@westend-test.com</span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => quickFillCredentials('manager.a@westend-test.com')}
-                    className="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded transition-colors"
-                  >
-                    Use
-                  </button>
-                </div>
-
-                {/* Manager B Account */}
-                <div className="flex items-center justify-between">
-                  <div className="text-xs">
-                    <span className="font-semibold text-gray-700">Manager B:</span>
-                    <span className="ml-2 font-mono text-gray-600">manager.b@westend-test.com</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => quickFillCredentials('manager.b@westend-test.com')}
+                    onClick={() => quickFillCredentials('manager@westend-test.com')}
                     className="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded transition-colors"
                   >
                     Use
