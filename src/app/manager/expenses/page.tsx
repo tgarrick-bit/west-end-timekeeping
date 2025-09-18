@@ -49,7 +49,7 @@ interface ExpenseStats {
 
 export default function ExpensesPage() {
   const router = useRouter()
-  const { appUser } = useAuth()
+  const { user, employee } = useAuth()
   const [expenses, setExpenses] = useState<ExpenseSubmission[]>([])
   const [stats, setStats] = useState<ExpenseStats>({
     totalSubmissions: 0,
@@ -316,7 +316,7 @@ export default function ExpensesPage() {
           </div>
           <div className="text-right">
             <p className="text-sm text-gray-500">Manager ID</p>
-            <p className="font-mono text-gray-900">{appUser?.id}</p>
+            <p className="font-mono text-gray-900">{employee?.id}</p>
           </div>
         </div>
       </div>
