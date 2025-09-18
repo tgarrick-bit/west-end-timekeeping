@@ -18,7 +18,7 @@ function toUserRole(role: unknown): UserRole {
 }
 
 export default function ProtectedRoute({ allowedRoles, children }: Props) {
-  const { user, employee, isLoading } = useAuth();
+  const { user, employee } = useAuth();
   const router = useRouter();
 
   // prefer employee.role, then user.role, then fallback
