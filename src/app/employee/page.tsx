@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import TimesheetModal from '@/components/TimesheetModal';
 import { 
   CalendarDays, 
   Clock, 
@@ -15,24 +16,13 @@ import {
   Briefcase,
   Receipt,
   CreditCard,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
-
-// Define types inline instead of importing
-interface Employee {
-  id: string;
-  email: string;
-  role: string;
-  is_active: boolean;
-  first_name?: string;
-  last_name?: string;
-  department?: string;
-  position?: string;
-  hire_date?: string;
-}
 
 interface Timecard {
   id: string;
+  employee_id: string;
   week_ending: string;
   status: 'draft' | 'submitted' | 'approved' | 'rejected';
   total_hours: number;
@@ -45,6 +35,7 @@ interface Timecard {
 
 interface Expense {
   id: string;
+  employee_id: string;
   expense_date: string;
   category: string;
   amount: number;
@@ -56,181 +47,268 @@ interface Expense {
   created_at: string;
 }
 
+interface Profile {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  role: string;
+}
+
 export default function EmployeeDashboard() {
-  const [employee, setEmployee] = useState<Employee | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [timecards, setTimecards] = useState<Timecard[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [selectedTimesheet, setSelectedTimesheet] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [stats, setStats] = useState({
-    // Timesheet stats
     totalHours: 0,
     totalEarnings: 0,
     pendingTimecards: 0,
     approvedTimecards: 0,
-    // Expense stats
     totalExpenses: 0,
     pendingExpenses: 0,
     approvedExpenses: 0,
     rejectedExpenses: 0
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const hasLoadedRef = useRef(false);
   const router = useRouter();
   const supabase = createClientComponentClient();
 
   useEffect(() => {
-    loadDashboardData();
+    checkUserRoleAndRedirect();
   }, []);
 
-  const loadDashboardData = async () => {
+  const checkUserRoleAndRedirect = async () => {
+    // Prevent double loading
+    if (hasLoadedRef.current) {
+      return;
+    }
+    
     try {
-      // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (userError || !user) {
-        console.error('Error getting user:', userError);
+      if (!user) {
         router.push('/auth/login');
         return;
       }
 
-      // Get employee data from employees table
-      const { data: employeeData, error: employeeError } = await supabase
+      // Check user's role in employees table
+      const { data: employeeData } = await supabase
         .from('employees')
-        .select('*')
+        .select('role, first_name, last_name, email')
         .eq('id', user.id)
         .single();
-
-      if (employeeError) {
-        console.error('Error fetching employee:', employeeError);
+      
+      // If no employee record exists, check email pattern as fallback
+      if (!employeeData) {
+        const userEmail = user.email?.toLowerCase() || '';
         
-        // Try fetching by email as fallback
-        const { data: employeeByEmail } = await supabase
-          .from('employees')
-          .select('*')
-          .eq('email', user.email!)
-          .single();
-
-        if (employeeByEmail) {
-          setEmployee(employeeByEmail);
-          
-          // Check role and redirect if not employee
-          if (employeeByEmail.role !== 'employee') {
-            console.log('User is not employee role, redirecting...');
-            redirectBasedOnRole(employeeByEmail.role);
-            return;
-          }
-        } else {
-          // No employee record found
-          console.error('No employee record found for user');
-          router.push('/auth/login');
+        if (userEmail.includes('admin')) {
+          router.push('/admin');
           return;
-        }
-      } else {
-        setEmployee(employeeData);
-        
-        // Check role and redirect if not employee
-        if (employeeData.role !== 'employee') {
-          console.log('User is not employee role, redirecting...');
-          redirectBasedOnRole(employeeData.role);
+        } else if (userEmail.includes('manager') || userEmail === 'sarah.johnson@westend-test.com') {
+          router.push('/manager');
           return;
         }
       }
 
-      // Get user's timecards - try both table names
-      let timecardsData = null;
+      const userRole = employeeData?.role?.toLowerCase().trim();
       
-      // First try 'timesheets' table (which seems to be the correct one)
+      // Redirect admins and managers to their respective dashboards
+      if (userRole === 'admin') {
+        router.push('/admin');
+        return;
+      }
+      
+      if (userRole === 'manager') {
+        router.push('/manager');
+        return;
+      }
+      
+      // If employee role, stay on this dashboard and load data
+      if (employeeData) {
+        setProfile({
+          id: user.id,
+          email: employeeData.email || user.email || '',
+          first_name: employeeData.first_name,
+          last_name: employeeData.last_name,
+          role: employeeData.role
+        });
+      }
+      
+      hasLoadedRef.current = true;
+      await loadDashboardData(user.id);
+    } catch (error) {
+      console.error('Error checking user role:', error);
+      setIsLoading(false);
+    }
+  };
+
+  const loadDashboardData = async (userId: string, isRefresh = false) => {
+    if (isRefresh) {
+      setIsRefreshing(true);
+    }
+    
+    try {
+      // Query from 'timesheets' table (correct table)
       const { data: timesheetsData, error: timesheetsError } = await supabase
         .from('timesheets')
         .select('*')
-        .eq('employee_id', user.id)
-        .order('week_ending', { ascending: false })
-        .limit(10);
+        .eq('employee_id', userId)
+        .order('created_at', { ascending: false });
 
-      if (!timesheetsError) {
-        timecardsData = timesheetsData;
-      } else {
-        // Fallback to 'timecards' if 'timesheets' doesn't work
-        const { data: timecardsDataFallback } = await supabase
-          .from('timecards')
-          .select('*')
-          .eq('employee_id', user.id)
-          .order('week_ending', { ascending: false })
-          .limit(10);
+      if (timesheetsError) {
+        console.error('Error fetching timesheets:', timesheetsError);
+        setTimecards([]);
+      } else if (timesheetsData && timesheetsData.length > 0) {
+        // Remove duplicates based on ID
+        const uniqueTimesheets = Array.from(
+          new Map(timesheetsData.map(item => [item.id, item])).values()
+        );
         
-        if (timecardsDataFallback) {
-          timecardsData = timecardsDataFallback;
-        }
-      }
-
-      if (timecardsData) {
-        setTimecards(timecardsData);
-        calculateTimecardStats(timecardsData);
+        setTimecards(uniqueTimesheets);
+        
+        // Calculate stats
+        const timecardStats = uniqueTimesheets.reduce((acc, tc) => ({
+          totalHours: acc.totalHours + (tc.total_hours || 0),
+          totalEarnings: acc.totalEarnings + (tc.total_amount || 0),
+          pendingTimecards: acc.pendingTimecards + (tc.status === 'submitted' ? 1 : 0),
+          approvedTimecards: acc.approvedTimecards + (tc.status === 'approved' ? 1 : 0)
+        }), {
+          totalHours: 0,
+          totalEarnings: 0,
+          pendingTimecards: 0,
+          approvedTimecards: 0
+        });
+        
+        setStats(prev => ({ ...prev, ...timecardStats }));
+      } else {
+        setTimecards([]);
       }
 
       // Get user's expenses
       const { data: expensesData, error: expensesError } = await supabase
         .from('expenses')
         .select('*')
-        .eq('employee_id', user.id)
-        .order('expense_date', { ascending: false })
-        .limit(10);
+        .eq('employee_id', userId)
+        .order('expense_date', { ascending: false });
 
-      if (expensesError) {
-        console.error('Error fetching expenses:', expensesError);
+      if (!expensesError && expensesData) {
+        const uniqueExpenses = Array.from(
+          new Map(expensesData.map(item => [item.id, item])).values()
+        );
+        setExpenses(uniqueExpenses);
+        
+        // Calculate expense stats
+        const expenseStats = uniqueExpenses.reduce((acc, exp) => ({
+          totalExpenses: acc.totalExpenses + (exp.amount || 0),
+          pendingExpenses: acc.pendingExpenses + (exp.status === 'submitted' ? exp.amount : 0),
+          approvedExpenses: acc.approvedExpenses + (exp.status === 'approved' ? exp.amount : 0),
+          rejectedExpenses: acc.rejectedExpenses + (exp.status === 'rejected' ? 1 : 0)
+        }), {
+          totalExpenses: 0,
+          pendingExpenses: 0,
+          approvedExpenses: 0,
+          rejectedExpenses: 0
+        });
+
+        setStats(prev => ({ ...prev, ...expenseStats }));
       } else {
-        setExpenses(expensesData || []);
-        calculateExpenseStats(expensesData || []);
+        setExpenses([]);
       }
     } catch (error) {
       console.error('Dashboard error:', error);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
-  const redirectBasedOnRole = (role: string) => {
-    switch (role.toLowerCase()) {
-      case 'admin':
-        router.push('/admin');
-        break;
-      case 'manager':
-        router.push('/manager');
-        break;
-      default:
-        router.push('/dashboard');
-        break;
+  const handleRefresh = async () => {
+    if (!profile) return;
+    await loadDashboardData(profile.id, true);
+  };
+
+  const handleTimesheetClick = async (timecard: Timecard) => {
+    try {
+      // Fetch full timesheet details
+      const { data: timesheetData, error: timesheetError } = await supabase
+        .from('timesheets')
+        .select('*')
+        .eq('id', timecard.id)
+        .single();
+
+      if (timesheetError) throw timesheetError;
+
+      // Fetch from timesheet_entries table
+      const { data: entriesData, error: entriesError } = await supabase
+        .from('timesheet_entries')
+        .select('*')
+        .eq('timesheet_id', timecard.id)
+        .order('date', { ascending: true });
+
+      console.log('Timesheet entries:', entriesData);
+
+      let formattedEntries = entriesData || [];
+
+      // If we have entries, fetch project details
+      if (formattedEntries.length > 0) {
+        const projectIds = [...new Set(formattedEntries.map(e => e.project_id).filter(Boolean))];
+        
+        if (projectIds.length > 0) {
+          const { data: projectsData } = await supabase
+            .from('projects')
+            .select('id, name, client_name, project_code')
+            .in('id', projectIds);
+
+          console.log('Projects data:', projectsData);
+
+          if (projectsData) {
+            formattedEntries = formattedEntries.map(entry => ({
+              ...entry,
+              project_name: projectsData.find(p => p.id === entry.project_id)?.name || 'General Work',
+              project_code: projectsData.find(p => p.id === entry.project_id)?.project_code,
+              client_name: projectsData.find(p => p.id === entry.project_id)?.client_name
+            }));
+          }
+        }
+      }
+
+      // Format the data for the modal
+      const formattedTimesheet = {
+        ...timesheetData,
+        employee_name: profile?.first_name && profile?.last_name 
+          ? `${profile.first_name} ${profile.last_name}` 
+          : 'John Employee',
+        employee_email: profile?.email || '',
+        entries: formattedEntries
+      };
+
+      console.log('Final formatted timesheet:', formattedTimesheet);
+      setSelectedTimesheet(formattedTimesheet);
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error('Error loading timesheet details:', error);
+      // Still show modal with basic data
+      const basicTimesheet = {
+        ...timecard,
+        employee_name: profile?.first_name && profile?.last_name 
+          ? `${profile.first_name} ${profile.last_name}` 
+          : 'John Employee',
+        employee_email: profile?.email || '',
+        entries: []
+      };
+      setSelectedTimesheet(basicTimesheet);
+      setIsModalOpen(true);
     }
   };
 
-  const calculateTimecardStats = (timecardsData: Timecard[]) => {
-    const timecardStats = timecardsData.reduce((acc, tc) => ({
-      totalHours: acc.totalHours + (tc.total_hours || 0),
-      totalEarnings: acc.totalEarnings + (tc.total_amount || 0),
-      pendingTimecards: acc.pendingTimecards + (tc.status === 'submitted' ? 1 : 0),
-      approvedTimecards: acc.approvedTimecards + (tc.status === 'approved' ? 1 : 0)
-    }), {
-      totalHours: 0,
-      totalEarnings: 0,
-      pendingTimecards: 0,
-      approvedTimecards: 0
-    });
-    
-    setStats(prev => ({ ...prev, ...timecardStats }));
-  };
-
-  const calculateExpenseStats = (expensesData: Expense[]) => {
-    const expenseStats = expensesData.reduce((acc, exp) => ({
-      totalExpenses: acc.totalExpenses + (exp.amount || 0),
-      pendingExpenses: acc.pendingExpenses + (exp.status === 'submitted' ? exp.amount : 0),
-      approvedExpenses: acc.approvedExpenses + (exp.status === 'approved' ? exp.amount : 0),
-      rejectedExpenses: acc.rejectedExpenses + (exp.status === 'rejected' ? 1 : 0)
-    }), {
-      totalExpenses: 0,
-      pendingExpenses: 0,
-      approvedExpenses: 0,
-      rejectedExpenses: 0
-    });
-
-    setStats(prev => ({ ...prev, ...expenseStats }));
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedTimesheet(null);
   };
 
   const handleSignOut = async () => {
@@ -312,13 +390,20 @@ export default function EmployeeDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-200 hover:text-white transition-colors disabled:opacity-50"
+                title="Refresh data"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
                   <User className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-sm text-gray-200">
-                  {employee?.email || 'Loading...'}
-                </span>
+                <span className="text-sm text-gray-200">{profile?.email}</span>
               </div>
               <button
                 onClick={handleSignOut}
@@ -337,7 +422,7 @@ export default function EmployeeDashboard() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-[#05202E] mb-2">
-            Welcome back{employee ? `, ${employee.first_name}` : ''}!
+            Welcome back{profile?.first_name ? `, ${profile.first_name}` : ''}!
           </h2>
           <p className="text-gray-600">
             Manage your timesheets and expenses
@@ -363,42 +448,87 @@ export default function EmployeeDashboard() {
           </button>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg border border-[#05202E] p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <Clock className="h-6 w-6 text-[#05202E]" />
-              <span className="text-xs text-gray-500 font-medium uppercase">All Time</span>
+        {/* Stats Grid - Timesheets Row */}
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Timesheet Summary</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
+            <div className="bg-white rounded-lg border border-[#05202E] p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <Clock className="h-6 w-6 text-[#05202E]" />
+                <span className="text-xs text-gray-500 font-medium uppercase">All Time</span>
+              </div>
+              <div className="text-2xl font-bold text-[#05202E]">{stats.totalHours.toFixed(1)}</div>
+              <p className="text-sm text-gray-600 mt-1">Total Hours</p>
             </div>
-            <div className="text-2xl font-bold text-[#05202E]">{stats.totalHours.toFixed(1)}</div>
-            <p className="text-sm text-gray-600 mt-1">Total Hours</p>
-          </div>
 
-          <div className="bg-white rounded-lg border border-[#05202E] p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <DollarSign className="h-6 w-6 text-[#05202E]" />
-              <span className="text-xs text-gray-500 font-medium uppercase">Pending</span>
+            <div className="bg-white rounded-lg border border-[#05202E] p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <DollarSign className="h-6 w-6 text-[#05202E]" />
+                <span className="text-xs text-gray-500 font-medium uppercase">Earnings</span>
+              </div>
+              <div className="text-2xl font-bold text-[#05202E]">{formatCurrency(stats.totalEarnings)}</div>
+              <p className="text-sm text-gray-600 mt-1">Total Amount</p>
             </div>
-            <div className="text-2xl font-bold text-[#05202E]">{stats.pendingTimecards}</div>
-            <p className="text-sm text-gray-600 mt-1">Awaiting Review</p>
-          </div>
 
-          <div className="bg-white rounded-lg border border-[#e31c79] p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <Receipt className="h-6 w-6 text-[#e31c79]" />
-              <span className="text-xs text-gray-500 font-medium uppercase">Expenses</span>
+            <div className="bg-white rounded-lg border border-[#05202E] p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <FileText className="h-6 w-6 text-[#05202E]" />
+                <span className="text-xs text-gray-500 font-medium uppercase">Pending</span>
+              </div>
+              <div className="text-2xl font-bold text-[#05202E]">{stats.pendingTimecards}</div>
+              <p className="text-sm text-gray-600 mt-1">Awaiting Review</p>
             </div>
-            <div className="text-2xl font-bold text-[#e31c79]">{formatCurrency(stats.totalExpenses)}</div>
-            <p className="text-sm text-gray-600 mt-1">Total Submitted</p>
-          </div>
 
-          <div className="bg-white rounded-lg border border-[#e31c79] p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <CreditCard className="h-6 w-6 text-[#e31c79]" />
-              <span className="text-xs text-gray-500 font-medium uppercase">Approved</span>
+            <div className="bg-white rounded-lg border border-[#05202E] p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <CalendarDays className="h-6 w-6 text-[#05202E]" />
+                <span className="text-xs text-gray-500 font-medium uppercase">Approved</span>
+              </div>
+              <div className="text-2xl font-bold text-[#05202E]">{stats.approvedTimecards}</div>
+              <p className="text-sm text-gray-600 mt-1">Completed</p>
             </div>
-            <div className="text-2xl font-bold text-[#e31c79]">{formatCurrency(stats.approvedExpenses)}</div>
-            <p className="text-sm text-gray-600 mt-1">Reimbursed</p>
+          </div>
+        </div>
+
+        {/* Stats Grid - Expenses Row */}
+        <div className="mb-8">
+          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Expense Summary</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-white rounded-lg border border-[#e31c79] p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <Receipt className="h-6 w-6 text-[#e31c79]" />
+                <span className="text-xs text-gray-500 font-medium uppercase">Total</span>
+              </div>
+              <div className="text-2xl font-bold text-[#e31c79]">{formatCurrency(stats.totalExpenses)}</div>
+              <p className="text-sm text-gray-600 mt-1">All Expenses</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-[#e31c79] p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <CreditCard className="h-6 w-6 text-[#e31c79]" />
+                <span className="text-xs text-gray-500 font-medium uppercase">Pending</span>
+              </div>
+              <div className="text-2xl font-bold text-[#e31c79]">{formatCurrency(stats.pendingExpenses)}</div>
+              <p className="text-sm text-gray-600 mt-1">Under Review</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-[#e31c79] p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <DollarSign className="h-6 w-6 text-[#e31c79]" />
+                <span className="text-xs text-gray-500 font-medium uppercase">Approved</span>
+              </div>
+              <div className="text-2xl font-bold text-[#e31c79]">{formatCurrency(stats.approvedExpenses)}</div>
+              <p className="text-sm text-gray-600 mt-1">Reimbursed</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-[#e31c79] p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <AlertCircle className="h-6 w-6 text-[#e31c79]" />
+                <span className="text-xs text-gray-500 font-medium uppercase">Rejected</span>
+              </div>
+              <div className="text-2xl font-bold text-[#e31c79]">{stats.rejectedExpenses}</div>
+              <p className="text-sm text-gray-600 mt-1">Need Action</p>
+            </div>
           </div>
         </div>
 
@@ -423,11 +553,11 @@ export default function EmployeeDashboard() {
                 </div>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {timecards.slice(0, 5).map((timecard) => (
+                  {timecards.map((timecard) => (
                     <div
                       key={timecard.id}
                       className="group flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-200 border border-gray-200 cursor-pointer"
-                      onClick={() => router.push(`/timesheet/${timecard.id}`)}
+                      onClick={() => handleTimesheetClick(timecard)}
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
@@ -436,7 +566,7 @@ export default function EmployeeDashboard() {
                               Week ending {formatDate(timecard.week_ending)}
                             </p>
                             <p className="text-xs text-gray-600 mt-1">
-                              {timecard.total_hours} hrs
+                              {timecard.total_hours || 0} hrs • {formatCurrency(timecard.total_amount || 0)}
                             </p>
                           </div>
                           <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getStatusColor(timecard.status)}`}>
@@ -471,7 +601,7 @@ export default function EmployeeDashboard() {
                 </div>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {expenses.slice(0, 5).map((expense) => (
+                  {expenses.map((expense) => (
                     <div
                       key={expense.id}
                       className="group flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-200 border border-gray-200 cursor-pointer"
@@ -501,6 +631,13 @@ export default function EmployeeDashboard() {
           </div>
         </div>
       </main>
+
+      {/* Timesheet Modal */}
+      <TimesheetModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        timesheet={selectedTimesheet}
+      />
     </div>
   );
 }

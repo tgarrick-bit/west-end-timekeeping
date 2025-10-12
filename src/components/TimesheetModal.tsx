@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Calendar, Clock, User, Building2, Check } from 'lucide-react';
 import { format } from 'date-fns';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface TimesheetEntry {
   id: string;
@@ -32,6 +33,8 @@ interface TimesheetDetail {
   approved_by_name?: string | null;
   notes?: string | null;
   entries?: TimesheetEntry[];  // Optional to handle missing data
+  rejection_reason?: string | null;  // Added for rejected timesheets
+  rejected_at?: string | null;
 }
 
 interface TimesheetModalProps {
@@ -41,6 +44,7 @@ interface TimesheetModalProps {
   onApprove?: () => void;
   onReject?: () => void;
   processing?: boolean;
+  isEmployeeView?: boolean;  // Added to show approval info for employees
 }
 
 export default function TimesheetModal({
@@ -49,8 +53,90 @@ export default function TimesheetModal({
   timesheet,
   onApprove,
   onReject,
-  processing = false
+  processing = false,
+  isEmployeeView = false
 }: TimesheetModalProps) {
+  const [entries, setEntries] = useState<TimesheetEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [approverName, setApproverName] = useState<string | null>(null);
+  const supabase = createClientComponentClient();
+
+  useEffect(() => {
+    if (isOpen && timesheet?.id) {
+      loadTimesheetEntries();
+      if (timesheet.approved_by) {
+        loadApproverName();
+      }
+    }
+  }, [isOpen, timesheet?.id]);
+
+  const loadTimesheetEntries = async () => {
+    if (!timesheet?.id) return;
+    
+    try {
+      setLoading(true);
+      console.log('Loading entries for timesheet:', timesheet.id);
+      
+      // Fetch timesheet entries with project information
+      const { data, error } = await supabase
+        .from('timesheet_entries')
+        .select(`
+          id,
+          timesheet_id,
+          date,
+          project_id,
+          hours,
+          description,
+          projects:project_id (
+            id,
+            name,
+            code
+          )
+        `)
+        .eq('timesheet_id', timesheet.id)
+        .order('date', { ascending: true });
+
+      if (error) {
+        console.error('Error loading entries:', error);
+      } else {
+        console.log('Loaded entries:', data);
+        // Transform the data to match the expected format
+        const transformedEntries = (data || []).map((entry: any) => ({
+          id: entry.id,
+          date: entry.date,
+          project_id: entry.project_id,
+          project_name: (entry.projects as any)?.name || 'General Work',
+          project_code: (entry.projects as any)?.code || '',
+          hours: entry.hours,
+          description: entry.description
+        }));
+        setEntries(transformedEntries);
+      }
+    } catch (error) {
+      console.error('Error in loadTimesheetEntries:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadApproverName = async () => {
+    if (!timesheet?.approved_by) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('first_name, last_name')
+        .eq('id', timesheet.approved_by)
+        .single();
+
+      if (!error && data) {
+        setApproverName(`${data.first_name} ${data.last_name}`);
+      }
+    } catch (error) {
+      console.error('Error loading approver name:', error);
+    }
+  };
+
   if (!isOpen || !timesheet) return null;
 
   const getStatusColor = () => {
@@ -62,11 +148,11 @@ export default function TimesheetModal({
     }
   };
 
-  // Normalize entries
-  const entries: TimesheetEntry[] = Array.isArray(timesheet.entries) ? timesheet.entries : [];
+  // Use fetched entries if available, otherwise fallback to passed entries
+  const displayEntries = entries.length > 0 ? entries : (timesheet.entries || []);
 
   // Sort by date (ascending), safely handling bad dates
-  const sortedEntries = [...entries].sort((a, b) => {
+  const sortedEntries = [...displayEntries].sort((a, b) => {
     const dateA = a?.date ? new Date(a.date).getTime() : NaN;
     const dateB = b?.date ? new Date(b.date).getTime() : NaN;
     if (isNaN(dateA) && isNaN(dateB)) return 0;
@@ -130,6 +216,37 @@ export default function TimesheetModal({
               </span>
             </div>
           </div>
+
+          {/* Show approval/rejection info for employees */}
+          {isEmployeeView && (
+            <div className="mt-3 text-sm text-white/80">
+              {timesheet.status === 'approved' && (
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-400" />
+                  <span>
+                    Approved by {approverName || timesheet.approved_by_name || 'Manager'}
+                    {timesheet.approved_at && ` on ${format(new Date(timesheet.approved_at), 'MMM dd, yyyy')}`}
+                  </span>
+                </div>
+              )}
+              {timesheet.status === 'rejected' && (
+                <div>
+                  <div className="flex items-center gap-2">
+                    <X className="h-4 w-4 text-red-400" />
+                    <span>
+                      Rejected
+                      {timesheet.rejected_at && ` on ${format(new Date(timesheet.rejected_at), 'MMM dd, yyyy')}`}
+                    </span>
+                  </div>
+                  {timesheet.rejection_reason && (
+                    <div className="mt-2 p-2 bg-red-900/20 rounded text-white/90">
+                      Reason: {timesheet.rejection_reason}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Summary Cards */}
@@ -158,10 +275,14 @@ export default function TimesheetModal({
         <div className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Daily Time Entries by Project ({sortedEntries.length} entries)
+            Daily Time Entries by Project ({sortedEntries.length} {sortedEntries.length === 1 ? 'entry' : 'entries'})
           </h3>
 
-          {sortedEntries.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-8 bg-gray-50 rounded-lg">
+              <p className="text-gray-500">Loading time entries...</p>
+            </div>
+          ) : sortedEntries.length === 0 ? (
             <div className="text-center py-8 bg-gray-50 rounded-lg">
               <p className="text-gray-500">No time entries found for this timecard</p>
               {timesheet.total_hours > 0 && (
@@ -250,7 +371,7 @@ export default function TimesheetModal({
 
         {/* Action Buttons */}
         <div className="sticky bottom-0 bg-gray-50 px-6 py-4 border-t flex justify-end gap-3">
-          {timesheet.status === 'submitted' && onApprove && onReject && (
+          {timesheet.status === 'submitted' && onApprove && onReject && !isEmployeeView && (
             <>
               <button
                 onClick={onReject}

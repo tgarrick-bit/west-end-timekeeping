@@ -31,6 +31,7 @@ interface Timesheet {
   id: string;
   employee_id: string;
   employee?: {
+    id?: string;
     first_name: string;
     last_name: string;
     email: string;
@@ -49,35 +50,21 @@ interface Timesheet {
   comments?: string;
   created_at?: string;
   updated_at?: string;
+  entries?: TimesheetEntry[];
 }
 
-interface TimecardDetail {
+interface TimesheetEntry {
   id: string;
-  employee_id: string;
-  employee_name: string;
-  employee_email: string;
-  employee_department?: string;
-  week_ending: string;
-  total_hours: number;
-  total_overtime: number;
-  total_amount: number;
-  status: 'draft' | 'submitted' | 'approved' | 'rejected';
-  submitted_at: string | null;
-  approved_at?: string | null;
-  approved_by?: string | null;
-  notes?: string;
-  entries?: TimecardEntry[];
-}
-
-interface TimecardEntry {
-  id: string;
+  timesheet_id: string;
   date: string;
-  project_id?: string;
-  project_name?: string;
-  project_code?: string;
+  project_id: string;
   hours: number;
-  overtime_hours?: number;
-  description?: string;
+  description: string | null;
+  project?: {
+    id: string;
+    name: string;
+    code: string;
+  };
 }
 
 export default function AdminTimesheets() {
@@ -85,7 +72,8 @@ export default function AdminTimesheets() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [managers, setManagers] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTimecard, setSelectedTimecard] = useState<TimecardDetail | null>(null);
+  const [selectedTimesheet, setSelectedTimesheet] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [filterStatus, setFilterStatus] = useState<'all' | 'draft' | 'submitted' | 'approved' | 'rejected'>('all');
   const [filterWeek, setFilterWeek] = useState<string>('all');
@@ -148,7 +136,7 @@ export default function AdminTimesheets() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      await supabase
+      const { error } = await supabase
         .from('timesheets')
         .update({ 
           status: 'approved',
@@ -156,8 +144,17 @@ export default function AdminTimesheets() {
           approved_by: user?.id
         })
         .eq('id', timesheetId);
+
+      if (error) throw error;
       
-      fetchAllData();
+      // Refresh data
+      await fetchAllData();
+      
+      // Close modal if this was the selected timesheet
+      if (selectedTimesheet?.id === timesheetId) {
+        setIsModalOpen(false);
+        setSelectedTimesheet(null);
+      }
     } catch (error) {
       console.error('Error approving timesheet:', error);
     } finally {
@@ -168,15 +165,24 @@ export default function AdminTimesheets() {
   const handleRejectTimesheet = async (timesheetId: string) => {
     setProcessing(true);
     try {
-      await supabase
+      const { error } = await supabase
         .from('timesheets')
         .update({ 
           status: 'rejected',
           comments: 'Please review and resubmit'
         })
         .eq('id', timesheetId);
+
+      if (error) throw error;
       
-      fetchAllData();
+      // Refresh data
+      await fetchAllData();
+      
+      // Close modal if this was the selected timesheet
+      if (selectedTimesheet?.id === timesheetId) {
+        setIsModalOpen(false);
+        setSelectedTimesheet(null);
+      }
     } catch (error) {
       console.error('Error rejecting timesheet:', error);
     } finally {
@@ -184,32 +190,16 @@ export default function AdminTimesheets() {
     }
   };
 
-  const handleModalApprove = async () => {
-    if (selectedTimecard) {
-      await handleApproveTimesheet(selectedTimecard.id);
-      setSelectedTimecard(null);
-    }
-  };
-
-  const handleModalReject = async () => {
-    if (selectedTimecard) {
-      await handleRejectTimesheet(selectedTimecard.id);
-      setSelectedTimecard(null);
-    }
-  };
-
   const openTimecardDetail = async (timesheet: Timesheet) => {
-    const employee = employees.find(e => e.id === timesheet.employee_id);
-    
     console.log('Opening timecard for timesheet:', timesheet.id);
     console.log('Employee ID:', timesheet.employee_id);
     
-    // Fetch entries for this specific timesheet
+    // Fetch entries for this specific timesheet with project information
     const { data: entries, error } = await supabase
       .from('timesheet_entries')
       .select(`
         *,
-        projects (
+        project:projects (
           id,
           name,
           code
@@ -220,52 +210,29 @@ export default function AdminTimesheets() {
 
     if (error) {
       console.error('Error fetching entries:', error);
+      return;
     }
     
     console.log('Raw entries from database:', entries);
     console.log('Number of entries:', entries?.length || 0);
 
-    // Calculate overtime properly
+    // Calculate overtime if not already set
     const totalHours = timesheet.total_hours || 0;
-    const calculatedOvertime = Math.max(0, totalHours - 40);
-    const hourlyRate = employee?.hourly_rate || 75;
+    const overtimeHours = timesheet.overtime_hours ?? Math.max(0, totalHours - 40);
 
-    const timecardDetail: TimecardDetail = {
-      id: timesheet.id,
-      employee_id: timesheet.employee_id,
-      employee_name: employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown',
-      employee_email: employee?.email || '',
-      employee_department: employee?.department,
-      week_ending: timesheet.week_ending,
+    // Create the timesheet object with the correct structure for TimesheetModal
+    const timesheetWithEntries: any = {
+      ...timesheet,
       total_hours: totalHours,
-      total_overtime: calculatedOvertime,
-      total_amount: (totalHours * hourlyRate) + (calculatedOvertime * hourlyRate * 0.5),
-      status: timesheet.status,
-      submitted_at: timesheet.submitted_at || null,
-      approved_at: timesheet.approved_at,
-      approved_by: timesheet.approved_by,
-      notes: timesheet.comments,
-      entries: entries?.map(e => {
-        console.log('Processing entry:', e);
-        return {
-          id: e.id,
-          date: e.date,
-          project_id: e.project_id || undefined,
-          project_name: e.projects?.name || 'General Work',
-          project_code: e.projects?.code || undefined,
-          hours: parseFloat(e.hours) || 0,
-          overtime_hours: undefined,
-          description: e.description || undefined
-        };
-      }) || []
+      overtime_hours: overtimeHours,
+      entries: entries || []
     };
     
-    console.log('Final timecard detail:', timecardDetail);
-    console.log('Entries in timecard:', timecardDetail.entries);
-    console.log('First entry (if exists):', timecardDetail.entries?.[0]);
-    console.log('Calculated overtime:', calculatedOvertime);
+    console.log('Final timesheet with entries:', timesheetWithEntries);
+    console.log('Entries in timesheet:', timesheetWithEntries.entries);
     
-    setSelectedTimecard(timecardDetail);
+    setSelectedTimesheet(timesheetWithEntries);
+    setIsModalOpen(true);
   };
 
   const exportToCSV = () => {
@@ -674,15 +641,21 @@ export default function AdminTimesheets() {
         </div>
       </div>
 
-      {/* Timesheet Modal */}
-      {selectedTimecard && (
+      {/* Timesheet Modal - Updated with correct props */}
+      {selectedTimesheet && (
         <TimesheetModal
-          isOpen={true}
-          onClose={() => setSelectedTimecard(null)}
-          timesheet={selectedTimecard as any}
-          onApprove={handleModalApprove}
-          onReject={handleModalReject}
-          processing={processing}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedTimesheet(null);
+          }}
+          timesheet={selectedTimesheet}
+          onApprove={() => {
+            handleApproveTimesheet(selectedTimesheet.id);
+          }}
+          onReject={() => {
+            handleRejectTimesheet(selectedTimesheet.id);
+          }}
         />
       )}
     </div>

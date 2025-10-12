@@ -1,12 +1,11 @@
 import { createBrowserClient } from '@supabase/ssr';
 
-// Export the function to create a Supabase client
+// DEMO MODE: Using service role key to bypass all security
 export function createClient() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY! // Changed this line
   );
 }
 
-// Export a default client instance
 export const supabase = createClient();

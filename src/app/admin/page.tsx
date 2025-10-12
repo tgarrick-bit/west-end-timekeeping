@@ -152,9 +152,9 @@ export default function AdminPage() {
         }
 
         let timesheetQuery = supabase
-          .from('timesheets')
-          .select('*')
-          .in('employee_id', employeeIds)
+        .from('timesheets')  // ← CORRECT TABLE
+        .select('*')
+        .in('employee_id', employeeIds)
           
         if (activeTab !== 'all' && actualStatusFilter !== 'all') {
           timesheetQuery = timesheetQuery.eq('status', actualStatusFilter)
