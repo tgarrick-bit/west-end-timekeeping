@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import TimesheetModal from '@/components/TimesheetModal'
 import { 
   Clock, 
   FileText,
@@ -18,7 +19,8 @@ import {
   Building2,
   Briefcase,
   DollarSign,
-  BarChart3
+  BarChart3,
+  Eye
 } from 'lucide-react'
 
 interface Employee {
@@ -89,6 +91,11 @@ export default function AdminPage() {
   const [adminId, setAdminId] = useState<string | null>(null)
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<'all' | 'approved' | 'unapproved' | 'unsubmitted'>('unapproved')
+  
+  // Modal state for timesheet viewing
+  const [selectedTimesheet, setSelectedTimesheet] = useState<any>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [processingId, setProcessingId] = useState<string | null>(null)
 
   useEffect(() => {
     checkAdminAndLoad()
@@ -152,7 +159,7 @@ export default function AdminPage() {
         }
 
         let timesheetQuery = supabase
-        .from('timesheets')  // ← CORRECT TABLE
+        .from('timesheets')
         .select('*')
         .in('employee_id', employeeIds)
           
@@ -228,6 +235,69 @@ export default function AdminPage() {
     }
   }
 
+  // Function to fetch timesheet details and open modal
+  const handleViewTimesheet = async (submission: Submission) => {
+    if (submission.type !== 'timesheet') return
+    
+    try {
+      setProcessingId(submission.id)
+      
+      // Fetch the complete timesheet data
+      const { data: timesheetData, error: timesheetError } = await supabase
+        .from('timesheets')
+        .select(`
+          *,
+          employee:employees!timesheets_employee_id_fkey (
+            id,
+            first_name,
+            last_name,
+            email,
+            department,
+            hourly_rate
+          )
+        `)
+        .eq('id', submission.id)
+        .single()
+
+      if (timesheetError) throw timesheetError
+
+      // Fetch timesheet entries with project information
+      const { data: entries, error: entriesError } = await supabase
+        .from('timesheet_entries')
+        .select(`
+          *,
+          project:projects!timesheet_entries_project_id_fkey (
+            id,
+            name,
+            code
+          )
+        `)
+        .eq('timesheet_id', submission.id)
+        .order('date', { ascending: true })
+      
+      if (entriesError) throw entriesError
+
+      // Calculate overtime if not already set
+      const totalHours = timesheetData.total_hours || 0
+      const overtimeHours = timesheetData.overtime_hours ?? Math.max(0, totalHours - 40)
+
+      // Combine the data
+      const timesheetWithDetails = {
+        ...timesheetData,
+        total_hours: totalHours,
+        overtime_hours: overtimeHours,
+        entries: entries || []
+      }
+
+      setSelectedTimesheet(timesheetWithDetails)
+      setIsModalOpen(true)
+    } catch (error) {
+      console.error('Error fetching timesheet details:', error)
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
   const handleApprove = async (submission: Submission) => {
     const table = submission.type === 'timesheet' ? 'timesheets' : 'expenses'
     
@@ -242,6 +312,12 @@ export default function AdminPage() {
 
     if (!error) {
       loadSubmissions()
+      
+      // Close modal if this was the selected timesheet
+      if (selectedTimesheet?.id === submission.id) {
+        setIsModalOpen(false)
+        setSelectedTimesheet(null)
+      }
     }
   }
 
@@ -264,6 +340,31 @@ export default function AdminPage() {
 
     if (!error) {
       loadSubmissions()
+      
+      // Close modal if this was the selected timesheet
+      if (selectedTimesheet?.id === submission.id) {
+        setIsModalOpen(false)
+        setSelectedTimesheet(null)
+      }
+    }
+  }
+
+  // Modal approve/reject handlers
+  const handleModalApprove = async () => {
+    if (!selectedTimesheet) return
+    
+    const submission = submissions.find(s => s.id === selectedTimesheet.id)
+    if (submission) {
+      await handleApprove(submission)
+    }
+  }
+
+  const handleModalReject = async () => {
+    if (!selectedTimesheet) return
+    
+    const submission = submissions.find(s => s.id === selectedTimesheet.id)
+    if (submission) {
+      await handleReject(submission)
     }
   }
 
@@ -296,11 +397,13 @@ export default function AdminPage() {
     setSelectedItems(visibleIds)
   }
 
+  const allTimesheetsCount = submissions.filter(s => s.type === 'timesheet').length
   const timesheetPendingCount = submissions.filter(s => s.status === 'submitted' && s.type === 'timesheet').length
   const expensePendingCount = submissions.filter(s => s.status === 'submitted' && s.type === 'expense').length
   const approvedCount = submissions.filter(s => s.status === 'approved').length
   const approvedTimesheetCount = submissions.filter(s => s.status === 'approved' && s.type === 'timesheet').length
   const approvedExpenseCount = submissions.filter(s => s.status === 'approved' && s.type === 'expense').length
+  const draftTimesheetCount = submissions.filter(s => s.status === 'draft' && s.type === 'timesheet').length
   
   const filteredSubmissions = submissions
 
@@ -667,11 +770,11 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Main Content - keeping same structure as manager page */}
+      {/* Main Content Area */}
       <div className="max-w-full px-4 sm:px-6 lg:px-8 py-4">
         <div className="bg-white rounded shadow-sm">
           
-          {/* All Tab Content */}
+          {/* ALL TAB CONTENT */}
           {activeTab === 'all' && (
             <div>
               <div className="p-4">
@@ -681,37 +784,31 @@ export default function AdminPage() {
               {/* Timecards Section */}
               <div className="border-b">
                 <div className="bg-[#05202E] px-4 py-2 flex justify-between items-center">
-                  <h3 className="text-sm font-semibold text-white">Timecards</h3>
+                  <h3 className="text-sm font-semibold text-white">All Timecards</h3>
                   <div className="flex items-center space-x-2 text-xs text-gray-300">
-                    <span>1 - {filteredSubmissions.filter(s => s.type === 'timesheet').length} of {filteredSubmissions.filter(s => s.type === 'timesheet').length}</span>
+                    <span>1 - {allTimesheetsCount} of {allTimesheetsCount}</span>
                   </div>
                 </div>
                 
-                {filteredSubmissions.filter(s => s.type === 'timesheet').length === 0 ? (
+                {allTimesheetsCount === 0 ? (
                   <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
                     None
                   </div>
                 ) : (
                   <>
                     <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b">
-                      <input type="checkbox" className="mr-4" />
                       <div className="w-8"></div>
                       <div className="flex-1">Employee</div>
                       <div className="w-32 text-center">Department</div>
                       <div className="w-24 text-right">Hours</div>
                       <div className="w-32 text-center">Status</div>
+                      <div className="w-24 text-center">Actions</div>
                     </div>
                     
                     {filteredSubmissions.filter(s => s.type === 'timesheet').map((submission, index) => (
                       <div key={submission.id} className={`px-4 py-3 flex items-center ${
-                        index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                       } hover:bg-gray-100 border-b`}>
-                        <input 
-                          type="checkbox"
-                          checked={selectedItems.has(submission.id)}
-                          onChange={() => toggleItemSelection(submission.id)}
-                          className="mr-4"
-                        />
                         <div className="w-8"></div>
                         <div className="flex-1">
                           <div className="text-sm">
@@ -729,45 +826,361 @@ export default function AdminPage() {
                           {submission.hours?.toFixed(2) || '0.00'}
                         </div>
                         <div className="w-32 text-center">
-                          <span className={`text-xs px-2 py-1 rounded ${
-                            submission.status === 'approved' ? 'bg-green-100 text-green-700' :
-                            submission.status === 'submitted' ? 'bg-yellow-100 text-yellow-700' :
-                            submission.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                            'bg-gray-100 text-gray-600'
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            submission.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            submission.status === 'submitted' ? 'bg-yellow-100 text-yellow-800' :
+                            submission.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
                           }`}>
                             {submission.status === 'submitted' ? 'Pending' : 
                              submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
                           </span>
                         </div>
+                        <div className="w-24 text-center">
+                          <button 
+                            onClick={() => handleViewTimesheet(submission)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                            disabled={processingId === submission.id}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                     ))}
+
+                    <div className="bg-gray-100 px-4 py-2 flex justify-end items-center">
+                      <span className="text-sm font-bold">
+                        Total: {filteredSubmissions.filter(s => s.type === 'timesheet')
+                          .reduce((sum, s) => sum + (s.hours || 0), 0).toFixed(2)}
+                      </span>
+                    </div>
                   </>
                 )}
               </div>
 
-              {/* Expenses Section - same structure */}
+              {/* Expenses Section */}
               <div className="mt-4">
                 <div className="bg-blue-900 px-4 py-2">
-                  <h3 className="text-sm font-semibold text-white">Expenses</h3>
+                  <h3 className="text-sm font-semibold text-white">All Expenses</h3>
                 </div>
-                {filteredSubmissions.filter(s => s.type === 'expense').length === 0 ? (
-                  <div className="bg-gray-50 px-4 py-8 text-center text-gray-500">
+                <div className="bg-gray-50 px-4 py-8 text-center text-gray-500">
+                  None
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* APPROVED TAB CONTENT */}
+          {activeTab === 'approved' && (
+            <div>
+              <div className="p-4">
+                <h2 className="text-lg font-semibold mb-4">Approved</h2>
+              </div>
+
+              {/* Timecards Section */}
+              <div className="border-b">
+                <div className="bg-[#05202E] px-4 py-2 flex justify-between items-center">
+                  <h3 className="text-sm font-semibold text-white">Approved Timecards</h3>
+                  <div className="flex items-center space-x-2 text-xs text-gray-300">
+                    <span>1 - {approvedTimesheetCount} of {approvedTimesheetCount}</span>
+                  </div>
+                </div>
+                
+                {approvedTimesheetCount === 0 ? (
+                  <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
                     None
                   </div>
                 ) : (
                   <>
-                    {/* Add expense list here similar to timesheets */}
+                    <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b">
+                      <div className="w-8"></div>
+                      <div className="flex-1">Employee</div>
+                      <div className="w-32 text-center">Department</div>
+                      <div className="w-24 text-right">Hours</div>
+                      <div className="w-32 text-center">Approved Date</div>
+                      <div className="w-24 text-center">Actions</div>
+                    </div>
+                    
+                    {filteredSubmissions.filter(s => s.type === 'timesheet' && s.status === 'approved').map((submission, index) => (
+                      <div key={submission.id} className={`px-4 py-3 flex items-center ${
+                        index % 2 === 0 ? 'bg-green-50' : 'bg-white'
+                      } hover:bg-green-100 border-b`}>
+                        <div className="w-8">
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm">
+                            <span className="font-medium">Week: </span>
+                            <span className="ml-1">{submission.week_range}</span>
+                          </div>
+                          <div className="text-sm text-gray-600 mt-0.5">
+                            {submission.employee?.first_name} {submission.employee?.last_name}
+                          </div>
+                        </div>
+                        <div className="w-32 text-center text-sm text-gray-600">
+                          {submission.employee?.department || 'N/A'}
+                        </div>
+                        <div className="w-24 text-right font-medium text-sm">
+                          {submission.hours?.toFixed(2) || '0.00'}
+                        </div>
+                        <div className="w-32 text-center text-sm text-gray-600">
+                          Approved
+                        </div>
+                        <div className="w-24 text-center">
+                          <button 
+                            onClick={() => handleViewTimesheet(submission)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                            disabled={processingId === submission.id}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="bg-gray-100 px-4 py-2 flex justify-end items-center">
+                      <span className="text-sm font-bold">
+                        Total: {filteredSubmissions.filter(s => s.type === 'timesheet' && s.status === 'approved')
+                          .reduce((sum, s) => sum + (s.hours || 0), 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Expenses Section */}
+              <div className="mt-4">
+                <div className="bg-blue-900 px-4 py-2">
+                  <h3 className="text-sm font-semibold text-white">Approved Expenses</h3>
+                </div>
+                <div className="bg-gray-50 px-4 py-8 text-center text-gray-500">
+                  None
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* UNAPPROVED TAB CONTENT */}
+          {activeTab === 'unapproved' && (
+            <div>
+              <div className="p-4">
+                <h2 className="text-lg font-semibold mb-4">Unapproved</h2>
+              </div>
+
+              {/* Timecards Section */}
+              <div className="border-b">
+                <div className="bg-[#05202E] px-4 py-2 flex justify-between items-center">
+                  <h3 className="text-sm font-semibold text-white">Pending Timecards</h3>
+                  <div className="flex items-center space-x-2 text-xs text-gray-300">
+                    <span>1 - {timesheetPendingCount} of {timesheetPendingCount}</span>
+                  </div>
+                </div>
+                
+                {timesheetPendingCount === 0 ? (
+                  <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
+                    None
+                  </div>
+                ) : (
+                  <>
+                    <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b">
+                      <input 
+                        type="checkbox" 
+                        className="mr-4" 
+                        onChange={(e) => e.target.checked ? selectAllVisible() : setSelectedItems(new Set())} 
+                      />
+                      <div className="w-8"></div>
+                      <div className="flex-1">Employee</div>
+                      <div className="w-32 text-center">Department</div>
+                      <div className="w-24 text-right">Hours</div>
+                      <div className="w-32 text-center">Actions</div>
+                    </div>
+                    
+                    {filteredSubmissions.filter(s => s.type === 'timesheet' && s.status === 'submitted').map((submission, index) => (
+                      <div key={submission.id} className={`px-4 py-3 flex items-center ${
+                        index % 2 === 0 ? 'bg-yellow-50' : 'bg-white'
+                      } hover:bg-yellow-100 border-b`}>
+                        <input 
+                          type="checkbox"
+                          checked={selectedItems.has(submission.id)}
+                          onChange={() => toggleItemSelection(submission.id)}
+                          className="mr-4"
+                        />
+                        <div className="w-8">
+                          <AlertCircle className="h-5 w-5 text-yellow-600" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm">
+                            <span className="font-medium">Week: </span>
+                            <span className="ml-1">{submission.week_range}</span>
+                          </div>
+                          <div className="text-sm text-gray-600 mt-0.5">
+                            {submission.employee?.first_name} {submission.employee?.last_name}
+                          </div>
+                        </div>
+                        <div className="w-32 text-center text-sm text-gray-600">
+                          {submission.employee?.department || 'N/A'}
+                        </div>
+                        <div className="w-24 text-right font-medium text-sm">
+                          {submission.hours?.toFixed(2) || '0.00'}
+                        </div>
+                        <div className="w-32 text-center flex items-center justify-center space-x-2">
+                          <button 
+                            onClick={() => handleApprove(submission)}
+                            className="p-1 text-green-600 hover:bg-green-50 rounded"
+                            title="Approve"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleReject(submission)}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded"
+                            title="Reject"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleViewTimesheet(submission)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                            disabled={processingId === submission.id}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {timesheetPendingCount > 0 && (
+                      <div className="bg-gray-100 px-4 py-2 flex justify-between items-center">
+                        <span className="text-sm font-bold">
+                          Total: {filteredSubmissions.filter(s => s.type === 'timesheet' && s.status === 'submitted')
+                            .reduce((sum, s) => sum + (s.hours || 0), 0).toFixed(2)}
+                        </span>
+                        <button 
+                          onClick={handleBulkApprove}
+                          disabled={selectedItems.size === 0}
+                          className={`px-6 py-2 rounded font-medium flex items-center ${
+                            selectedItems.size === 0 
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                              : 'bg-green-600 text-white hover:bg-green-700'
+                          }`}
+                        >
+                          Approve Selected ({selectedItems.size})
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Expenses Section */}
+              <div className="mt-4">
+                <div className="bg-blue-900 px-4 py-2">
+                  <h3 className="text-sm font-semibold text-white">Pending Expenses</h3>
+                </div>
+                <div className="bg-gray-50 px-4 py-8 text-center text-gray-500">
+                  None
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* UNSUBMITTED TAB CONTENT */}
+          {activeTab === 'unsubmitted' && (
+            <div>
+              <div className="p-4">
+                <h2 className="text-lg font-semibold mb-4">Unsubmitted Timecards</h2>
+              </div>
+
+              {/* Timecards Section */}
+              <div className="border-b">
+                <div className="bg-[#05202E] px-4 py-2 flex justify-between items-center">
+                  <h3 className="text-sm font-semibold text-white">Draft Timecards</h3>
+                  <div className="flex items-center space-x-2 text-xs text-gray-300">
+                    <span>1 - {draftTimesheetCount} of {draftTimesheetCount}</span>
+                  </div>
+                </div>
+                
+                {draftTimesheetCount === 0 ? (
+                  <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
+                    None
+                  </div>
+                ) : (
+                  <>
+                    <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b">
+                      <div className="w-8"></div>
+                      <div className="flex-1">Employee</div>
+                      <div className="w-32 text-center">Department</div>
+                      <div className="w-24 text-right">Hours</div>
+                      <div className="w-32 text-center">Status</div>
+                      <div className="w-24 text-center">Actions</div>
+                    </div>
+                    
+                    {filteredSubmissions.filter(s => s.type === 'timesheet' && s.status === 'draft').map((submission, index) => (
+                      <div key={submission.id} className={`px-4 py-3 flex items-center ${
+                        index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                      } hover:bg-gray-100 border-b`}>
+                        <div className="w-8">
+                          <AlertCircle className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm">
+                            <span className="font-medium">Week: </span>
+                            <span className="ml-1">{submission.week_range}</span>
+                          </div>
+                          <div className="text-sm text-gray-600 mt-0.5">
+                            {submission.employee?.first_name} {submission.employee?.last_name}
+                          </div>
+                        </div>
+                        <div className="w-32 text-center text-sm text-gray-600">
+                          {submission.employee?.department || 'N/A'}
+                        </div>
+                        <div className="w-24 text-right font-medium text-sm">
+                          {submission.hours?.toFixed(2) || '0.00'}
+                        </div>
+                        <div className="w-32 text-center">
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                            Draft
+                          </span>
+                        </div>
+                        <div className="w-24 text-center">
+                          <button 
+                            onClick={() => handleViewTimesheet(submission)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                            disabled={processingId === submission.id}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="bg-gray-100 px-4 py-2 flex justify-end items-center">
+                      <span className="text-sm font-bold">
+                        Total: {filteredSubmissions.filter(s => s.type === 'timesheet' && s.status === 'draft')
+                          .reduce((sum, s) => sum + (s.hours || 0), 0).toFixed(2)}
+                      </span>
+                    </div>
                   </>
                 )}
               </div>
             </div>
           )}
-
-          {/* Other tabs follow same structure but with admin-specific features */}
-          {/* ... rest of tab content ... */}
-
         </div>
       </div>
+
+      {/* Timesheet Modal */}
+      {selectedTimesheet && (
+        <TimesheetModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false)
+            setSelectedTimesheet(null)
+          }}
+          timesheet={selectedTimesheet}
+          onApprove={handleModalApprove}
+          onReject={handleModalReject}
+        />
+      )}
     </div>
   )
 }
