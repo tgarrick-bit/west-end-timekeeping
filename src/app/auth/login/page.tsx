@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/lib/supabase';
 
 // Define types inline if not available in external files
 type UserRole = 'admin' | 'manager' | 'employee';
@@ -25,7 +25,7 @@ export default function LoginPage() {
   const [cooldown, setCooldown] = useState<number>(0);
   const [rememberMe, setRememberMe] = useState(false);
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createSupabaseClient();
 
   // Debug helper function
   const addDebugInfo = (info: string) => {
@@ -53,7 +53,7 @@ export default function LoginPage() {
         break;
       case 'employee':
       default:
-        router.push('/dashboard');
+        router.push('/employee'); 
         break;
     }
   };

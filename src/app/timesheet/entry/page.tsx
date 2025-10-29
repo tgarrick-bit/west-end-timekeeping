@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/lib/supabase';
 import { 
   ArrowLeft,
   Calendar,
@@ -49,7 +49,7 @@ export default function TimesheetEntry() {
   const [existingTimesheetId, setExistingTimesheetId] = useState<string | null>(null);
   
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createSupabaseClient();
 
   useEffect(() => {
     loadProjects();
@@ -61,10 +61,14 @@ export default function TimesheetEntry() {
       const { data, error } = await supabase
         .from('projects')
         .select('id, name, code')
+        .eq('is_active', true)  // Make sure this line exists
         .order('name');
-
+  
       if (!error && data) {
         setProjects(data);
+        console.log('Loaded projects:', data); // Add this for debugging
+      } else {
+        console.error('Error loading projects:', error);
       }
     } catch (error) {
       console.error('Error loading projects:', error);
@@ -273,7 +277,7 @@ export default function TimesheetEntry() {
         return;
       }
 
-      const supabase = createClientComponentClient();
+      const supabase = createSupabaseClient();
       
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();

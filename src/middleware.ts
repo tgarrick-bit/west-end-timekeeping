@@ -1,4 +1,3 @@
-// src/middleware.ts
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -9,27 +8,16 @@ export async function middleware(req: NextRequest) {
 
   const { data: { session } } = await supabase.auth.getSession();
 
-  // Allow test page
-  if (req.nextUrl.pathname === '/test') {
+  // Allow test page and auth pages
+  if (req.nextUrl.pathname === '/test' || req.nextUrl.pathname.startsWith('/auth/')) {
     return res;
   }
 
-  // Public routes
-  const publicPaths = ['/auth/login', '/auth/signup'];
-  const isPublicPath = publicPaths.some(path => 
-    req.nextUrl.pathname === path
-  );
-
   // Protected routes
-  const protectedPaths = ['/dashboard', '/employee', '/manager', '/timesheet', '/timesheets'];
+  const protectedPaths = ['/employee', '/manager', '/admin', '/timesheet', '/expense'];
   const isProtectedPath = protectedPaths.some(path => 
     req.nextUrl.pathname.startsWith(path)
   );
-
-  // Redirect logged-in users away from login page
-  if (session && req.nextUrl.pathname === '/auth/login') {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
-  }
 
   // Redirect to login if accessing protected route without session
   if (isProtectedPath && !session) {

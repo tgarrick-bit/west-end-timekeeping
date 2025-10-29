@@ -2,12 +2,11 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/lib/supabase';
 import TimesheetModal from '@/components/TimesheetModal';
 import { 
   CalendarDays, 
   Clock, 
-  DollarSign, 
   FileText,
   Plus,
   ChevronRight,
@@ -63,7 +62,6 @@ export default function EmployeeDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [stats, setStats] = useState({
     totalHours: 0,
-    totalEarnings: 0,
     pendingTimecards: 0,
     approvedTimecards: 0,
     totalExpenses: 0,
@@ -75,8 +73,7 @@ export default function EmployeeDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const hasLoadedRef = useRef(false);
   const router = useRouter();
-  const supabase = createClientComponentClient();
-
+  const supabase = createSupabaseClient();
   useEffect(() => {
     checkUserRoleAndRedirect();
   }, []);
@@ -171,15 +168,13 @@ export default function EmployeeDashboard() {
         
         setTimecards(uniqueTimesheets);
         
-        // Calculate stats
+        // Calculate stats - removed totalEarnings
         const timecardStats = uniqueTimesheets.reduce((acc, tc) => ({
           totalHours: acc.totalHours + (tc.total_hours || 0),
-          totalEarnings: acc.totalEarnings + (tc.total_amount || 0),
           pendingTimecards: acc.pendingTimecards + (tc.status === 'submitted' ? 1 : 0),
           approvedTimecards: acc.approvedTimecards + (tc.status === 'approved' ? 1 : 0)
         }), {
           totalHours: 0,
-          totalEarnings: 0,
           pendingTimecards: 0,
           approvedTimecards: 0
         });
@@ -343,8 +338,20 @@ export default function EmployeeDashboard() {
 
   const getCategoryLabel = (category: string) => {
     const labels: Record<string, string> = {
-      travel: 'Travel',
+      airfare: 'Airfare',
+      breakfast: 'Breakfast',
+      dinner: 'Dinner',
+      fuel: 'Fuel',
+      incidental: 'Incidental',
+      lodging: 'Lodging',
+      lunch: 'Lunch',
+      meals_and_incidentals_gsa: 'Meals and Incidentals(GSA)',
       mileage: 'Mileage',
+      miscellaneous: 'Miscellaneous',
+      parking: 'Parking',
+      rental_car: 'Rental Car',
+      // Keep backward compatibility for any old entries
+      travel: 'Travel',
       meals: 'Meals',
       accommodation: 'Accommodation',
       supplies: 'Supplies',
@@ -352,7 +359,6 @@ export default function EmployeeDashboard() {
       software: 'Software',
       training: 'Training',
       communication: 'Communication',
-      parking: 'Parking',
       shipping: 'Shipping',
       other: 'Other'
     };
@@ -429,14 +435,14 @@ export default function EmployeeDashboard() {
           </p>
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions - Updated button text */}
         <div className="mb-8 flex gap-4">
           <button 
             onClick={() => router.push('/timesheet/entry')}
             className="flex items-center gap-3 px-6 py-3 bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865] transition-all duration-200 font-medium shadow-lg"
           >
-            <Plus className="h-5 w-5" />
-            Create New Timecard
+            <FileText className="h-5 w-5" />
+            Access Timecards
           </button>
           
           <button 
@@ -448,10 +454,10 @@ export default function EmployeeDashboard() {
           </button>
         </div>
 
-        {/* Stats Grid - Timesheets Row */}
+        {/* Stats Grid - Timesheets Row (Removed Earnings box) */}
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Timesheet Summary</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
             <div className="bg-white rounded-lg border border-[#05202E] p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <Clock className="h-6 w-6 text-[#05202E]" />
@@ -459,15 +465,6 @@ export default function EmployeeDashboard() {
               </div>
               <div className="text-2xl font-bold text-[#05202E]">{stats.totalHours.toFixed(1)}</div>
               <p className="text-sm text-gray-600 mt-1">Total Hours</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-[#05202E] p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <DollarSign className="h-6 w-6 text-[#05202E]" />
-                <span className="text-xs text-gray-500 font-medium uppercase">Earnings</span>
-              </div>
-              <div className="text-2xl font-bold text-[#05202E]">{formatCurrency(stats.totalEarnings)}</div>
-              <p className="text-sm text-gray-600 mt-1">Total Amount</p>
             </div>
 
             <div className="bg-white rounded-lg border border-[#05202E] p-6 shadow-sm">
@@ -490,7 +487,7 @@ export default function EmployeeDashboard() {
           </div>
         </div>
 
-        {/* Stats Grid - Expenses Row */}
+        {/* Stats Grid - Expenses Row (Updated Approved box text) */}
         <div className="mb-8">
           <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Expense Summary</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -513,12 +510,11 @@ export default function EmployeeDashboard() {
             </div>
 
             <div className="bg-white rounded-lg border border-[#e31c79] p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <DollarSign className="h-6 w-6 text-[#e31c79]" />
+              <div className="flex items-center justify-center mb-4">
                 <span className="text-xs text-gray-500 font-medium uppercase">Approved</span>
               </div>
               <div className="text-2xl font-bold text-[#e31c79]">{formatCurrency(stats.approvedExpenses)}</div>
-              <p className="text-sm text-gray-600 mt-1">Reimbursed</p>
+              <p className="text-sm text-gray-600 mt-1">Approved</p>
             </div>
 
             <div className="bg-white rounded-lg border border-[#e31c79] p-6 shadow-sm">
@@ -548,7 +544,7 @@ export default function EmployeeDashboard() {
                   </div>
                   <p className="text-gray-600 font-medium">No timecards yet</p>
                   <p className="text-sm text-gray-500 mt-1">
-                    Click "Create New Timecard" to get started
+                    Click "Access Timecards" to get started
                   </p>
                 </div>
               ) : (
@@ -566,7 +562,7 @@ export default function EmployeeDashboard() {
                               Week ending {formatDate(timecard.week_ending)}
                             </p>
                             <p className="text-xs text-gray-600 mt-1">
-                              {timecard.total_hours || 0} hrs • {formatCurrency(timecard.total_amount || 0)}
+                              {timecard.total_hours || 0} hrs
                             </p>
                           </div>
                           <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getStatusColor(timecard.status)}`}>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/lib/supabase';
 import { 
   ArrowLeft, Plus, Save, Send, Trash2, Calendar, Upload, 
   DollarSign, Receipt, AlertCircle, ChevronLeft, ChevronRight
@@ -19,7 +19,6 @@ interface ExpenseEntry {
   description: string;
   receipt_file?: File | null;
   receipt_url?: string;
-  billable: boolean;
 }
 
 interface Project {
@@ -29,23 +28,23 @@ interface Project {
 }
 
 const expenseCategories = [
-  { value: 'travel', label: 'Travel' },
-  { value: 'meals', label: 'Meals & Entertainment' },
-  { value: 'accommodation', label: 'Accommodation' },
-  { value: 'supplies', label: 'Office Supplies' },
-  { value: 'equipment', label: 'Equipment' },
-  { value: 'software', label: 'Software & Subscriptions' },
-  { value: 'training', label: 'Training & Education' },
-  { value: 'communication', label: 'Phone & Internet' },
+  { value: 'airfare', label: 'Airfare' },
+  { value: 'breakfast', label: 'Breakfast' },
+  { value: 'dinner', label: 'Dinner' },
+  { value: 'fuel', label: 'Fuel' },
+  { value: 'incidental', label: 'Incidental' },
+  { value: 'lodging', label: 'Lodging' },
+  { value: 'lunch', label: 'Lunch' },
+  { value: 'meals_and_incidentals_gsa', label: 'Meals and Incidentals(GSA)' },
   { value: 'mileage', label: 'Mileage' },
-  { value: 'parking', label: 'Parking & Tolls' },
-  { value: 'shipping', label: 'Shipping & Postage' },
-  { value: 'other', label: 'Other' }
+  { value: 'miscellaneous', label: 'Miscellaneous' },
+  { value: 'parking', label: 'Parking' },
+  { value: 'rental_car', label: 'Rental Car' }
 ];
 
 export default function ExpenseEntryPage() {
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createSupabaseClient();
   const [expensePeriod, setExpensePeriod] = useState('');
   const [entries, setEntries] = useState<ExpenseEntry[]>([
     {
@@ -57,13 +56,13 @@ export default function ExpenseEntryPage() {
       amount: 0,
       vendor: '',
       description: '',
-      receipt_file: null,
-      billable: false
+      receipt_file: null
     }
   ]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [userEmail, setUserEmail] = useState('');
+  const [userId, setUserId] = useState('');
 
   useEffect(() => {
     checkAuth();
@@ -82,6 +81,7 @@ export default function ExpenseEntryPage() {
       return;
     }
     setUserEmail(user.email || '');
+    setUserId(user.id);
   };
 
   const loadProjects = async () => {
@@ -139,8 +139,7 @@ export default function ExpenseEntryPage() {
       amount: 0,
       vendor: '',
       description: '',
-      receipt_file: null,
-      billable: false
+      receipt_file: null
     };
     setEntries([...entries, newEntry]);
   };
@@ -157,12 +156,9 @@ export default function ExpenseEntryPage() {
 
   const uploadReceipt = async (file: File): Promise<string | null> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-      
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
+      const filePath = `${userId}/${fileName}`;
   
       const { error: uploadError } = await supabase.storage
         .from('expense-receipts')
@@ -187,15 +183,16 @@ export default function ExpenseEntryPage() {
   const handleSubmit = async (isDraft: boolean = false) => {
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (!userId) {
         alert('Please login to submit expenses');
+        setIsLoading(false);
         return;
       }
 
       const validEntries = entries.filter(e => e.project_id && e.amount > 0 && e.category);
       if (validEntries.length === 0) {
         alert('Please complete at least one expense entry');
+        setIsLoading(false);
         return;
       }
 
@@ -209,7 +206,7 @@ export default function ExpenseEntryPage() {
         const { error } = await supabase
           .from('expenses')
           .insert({
-            employee_id: user.id,
+            employee_id: userId,
             project_id: entry.project_id,
             expense_date: entry.date,
             category: entry.category,
@@ -217,7 +214,6 @@ export default function ExpenseEntryPage() {
             description: entry.description,
             receipt_url: receipt_url,
             vendor: entry.vendor,
-            is_billable: entry.billable,
             status: isDraft ? 'draft' : 'submitted',
             submitted_at: isDraft ? null : new Date().toISOString()
           });
@@ -226,7 +222,7 @@ export default function ExpenseEntryPage() {
       }
 
       alert(isDraft ? 'Expenses saved as draft!' : 'Expenses submitted successfully!');
-      router.push('/dashboard');
+      router.push('/employee');
     } catch (error) {
       console.error('Error submitting expenses:', error);
       alert('Error submitting expenses. Please try again.');
@@ -262,7 +258,7 @@ export default function ExpenseEntryPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push('/employee')}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-200 hover:text-white"
               >
                 <ArrowLeft className="h-5 w-5" />
@@ -440,22 +436,8 @@ export default function ExpenseEntryPage() {
                     />
                   </div>
 
-                  {/* Billable Checkbox */}
-                  <div className="flex items-center pt-6">
-                    <input
-                      type="checkbox"
-                      id={`billable-${entry.id}`}
-                      checked={entry.billable}
-                      onChange={(e) => updateEntry(entry.id, 'billable', e.target.checked)}
-                      className="w-4 h-4 text-[#e31c79] rounded border-gray-300 focus:ring-[#e31c79]"
-                    />
-                    <label htmlFor={`billable-${entry.id}`} className="ml-2 text-sm text-gray-700">
-                      Billable to client
-                    </label>
-                  </div>
-
                   {/* Receipt Upload */}
-                  <div className="lg:col-span-3">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Receipt
                     </label>
@@ -463,7 +445,7 @@ export default function ExpenseEntryPage() {
                       <label className="flex-1 flex items-center justify-center px-4 py-2 bg-gray-50 border-2 border-dashed border-gray-300 rounded-md hover:bg-gray-100 hover:border-gray-400 cursor-pointer transition-colors">
                         <Upload className="h-5 w-5 mr-2 text-gray-500" />
                         <span className="text-gray-600 text-sm">
-                          {entry.receipt_file ? entry.receipt_file.name : 'Choose file or drag here'}
+                          {entry.receipt_file ? entry.receipt_file.name : 'Choose file'}
                         </span>
                         <input
                           type="file"
@@ -549,7 +531,7 @@ export default function ExpenseEntryPage() {
         {/* Action Buttons */}
         <div className="flex justify-between items-center">
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/employee')}
             className="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             Cancel

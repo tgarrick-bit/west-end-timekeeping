@@ -15,7 +15,10 @@ import {
   ChevronDown,
   Settings,
   RotateCw,
-  Eye
+  Eye,
+  Receipt,
+  Download,
+  Calendar
 } from 'lucide-react'
 
 interface Employee {
@@ -70,6 +73,7 @@ interface Expense {
   approved_at: string | null
   approved_by: string | null
   rejection_reason: string | null
+  receipt_url?: string | null
 }
 
 type Submission = {
@@ -84,6 +88,7 @@ type Submission = {
   category?: string
   overtime_hours?: number
   week_range?: string
+  receipt_url?: string | null
 }
 
 export default function ManagerPage() {
@@ -99,6 +104,8 @@ export default function ManagerPage() {
   const [managerId, setManagerId] = useState<string | null>(null)
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<'all' | 'approved' | 'unapproved' | 'unsubmitted'>('unapproved')
+  const [selectedExpense, setSelectedExpense] = useState<any>(null)
+  const [showExpenseModal, setShowExpenseModal] = useState(false)
   
   // Modal state for timesheet viewing
   const [selectedTimesheet, setSelectedTimesheet] = useState<any>(null)
@@ -206,7 +213,8 @@ export default function ManagerPage() {
             amount: e.amount,
             status: e.status,
             description: e.description,
-            category: e.category
+            category: e.category,
+            receipt_url: e.receipt_url
           }))
           allSubmissions = [...allSubmissions, ...expenseSubmissions]
         }
@@ -287,6 +295,12 @@ export default function ManagerPage() {
     }
   }
 
+  // Function to handle expense view
+  const handleViewExpense = (expense: Submission) => {
+    setSelectedExpense(expense)
+    setShowExpenseModal(true)
+  }
+
   const handleApprove = async (submission: Submission) => {
     const table = submission.type === 'timesheet' ? 'timesheets' : 'expenses'
     
@@ -306,6 +320,11 @@ export default function ManagerPage() {
       if (selectedTimesheet?.id === submission.id) {
         setIsModalOpen(false)
         setSelectedTimesheet(null)
+      }
+      // Close expense modal if this was the selected expense
+      if (selectedExpense?.id === submission.id) {
+        setShowExpenseModal(false)
+        setSelectedExpense(null)
       }
     }
   }
@@ -334,6 +353,11 @@ export default function ManagerPage() {
       if (selectedTimesheet?.id === submission.id) {
         setIsModalOpen(false)
         setSelectedTimesheet(null)
+      }
+      // Close expense modal if this was the selected expense
+      if (selectedExpense?.id === submission.id) {
+        setShowExpenseModal(false)
+        setSelectedExpense(null)
       }
     }
   }
@@ -729,12 +753,103 @@ export default function ManagerPage() {
 
               {/* Expenses Section */}
               <div className="mt-4">
-                <div className="bg-[#e31c79] px-4 py-2">
+                <div className="bg-[#e31c79] px-4 py-2 flex justify-between items-center">
                   <h3 className="text-sm font-semibold text-white">All Expenses</h3>
+                  <div className="flex items-center space-x-2 text-xs text-gray-100">
+                    <span>1 - {filteredSubmissions.filter(s => s.type === 'expense').length} of {filteredSubmissions.filter(s => s.type === 'expense').length}</span>
+                  </div>
                 </div>
-                <div className="bg-gray-50 px-4 py-8 text-center text-gray-500">
-                  None
-                </div>
+                
+                {filteredSubmissions.filter(s => s.type === 'expense').length === 0 ? (
+                  <div className="bg-gray-50 px-4 py-8 text-center text-gray-500">
+                    None
+                  </div>
+                ) : (
+                  <>
+                    <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b">
+                      <div className="w-8"></div>
+                      <div className="flex-1">Employee</div>
+                      <div className="w-32">Date</div>
+                      <div className="w-32">Category</div>
+                      <div className="w-32 text-center">Status</div>
+                      <div className="w-24 text-right">Amount</div>
+                      <div className="w-32 text-center">Actions</div>
+                    </div>
+                    
+                    {filteredSubmissions.filter(s => s.type === 'expense').map((expense, index) => (
+                      <div key={expense.id} className={`px-4 py-3 flex items-center ${
+                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                      } hover:bg-gray-100 border-b`}>
+                        <div className="w-8"></div>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">
+                            {expense.employee?.first_name} {expense.employee?.last_name}
+                          </div>
+                          <div className="text-xs text-gray-600">{expense.employee?.email}</div>
+                        </div>
+                        <div className="w-32 text-sm">
+                          {new Date(expense.date).toLocaleDateString()}
+                        </div>
+                        <div className="w-32 text-sm">
+                          {expense.category || '-'}
+                        </div>
+                        <div className="w-32 text-center">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            expense.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            expense.status === 'submitted' ? 'bg-yellow-100 text-yellow-800' :
+                            expense.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
+                          </span>
+                        </div>
+                        <div className="w-24 text-right font-medium text-sm">
+                          ${expense.amount.toFixed(2)}
+                        </div>
+                        <div className="w-32 text-center flex items-center justify-center space-x-2">
+                          {expense.status === 'submitted' && (
+                            <>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleApprove(expense)
+                                }}
+                                className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                title="Approve"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </button>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleReject(expense)
+                                }}
+                                className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                title="Reject"
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
+                          <button 
+                            onClick={() => handleViewExpense(expense)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                            title="View Details"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    <div className="bg-gray-100 px-4 py-2 flex justify-end items-center">
+                      <span className="text-sm font-bold">
+                        Total: ${filteredSubmissions.filter(s => s.type === 'expense')
+                          .reduce((sum, s) => sum + s.amount, 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -815,12 +930,70 @@ export default function ManagerPage() {
 
               {/* Expenses Section */}
               <div className="mt-4">
-                <div className="bg-[#e31c79] px-4 py-2">
+                <div className="bg-[#e31c79] px-4 py-2 flex justify-between items-center">
                   <h3 className="text-sm font-semibold text-white">Approved Expenses</h3>
+                  <div className="flex items-center space-x-2 text-xs text-gray-100">
+                    <span>1 - {approvedExpenseCount} of {approvedExpenseCount}</span>
+                  </div>
                 </div>
-                <div className="bg-gray-50 px-4 py-8 text-center text-gray-500">
-                  None
-                </div>
+                
+                {filteredSubmissions.filter(s => s.type === 'expense' && s.status === 'approved').length === 0 ? (
+                  <div className="bg-gray-50 px-4 py-8 text-center text-gray-500">
+                    None
+                  </div>
+                ) : (
+                  <>
+                    <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b">
+                      <div className="w-8"></div>
+                      <div className="flex-1">Employee</div>
+                      <div className="w-32">Date</div>
+                      <div className="w-32">Category</div>
+                      <div className="w-24 text-right">Amount</div>
+                      <div className="w-32 text-center">Actions</div>
+                    </div>
+                    
+                    {filteredSubmissions.filter(s => s.type === 'expense' && s.status === 'approved').map((expense, index) => (
+                      <div key={expense.id} className={`px-4 py-3 flex items-center ${
+                        index % 2 === 0 ? 'bg-green-50' : 'bg-white'
+                      } hover:bg-green-100 border-b`}>
+                        <div className="w-8">
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">
+                            {expense.employee?.first_name} {expense.employee?.last_name}
+                          </div>
+                          <div className="text-xs text-gray-600">{expense.employee?.email}</div>
+                        </div>
+                        <div className="w-32 text-sm">
+                          {new Date(expense.date).toLocaleDateString()}
+                        </div>
+                        <div className="w-32 text-sm">
+                          {expense.category || '-'}
+                        </div>
+                        <div className="w-24 text-right font-medium text-sm text-green-600">
+                          ${expense.amount.toFixed(2)}
+                        </div>
+                        <div className="w-32 text-center flex items-center justify-center">
+                          <button 
+                            onClick={() => handleViewExpense(expense)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                            title="View Details"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    <div className="bg-gray-100 px-4 py-2 flex justify-end items-center">
+                      <span className="text-sm font-bold">
+                        Total: ${filteredSubmissions.filter(s => s.type === 'expense' && s.status === 'approved')
+                          .reduce((sum, s) => sum + s.amount, 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -940,12 +1113,110 @@ export default function ManagerPage() {
 
               {/* Expenses Section */}
               <div className="mt-4">
-                <div className="bg-[#e31c79] px-4 py-2">
+                <div className="bg-[#e31c79] px-4 py-2 flex justify-between items-center">
                   <h3 className="text-sm font-semibold text-white">Expenses</h3>
+                  <div className="flex items-center space-x-2 text-xs text-gray-100">
+                    <span>{expensePendingCount} pending</span>
+                  </div>
                 </div>
-                <div className="bg-gray-50 px-4 py-8 text-center text-gray-500">
-                  None
-                </div>
+                
+                {filteredSubmissions.filter(s => s.type === 'expense' && s.status === 'submitted').length === 0 ? (
+                  <div className="bg-gray-50 px-4 py-8 text-center text-gray-500">
+                    None
+                  </div>
+                ) : (
+                  <>
+                    <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b">
+                      <input 
+                        type="checkbox" 
+                        className="mr-4" 
+                        onChange={(e) => {
+                          const expenseIds = filteredSubmissions
+                            .filter(s => s.type === 'expense' && s.status === 'submitted')
+                            .map(s => s.id);
+                          if (e.target.checked) {
+                            setSelectedItems(new Set([...selectedItems, ...expenseIds]));
+                          } else {
+                            const newSelected = new Set(selectedItems);
+                            expenseIds.forEach(id => newSelected.delete(id));
+                            setSelectedItems(newSelected);
+                          }
+                        }} 
+                      />
+                      <div className="flex-1">Employee</div>
+                      <div className="w-32">Date</div>
+                      <div className="w-32">Category</div>
+                      <div className="w-24 text-right">Amount</div>
+                      <div className="w-32 text-center">Actions</div>
+                    </div>
+                    
+                    {filteredSubmissions.filter(s => s.type === 'expense' && s.status === 'submitted').map((expense, index) => (
+                      <div key={expense.id} className={`px-4 py-3 flex items-center ${
+                        index % 2 === 0 ? 'bg-yellow-50' : 'bg-white'
+                      } hover:bg-yellow-100 border-b`}>
+                        <input 
+                          type="checkbox"
+                          checked={selectedItems.has(expense.id)}
+                          onChange={() => toggleItemSelection(expense.id)}
+                          className="mr-4"
+                        />
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">
+                            {expense.employee?.first_name} {expense.employee?.last_name}
+                          </div>
+                          <div className="text-xs text-gray-600">{expense.employee?.email}</div>
+                        </div>
+                        <div className="w-32 text-sm">
+                          {new Date(expense.date).toLocaleDateString()}
+                        </div>
+                        <div className="w-32 text-sm">
+                          {expense.category || '-'}
+                        </div>
+                        <div className="w-24 text-right font-medium text-sm">
+                          ${expense.amount.toFixed(2)}
+                        </div>
+                        <div className="w-32 text-center flex items-center justify-center space-x-2">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleApprove(expense)
+                            }}
+                            className="p-1 text-green-600 hover:bg-green-50 rounded"
+                            title="Approve"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleReject(expense)
+                            }}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded"
+                            title="Reject"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleViewExpense(expense)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                            title="View Details"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {expensePendingCount > 0 && (
+                      <div className="bg-gray-100 px-4 py-2 flex justify-end items-center">
+                        <span className="text-sm font-bold">
+                          Total: ${filteredSubmissions.filter(s => s.type === 'expense' && s.status === 'submitted')
+                            .reduce((sum, s) => sum + s.amount, 0).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Bottom Action Section */}
@@ -1090,6 +1361,241 @@ export default function ManagerPage() {
           onApprove={handleModalApprove}
           onReject={handleModalReject}
         />
+      )}
+
+      {/* Expense Details Modal */}
+      {showExpenseModal && selectedExpense && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            {/* Modal Header - Pink version */}
+            <div className="bg-[#e31c79] text-white p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Expense Details</h2>
+                <button
+                  onClick={() => {
+                    setShowExpenseModal(false)
+                    setSelectedExpense(null)
+                  }}
+                  className="text-white hover:text-gray-200"
+                >
+                  <XCircle className="h-6 w-6" />
+                </button>
+              </div>
+              
+              {/* Status Badge and Date */}
+              <div className="flex items-center gap-4">
+                <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
+                  selectedExpense.status === 'approved' ? 'bg-green-500 text-white' :
+                  selectedExpense.status === 'submitted' ? 'bg-yellow-500 text-white' :
+                  selectedExpense.status === 'rejected' ? 'bg-red-500 text-white' :
+                  'bg-gray-500 text-white'
+                }`}>
+                  {selectedExpense.status.charAt(0).toUpperCase() + selectedExpense.status.slice(1)}
+                </span>
+                <span className="flex items-center gap-2 text-white">
+                  <Calendar className="h-4 w-4" />
+                  Expense Date: {new Date(selectedExpense.date).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </span>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-4 gap-4 mb-6">
+                <div className="text-center p-4 bg-gray-50 rounded">
+                  <p className="text-sm text-gray-600 mb-1">Amount</p>
+                  <p className="text-2xl font-bold text-[#e31c79]">${selectedExpense.amount.toFixed(2)}</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded">
+                  <p className="text-sm text-gray-600 mb-1">Category</p>
+                  <p className="text-xl font-bold">{selectedExpense.category || '-'}</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded">
+                  <p className="text-sm text-gray-600 mb-1">Employee</p>
+                  <p className="text-lg font-bold">{selectedExpense.employee?.first_name} {selectedExpense.employee?.last_name}</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded">
+                  <p className="text-sm text-gray-600 mb-1">Department</p>
+                  <p className="text-lg font-bold text-green-600">{selectedExpense.employee?.department || 'General'}</p>
+                </div>
+              </div>
+
+              {/* Expense Details Section */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <Receipt className="h-5 w-5 text-[#e31c79]" />
+                  Expense Information
+                </h3>
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left py-3 px-4 font-medium text-gray-700">Field</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-700">Details</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      <tr className="hover:bg-gray-50">
+                        <td className="py-3 px-4 font-medium">Date</td>
+                        <td className="py-3 px-4">
+                          {new Date(selectedExpense.date).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </td>
+                      </tr>
+                      <tr className="hover:bg-gray-50">
+                        <td className="py-3 px-4 font-medium">Category</td>
+                        <td className="py-3 px-4">{selectedExpense.category || 'Not specified'}</td>
+                      </tr>
+                      <tr className="hover:bg-gray-50">
+                        <td className="py-3 px-4 font-medium">Amount</td>
+                        <td className="py-3 px-4 text-lg font-bold text-[#e31c79]">
+                          ${selectedExpense.amount.toFixed(2)}
+                        </td>
+                      </tr>
+                      <tr className="hover:bg-gray-50">
+                        <td className="py-3 px-4 font-medium">Employee</td>
+                        <td className="py-3 px-4">
+                          {selectedExpense.employee?.first_name} {selectedExpense.employee?.last_name}
+                          <br />
+                          <span className="text-sm text-gray-500">{selectedExpense.employee?.email}</span>
+                        </td>
+                      </tr>
+                      {selectedExpense.description && (
+                        <tr className="hover:bg-gray-50">
+                          <td className="py-3 px-4 font-medium">Description</td>
+                          <td className="py-3 px-4">{selectedExpense.description}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Receipt Section */}
+              {selectedExpense.receipt_url ? (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-[#e31c79]" />
+                    Receipt Attachment
+                  </h3>
+                  <div className="border rounded-lg p-4 bg-gray-50">
+                    {selectedExpense.receipt_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                      <div>
+                        <img 
+                          src={selectedExpense.receipt_url} 
+                          alt="Expense receipt" 
+                          className="max-w-full h-auto rounded shadow-md cursor-pointer mb-3"
+                          style={{ maxHeight: '400px', objectFit: 'contain' }}
+                          onClick={() => window.open(selectedExpense.receipt_url, '_blank')}
+                        />
+                        <p className="text-sm text-gray-500 text-center">Click image to view full size</p>
+                      </div>
+                    ) : selectedExpense.receipt_url.match(/\.pdf$/i) ? (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-10 w-10 text-gray-400" />
+                          <div>
+                            <p className="font-medium">PDF Receipt</p>
+                            <p className="text-sm text-gray-500">Click to view in new tab</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => window.open(selectedExpense.receipt_url, '_blank')}
+                          className="px-4 py-2 bg-[#e31c79] text-white rounded hover:bg-[#c71865] flex items-center gap-2"
+                        >
+                          <Eye className="h-4 w-4" />
+                          View Receipt
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-10 w-10 text-gray-400" />
+                          <div>
+                            <p className="font-medium">Receipt File</p>
+                            <p className="text-sm text-gray-500">Click to download</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => window.open(selectedExpense.receipt_url, '_blank')}
+                          className="px-4 py-2 bg-[#e31c79] text-white rounded hover:bg-[#c71865] flex items-center gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          Download
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-[#e31c79]" />
+                    Receipt Attachment
+                  </h3>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 bg-gray-50 text-center">
+                    <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-500">No receipt attached</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Total Summary */}
+              <div className="bg-gray-100 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold">Expense Total:</span>
+                  <span className="text-2xl font-bold text-[#e31c79]">${selectedExpense.amount.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-gray-50 px-6 py-4 border-t flex justify-between">
+              <button
+                onClick={() => {
+                  setShowExpenseModal(false)
+                  setSelectedExpense(null)
+                }}
+                className="px-6 py-2 text-gray-700 hover:text-gray-900 font-medium"
+              >
+                Close
+              </button>
+              
+              {selectedExpense.status === 'submitted' && (
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      handleReject(selectedExpense)
+                    }}
+                    className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-2 font-medium"
+                  >
+                    <XCircle className="h-5 w-5" />
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleApprove(selectedExpense)
+                    }}
+                    className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2 font-medium"
+                  >
+                    <CheckCircle className="h-5 w-5" />
+                    Approve
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
