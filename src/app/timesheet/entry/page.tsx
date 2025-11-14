@@ -335,7 +335,7 @@ export default function TimesheetEntry() {
         const { data: newTimesheet, error: createError } = await supabase
           .from('timesheets')
           .insert({
-            employee_id: employee.id,
+            employee_id: null,
             week_ending: weekEndingDate,
             total_hours: weekTotal,
             overtime_hours: overtimeHours,
