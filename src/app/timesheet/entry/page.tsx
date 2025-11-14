@@ -61,12 +61,12 @@ export default function TimesheetEntry() {
       const { data, error } = await supabase
         .from('projects')
         .select('id, name, code')
-        .eq('is_active', true)  // Make sure this line exists
+        .eq('is_active', true)
         .order('name');
   
       if (!error && data) {
         setProjects(data);
-        console.log('Loaded projects:', data); // Add this for debugging
+        console.log('Loaded projects:', data);
       } else {
         console.error('Error loading projects:', error);
       }
@@ -90,7 +90,6 @@ export default function TimesheetEntry() {
 
       const weekEndingDate = getWeekEndingDate(selectedWeek);
       
-      // Check for existing timesheet
       const { data: existing } = await supabase
         .from('timesheets')
         .select('id, status')
@@ -107,7 +106,6 @@ export default function TimesheetEntry() {
         }
       } else {
         setExistingTimesheetId(null);
-        // Reset to single empty row for new timesheet
         setRows([{
           id: '1',
           project_id: '',
@@ -129,7 +127,6 @@ export default function TimesheetEntry() {
         .order('date');
 
       if (entries && entries.length > 0) {
-        // Group entries by project
         const projectGroups: { [key: string]: TimesheetRow } = {};
         
         entries.forEach(entry => {
@@ -253,17 +250,11 @@ export default function TimesheetEntry() {
   };
 
   const handleSubmit = async (isDraft: boolean = false) => {
+    setIsLoading(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+    
     try {
-      setIsLoading(true);
-      setErrorMessage('');
-      setSuccessMessage('');
-
-      if (!isDraft && !attestation) {
-        setErrorMessage('Please certify that your hours are accurate before submitting.');
-        setIsLoading(false);
-        return;
-      }
-
       // Validate at least one row has project and hours
       const validRows = rows.filter(row => {
         const hasProject = row.project_id !== '';
@@ -277,20 +268,36 @@ export default function TimesheetEntry() {
         return;
       }
 
-      const supabase = createSupabaseClient();
-      
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No authenticated user');
 
-      // Get employee record BY EMAIL
-      const { data: employee } = await supabase
+      // Get or create employee record
+      let { data: employee } = await supabase
         .from('employees')
         .select('id')
         .eq('email', user.email || '')
         .single();
       
-      if (!employee) throw new Error('Employee record not found');
+      if (!employee) {
+        // Create employee if doesn't exist
+        const { data: newEmployee } = await supabase
+          .from('employees')
+          .insert({
+            email: user.email,
+            first_name: user.user_metadata?.first_name || 'Unknown',
+            last_name: user.user_metadata?.last_name || 'User',
+            role: 'employee',
+            is_active: true,
+            hourly_rate: 0, // Default rate, should be updated by admin
+            department: 'General'
+          })
+          .select()
+          .single();
+        
+        if (!newEmployee) throw new Error('Could not create employee profile');
+        employee = newEmployee;
+      }
 
       const weekEndingDate = getWeekEndingDate(selectedWeek);
       const { weekTotal, overtimeHours } = calculateTotals();

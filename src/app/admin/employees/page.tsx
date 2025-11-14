@@ -114,7 +114,7 @@ export default function EmployeeManagement() {
     is_exempt: false,
     state: 'CA',
     employee_id: '',
-    mybase_payroll_id: '',  // Added
+    mybase_payroll_id: '',  // Keep as empty string for form
     manager_id: '',         // Added
     password: '' // Only for new employees
   });
@@ -206,44 +206,51 @@ export default function EmployeeManagement() {
     setFilteredEmployees(filtered);
   };
 
-  const handleAddEmployee = async () => {
-    try {
-      // First create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password || 'TempPassword123!',
-        options: {
-          data: {
-            first_name: formData.first_name,
-            last_name: formData.last_name
-          }
-        }
-      });
+// Instead of creating user directly, call the API
+const handleAddEmployee = async () => {  // Remove the parameter
+  try {
+    console.log('Client sending:', {
+      email: formData.email,
+      hasEmail: 'email' in formData,
+      allKeys: Object.keys(formData),
+      formData: formData
+    })
+    const response = await fetch('/api/admin/employees', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: formData.email,  // Now this uses the state formData
+        password: formData.password,
+        firstName: formData.first_name,
+        lastName: formData.last_name,
+        role: formData.role,
+        department: formData.department,
+        managerId: formData.manager_id,
+        hourlyRate: formData.hourly_rate,
+        employeeId: formData.employee_id,
+        mybasePayrollId: formData.mybase_payroll_id || null,
+        hireDate: formData.hire_date,
+        state: formData.state,
+        isActive: formData.is_active,
+        isExempt: formData.is_exempt
+      })
+    })
 
-      if (authError) throw authError;
-
-      // Then create employee record
-      const employeeData = { ...formData };
-      delete (employeeData as any).password;
-
-      const { error: dbError } = await supabase
-        .from('employees')
-        .insert({
-          ...employeeData,
-          id: authData.user?.id,
-          employee_id: employeeData.employee_id || `EMP${Date.now()}`
-        });
-
-      if (dbError) throw dbError;
-
-      setShowAddModal(false);
-      resetForm();
-      fetchEmployees();
-    } catch (error: any) {
-      console.error('Error adding employee:', error);
-      alert(`Error: ${error.message}`);
+    const data = await response.json()
+    
+    if (!response.ok) {
+      throw new Error((data as any).error || 'Failed to create employee')
     }
-  };
+    
+    // Success! 
+    alert('Employee created successfully!')
+    await fetchEmployees() // Refresh the employee list
+    
+  } catch (error: any) {
+    console.error('Error adding employee:', error)
+    alert(error?.message || 'Database error saving new user')
+  }
+}
 
   const handleUpdateEmployee = async () => {
     if (!selectedEmployee) return;
@@ -575,45 +582,20 @@ export default function EmployeeManagement() {
                   />
                 </div>
 
-                {/* CRITICAL: MyBase Payroll ID */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    MyBase Payroll ID <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.mybase_payroll_id}
-                    onChange={(e) => setFormData({...formData, mybase_payroll_id: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
-                    placeholder="Must match MyBase Pay"
-                    required
-                  />
-                  <p className="text-xs text-red-600 mt-1">Critical for payroll exports</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({...formData, role: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
-                  >
-                    <option value="employee">Employee</option>
-                    <option value="manager">Manager</option>
-                    <option value="admin">Admin</option>
-                    <option value="time_approver">Time Approver</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                  <input
-                    type="text"
-                    value={formData.department}
-                    onChange={(e) => setFormData({...formData, department: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
-                  />
-                </div>
+                {/* MyBase Payroll ID - Optional */}
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    MyBase Payroll ID <span className="text-gray-400">(Optional)</span>
+  </label>
+  <input
+  type="text"
+  value={formData.mybase_payroll_id || ''}  // Add || '' to handle null/undefined
+  onChange={(e) => setFormData({...formData, mybase_payroll_id: e.target.value})}
+  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+  placeholder="Leave blank if not needed"
+/>
+  <p className="text-xs text-gray-600 mt-1">For payroll exports (can be added later)</p>
+</div>
 
                 {/* CRITICAL: Time Approver */}
                 <div>
