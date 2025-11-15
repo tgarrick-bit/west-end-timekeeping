@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
 import TimesheetModal from '@/components/TimesheetModal';
+import Image from 'next/image';
 import { 
   CalendarDays, 
   Clock, 
@@ -16,7 +17,10 @@ import {
   Receipt,
   CreditCard,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  DollarSign,
+  CheckCircle,
+  Calendar
 } from 'lucide-react';
 
 interface Timecard {
@@ -74,6 +78,7 @@ export default function EmployeeDashboard() {
   const hasLoadedRef = useRef(false);
   const router = useRouter();
   const supabase = createSupabaseClient();
+  
   useEffect(() => {
     checkUserRoleAndRedirect();
   }, []);
@@ -365,6 +370,19 @@ export default function EmployeeDashboard() {
     return labels[category] || category;
   };
 
+  // Add greeting function HERE - before the if statement
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().getHours();
+    
+    if (hour < 12) {
+      return 'Good morning';
+    } else if (hour < 17) {
+      return 'Good afternoon';
+    } else {
+      return 'Good evening';
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -384,14 +402,16 @@ export default function EmployeeDashboard() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <div className="flex items-center gap-3">
-                <div className="bg-white/10 p-2 rounded-lg">
-                  <Briefcase className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-semibold text-white">
-                    West End Workforce
-                  </h1>
-                  <span className="text-xs text-gray-300">Employee Portal</span>
+                <Image
+                  src="/WE-logo-SEPT2024v3-WHT.png"
+                  alt="West End Workforce"
+                  width={200}
+                  height={50}
+                  className="h-9 w-auto"
+                  priority
+                />
+                <div className="border-l border-gray-600 pl-3">
+                  <span className="text-sm text-gray-300">Employee Portal</span>
                 </div>
               </div>
             </div>
@@ -409,7 +429,9 @@ export default function EmployeeDashboard() {
                 <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
                   <User className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-sm text-gray-200">{profile?.email}</span>
+                <span className="text-sm text-gray-200">
+                  {getTimeBasedGreeting()}, {profile?.first_name || 'Employee'}
+                </span>
               </div>
               <button
                 onClick={handleSignOut}
@@ -435,11 +457,11 @@ export default function EmployeeDashboard() {
           </p>
         </div>
 
-        {/* Quick Actions - Updated button text */}
+        {/* Quick Actions - Swapped colors */}
         <div className="mb-8 flex gap-4">
           <button 
             onClick={() => router.push('/timesheet/entry')}
-            className="flex items-center gap-3 px-6 py-3 bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865] transition-all duration-200 font-medium shadow-lg"
+            className="flex items-center gap-3 px-6 py-3 bg-[#05202E] text-white rounded-lg hover:bg-[#0a2a3d] transition-all duration-200 font-medium shadow-lg"
           >
             <FileText className="h-5 w-5" />
             Access Timecards
@@ -447,130 +469,147 @@ export default function EmployeeDashboard() {
           
           <button 
             onClick={() => router.push('/expense/entry')}
-            className="flex items-center gap-3 px-6 py-3 bg-[#05202E] text-white rounded-lg hover:bg-[#0a2a3d] transition-all duration-200 font-medium shadow-lg"
+            className="flex items-center gap-3 px-6 py-3 bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865] transition-all duration-200 font-medium shadow-lg"
           >
             <Receipt className="h-5 w-5" />
             Submit Expense
           </button>
         </div>
 
-        {/* Stats Grid - Timesheets Row (Removed Earnings box) */}
-        <div className="mb-4">
-          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Timesheet Summary</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-            <div className="bg-white rounded-lg border border-[#05202E] p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <Clock className="h-6 w-6 text-[#05202E]" />
-                <span className="text-xs text-gray-500 font-medium uppercase">All Time</span>
-              </div>
-              <div className="text-2xl font-bold text-[#05202E]">{stats.totalHours.toFixed(1)}</div>
-              <p className="text-sm text-gray-600 mt-1">Total Hours</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-[#05202E] p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <FileText className="h-6 w-6 text-[#05202E]" />
-                <span className="text-xs text-gray-500 font-medium uppercase">Pending</span>
-              </div>
-              <div className="text-2xl font-bold text-[#05202E]">{stats.pendingTimecards}</div>
-              <p className="text-sm text-gray-600 mt-1">Awaiting Review</p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-[#05202E] p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <CalendarDays className="h-6 w-6 text-[#05202E]" />
-                <span className="text-xs text-gray-500 font-medium uppercase">Approved</span>
-              </div>
-              <div className="text-2xl font-bold text-[#05202E]">{stats.approvedTimecards}</div>
-              <p className="text-sm text-gray-600 mt-1">Completed</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Grid - Expenses Row (Updated Approved box text) */}
+        {/* TIMESHEET SUMMARY */}
         <div className="mb-8">
-          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Expense Summary</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white rounded-lg border border-[#e31c79] p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <Receipt className="h-6 w-6 text-[#e31c79]" />
-                <span className="text-xs text-gray-500 font-medium uppercase">Total</span>
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+            Timesheet Summary
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* All Time Card */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <Clock className="h-5 w-5 text-[#05202E]" />
+                <span className="text-xs font-medium text-gray-500 uppercase">All Time</span>
               </div>
-              <div className="text-2xl font-bold text-[#e31c79]">{formatCurrency(stats.totalExpenses)}</div>
-              <p className="text-sm text-gray-600 mt-1">All Expenses</p>
+              <p className="text-3xl font-bold text-[#05202E]">{stats.totalHours.toFixed(1)}</p>
+              <p className="text-sm text-gray-500 mt-1">Total Hours</p>
             </div>
 
-            <div className="bg-white rounded-lg border border-[#e31c79] p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <CreditCard className="h-6 w-6 text-[#e31c79]" />
-                <span className="text-xs text-gray-500 font-medium uppercase">Pending</span>
+            {/* Pending Card */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <FileText className="h-5 w-5 text-[#05202E]" />
+                <span className="text-xs font-medium text-gray-500 uppercase">Pending</span>
               </div>
-              <div className="text-2xl font-bold text-[#e31c79]">{formatCurrency(stats.pendingExpenses)}</div>
-              <p className="text-sm text-gray-600 mt-1">Under Review</p>
+              <p className="text-3xl font-bold text-[#05202E]">{stats.pendingTimecards}</p>
+              <p className="text-sm text-gray-500 mt-1">Awaiting Review</p>
             </div>
 
-            <div className="bg-white rounded-lg border border-[#e31c79] p-6 shadow-sm">
-              <div className="flex items-center justify-center mb-4">
-                <span className="text-xs text-gray-500 font-medium uppercase">Approved</span>
+            {/* Approved Card */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <CheckCircle className="h-5 w-5 text-green-500" />
+                <span className="text-xs font-medium text-gray-500 uppercase">Approved</span>
               </div>
-              <div className="text-2xl font-bold text-[#e31c79]">{formatCurrency(stats.approvedExpenses)}</div>
-              <p className="text-sm text-gray-600 mt-1">Approved</p>
+              <p className="text-3xl font-bold text-[#05202E]">{stats.approvedTimecards}</p>
+              <p className="text-sm text-gray-500 mt-1">Completed</p>
             </div>
 
-            <div className="bg-white rounded-lg border border-[#e31c79] p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <AlertCircle className="h-6 w-6 text-[#e31c79]" />
-                <span className="text-xs text-gray-500 font-medium uppercase">Rejected</span>
+            {/* Rejected Card - NEW */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <AlertCircle className="h-5 w-5 text-red-500" />
+                <span className="text-xs font-medium text-gray-500 uppercase">Rejected</span>
               </div>
-              <div className="text-2xl font-bold text-[#e31c79]">{stats.rejectedExpenses}</div>
-              <p className="text-sm text-gray-600 mt-1">Need Action</p>
+              <p className="text-3xl font-bold text-gray-500">0</p>
+              <p className="text-sm text-gray-500 mt-1">Need Action</p>
             </div>
           </div>
         </div>
 
-        {/* Recent Activity - Two Columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Timecards */}
-          <div className="bg-white rounded-lg shadow-sm">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-[#05202E]">Recent Timecards</h3>
-              <p className="text-sm text-gray-600 mt-1">Your latest timesheet submissions</p>
+        {/* EXPENSE SUMMARY */}
+        <div className="mb-8">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
+            Expense Summary
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Total Card */}
+            <div className="bg-white rounded-lg border border-[#e31c79]/20 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <DollarSign className="h-5 w-5 text-[#e31c79]" />
+                <span className="text-xs font-medium text-gray-500 uppercase">Total</span>
+              </div>
+              <p className="text-2xl font-bold text-[#e31c79]">{formatCurrency(stats.totalExpenses)}</p>
+              <p className="text-sm text-gray-500 mt-1">All Expenses</p>
             </div>
-            <div className="p-6">
+
+            {/* Pending Card */}
+            <div className="bg-white rounded-lg border border-[#e31c79]/20 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <Receipt className="h-5 w-5 text-[#e31c79]" />
+                <span className="text-xs font-medium text-gray-500 uppercase">Pending</span>
+              </div>
+              <p className="text-2xl font-bold text-[#e31c79]">{formatCurrency(stats.pendingExpenses)}</p>
+              <p className="text-sm text-gray-500 mt-1">Under Review</p>
+            </div>
+
+            {/* Approved Card */}
+            <div className="bg-white rounded-lg border border-[#e31c79]/20 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <CheckCircle className="h-5 w-5 text-green-500" />
+                <span className="text-xs font-medium text-gray-500 uppercase">Approved</span>
+              </div>
+              <p className="text-2xl font-bold text-[#e31c79]">{formatCurrency(stats.approvedExpenses)}</p>
+              <p className="text-sm text-gray-500 mt-1">Approved</p>
+            </div>
+
+            {/* Rejected Card */}
+            <div className="bg-white rounded-lg border border-[#e31c79]/20 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <AlertCircle className="h-5 w-5 text-red-500" />
+                <span className="text-xs font-medium text-gray-500 uppercase">Rejected</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-500">{stats.rejectedExpenses}</p>
+              <p className="text-sm text-gray-500 mt-1">Need Action</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+          {/* Recent Timecards */}
+          <div>
+            <div className="bg-white rounded-t-lg border border-[#05202E]-200 px-6 py-4 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
+              <h3 className="text-lg font-semibold text-[#05202E]">Recent Timecards</h3>
+              <p className="text-sm text-gray-500">Your latest timesheet submissions</p>
+            </div>
+            <div className="bg-white rounded-b-lg border-x border-b border-[#05202E]-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
               {timecards.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <FileText className="h-8 w-8 text-gray-400" />
-                  </div>
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                   <p className="text-gray-600 font-medium">No timecards yet</p>
                   <p className="text-sm text-gray-500 mt-1">
                     Click "Access Timecards" to get started
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
+                <div className="space-y-3">
                   {timecards.map((timecard) => (
                     <div
                       key={timecard.id}
-                      className="group flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-200 border border-gray-200 cursor-pointer"
+                      className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                       onClick={() => handleTimesheetClick(timecard)}
                     >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <div>
-                            <p className="font-medium text-sm text-[#05202E]">
-                              Week ending {formatDate(timecard.week_ending)}
-                            </p>
-                            <p className="text-xs text-gray-600 mt-1">
-                              {timecard.total_hours || 0} hrs
-                            </p>
-                          </div>
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getStatusColor(timecard.status)}`}>
-                            {timecard.status.charAt(0).toUpperCase() + timecard.status.slice(1)}
-                          </span>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-[#05202E]">
+                            Week ending {formatDate(timecard.week_ending)}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {timecard.total_hours || 0} hrs
+                          </p>
                         </div>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(timecard.status)}`}>
+                          {timecard.status.charAt(0).toUpperCase() + timecard.status.slice(1)}
+                        </span>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
                     </div>
                   ))}
                 </div>
@@ -579,46 +618,41 @@ export default function EmployeeDashboard() {
           </div>
 
           {/* Recent Expenses */}
-          <div className="bg-white rounded-lg shadow-sm">
-            <div className="p-6 border-b border-gray-200">
+          <div>
+            <div className="bg-white rounded-t-lg border border-gray-200 px-6 py-4 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
               <h3 className="text-lg font-semibold text-[#05202E]">Recent Expenses</h3>
-              <p className="text-sm text-gray-600 mt-1">Your latest expense submissions</p>
+              <p className="text-sm text-gray-500">Your latest expense submissions</p>
             </div>
-            <div className="p-6">
+            <div className="bg-white rounded-b-lg border-x border-b border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
               {expenses.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Receipt className="h-8 w-8 text-gray-400" />
-                  </div>
+                <div className="text-center py-8">
+                  <Receipt className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                   <p className="text-gray-600 font-medium">No expenses yet</p>
                   <p className="text-sm text-gray-500 mt-1">
                     Click "Submit Expense" to get started
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
+                <div className="space-y-3">
                   {expenses.map((expense) => (
                     <div
                       key={expense.id}
-                      className="group flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-200 border border-gray-200 cursor-pointer"
+                      className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                       onClick={() => router.push(`/expense/${expense.id}`)}
                     >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <div>
-                            <p className="font-medium text-sm text-[#05202E]">
-                              {getCategoryLabel(expense.category)}
-                            </p>
-                            <p className="text-xs text-gray-600 mt-1">
-                              {formatCurrency(expense.amount)} • {formatDate(expense.expense_date)}
-                            </p>
-                          </div>
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getStatusColor(expense.status)}`}>
-                            {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
-                          </span>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-[#05202E]">
+                            {getCategoryLabel(expense.category)}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {formatCurrency(expense.amount)} • {formatDate(expense.expense_date)}
+                          </p>
                         </div>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(expense.status)}`}>
+                          {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
+                        </span>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
                     </div>
                   ))}
                 </div>

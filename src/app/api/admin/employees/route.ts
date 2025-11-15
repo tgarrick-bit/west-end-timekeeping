@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       department,
       managerId,
       hourlyRate,
-      employeeId,  // We receive it but don't use it since column doesn't exist
+      employeeId,
       mybasePayrollId,
       hireDate,
       state,
@@ -95,61 +95,73 @@ export async function POST(request: NextRequest) {
       isExempt
     } = body
 
+    // ✅ Required fields (MyBase Payroll ID is NOT here)
+    if (!email || !password || !firstName || !lastName || !managerId) {
+      return NextResponse.json(
+        { error: 'Please fill in all required fields including Time Approver.' },
+        { status: 400 }
+      )
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'Password must be at least 6 characters.' },
+        { status: 400 }
+      )
+    }
+
     // Step 1: Create auth user using admin client
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: email,
-      password: password,
-      email_confirm: true, // Auto-confirm email
+      email,
+      password,
+      email_confirm: true,
       user_metadata: {
         first_name: firstName,
         last_name: lastName,
-        role: role
+        role: role || 'employee'
       }
     })
 
     if (authError) {
       console.error('Auth error details:', authError)
       
-      // Check if it's a duplicate user error
-      if (authError.message?.includes('already been registered') || 
-          authError.message?.includes('already exists') ||
-          authError.message?.includes('duplicate')) {
+      if (
+        authError.message?.includes('already been registered') || 
+        authError.message?.includes('already exists') ||
+        authError.message?.includes('duplicate')
+      ) {
         return NextResponse.json({ 
           error: 'A user with this email already exists. Please use a different email.' 
         }, { status: 400 })
       }
       
-      // Other errors
       return NextResponse.json({ 
         error: `Error creating user: ${authError.message}` 
       }, { status: 400 })
     }
 
     if (!authUser.user) {
-      return NextResponse.json({ 
-        error: 'Failed to create auth user' 
-      }, { status: 400 })
+      return NextResponse.json({ error: 'Failed to create auth user' }, { status: 400 })
     }
 
     // Step 2: Create employee record using the auth user's ID
-    // REMOVED employee_id since it doesn't exist in your database
     const { data: employee, error: employeeError } = await supabase
       .from('employees')
       .insert({
         id: authUser.user.id,
-        email: email,
+        email,
         first_name: firstName,
         last_name: lastName,
         role: role || 'employee',
         department: department || null,
         manager_id: managerId || null,
-        mybase_payroll_id: mybasePayrollId || null,
-        // employee_id removed - doesn't exist in database
-        hourly_rate: hourlyRate || null,
+        mybase_payroll_id: mybasePayrollId || null,   // ✅ optional
+        employee_id: employeeId || null,              // use if column exists; remove if not
+        hourly_rate: hourlyRate ?? null,
         hire_date: hireDate || null,
         state: state || null,
-        is_active: isActive !== undefined ? isActive : true,
-        is_exempt: isExempt || false,
+        is_active: isActive ?? true,
+        is_exempt: isExempt ?? false,                 // ✅ safe default
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
@@ -159,7 +171,7 @@ export async function POST(request: NextRequest) {
     if (employeeError) {
       console.error('Employee creation error:', employeeError)
       
-      // If employee creation fails, try to delete the auth user
+      // Cleanup auth user if employee insert fails
       await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
       
       return NextResponse.json({ 
@@ -169,15 +181,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true,
-      employee: employee,
+      employee,
       message: 'Employee created successfully'
     })
 
   } catch (error) {
     console.error('Error creating employee:', error)
-    return NextResponse.json({ 
-      error: 'Failed to create employee' 
-    }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create employee' }, { status: 500 })
   }
 }
 

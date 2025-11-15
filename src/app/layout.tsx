@@ -1,15 +1,20 @@
-// src/app/layout.tsx
-import './globals.css';
-import type { ReactNode } from 'react';
-import { AuthProvider } from '@/contexts/AuthContext';
+// app/layout.tsx
+import { Montserrat } from 'next/font/google'
+import './globals.css'
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+const montserrat = Montserrat({ 
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-montserrat',
+})
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>
-        <AuthProvider>{children}</AuthProvider>
+      <body className={montserrat.className}>
+        {children}
       </body>
     </html>
-  );
+  )
 }
 

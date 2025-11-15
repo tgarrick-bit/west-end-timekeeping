@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';  // Add this import
 import { useAuth } from '@/contexts/AuthContext';
 import type { UserRole } from '@/types';
 
@@ -42,9 +43,22 @@ export default function TopNavigation() {
   const role: UserRole = (profile.role as UserRole) ?? 'employee';
 
   return (
-    <div className="w-full bg-white border-b border-gray-200">
+    <div className="w-full bg-[#05202E] text-white">  {/* Changed to dark blue background */}
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        <div className="text-lg font-semibold text-gray-900">West End Workforce</div>
+        {/* Replace the text with the logo */}
+        <div className="flex items-center space-x-3">
+          <Image
+            src="/WE-logo-SEPT2024v3-WHT.png"
+            alt="West End Workforce"
+            width={180}
+            height={50}
+            className="h-8 w-auto"
+            priority
+          />
+          <span className="text-sm text-gray-300 border-l border-gray-600 pl-3">
+            Employee Portal
+          </span>
+        </div>
 
         <div className="flex items-center space-x-3">
           <div
@@ -57,10 +71,10 @@ export default function TopNavigation() {
           </div>
 
           <div className="hidden sm:block">
-            <div className="text-sm font-medium text-gray-900">
+            <div className="text-sm font-medium text-white">  {/* Changed to white */}
               {(first || last) ? `${first} ${last}`.trim() : user?.email ?? 'User'}
             </div>
-            <div className="text-xs text-gray-500 capitalize">
+            <div className="text-xs text-gray-300 capitalize">  {/* Changed to gray-300 */}
               {role.replace(/_/g, ' ')}
             </div>
           </div>

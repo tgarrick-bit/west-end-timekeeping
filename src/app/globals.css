@@ -4,6 +4,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom Font Imports */
+@font-face {
+  font-family: 'Sohne Schmal';
+  src: url('/fonts/Sohne-Schmal-Dreiviertelfett.woff2') format('woff2'),
+       url('/fonts/Sohne-Schmal-Dreiviertelfett.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Root Variables */
+:root {
+  --color-timesheet: #e31c79;
+  --color-expense: #05202e;
+  --font-heading: 'Sohne Schmal', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
 /* Reset and Base Styles */
 * {
   margin: 0;
@@ -12,12 +30,13 @@
 }
 
 html {
-  font-size: 16px; /* Base font size */
+  font-size: 16px;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  font-size: 0.875rem; /* 14px default body text */
+  font-family: var(--font-body);
+  font-weight: 500; /* Montserrat Medium */
+  font-size: 0.875rem;
   line-height: 1.5;
   color: #1a1a1a;
   background-color: #f9fafb;
@@ -25,7 +44,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Typography Scale */
+/* Typography Scale with Sohne for Headers */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700; /* Dreiviertelfett = Bold */
+}
+
 h1 {
   font-size: 1.875rem; /* 30px */
   line-height: 1.2;
@@ -52,31 +76,44 @@ p {
 }
 
 .text-xs {
-  font-size: 0.75rem !important; /* 12px */
+  font-size: 0.75rem !important;
 }
 
 .text-sm {
-  font-size: 0.8125rem !important; /* 13px */
+  font-size: 0.8125rem !important;
 }
 
 .text-base {
-  font-size: 0.875rem !important; /* 14px */
+  font-size: 0.875rem !important;
 }
 
 .text-lg {
-  font-size: 1rem !important; /* 16px */
+  font-size: 1rem !important;
 }
 
 .text-xl {
-  font-size: 1.125rem !important; /* 18px */
+  font-size: 1.125rem !important;
 }
 
 .text-2xl {
-  font-size: 1.25rem !important; /* 20px */
+  font-size: 1.25rem !important;
 }
 
 .text-3xl {
-  font-size: 1.5rem !important; /* 24px */
+  font-size: 1.5rem !important;
+}
+
+.text-4xl {
+  font-size: 1.875rem !important;
+}
+
+/* Font Family Utilities */
+.font-heading {
+  font-family: var(--font-heading) !important;
+}
+
+.font-body {
+  font-family: var(--font-body) !important;
 }
 
 /* Container widths */
@@ -86,15 +123,18 @@ p {
 
 /* Button sizes */
 button {
-  font-size: 0.875rem; /* 14px */
+  font-size: 0.875rem;
+  font-family: var(--font-body);
+  font-weight: 500;
 }
 
 /* Input sizes */
 input, 
 select, 
 textarea {
-  font-size: 0.875rem; /* 14px */
+  font-size: 0.875rem;
   padding: 0.5rem 0.75rem;
+  font-family: var(--font-body);
 }
 
 /* Card padding adjustments */
@@ -134,6 +174,8 @@ header {
 
 header h1 {
   font-size: 1.25rem !important;
+  font-family: var(--font-heading);
+  font-weight: 700;
 }
 
 /* Dashboard card adjustments */
@@ -167,7 +209,7 @@ svg {
   height: 1.5rem !important;
 }
 
-/* Remove focus outlines and add custom ones */
+/* Focus styles */
 *:focus {
   outline: none;
 }
