@@ -3,9 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
-import { 
-  ArrowLeft, Plus, Save, Send, Trash2, Calendar, Upload, 
-  DollarSign, Receipt, AlertCircle, ChevronLeft, ChevronRight
+import {
+  ArrowLeft,
+  Plus,
+  Save,
+  Send,
+  Trash2,
+  Calendar,
+  Upload,
+  DollarSign,
+  Receipt,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface ExpenseEntry {
@@ -39,12 +49,13 @@ const expenseCategories = [
   { value: 'mileage', label: 'Mileage' },
   { value: 'miscellaneous', label: 'Miscellaneous' },
   { value: 'parking', label: 'Parking' },
-  { value: 'rental_car', label: 'Rental Car' }
+  { value: 'rental_car', label: 'Rental Car' },
 ];
 
 export default function ExpenseEntryPage() {
   const router = useRouter();
   const supabase = createSupabaseClient();
+
   const [expensePeriod, setExpensePeriod] = useState('');
   const [entries, setEntries] = useState<ExpenseEntry[]>([
     {
@@ -56,26 +67,30 @@ export default function ExpenseEntryPage() {
       amount: 0,
       vendor: '',
       description: '',
-      receipt_file: null
-    }
+      receipt_file: null,
+    },
   ]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [userEmail, setUserEmail] = useState('');
-  const [userId, setUserId] = useState('');
+  const [userId, setUserId] = useState(''); // auth user id
 
   useEffect(() => {
     checkAuth();
     loadProjects();
-    // Set default expense period (current month)
+
+    // Default to current month
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     setExpensePeriod(`${year}-${month}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       router.push('/auth/login');
       return;
@@ -90,7 +105,7 @@ export default function ExpenseEntryPage() {
       .select('id, name, is_active')
       .eq('is_active', true)
       .order('name');
-    
+
     if (error) {
       console.error('Error loading projects:', error);
     } else {
@@ -99,23 +114,25 @@ export default function ExpenseEntryPage() {
   };
 
   const updateEntry = (entryId: string, field: keyof ExpenseEntry, value: any) => {
-    setEntries(entries.map(entry => {
-      if (entry.id === entryId) {
-        const updated = { ...entry, [field]: value };
-        
-        if (field === 'project_id') {
-          const project = projects.find(p => p.id === value);
-          updated.project_name = project?.name || '';
+    setEntries((prev) =>
+      prev.map((entry) => {
+        if (entry.id === entryId) {
+          const updated: ExpenseEntry = { ...entry, [field]: value } as ExpenseEntry;
+
+          if (field === 'project_id') {
+            const project = projects.find((p) => p.id === value);
+            updated.project_name = project?.name || '';
+          }
+
+          if (field === 'amount') {
+            updated.amount = parseFloat(value) || 0;
+          }
+
+          return updated;
         }
-        
-        if (field === 'amount') {
-          updated.amount = parseFloat(value) || 0;
-        }
-        
-        return updated;
-      }
-      return entry;
-    }));
+        return entry;
+      }),
+    );
   };
 
   const handleFileChange = (entryId: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,15 +156,13 @@ export default function ExpenseEntryPage() {
       amount: 0,
       vendor: '',
       description: '',
-      receipt_file: null
+      receipt_file: null,
     };
-    setEntries([...entries, newEntry]);
+    setEntries((prev) => [...prev, newEntry]);
   };
 
   const removeRow = (id: string) => {
-    if (entries.length > 1) {
-      setEntries(entries.filter(entry => entry.id !== id));
-    }
+    setEntries((prev) => (prev.length > 1 ? prev.filter((entry) => entry.id !== id) : prev));
   };
 
   const calculateTotal = () => {
@@ -159,7 +174,7 @@ export default function ExpenseEntryPage() {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `${userId}/${fileName}`;
-  
+
       const { error: uploadError } = await supabase.storage
         .from('expense-receipts')
         .upload(filePath, file);
@@ -169,9 +184,7 @@ export default function ExpenseEntryPage() {
         return null;
       }
 
-      const { data } = supabase.storage
-        .from('expense-receipts')
-        .getPublicUrl(filePath);
+      const { data } = supabase.storage.from('expense-receipts').getPublicUrl(filePath);
 
       return data.publicUrl;
     } catch (error) {
@@ -180,6 +193,7 @@ export default function ExpenseEntryPage() {
     }
   };
 
+  // 🔥 FIXED: ensure an employee row exists with id === auth user id, and link expenses to that
   const handleSubmit = async (isDraft: boolean = false) => {
     setIsLoading(true);
     try {
@@ -188,48 +202,94 @@ export default function ExpenseEntryPage() {
         setIsLoading(false);
         return;
       }
-
-      const validEntries = entries.filter(e => e.project_id && e.amount > 0 && e.category);
+  
+      const validEntries = entries.filter(
+        (e) => e.project_id && e.amount > 0 && e.category
+      );
       if (validEntries.length === 0) {
         alert('Please complete at least one expense entry');
         setIsLoading(false);
         return;
       }
-
+  
+      // 1) Get current auth user (for metadata)
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        alert('Please login to submit expenses');
+        setIsLoading(false);
+        return;
+      }
+  
+      const authUserId = user.id;
+  
+      // 2) Get or create employee with id === authUserId
+      let { data: employee } = await supabase
+        .from('employees')
+        .select('id')
+        .eq('id', authUserId)
+        .single();
+  
+      if (!employee) {
+        const { data: newEmployee, error: empInsertError } = await supabase
+          .from('employees')
+          .insert({
+            id: authUserId,
+            email: user.email,
+            first_name: user.user_metadata?.first_name || 'Unknown',
+            last_name: user.user_metadata?.last_name || 'User',
+            role: 'employee',
+            is_active: true,
+            hourly_rate: 0,
+            department: 'General',
+          })
+          .select('id')
+          .single();
+  
+        if (empInsertError || !newEmployee) {
+          throw empInsertError || new Error('Could not create employee profile');
+        }
+        employee = newEmployee;
+      }
+  
+      const employeeId = employee.id;
+  
+      // 3) Insert one expense row per valid entry, linked to this employee
       for (const entry of validEntries) {
-        let receipt_url = null;
-        
+        let receipt_url: string | null = null;
+  
         if (entry.receipt_file) {
           receipt_url = await uploadReceipt(entry.receipt_file);
         }
-
-        const { error } = await supabase
-          .from('expenses')
-          .insert({
-            employee_id: userId,
-            project_id: entry.project_id,
-            expense_date: entry.date,
-            category: entry.category,
-            amount: entry.amount,
-            description: entry.description,
-            receipt_url: receipt_url,
-            vendor: entry.vendor,
-            status: isDraft ? 'draft' : 'submitted',
-            submitted_at: isDraft ? null : new Date().toISOString()
-          });
-
+  
+        const { error } = await supabase.from('expenses').insert({
+          employee_id: employeeId,          // 👈 now always set
+          project_id: entry.project_id,
+          expense_date: entry.date,
+          category: entry.category,
+          amount: entry.amount,
+          description: entry.description,
+          receipt_url,
+          vendor: entry.vendor,
+          status: isDraft ? 'draft' : 'submitted',
+          submitted_at: isDraft ? null : new Date().toISOString(),
+          // NOTE: no 'period', 'created_at', 'updated_at' here
+          // to avoid schema mismatches
+        });
+  
         if (error) throw error;
       }
-
+  
       alert(isDraft ? 'Expenses saved as draft!' : 'Expenses submitted successfully!');
       router.push('/employee');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting expenses:', error);
-      alert('Error submitting expenses. Please try again.');
+      alert(error.message || 'Error submitting expenses. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  };
+  };  
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     const [year, month] = expensePeriod.split('-').map(Number);
@@ -248,7 +308,9 @@ export default function ExpenseEntryPage() {
   };
 
   const total = calculateTotal();
-  const validEntries = entries.filter(e => e.project_id && e.amount > 0 && e.category);
+  const validEntries = entries.filter(
+    (e) => e.project_id && e.amount > 0 && e.category,
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -268,8 +330,12 @@ export default function ExpenseEntryPage() {
                   <Receipt className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-semibold text-white">Expense Submission</h1>
-                  <span className="text-xs text-gray-300">Track your business expenses</span>
+                  <h1 className="text-xl font-semibold text-white">
+                    Expense Submission
+                  </h1>
+                  <span className="text-xs text-gray-300">
+                    Track your business expenses
+                  </span>
                 </div>
               </div>
             </div>
@@ -287,7 +353,9 @@ export default function ExpenseEntryPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Calendar className="h-5 w-5 text-[#e31c79]" />
-              <label className="text-sm font-medium text-gray-700">Expense Period:</label>
+              <label className="text-sm font-medium text-gray-700">
+                Expense Period:
+              </label>
               <input
                 type="month"
                 value={expensePeriod}
@@ -303,7 +371,9 @@ export default function ExpenseEntryPage() {
                 <ChevronLeft className="h-5 w-5 text-gray-600" />
               </button>
               <button
-                onClick={() => setExpensePeriod(new Date().toISOString().slice(0, 7))}
+                onClick={() =>
+                  setExpensePeriod(new Date().toISOString().slice(0, 7))
+                }
                 className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900"
               >
                 Current Month
@@ -317,9 +387,12 @@ export default function ExpenseEntryPage() {
             </div>
           </div>
           <div className="mt-3 text-center">
-            <div className="text-lg font-medium text-gray-900">{formatPeriod()}</div>
+            <div className="text-lg font-medium text-gray-900">
+              {formatPeriod()}
+            </div>
             <div className="text-sm text-gray-500 mt-1">
-              {validEntries.length} expense{validEntries.length !== 1 ? 's' : ''} ready
+              {validEntries.length} expense
+              {validEntries.length !== 1 ? 's' : ''} ready
             </div>
           </div>
         </div>
@@ -331,13 +404,20 @@ export default function ExpenseEntryPage() {
           </div>
           <div className="p-6">
             {entries.map((entry, index) => (
-              <div key={entry.id} className={index > 0 ? "border-t border-gray-200 pt-6 mt-6" : ""}>
+              <div
+                key={entry.id}
+                className={index > 0 ? 'border-t border-gray-200 pt-6 mt-6' : ''}
+              >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">
                     <div className="bg-[#e31c79]/10 p-2 rounded-lg">
-                      <span className="text-[#e31c79] font-semibold">{index + 1}</span>
+                      <span className="text-[#e31c79] font-semibold">
+                        {index + 1}
+                      </span>
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900">Entry #{index + 1}</h3>
+                    <h3 className="text-lg font-medium text-gray-900">
+                      Entry #{index + 1}
+                    </h3>
                   </div>
                   {entries.length > 1 && (
                     <button
@@ -358,7 +438,9 @@ export default function ExpenseEntryPage() {
                     <input
                       type="date"
                       value={entry.date}
-                      onChange={(e) => updateEntry(entry.id, 'date', e.target.value)}
+                      onChange={(e) =>
+                        updateEntry(entry.id, 'date', e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
                     />
                   </div>
@@ -370,11 +452,13 @@ export default function ExpenseEntryPage() {
                     </label>
                     <select
                       value={entry.project_id}
-                      onChange={(e) => updateEntry(entry.id, 'project_id', e.target.value)}
+                      onChange={(e) =>
+                        updateEntry(entry.id, 'project_id', e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
                     >
                       <option value="">Select a project...</option>
-                      {projects.map(project => (
+                      {projects.map((project) => (
                         <option key={project.id} value={project.id}>
                           {project.name}
                         </option>
@@ -389,11 +473,13 @@ export default function ExpenseEntryPage() {
                     </label>
                     <select
                       value={entry.category}
-                      onChange={(e) => updateEntry(entry.id, 'category', e.target.value)}
+                      onChange={(e) =>
+                        updateEntry(entry.id, 'category', e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
                     >
                       <option value="">Select category...</option>
-                      {expenseCategories.map(cat => (
+                      {expenseCategories.map((cat) => (
                         <option key={cat.value} value={cat.value}>
                           {cat.label}
                         </option>
@@ -415,7 +501,9 @@ export default function ExpenseEntryPage() {
                         min="0"
                         step="0.01"
                         value={entry.amount || ''}
-                        onChange={(e) => updateEntry(entry.id, 'amount', e.target.value)}
+                        onChange={(e) =>
+                          updateEntry(entry.id, 'amount', e.target.value)
+                        }
                         className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
                         placeholder="0.00"
                       />
@@ -430,7 +518,9 @@ export default function ExpenseEntryPage() {
                     <input
                       type="text"
                       value={entry.vendor}
-                      onChange={(e) => updateEntry(entry.id, 'vendor', e.target.value)}
+                      onChange={(e) =>
+                        updateEntry(entry.id, 'vendor', e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
                       placeholder="e.g., Office Depot"
                     />
@@ -445,7 +535,9 @@ export default function ExpenseEntryPage() {
                       <label className="flex-1 flex items-center justify-center px-4 py-2 bg-gray-50 border-2 border-dashed border-gray-300 rounded-md hover:bg-gray-100 hover:border-gray-400 cursor-pointer transition-colors">
                         <Upload className="h-5 w-5 mr-2 text-gray-500" />
                         <span className="text-gray-600 text-sm">
-                          {entry.receipt_file ? entry.receipt_file.name : 'Choose file'}
+                          {entry.receipt_file
+                            ? entry.receipt_file.name
+                            : 'Choose file'}
                         </span>
                         <input
                           type="file"
@@ -456,14 +548,18 @@ export default function ExpenseEntryPage() {
                       </label>
                       {entry.receipt_file && (
                         <button
-                          onClick={() => updateEntry(entry.id, 'receipt_file', null)}
+                          onClick={() =>
+                            updateEntry(entry.id, 'receipt_file', null)
+                          }
                           className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Max 5MB • JPG, PNG, GIF, or PDF</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Max 5MB • JPG, PNG, GIF, or PDF
+                    </p>
                   </div>
 
                   {/* Description */}
@@ -473,7 +569,9 @@ export default function ExpenseEntryPage() {
                     </label>
                     <textarea
                       value={entry.description}
-                      onChange={(e) => updateEntry(entry.id, 'description', e.target.value)}
+                      onChange={(e) =>
+                        updateEntry(entry.id, 'description', e.target.value)
+                      }
                       placeholder="Provide details about this expense..."
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79] resize-none"
                       rows={2}
@@ -492,7 +590,9 @@ export default function ExpenseEntryPage() {
         >
           <div className="flex items-center justify-center gap-2">
             <Plus className="h-5 w-5 text-gray-400 group-hover:text-[#e31c79]" />
-            <span className="text-gray-600 group-hover:text-[#e31c79] font-medium">Add Another Expense</span>
+            <span className="text-gray-600 group-hover:text-[#e31c79] font-medium">
+              Add Another Expense
+            </span>
           </div>
         </button>
 
@@ -515,13 +615,14 @@ export default function ExpenseEntryPage() {
         </div>
 
         {/* Warning Message */}
-        {entries.some(e => !e.project_id || !e.category || e.amount <= 0) && (
+        {entries.some((e) => !e.project_id || !e.category || e.amount <= 0) && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
             <div className="flex items-start gap-2">
               <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
               <div>
                 <p className="text-sm text-yellow-800">
-                  Please complete all required fields (Project, Category, and Amount) for each expense entry before submitting.
+                  Please complete all required fields (Project, Category, and
+                  Amount) for each expense entry before submitting.
                 </p>
               </div>
             </div>
@@ -536,7 +637,7 @@ export default function ExpenseEntryPage() {
           >
             Cancel
           </button>
-          
+
           <div className="flex gap-3">
             <button
               onClick={() => handleSubmit(true)}

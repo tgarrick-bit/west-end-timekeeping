@@ -3,18 +3,17 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
-import { 
+import {
   ArrowLeft,
   Calendar,
   ChevronLeft,
   ChevronRight,
-  Clock,
   Save,
   Send,
   AlertCircle,
   Plus,
   Trash2,
-  Briefcase
+  Briefcase,
 } from 'lucide-react';
 
 interface Project {
@@ -38,8 +37,8 @@ export default function TimesheetEntry() {
       id: '1',
       project_id: '',
       hours: {},
-      notes: {}
-    }
+      notes: {},
+    },
   ]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -47,13 +46,14 @@ export default function TimesheetEntry() {
   const [successMessage, setSuccessMessage] = useState('');
   const [attestation, setAttestation] = useState(false);
   const [existingTimesheetId, setExistingTimesheetId] = useState<string | null>(null);
-  
+
   const router = useRouter();
   const supabase = createSupabaseClient();
 
   useEffect(() => {
     loadProjects();
     checkExistingTimesheet();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedWeek]);
 
   const loadProjects = async () => {
@@ -63,10 +63,9 @@ export default function TimesheetEntry() {
         .select('id, name, code')
         .eq('is_active', true)
         .order('name');
-  
+
       if (!error && data) {
         setProjects(data);
-        console.log('Loaded projects:', data);
       } else {
         console.error('Error loading projects:', error);
       }
@@ -77,19 +76,22 @@ export default function TimesheetEntry() {
 
   const checkExistingTimesheet = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Look up employee by auth user id (NOT email)
       const { data: employee } = await supabase
         .from('employees')
         .select('id')
-        .eq('email', user.email || '')
+        .eq('id', user.id)
         .single();
 
       if (!employee) return;
 
       const weekEndingDate = getWeekEndingDate(selectedWeek);
-      
+
       const { data: existing } = await supabase
         .from('timesheets')
         .select('id, status')
@@ -106,12 +108,14 @@ export default function TimesheetEntry() {
         }
       } else {
         setExistingTimesheetId(null);
-        setRows([{
-          id: '1',
-          project_id: '',
-          hours: {},
-          notes: {}
-        }]);
+        setRows([
+          {
+            id: '1',
+            project_id: '',
+            hours: {},
+            notes: {},
+          },
+        ]);
       }
     } catch (error) {
       console.error('Error checking existing timesheet:', error);
@@ -128,14 +132,14 @@ export default function TimesheetEntry() {
 
       if (entries && entries.length > 0) {
         const projectGroups: { [key: string]: TimesheetRow } = {};
-        
-        entries.forEach(entry => {
+
+        entries.forEach((entry: any) => {
           if (!projectGroups[entry.project_id]) {
             projectGroups[entry.project_id] = {
               id: entry.project_id,
               project_id: entry.project_id,
               hours: {},
-              notes: {}
+              notes: {},
             };
           }
           projectGroups[entry.project_id].hours[entry.date] = entry.hours;
@@ -160,7 +164,7 @@ export default function TimesheetEntry() {
   };
 
   const getWeekDates = () => {
-    const dates = [];
+    const dates: Date[] = [];
     const startDate = new Date(selectedWeek);
     const day = startDate.getDay();
     const diff = startDate.getDate() - day;
@@ -182,50 +186,57 @@ export default function TimesheetEntry() {
     const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
     return {
       day: days[date.getDay()],
-      date: date.getDate()
+      date: date.getDate(),
     };
   };
 
   const updateRowHours = (rowId: string, dateStr: string, hours: number) => {
-    setRows(prev => prev.map(row => {
-      if (row.id === rowId) {
-        return {
-          ...row,
-          hours: {
-            ...row.hours,
-            [dateStr]: hours
-          }
-        };
-      }
-      return row;
-    }));
+    setRows((prev) =>
+      prev.map((row) => {
+        if (row.id === rowId) {
+          return {
+            ...row,
+            hours: {
+              ...row.hours,
+              [dateStr]: hours,
+            },
+          };
+        }
+        return row;
+      }),
+    );
   };
 
   const updateRowProject = (rowId: string, projectId: string) => {
-    setRows(prev => prev.map(row => {
-      if (row.id === rowId) {
-        return {
-          ...row,
-          project_id: projectId
-        };
-      }
-      return row;
-    }));
+    setRows((prev) =>
+      prev.map((row) => {
+        if (row.id === rowId) {
+          return {
+            ...row,
+            project_id: projectId,
+          };
+        }
+        return row;
+      }),
+    );
   };
 
   const addRow = () => {
-    const newId = (Math.max(...rows.map(r => parseInt(r.id))) + 1).toString();
-    setRows([...rows, {
-      id: newId,
-      project_id: '',
-      hours: {},
-      notes: {}
-    }]);
+    const newId = (Math.max(...rows.map((r) => parseInt(r.id))) + 1).toString();
+    setRows([
+      ...rows,
+      {
+        id: newId,
+        project_id: '',
+        hours: {},
+        notes: {},
+      },
+    ]);
   };
 
   const removeRow = (rowId: string) => {
     if (rows.length > 1) {
-      setRows(rows.filter(row => row.id !== rowId));
+      setRows(rows.filter((row) => row.id !== rowId));
     }
   };
 
@@ -233,10 +244,10 @@ export default function TimesheetEntry() {
     const dailyTotals: { [key: string]: number } = {};
     let weekTotal = 0;
 
-    getWeekDates().forEach(date => {
+    getWeekDates().forEach((date) => {
       const dateStr = formatDate(date);
       let dayTotal = 0;
-      rows.forEach(row => {
+      rows.forEach((row) => {
         dayTotal += row.hours[dateStr] || 0;
       });
       dailyTotals[dateStr] = dayTotal;
@@ -249,16 +260,17 @@ export default function TimesheetEntry() {
     return { dailyTotals, weekTotal, regularHours, overtimeHours };
   };
 
+  // 🔥 FIXED handleSubmit: align employee.id with auth user id & set employee_id on timesheets
   const handleSubmit = async (isDraft: boolean = false) => {
     setIsLoading(true);
     setErrorMessage('');
     setSuccessMessage('');
-    
+
     try {
       // Validate at least one row has project and hours
-      const validRows = rows.filter(row => {
+      const validRows = rows.filter((row) => {
         const hasProject = row.project_id !== '';
-        const hasHours = Object.values(row.hours).some(h => h > 0);
+        const hasHours = Object.values(row.hours).some((h) => h > 0);
         return hasProject && hasHours;
       });
 
@@ -268,133 +280,125 @@ export default function TimesheetEntry() {
         return;
       }
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      // Get current auth user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('No authenticated user');
 
-      // Get or create employee record
+      const authUserId = user.id;
+
+      // Get or create employee record whose id === auth.user.id
       let { data: employee } = await supabase
         .from('employees')
         .select('id')
-        .eq('email', user.email || '')
+        .eq('id', authUserId)
         .single();
-      
+
       if (!employee) {
-        // Create employee if doesn't exist
-        const { data: newEmployee } = await supabase
+        const { data: newEmployee, error: empInsertError } = await supabase
           .from('employees')
           .insert({
+            id: authUserId, // keep employee.id in sync with auth user id
             email: user.email,
             first_name: user.user_metadata?.first_name || 'Unknown',
             last_name: user.user_metadata?.last_name || 'User',
             role: 'employee',
             is_active: true,
-            hourly_rate: 0, // Default rate, should be updated by admin
-            department: 'General'
+            hourly_rate: 0, // default; admins can update later
+            department: 'General',
           })
-          .select()
+          .select('id')
           .single();
-        
-        if (!newEmployee) throw new Error('Could not create employee profile');
+
+        if (empInsertError || !newEmployee) {
+          throw empInsertError || new Error('Could not create employee profile');
+        }
         employee = newEmployee;
       }
 
+      const employeeId = employee.id;
       const weekEndingDate = getWeekEndingDate(selectedWeek);
       const { weekTotal, overtimeHours } = calculateTotals();
 
       let timesheetId = existingTimesheetId;
 
       if (existingTimesheetId) {
-        // Update existing timesheet
-        console.log('Updating existing timesheet:', existingTimesheetId);
-        
-        // Delete old entries
+        // Update existing timesheet: replace entries & update summary
         await supabase
           .from('timesheet_entries')
           .delete()
           .eq('timesheet_id', existingTimesheetId);
 
-        // Update timesheet
         const { error: updateError } = await supabase
           .from('timesheets')
           .update({
+            employee_id: employeeId,
             total_hours: weekTotal,
             overtime_hours: overtimeHours,
             status: isDraft ? 'draft' : 'submitted',
             submitted_at: isDraft ? null : new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq('id', existingTimesheetId);
 
         if (updateError) throw updateError;
-
       } else {
         // Create new timesheet
-        console.log('Creating new timesheet for week ending:', weekEndingDate);
-
         const { data: newTimesheet, error: createError } = await supabase
           .from('timesheets')
           .insert({
-            employee_id: null,
+            employee_id: employeeId, // 👈 critical fix
             week_ending: weekEndingDate,
             total_hours: weekTotal,
             overtime_hours: overtimeHours,
             status: isDraft ? 'draft' : 'submitted',
-            submitted_at: isDraft ? null : new Date().toISOString()
+            submitted_at: isDraft ? null : new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           })
           .select()
           .single();
 
-        if (createError) throw createError;
-        
+        if (createError || !newTimesheet) throw createError;
         timesheetId = newTimesheet.id;
-        console.log('Created timesheet with ID:', timesheetId);
       }
 
       // Create timesheet entries
-      const entries = [];
-      
+      const entries: any[] = [];
+      const weekDates = getWeekDates();
+
       for (const row of validRows) {
-        const weekDates = getWeekDates();
         for (const date of weekDates) {
           const dateStr = formatDate(date);
           const hours = row.hours[dateStr] || 0;
-          
+
           if (hours > 0) {
             entries.push({
               timesheet_id: timesheetId,
               date: dateStr,
               project_id: row.project_id,
-              hours: hours,
-              description: row.notes[dateStr] || ''
+              hours,
+              description: row.notes[dateStr] || '',
             });
-            console.log(`Adding entry for ${dateStr}: ${hours} hours on project ${row.project_id}`);
           }
         }
       }
 
       if (entries.length > 0) {
-        console.log('Creating timesheet entries:', entries);
-        
-        const { error: entriesError } = await supabase
-          .from('timesheet_entries')
-          .insert(entries);
-
+        const { error: entriesError } = await supabase.from('timesheet_entries').insert(entries);
         if (entriesError) throw entriesError;
-        
-        console.log('Successfully created entries');
       }
 
       setSuccessMessage(
-        existingTimesheetId 
-          ? `Timesheet updated successfully!` 
-          : `Timesheet ${isDraft ? 'saved as draft' : 'submitted successfully'}!`
+        existingTimesheetId
+          ? 'Timesheet updated successfully!'
+          : `Timesheet ${isDraft ? 'saved as draft' : 'submitted successfully'}!`,
       );
-      
+
       setTimeout(() => {
         router.push('/employee');
       }, 1500);
-
     } catch (error: any) {
       console.error('Error in handleSubmit:', error);
       setErrorMessage(error.message || 'Error submitting timesheet. Please try again.');
@@ -405,7 +409,7 @@ export default function TimesheetEntry() {
 
   const navigateWeek = (direction: number) => {
     const newDate = new Date(selectedWeek);
-    newDate.setDate(newDate.getDate() + (direction * 7));
+    newDate.setDate(newDate.getDate() + direction * 7);
     setSelectedWeek(newDate);
   };
 
@@ -472,8 +476,17 @@ export default function TimesheetEntry() {
 
           {/* Week Date Range */}
           <div className="text-center text-sm text-gray-600">
-            {getWeekDates()[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - {' '}
-            {getWeekDates()[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            {getWeekDates()[0].toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}{' '}
+            -{' '}
+            {getWeekDates()[6].toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}
           </div>
         </div>
 
@@ -498,10 +511,13 @@ export default function TimesheetEntry() {
               <thead>
                 <tr className="bg-[#05202E] text-white">
                   <th className="text-left px-4 py-3 font-medium">PROJECT</th>
-                  {getWeekDates().map(date => {
+                  {getWeekDates().map((date) => {
                     const header = formatDateHeader(date);
                     return (
-                      <th key={date.toISOString()} className="text-center px-2 py-3 font-medium min-w-[80px]">
+                      <th
+                        key={date.toISOString()}
+                        className="text-center px-2 py-3 font-medium min-w-[80px]"
+                      >
                         <div>{header.day}</div>
                         <div className="text-xs opacity-75">{header.date}</div>
                       </th>
@@ -512,7 +528,7 @@ export default function TimesheetEntry() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row, index) => {
+                {rows.map((row) => {
                   const rowTotal = Object.values(row.hours).reduce((sum, h) => sum + h, 0);
                   return (
                     <tr key={row.id} className="border-b hover:bg-gray-50">
@@ -523,14 +539,14 @@ export default function TimesheetEntry() {
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#e31c79] focus:border-transparent"
                         >
                           <option value="">Select a project...</option>
-                          {projects.map(project => (
+                          {projects.map((project) => (
                             <option key={project.id} value={project.id}>
                               {project.name} {project.code && `(${project.code})`}
                             </option>
                           ))}
                         </select>
                       </td>
-                      {getWeekDates().map(date => {
+                      {getWeekDates().map((date) => {
                         const dateStr = formatDate(date);
                         return (
                           <td key={dateStr} className="px-2 py-3">
@@ -540,7 +556,13 @@ export default function TimesheetEntry() {
                               max="24"
                               step="0.5"
                               value={row.hours[dateStr] || ''}
-                              onChange={(e) => updateRowHours(row.id, dateStr, parseFloat(e.target.value) || 0)}
+                              onChange={(e) =>
+                                updateRowHours(
+                                  row.id,
+                                  dateStr,
+                                  parseFloat(e.target.value) || 0,
+                                )
+                              }
                               className="w-full px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-[#e31c79] focus:border-transparent"
                               placeholder="0"
                             />
@@ -566,10 +588,13 @@ export default function TimesheetEntry() {
               <tfoot>
                 <tr className="bg-gray-50 font-medium">
                   <td className="px-4 py-3 text-[#05202E]">Daily Totals:</td>
-                  {getWeekDates().map(date => {
+                  {getWeekDates().map((date) => {
                     const dateStr = formatDate(date);
                     return (
-                      <td key={dateStr} className="px-2 py-3 text-center text-[#05202E]">
+                      <td
+                        key={dateStr}
+                        className="px-2 py-3 text-center text-[#05202E]"
+                      >
                         {dailyTotals[dateStr]?.toFixed(1) || '0.0'}
                       </td>
                     );
@@ -609,7 +634,9 @@ export default function TimesheetEntry() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm">Total Hours:</span>
-                <span className="font-bold text-lg text-[#e31c79]">{weekTotal.toFixed(1)}</span>
+                <span className="font-bold text-lg text-[#e31c79]">
+                  {weekTotal.toFixed(1)}
+                </span>
               </div>
             </div>
             <div className="text-sm text-gray-600">
@@ -620,7 +647,9 @@ export default function TimesheetEntry() {
 
         {/* Attestation */}
         <div className="bg-white rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-[#05202E] mb-4">Timesheet Attestation</h3>
+          <h3 className="text-lg font-semibold text-[#05202E] mb-4">
+            Timesheet Attestation
+          </h3>
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"

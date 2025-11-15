@@ -78,9 +78,6 @@ export async function POST(request: NextRequest) {
 
     // Get form data
     const body = await request.json()
-    console.log('API received body:', body)  // ADD THIS
-console.log('Email from body:', body.email)  // ADD THIS
-console.log('Password from body:', body.password)  // ADD THIS
     const {
       email,
       password,
@@ -90,15 +87,13 @@ console.log('Password from body:', body.password)  // ADD THIS
       department,
       managerId,
       hourlyRate,
-      employeeId,
+      employeeId,  // We receive it but don't use it since column doesn't exist
       mybasePayrollId,
       hireDate,
       state,
       isActive,
       isExempt
     } = body
-    console.log('Extracted email:', email)  // ADD THIS
-console.log('Extracted password:', password)  // ADD THIS
 
     // Step 1: Create auth user using admin client
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -113,14 +108,20 @@ console.log('Extracted password:', password)  // ADD THIS
     })
 
     if (authError) {
-      console.error('Auth error details:', {
-        message: authError.message,
-        status: authError.status,
-        code: authError.code,
-        details: authError
-      })
+      console.error('Auth error details:', authError)
+      
+      // Check if it's a duplicate user error
+      if (authError.message?.includes('already been registered') || 
+          authError.message?.includes('already exists') ||
+          authError.message?.includes('duplicate')) {
+        return NextResponse.json({ 
+          error: 'A user with this email already exists. Please use a different email.' 
+        }, { status: 400 })
+      }
+      
+      // Other errors
       return NextResponse.json({ 
-        error: `AuthApiError: ${authError.message} (${authError.code})` 
+        error: `Error creating user: ${authError.message}` 
       }, { status: 400 })
     }
 
@@ -131,26 +132,29 @@ console.log('Extracted password:', password)  // ADD THIS
     }
 
     // Step 2: Create employee record using the auth user's ID
-   // Step 2: Create employee record using the auth user's ID
-   const { data: employee, error: employeeError } = await supabase
-  .from('employees')
-  .insert({
-    id: authUser.user.id,
-    email: email,
-    first_name: firstName,
-    last_name: lastName,
-    role: role || 'employee',
-    department: department || null,
-    manager_id: managerId || null,
-    hourly_rate: hourlyRate || null,
-    pay_rate: hourlyRate || null,
-    bill_rate: null,
-    is_active: isActive !== undefined ? isActive : true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  })
-  .select()
-  .single()
+    // REMOVED employee_id since it doesn't exist in your database
+    const { data: employee, error: employeeError } = await supabase
+      .from('employees')
+      .insert({
+        id: authUser.user.id,
+        email: email,
+        first_name: firstName,
+        last_name: lastName,
+        role: role || 'employee',
+        department: department || null,
+        manager_id: managerId || null,
+        mybase_payroll_id: mybasePayrollId || null,
+        // employee_id removed - doesn't exist in database
+        hourly_rate: hourlyRate || null,
+        hire_date: hireDate || null,
+        state: state || null,
+        is_active: isActive !== undefined ? isActive : true,
+        is_exempt: isExempt || false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
 
     if (employeeError) {
       console.error('Employee creation error:', employeeError)

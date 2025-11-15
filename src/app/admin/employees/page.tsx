@@ -3,9 +3,16 @@
 import { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
-import { 
-  Users, Plus, Search, Edit, Trash2, ChevronLeft, X,
-  Mail, Phone, Calendar, DollarSign, UserCheck, Building2
+import {
+  Users,
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  ChevronLeft,
+  X,
+  UserCheck,
+  Building2,
 } from 'lucide-react';
 
 const US_STATES = [
@@ -58,7 +65,7 @@ const US_STATES = [
   { value: 'WA', label: 'Washington' },
   { value: 'WV', label: 'West Virginia' },
   { value: 'WI', label: 'Wisconsin' },
-  { value: 'WY', label: 'Wyoming' }
+  { value: 'WY', label: 'Wyoming' },
 ];
 
 interface Employee {
@@ -97,7 +104,9 @@ export default function EmployeeManagement() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
+  const [isCreating, setIsCreating] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+
   const supabase = createClientComponentClient();
   const router = useRouter();
 
@@ -114,9 +123,9 @@ export default function EmployeeManagement() {
     is_exempt: false,
     state: 'CA',
     employee_id: '',
-    mybase_payroll_id: '',  // Keep as empty string for form
-    manager_id: '',         // Added
-    password: '' // Only for new employees
+    mybase_payroll_id: '',
+    manager_id: '',
+    password: '',
   });
 
   useEffect(() => {
@@ -129,8 +138,11 @@ export default function EmployeeManagement() {
 
   const checkAuthAndFetch = async () => {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
       if (authError || !user) {
         router.push('/auth/login');
         return;
@@ -148,7 +160,7 @@ export default function EmployeeManagement() {
       }
 
       await fetchEmployees();
-      await fetchManagers();  // Added
+      await fetchManagers();
     } catch (err) {
       console.error('Error:', err);
       setError('Failed to load data');
@@ -174,7 +186,6 @@ export default function EmployeeManagement() {
     }
   };
 
-  // Added function to fetch managers
   const fetchManagers = async () => {
     try {
       const { data, error } = await supabase
@@ -195,69 +206,98 @@ export default function EmployeeManagement() {
     let filtered = [...employees];
 
     if (searchTerm) {
-      filtered = filtered.filter(emp => 
-        emp.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        emp.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        emp.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        emp.employee_id?.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (emp) =>
+          emp.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          emp.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          emp.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          emp.employee_id?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     setFilteredEmployees(filtered);
   };
 
-// Instead of creating user directly, call the API
-const handleAddEmployee = async () => {  // Remove the parameter
-  try {
-    console.log('Client sending:', {
-      email: formData.email,
-      hasEmail: 'email' in formData,
-      allKeys: Object.keys(formData),
-      formData: formData
-    })
-    const response = await fetch('/api/admin/employees', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: formData.email,  // Now this uses the state formData
-        password: formData.password,
-        firstName: formData.first_name,
-        lastName: formData.last_name,
-        role: formData.role,
-        department: formData.department,
-        managerId: formData.manager_id,
-        hourlyRate: formData.hourly_rate,
-        employeeId: formData.employee_id,
-        mybasePayrollId: formData.mybase_payroll_id || null,
-        hireDate: formData.hire_date,
-        state: formData.state,
-        isActive: formData.is_active,
-        isExempt: formData.is_exempt
-      })
-    })
+  // Create employee via API
+  const handleAddEmployee = async () => {
+    setIsCreating(true);
+    setError(null);
+    setSuccess(null);
 
-    const data = await response.json()
-    
-    if (!response.ok) {
-      throw new Error((data as any).error || 'Failed to create employee')
+    try {
+      if (
+        !formData.email ||
+        !formData.first_name ||
+        !formData.last_name ||
+        !formData.password ||
+        !formData.manager_id
+      ) {
+        setError('Please fill in all required fields');
+        setIsCreating(false);
+        return;
+      }
+
+      if (formData.password.length < 6) {
+        setError('Password must be at least 6 characters');
+        setIsCreating(false);
+        return;
+      }
+
+      const response = await fetch('/api/admin/employees', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          firstName: formData.first_name,
+          lastName: formData.last_name,
+          role: formData.role || 'employee',
+          department: formData.department || null,
+          managerId: formData.manager_id,
+          hourlyRate: formData.hourly_rate || null,
+          employeeId: formData.employee_id || null,
+          mybasePayrollId: formData.mybase_payroll_id,
+          hireDate: formData.hire_date || null,
+          state: formData.state || null,
+          isActive: formData.is_active,
+          isExempt: formData.is_exempt,
+        }),
+      });
+
+      const data = await response.json();
+      console.log('API Response:', data);
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create employee');
+      }
+
+      setSuccess(
+        `Employee "${formData.first_name} ${formData.last_name}" created successfully!`
+      );
+
+      await fetchEmployees();
+
+      setTimeout(() => {
+        setShowAddModal(false);
+        resetForm();
+        setSuccess(null);
+      }, 3000);
+    } catch (error: any) {
+      console.error('Error adding employee:', error);
+      setError(error?.message || 'Failed to create employee');
+    } finally {
+      setIsCreating(false);
     }
-    
-    // Success! 
-    alert('Employee created successfully!')
-    await fetchEmployees() // Refresh the employee list
-    
-  } catch (error: any) {
-    console.error('Error adding employee:', error)
-    alert(error?.message || 'Database error saving new user')
-  }
-}
+  };
 
   const handleUpdateEmployee = async () => {
     if (!selectedEmployee) return;
 
     try {
-      const updateData = { ...formData };
-      delete (updateData as any).password;
+      const updateData: any = { ...formData };
+      delete updateData.password;
 
       const { error } = await supabase
         .from('employees')
@@ -307,9 +347,9 @@ const handleAddEmployee = async () => {  // Remove the parameter
       is_exempt: employee.is_exempt || false,
       state: employee.state || 'CA',
       employee_id: employee.employee_id || '',
-      mybase_payroll_id: employee.mybase_payroll_id || '',  // Added
-      manager_id: employee.manager_id || '',                // Added
-      password: ''
+      mybase_payroll_id: employee.mybase_payroll_id || '',
+      manager_id: employee.manager_id || '',
+      password: '',
     });
     setShowEditModal(true);
   };
@@ -328,9 +368,9 @@ const handleAddEmployee = async () => {  // Remove the parameter
       is_exempt: false,
       state: 'CA',
       employee_id: '',
-      mybase_payroll_id: '',  // Added
-      manager_id: '',         // Added
-      password: ''
+      mybase_payroll_id: '',
+      manager_id: '',
+      password: '',
     });
   };
 
@@ -363,8 +403,12 @@ const handleAddEmployee = async () => {  // Remove the parameter
                   <Users className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-semibold text-white">Employee Management</h1>
-                  <span className="text-xs text-gray-300">Manage workforce and permissions</span>
+                  <h1 className="text-xl font-semibold text-white">
+                    Employee Management
+                  </h1>
+                  <span className="text-xs text-gray-300">
+                    Manage workforce and permissions
+                  </span>
                 </div>
               </div>
             </div>
@@ -403,7 +447,9 @@ const handleAddEmployee = async () => {  // Remove the parameter
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Employees</p>
-                <p className="text-2xl font-bold text-gray-900">{employees.length}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {employees.length}
+                </p>
               </div>
               <Users className="h-8 w-8 text-gray-400" />
             </div>
@@ -413,7 +459,7 @@ const handleAddEmployee = async () => {  // Remove the parameter
               <div>
                 <p className="text-sm text-gray-600">Active</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {employees.filter(e => e.is_active).length}
+                  {employees.filter((e) => e.is_active).length}
                 </p>
               </div>
               <UserCheck className="h-8 w-8 text-green-500" />
@@ -424,7 +470,7 @@ const handleAddEmployee = async () => {  // Remove the parameter
               <div>
                 <p className="text-sm text-gray-600">Managers</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {employees.filter(e => e.role === 'manager').length}
+                  {employees.filter((e) => e.role === 'manager').length}
                 </p>
               </div>
               <Building2 className="h-8 w-8 text-blue-500" />
@@ -435,7 +481,7 @@ const handleAddEmployee = async () => {  // Remove the parameter
               <div>
                 <p className="text-sm text-gray-600">Admins</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {employees.filter(e => e.role === 'admin').length}
+                  {employees.filter((e) => e.role === 'admin').length}
                 </p>
               </div>
               <UserCheck className="h-8 w-8 text-purple-500" />
@@ -448,11 +494,21 @@ const handleAddEmployee = async () => {  // Remove the parameter
           <table className="min-w-full">
             <thead className="bg-[#05202E] text-white">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Employee</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Contact</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Role</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Employee
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Contact
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Role
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -464,26 +520,45 @@ const handleAddEmployee = async () => {  // Remove the parameter
                         {employee.first_name} {employee.last_name}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {employee.mybase_payroll_id || employee.employee_id || 'No ID'}
+                        {employee.mybase_payroll_id ||
+                          employee.employee_id ||
+                          'No ID'}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{employee.email}</div>
-                    <div className="text-sm text-gray-500">{employee.phone || 'No phone'}</div>
+                    <div className="text-sm text-gray-900">
+                      {employee.email}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {employee.phone || 'No phone'}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                      ${employee.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                        employee.role === 'manager' ? 'bg-blue-100 text-blue-800' :
-                        employee.role === 'time_approver' ? 'bg-orange-100 text-orange-800' :
-                        'bg-gray-100 text-gray-800'}`}>
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                      ${
+                        employee.role === 'admin'
+                          ? 'bg-purple-100 text-purple-800'
+                          : employee.role === 'manager'
+                          ? 'bg-blue-100 text-blue-800'
+                          : employee.role === 'time_approver'
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
                       {employee.role}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                      ${employee.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                      ${
+                        employee.is_active
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}
+                    >
                       {employee.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
@@ -495,7 +570,9 @@ const handleAddEmployee = async () => {  // Remove the parameter
                       <Edit className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={() => handleDeactivateEmployee(employee.id)}
+                      onClick={() =>
+                        handleDeactivateEmployee(employee.id)
+                      }
                       className="text-red-600 hover:text-red-900"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -531,131 +608,233 @@ const handleAddEmployee = async () => {  // Remove the parameter
             </div>
 
             <div className="p-6">
+              {(error || success) && (
+                <div className="mb-4">
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-md text-sm">
+                      {error}
+                    </div>
+                  )}
+                  {success && (
+                    <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-md text-sm">
+                      {success}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
+                {/* First Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name *
+                  </label>
                   <input
                     type="text"
                     value={formData.first_name}
-                    onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        first_name: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   />
                 </div>
 
+                {/* Last Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name *
+                  </label>
                   <input
                     type="text"
                     value={formData.last_name}
-                    onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        last_name: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   />
                 </div>
 
+                {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email *
+                  </label>
                   <input
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        email: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   />
                 </div>
 
+                {/* Phone */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone
+                  </label>
                   <input
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        phone: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   />
                 </div>
 
+                {/* Employee ID */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Employee ID
+                  </label>
                   <input
                     type="text"
                     value={formData.employee_id}
-                    onChange={(e) => setFormData({...formData, employee_id: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        employee_id: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   />
                 </div>
 
-                {/* MyBase Payroll ID - Optional */}
-<div>
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    MyBase Payroll ID <span className="text-gray-400">(Optional)</span>
-  </label>
-  <input
-  type="text"
-  value={formData.mybase_payroll_id || ''}  // Add || '' to handle null/undefined
-  onChange={(e) => setFormData({...formData, mybase_payroll_id: e.target.value})}
-  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
-  placeholder="Leave blank if not needed"
-/>
-  <p className="text-xs text-gray-600 mt-1">For payroll exports (can be added later)</p>
-</div>
+                {/* MyBase Payroll ID */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    MyBase Payroll ID{' '}
+                    <span className="text-gray-400">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.mybase_payroll_id || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        mybase_payroll_id: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    placeholder="Leave blank if not needed"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">
+                    For payroll exports (can be added later)
+                  </p>
+                </div>
 
-                {/* CRITICAL: Time Approver */}
+                {/* Time Approver */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Time Approver <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.manager_id}
-                    onChange={(e) => setFormData({...formData, manager_id: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        manager_id: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                     required
                   >
                     <option value="">Select Time Approver</option>
-                    {managers.map(manager => (
+                    {managers.map((manager) => (
                       <option key={manager.id} value={manager.id}>
-                        {manager.first_name} {manager.last_name} 
-                        {manager.department ? ` - ${manager.department}` : ''}
+                        {manager.first_name} {manager.last_name}
+                        {manager.department
+                          ? ` - ${manager.department}`
+                          : ''}
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">Timesheets will appear on this approver's dashboard</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Timesheets will appear on this approver&apos;s dashboard
+                  </p>
                 </div>
 
+                {/* Hourly Rate */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Hourly Rate
+                  </label>
                   <input
                     type="number"
                     step="0.01"
                     value={formData.hourly_rate}
-                    onChange={(e) => setFormData({...formData, hourly_rate: parseFloat(e.target.value)})}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFormData({
+                        ...formData,
+                        hourly_rate:
+                          value === '' ? 0 : parseFloat(value),
+                      });
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   />
                 </div>
 
+                {/* Hire Date */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hire Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Hire Date
+                  </label>
                   <input
                     type="date"
                     value={formData.hire_date}
-                    onChange={(e) => setFormData({...formData, hire_date: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        hire_date: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   />
                 </div>
 
+                {/* State */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    State
+                  </label>
                   <select
                     value={formData.state}
-                    onChange={(e) => setFormData({...formData, state: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        state: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   >
                     <option value="">Select State</option>
-                    {US_STATES.map(state => (
-                      <option key={state.value} value={state.value}>
+                    {US_STATES.map((state) => (
+                      <option
+                        key={state.value}
+                        value={state.value}
+                      >
                         {state.label}
                       </option>
                     ))}
                   </select>
                 </div>
 
+                {/* Temp Password (add mode only) */}
                 {showAddModal && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -664,31 +843,51 @@ const handleAddEmployee = async () => {  // Remove the parameter
                     <input
                       type="password"
                       value={formData.password}
-                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          password: e.target.value,
+                        })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
-                      placeholder="Min 8 characters"
+                      placeholder="Min 6 characters"
                     />
                   </div>
                 )}
 
+                {/* Status + Exempt */}
                 <div className="col-span-2 flex items-center gap-6">
                   <label className="flex items-center">
                     <input
                       type="checkbox"
                       checked={formData.is_active}
-                      onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          is_active: e.target.checked,
+                        })
+                      }
                       className="mr-2 text-[#e31c79]"
                     />
-                    <span className="text-sm text-gray-700">Active</span>
+                    <span className="text-sm text-gray-700">
+                      Active
+                    </span>
                   </label>
                   <label className="flex items-center">
                     <input
                       type="checkbox"
                       checked={formData.is_exempt}
-                      onChange={(e) => setFormData({...formData, is_exempt: e.target.checked})}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          is_exempt: e.target.checked,
+                        })
+                      }
                       className="mr-2 text-[#e31c79]"
                     />
-                    <span className="text-sm text-gray-700">Exempt (Salary)</span>
+                    <span className="text-sm text-gray-700">
+                      Exempt (Salary)
+                    </span>
                   </label>
                 </div>
               </div>
@@ -705,10 +904,19 @@ const handleAddEmployee = async () => {  // Remove the parameter
                   Cancel
                 </button>
                 <button
-                  onClick={showAddModal ? handleAddEmployee : handleUpdateEmployee}
-                  className="px-4 py-2 bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865]"
+                  onClick={
+                    showAddModal
+                      ? handleAddEmployee
+                      : handleUpdateEmployee
+                  }
+                  disabled={isCreating}
+                  className="px-4 py-2 bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865] disabled:opacity-60"
                 >
-                  {showAddModal ? 'Add Employee' : 'Save Changes'}
+                  {showAddModal
+                    ? isCreating
+                      ? 'Adding...'
+                      : 'Add Employee'
+                    : 'Save Changes'}
                 </button>
               </div>
             </div>

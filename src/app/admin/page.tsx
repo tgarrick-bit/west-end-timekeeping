@@ -95,11 +95,15 @@ export default function AdminPage() {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<'all' | 'approved' | 'pending' | 'rejected' | 'unsubmitted'>('pending')
   const [managerFilter, setManagerFilter] = useState<string>('all')
-  
+const [employeeFilter, setEmployeeFilter] = useState<string>('all')
+
   // Modal state for timesheet viewing
   const [selectedTimesheet, setSelectedTimesheet] = useState<any>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [processingId, setProcessingId] = useState<string | null>(null)
+  const [selectedExpense, setSelectedExpense] = useState<any>(null)
+const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false)
+
 
   useEffect(() => {
     checkAdminAndLoad()
@@ -465,6 +469,33 @@ export default function AdminPage() {
     }
   }
 
+  const handleViewExpense = async (submission: Submission) => {
+    if (submission.type !== 'expense') return
+  
+    try {
+      setProcessingId(submission.id)
+  
+      // Basic fetch – we can join later if you want project info
+      const { data: expenseData, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .eq('id', submission.id)
+        .single()
+  
+      if (error) throw error
+  
+      setSelectedExpense({
+        ...expenseData,
+        employee: submission.employee, // use already-loaded employee object for name/email
+      })
+      setIsExpenseModalOpen(true)
+    } catch (err) {
+      console.error('Error loading expense details:', err)
+    } finally {
+      setProcessingId(null)
+    }
+  }  
+
   const handleApprove = async (submission: Submission) => {
     const table = submission.type === 'timesheet' ? 'timesheets' : 'expenses'
     
@@ -575,19 +606,26 @@ export default function AdminPage() {
   
   const filteredSubmissions = (() => {
     let filtered = submissions
-    
+  
+    // Tab filters
     if (activeTab === 'all') filtered = submissions
     else if (activeTab === 'approved') filtered = submissions.filter(s => s.status === 'approved')
     else if (activeTab === 'pending') filtered = submissions.filter(s => s.status === 'submitted')
     else if (activeTab === 'rejected') filtered = submissions.filter(s => s.status === 'rejected')
     else if (activeTab === 'unsubmitted') filtered = submissions.filter(s => s.status === 'draft')
-    
+  
+    // Manager filter
     if (managerFilter && managerFilter !== 'all') {
       filtered = filtered.filter(s => s.employee?.manager_id === managerFilter)
     }
-    
+  
+    // ✅ Employee filter
+    if (employeeFilter && employeeFilter !== 'all') {
+      filtered = filtered.filter(s => s.employee?.id === employeeFilter)
+    }
+  
     return filtered
-  })()
+  })()  
 
   if (isLoading) {
     return (
@@ -800,16 +838,20 @@ export default function AdminPage() {
               </div>
 
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-700">Employee:</span>
-                <select className="text-sm px-3 py-1 border border-gray-300 rounded">
-                  <option value="all">- All -</option>
-                  {employees.map(emp => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.first_name} {emp.last_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+  <span className="text-sm text-gray-700">Employee:</span>
+  <select
+    className="text-sm px-3 py-1 border border-gray-300 rounded"
+    value={employeeFilter}
+    onChange={(e) => setEmployeeFilter(e.target.value)}
+  >
+    <option value="all">- All -</option>
+    {employees.map(emp => (
+      <option key={emp.id} value={emp.id}>
+        {emp.first_name} {emp.last_name}
+      </option>
+    ))}
+  </select>
+</div>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -1074,6 +1116,112 @@ export default function AdminPage() {
                     <span>1 - {allTimesheetsCount} of {allTimesheetsCount}</span>
                   </div>
                 </div>
+
+                {/* Expenses Section */}
+<div className="border-b">
+  <div className="bg-pink-700 px-4 py-2 flex justify-between items-center">
+    <h3 className="text-sm font-semibold text-white">All Expenses</h3>
+    <div className="flex items-center space-x-2 text-xs text-pink-100">
+      <span>
+        {filteredSubmissions.filter(s => s.type === 'expense').length} expense
+        {filteredSubmissions.filter(s => s.type === 'expense').length !== 1 ? 's' : ''}
+      </span>
+    </div>
+  </div>
+
+  {filteredSubmissions.filter(s => s.type === 'expense').length === 0 ? (
+    <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
+      None
+    </div>
+  ) : (
+    <>
+      <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b">
+        <div className="flex-1">Employee</div>
+        <div className="w-32 text-center">Date</div>
+        <div className="w-32 text-center">Category</div>
+        <div className="w-24 text-right">Amount</div>
+        <div className="w-32 text-center">Status</div>
+        <div className="w-32 text-center">Actions</div>
+      </div>
+
+      {filteredSubmissions
+        .filter(s => s.type === 'expense')
+        .map((submission, index) => (
+          <div
+            key={submission.id}
+            className={`px-4 py-3 flex items-center ${
+              index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+            } hover:bg-gray-100 border-b`}
+          >
+            <div className="flex-1">
+              <div className="text-sm text-gray-900">
+                {submission.employee?.first_name} {submission.employee?.last_name}
+              </div>
+              <div className="text-xs text-gray-500">
+                {submission.employee?.email}
+              </div>
+            </div>
+            <div className="w-32 text-center text-sm text-gray-700">
+              {new Date(submission.date).toLocaleDateString()}
+            </div>
+            <div className="w-32 text-center text-sm text-gray-700">
+              {submission.category || '—'}
+            </div>
+            <div className="w-24 text-right text-sm font-medium">
+              ${submission.amount.toFixed(2)}
+            </div>
+            <div className="w-32 text-center">
+              <span
+                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                  submission.status === 'approved'
+                    ? 'bg-green-100 text-green-800'
+                    : submission.status === 'submitted'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : submission.status === 'rejected'
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                {submission.status === 'submitted'
+                  ? 'Pending'
+                  : submission.status.charAt(0).toUpperCase() +
+                    submission.status.slice(1)}
+              </span>
+            </div>
+            <div className="w-32 text-center flex items-center justify-center space-x-2">
+  <button
+    onClick={() => handleViewExpense(submission)}
+    className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+    title="View details"
+    disabled={processingId === submission.id}
+  >
+    <Eye className="h-4 w-4" />
+  </button>
+
+  {submission.status === 'submitted' && (
+    <>
+      <button
+        onClick={() => handleApprove(submission)}
+        className="p-1 text-green-600 hover:bg-green-50 rounded"
+        title="Approve"
+      >
+        <CheckCircle className="h-4 w-4" />
+      </button>
+      <button
+        onClick={() => handleReject(submission)}
+        className="p-1 text-red-600 hover:bg-red-50 rounded"
+        title="Reject"
+      >
+        <XCircle className="h-4 w-4" />
+      </button>
+    </>
+  )}
+</div>
+          </div>
+        ))}
+    </>
+  )}
+</div>
                 
                 {allTimesheetsCount === 0 ? (
                   <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
@@ -1151,6 +1299,78 @@ export default function AdminPage() {
                   <div className="flex items-center space-x-2 text-xs text-gray-300">
                     <span>{timesheetPendingCount} pending</span>
                   </div>
+
+                  {/* Pending Expenses Section */}
+<div className="mt-6 border-t">
+  <div className="bg-pink-700 px-4 py-2 flex justify-between items-center">
+    <h3 className="text-sm font-semibold text-white">Pending Expenses</h3>
+    <div className="flex items-center space-x-2 text-xs text-pink-100">
+      <span>{expensePendingCount} pending</span>
+    </div>
+  </div>
+
+  {filteredSubmissions.filter(s => s.type === 'expense' && s.status === 'submitted').length === 0 ? (
+    <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
+      No pending expenses awaiting approval
+    </div>
+  ) : (
+    <>
+      <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b">
+        <div className="flex-1">Employee</div>
+        <div className="w-32 text-center">Date</div>
+        <div className="w-32 text-center">Category</div>
+        <div className="w-24 text-right">Amount</div>
+        <div className="w-32 text-center">Actions</div>
+      </div>
+
+      {filteredSubmissions
+        .filter(s => s.type === 'expense' && s.status === 'submitted')
+        .map((submission, index) => (
+          <div
+            key={submission.id}
+            className={`px-4 py-3 flex items-center ${
+              index % 2 === 0 ? 'bg-yellow-50' : 'bg-white'
+            } hover:bg-yellow-100 border-b`}
+          >
+            <div className="flex-1">
+              <div className="text-sm text-gray-900">
+                {submission.employee?.first_name} {submission.employee?.last_name}
+              </div>
+              <div className="text-xs text-gray-500">
+                {submission.employee?.email}
+              </div>
+            </div>
+            <div className="w-32 text-center text-sm text-gray-700">
+              {new Date(submission.date).toLocaleDateString()}
+            </div>
+            <div className="w-32 text-center text-sm text-gray-700">
+              {submission.category || '—'}
+            </div>
+            <div className="w-24 text-right text-sm font-medium">
+              ${submission.amount.toFixed(2)}
+            </div>
+            <div className="w-32 text-center flex items-center justify-center space-x-2">
+              <button
+                onClick={() => handleApprove(submission)}
+                className="p-1 text-green-600 hover:bg-green-50 rounded"
+                title="Approve"
+              >
+                <CheckCircle className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => handleReject(submission)}
+                className="p-1 text-red-600 hover:bg-red-50 rounded"
+                title="Reject"
+              >
+                <XCircle className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+    </>
+  )}
+</div>
+
                 </div>
                 
                 {filteredSubmissions.filter(s => s.type === 'timesheet' && s.status === 'submitted').length === 0 ? (
@@ -1384,7 +1604,7 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Timesheet Modal */}
+                 {/* Timesheet Modal */}
       {selectedTimesheet && (
         <TimesheetModal
           isOpen={isModalOpen}
@@ -1396,6 +1616,96 @@ export default function AdminPage() {
           onApprove={handleModalApprove}
           onReject={handleModalReject}
         />
+      )}
+
+      {/* Expense Modal */}
+      {isExpenseModalOpen && selectedExpense && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Expense Details
+              </h3>
+              <button
+                onClick={() => {
+                  setIsExpenseModalOpen(false)
+                  setSelectedExpense(null)
+                }}
+                className="p-1 rounded hover:bg-gray-100"
+              >
+                <XCircle className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-sm text-gray-700">
+              <div>
+                <span className="font-medium">Employee: </span>
+                {selectedExpense.employee
+                  ? `${selectedExpense.employee.first_name} ${selectedExpense.employee.last_name} (${selectedExpense.employee.email})`
+                  : 'Unknown'}
+              </div>
+              <div>
+                <span className="font-medium">Date: </span>
+                {new Date(selectedExpense.expense_date).toLocaleDateString()}
+              </div>
+              <div>
+                <span className="font-medium">Category: </span>
+                {selectedExpense.category}
+              </div>
+              <div>
+                <span className="font-medium">Amount: </span>
+                ${selectedExpense.amount?.toFixed(2)}
+              </div>
+
+              {selectedExpense.vendor && (
+                <div>
+                  <span className="font-medium">Vendor: </span>
+                  {selectedExpense.vendor}
+                </div>
+              )}
+
+              {selectedExpense.description && (
+                <div>
+                  <span className="font-medium">Description: </span>
+                  {selectedExpense.description}
+                </div>
+              )}
+
+              {selectedExpense.receipt_url && (
+                <div>
+                  <span className="font-medium">Receipt: </span>
+                  <a
+                    href={selectedExpense.receipt_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    View uploaded receipt
+                  </a>
+                </div>
+              )}
+
+              {selectedExpense.rejection_reason && (
+                <div className="text-red-700">
+                  <span className="font-medium">Rejection reason: </span>
+                  {selectedExpense.rejection_reason}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setIsExpenseModalOpen(false)
+                  setSelectedExpense(null)
+                }}
+                className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
