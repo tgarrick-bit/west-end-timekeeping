@@ -87,18 +87,35 @@ export async function POST(request: NextRequest) {
       department,
       managerId,
       hourlyRate,
+      billRate,         // NEW: from frontend
       employeeId,
       mybasePayrollId,
       hireDate,
       state,
       isActive,
-      isExempt
+      isExempt,
     } = body
 
-    // ✅ Required fields (MyBase Payroll ID is NOT here)
-    if (!email || !password || !firstName || !lastName || !managerId) {
+    const effectiveRole = role || 'employee'
+    const isEmployee = effectiveRole === 'employee'
+
+    // ✅ Required fields: managerId only required for employees
+    if (
+      !email ||
+      !password ||
+      !firstName ||
+      !lastName ||
+      (isEmployee && !managerId)
+    ) {
+      let errorMessage = 'Please fill in all required fields.'
+
+      if (isEmployee && !managerId) {
+        errorMessage =
+          'Please fill in all required fields, including Time Approver, for employees.'
+      }
+
       return NextResponse.json(
-        { error: 'Please fill in all required fields including Time Approver.' },
+        { error: errorMessage },
         { status: 400 }
       )
     }
@@ -118,8 +135,8 @@ export async function POST(request: NextRequest) {
       user_metadata: {
         first_name: firstName,
         last_name: lastName,
-        role: role || 'employee'
-      }
+        role: effectiveRole,
+      },
     })
 
     if (authError) {
@@ -144,35 +161,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create auth user' }, { status: 400 })
     }
 
-    // Step 2: Create employee record using the auth user's ID
+    const authId = authUser.user.id
+
+    // Step 2: Create or update employee record using the auth user's ID
+    //        (upsert makes this idempotent and avoids duplicate key errors)
     const { data: employee, error: employeeError } = await supabase
       .from('employees')
-      .insert({
-        id: authUser.user.id,
-        email,
-        first_name: firstName,
-        last_name: lastName,
-        role: role || 'employee',
-        department: department || null,
-        manager_id: managerId || null,
-        mybase_payroll_id: mybasePayrollId || null,   // ✅ optional
-        employee_id: employeeId || null,              // use if column exists; remove if not
-        hourly_rate: hourlyRate ?? null,
-        hire_date: hireDate || null,
-        state: state || null,
-        is_active: isActive ?? true,
-        is_exempt: isExempt ?? false,                 // ✅ safe default
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .upsert(
+        {
+          id: authId,
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          role: effectiveRole,
+          department: department || null,
+          manager_id: isEmployee ? (managerId || null) : null,        // only for employees
+          mybase_payroll_id: mybasePayrollId || null,
+          employee_id: employeeId || null,
+          hourly_rate: isEmployee ? (hourlyRate ?? null) : null,      // only for employees
+          bill_rate: isEmployee ? (billRate ?? null) : null,          // only for employees
+          hire_date: hireDate || null,
+          state: state || null,
+          is_active: isActive ?? true,
+          is_exempt: isExempt ?? false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }   // 👈 key part: if id exists, update instead of error
+      )
       .select()
       .single()
 
     if (employeeError) {
       console.error('Employee creation error:', employeeError)
-      
-      // Cleanup auth user if employee insert fails
-      await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
+
+      // Cleanup auth user if employee upsert fails for some other reason
+      await supabaseAdmin.auth.admin.deleteUser(authId)
       
       return NextResponse.json({ 
         error: `Database error: ${employeeError.message}` 
@@ -182,7 +206,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true,
       employee,
-      message: 'Employee created successfully'
+      message: 'Employee created successfully',
     })
 
   } catch (error) {

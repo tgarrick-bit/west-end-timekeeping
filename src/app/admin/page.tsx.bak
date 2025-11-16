@@ -24,46 +24,19 @@ import {
   Eye,
   Send,
   Bell,
-  User,
-  ArrowUpDown,
-  Search,
+  User
 } from 'lucide-react'
-
-// Shared helper for names: "Last, First Middle" by default
-function formatName(
-  first?: string,
-  middle?: string,
-  last?: string,
-  style: 'lastFirst' | 'firstLast' = 'lastFirst'
-) {
-  const safeFirst = first?.trim() || ''
-  const safeMiddle = middle?.trim() || ''
-  const safeLast = last?.trim() || ''
-
-  if (style === 'firstLast') {
-    // "First Middle Last"
-    return [safeFirst, safeMiddle, safeLast].filter(Boolean).join(' ')
-  }
-
-  // Default: "Last, First Middle"
-  const firstPart = [safeFirst, safeMiddle].filter(Boolean).join(' ')
-  if (!safeLast) return firstPart || ''
-  if (!firstPart) return safeLast
-  return `${safeLast}, ${firstPart}`
-}
 
 interface Employee {
   id: string
   first_name: string
-  middle_name?: string
   last_name: string
   email: string
   employee_id: string
   department: string | null
   hourly_rate: number
-  bill_rate: number | null
   manager_id: string | null
-  role: string               // 'employee' | 'manager' | 'admin'
+  role: string
 }
 
 interface Timesheet {
@@ -113,7 +86,7 @@ type Submission = {
 
 export default function AdminPage() {
   const router = useRouter()
-  const { employee } = useAuth()
+  const { user, employee } = useAuth()
   const supabase = createClientComponentClient()
   
   const [submissions, setSubmissions] = useState<Submission[]>([])
@@ -125,25 +98,13 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'approved' | 'pending' | 'rejected' | 'unsubmitted'>('pending')
   const [managerFilter, setManagerFilter] = useState<string>('all')
   const [employeeFilter, setEmployeeFilter] = useState<string>('all')
-  const [searchTerm, setSearchTerm] = useState<string>('')
 
-  // Modal state
+  // Modal state for timesheet viewing
   const [selectedTimesheet, setSelectedTimesheet] = useState<any>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [selectedExpense, setSelectedExpense] = useState<any>(null)
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false)
-
-  // CARD-LEVEL FILTERS & SORTS (manager-style)
-  const [timesheetEmployeeFilter, setTimesheetEmployeeFilter] = useState<string>('all')
-  const [timesheetWeekFilter, setTimesheetWeekFilter] = useState<string>('all')
-  const [timesheetStatusCardFilter, setTimesheetStatusCardFilter] = useState<string>('all')
-
-  const [timesheetEmployeeSort, setTimesheetEmployeeSort] = useState<'asc' | 'desc' | null>(null)
-  const [timesheetWeekSort, setTimesheetWeekSort] = useState<'asc' | 'desc' | null>(null)
-
-  const [expenseEmployeeSort, setExpenseEmployeeSort] = useState<'asc' | 'desc' | null>(null)
-  const [expenseDateSort, setExpenseDateSort] = useState<'asc' | 'desc' | null>(null)
 
   useEffect(() => {
     checkAdminAndLoad()
@@ -151,7 +112,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (adminId) {
-      loadSubmissions()
+    loadSubmissions()
     }
   }, [adminId, statusFilter, activeTab])
 
@@ -189,8 +150,8 @@ export default function AdminPage() {
         .order('last_name', { ascending: true })
   
       if (allEmployees) {
-        setEmployees(allEmployees as Employee[])
-        const employeeIds = (allEmployees as Employee[]).map(e => e.id)
+        setEmployees(allEmployees)
+        const employeeIds = allEmployees.map(e => e.id)
         
         let allSubmissions: Submission[] = []
   
@@ -200,7 +161,7 @@ export default function AdminPage() {
           .in('employee_id', employeeIds)
   
         if (timesheets) {
-          const timesheetSubmissions = (timesheets as any[]).map(t => {
+          const timesheetSubmissions = timesheets.map(t => {
             const weekEnd = new Date(t.week_ending)
             const weekStart = new Date(weekEnd)
             weekStart.setDate(weekStart.getDate() - 6)
@@ -214,9 +175,9 @@ export default function AdminPage() {
             return {
               id: t.id,
               type: 'timesheet' as const,
-              employee: (allEmployees as Employee[]).find(e => e.id === t.employee_id),
+              employee: allEmployees.find(e => e.id === t.employee_id),
               date: t.week_ending,
-              amount: (t.total_hours || 0) * ((allEmployees as Employee[]).find(e => e.id === t.employee_id)?.hourly_rate || 0),
+              amount: (t.total_hours || 0) * (allEmployees.find(e => e.id === t.employee_id)?.hourly_rate || 0),
               hours: t.total_hours,
               overtime_hours: t.overtime_hours,
               status: t.status,
@@ -234,10 +195,10 @@ export default function AdminPage() {
           .in('employee_id', employeeIds)
   
         if (expenses) {
-          const expenseSubmissions = (expenses as any[]).map(e => ({
+          const expenseSubmissions = expenses.map(e => ({
             id: e.id,
             type: 'expense' as const,
-            employee: (allEmployees as Employee[]).find(emp => emp.id === e.employee_id),
+            employee: allEmployees.find(emp => emp.id === e.employee_id),
             date: e.expense_date,
             amount: e.amount,
             status: e.status,
@@ -247,8 +208,7 @@ export default function AdminPage() {
           }))
           allSubmissions = [...allSubmissions, ...expenseSubmissions]
         }
-
-        // Keep submissions sorted by date (latest first) for raw list
+  
         allSubmissions.sort((a, b) => 
           new Date(b.date).getTime() - new Date(a.date).getTime()
         )
@@ -262,6 +222,7 @@ export default function AdminPage() {
     }
   }
 
+  // Function to group pending timecards by manager
   const getPendingByManager = () => {
     const pendingByManager = new Map<string, {
       managerId: string,
@@ -299,7 +260,7 @@ export default function AdminPage() {
           if (!pendingByManager.has(managerId)) {
             pendingByManager.set(managerId, {
               managerId,
-              managerName: formatName(manager.first_name, manager.middle_name, manager.last_name),
+              managerName: `${manager.first_name} ${manager.last_name}`,
               managerEmail: manager.email,
               count: 0,
               submissions: [],
@@ -309,8 +270,7 @@ export default function AdminPage() {
           }
         }
         
-        const key = managerId === 'unassigned' ? 'unassigned' : managerId
-        const data = pendingByManager.get(key)!
+        const data = pendingByManager.get(managerId === 'unassigned' ? 'unassigned' : managerId)!
         data.count++
         data.submissions.push(submission)
         data.totalHours += submission.hours || 0
@@ -323,17 +283,11 @@ export default function AdminPage() {
     return pendingByManager
   }
 
+  // Send reminder to employee for unsubmitted timecard
   const handleSendSubmittalReminder = async (submission: Submission) => {
     if (!submission.employee) return
     
-    const confirmed = confirm(
-      `Send reminder to ${formatName(
-        submission.employee.first_name,
-        submission.employee.middle_name,
-        submission.employee.last_name,
-        'firstLast'
-      )} for unsubmitted timecard?`
-    )
+    const confirmed = confirm(`Send reminder to ${submission.employee.first_name} ${submission.employee.last_name} for unsubmitted timecard?`)
     if (!confirmed) return
     
     try {
@@ -346,12 +300,7 @@ export default function AdminPage() {
           recipient_email: submission.employee.email,
           data: {
             week_ending: submission.date,
-            employee_name: formatName(
-              submission.employee.first_name,
-              submission.employee.middle_name,
-              submission.employee.last_name,
-              'firstLast'
-            ),
+            employee_name: `${submission.employee.first_name} ${submission.employee.last_name}`,
             status: 'unsubmitted'
           }
         })
@@ -368,6 +317,7 @@ export default function AdminPage() {
     }
   }
 
+  // Send reminder to manager for pending approvals
   const handleSendApprovalReminder = async (managerId: string, managerName: string, pendingSubmissions: Submission[]) => {
     const manager = employees.find(e => e.id === managerId)
     if (!manager) {
@@ -376,12 +326,7 @@ export default function AdminPage() {
     }
 
     const pendingDetails = pendingSubmissions.map(s => ({
-      employee: formatName(
-        s.employee?.first_name,
-        s.employee?.middle_name,
-        s.employee?.last_name,
-        'firstLast'
-      ),
+      employee: `${s.employee?.first_name} ${s.employee?.last_name}`,
       week: s.week_range?.split(',')[0] || s.date
     }))
 
@@ -423,6 +368,7 @@ export default function AdminPage() {
     }
   }
 
+  // Bulk send reminders for all unsubmitted timecards
   const handleBulkSubmittalReminders = async () => {
     const unsubmittedWithEmployees = submissions.filter(
       s => s.type === 'timesheet' && s.status === 'draft' && s.employee
@@ -450,12 +396,7 @@ export default function AdminPage() {
             recipient_email: submission.employee!.email,
             data: {
               week_ending: submission.date,
-              employee_name: formatName(
-                submission.employee!.first_name,
-                submission.employee!.middle_name,
-                submission.employee!.last_name,
-                'firstLast'
-              ),
+              employee_name: `${submission.employee!.first_name} ${submission.employee!.last_name}`,
               status: 'unsubmitted'
             }
           })
@@ -484,7 +425,6 @@ export default function AdminPage() {
           employee:employees!timesheets_employee_id_fkey (
             id,
             first_name,
-            middle_name,
             last_name,
             email,
             department,
@@ -575,10 +515,6 @@ export default function AdminPage() {
         setIsModalOpen(false)
         setSelectedTimesheet(null)
       }
-      if (selectedExpense?.id === submission.id) {
-        setIsExpenseModalOpen(false)
-        setSelectedExpense(null)
-      }
     }
   }
 
@@ -605,10 +541,6 @@ export default function AdminPage() {
       if (selectedTimesheet?.id === submission.id) {
         setIsModalOpen(false)
         setSelectedTimesheet(null)
-      }
-      if (selectedExpense?.id === submission.id) {
-        setIsExpenseModalOpen(false)
-        setSelectedExpense(null)
       }
     }
   }
@@ -660,7 +592,7 @@ export default function AdminPage() {
     setSelectedItems(visibleIds)
   }
 
-  // SUMMARY COUNTS
+  // Count variables
   const allTimesheetsCount = submissions.filter(s => s.type === 'timesheet').length
   const timesheetPendingCount = submissions.filter(s => s.status === 'submitted' && s.type === 'timesheet').length
   const expensePendingCount = submissions.filter(s => s.status === 'submitted' && s.type === 'expense').length
@@ -671,36 +603,15 @@ export default function AdminPage() {
   const draftExpenseCount = submissions.filter(s => s.status === 'draft' && s.type === 'expense').length
   const rejectedTimesheetCount = submissions.filter(s => s.status === 'rejected' && s.type === 'timesheet').length
   const rejectedExpenseCount = submissions.filter(s => s.status === 'rejected' && s.type === 'expense').length
-
-  // FILTERED SUBMISSIONS (tabs + top filters + search)
+  
   const filteredSubmissions = (() => {
     let filtered = submissions
-
-    // Search by employee name/email/category/description/week
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(s => {
-        const emp = s.employee
-        const nameFirstLast = formatName(emp?.first_name, emp?.middle_name, emp?.last_name, 'firstLast').toLowerCase()
-        const email = emp?.email?.toLowerCase() || ''
-        const cat = (s.category || '').toLowerCase()
-        const desc = (s.description || '').toLowerCase()
-        const week = (s.week_range || '').toLowerCase()
-        return (
-          nameFirstLast.includes(term) ||
-          email.includes(term) ||
-          cat.includes(term) ||
-          desc.includes(term) ||
-          week.includes(term)
-        )
-      })
-    }
   
-    if (activeTab === 'all') filtered = filtered
-    else if (activeTab === 'approved') filtered = filtered.filter(s => s.status === 'approved')
-    else if (activeTab === 'pending') filtered = filtered.filter(s => s.status === 'submitted')
-    else if (activeTab === 'rejected') filtered = filtered.filter(s => s.status === 'rejected')
-    else if (activeTab === 'unsubmitted') filtered = filtered.filter(s => s.status === 'draft')
+    if (activeTab === 'all') filtered = submissions
+    else if (activeTab === 'approved') filtered = submissions.filter(s => s.status === 'approved')
+    else if (activeTab === 'pending') filtered = submissions.filter(s => s.status === 'submitted')
+    else if (activeTab === 'rejected') filtered = submissions.filter(s => s.status === 'rejected')
+    else if (activeTab === 'unsubmitted') filtered = submissions.filter(s => s.status === 'draft')
   
     if (managerFilter && managerFilter !== 'all') {
       filtered = filtered.filter(s => s.employee?.manager_id === managerFilter)
@@ -712,119 +623,6 @@ export default function AdminPage() {
   
     return filtered
   })()  
-
-  const pendingTimesheets = filteredSubmissions.filter(
-    s => s.type === 'timesheet' && s.status === 'submitted'
-  )
-  const pendingExpenses = filteredSubmissions.filter(
-    s => s.type === 'expense' && s.status === 'submitted'
-  )  
-
-  // CARD-LEVEL BASE DATA (respect top filters + search)
-  const baseCardSubmissions = (() => {
-    let filtered = submissions
-
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(s => {
-        const emp = s.employee
-        const nameFirstLast = formatName(emp?.first_name, emp?.middle_name, emp?.last_name, 'firstLast').toLowerCase()
-        const email = emp?.email?.toLowerCase() || ''
-        const cat = (s.category || '').toLowerCase()
-        const desc = (s.description || '').toLowerCase()
-        const week = (s.week_range || '').toLowerCase()
-        return (
-          nameFirstLast.includes(term) ||
-          email.includes(term) ||
-          cat.includes(term) ||
-          desc.includes(term) ||
-          week.includes(term)
-        )
-      })
-    }
-
-    if (managerFilter && managerFilter !== 'all') {
-      filtered = filtered.filter(s => s.employee?.manager_id === managerFilter)
-    }
-    if (employeeFilter && employeeFilter !== 'all') {
-      filtered = filtered.filter(s => s.employee?.id === employeeFilter)
-    }
-    return filtered
-  })()
-
-  const allTimesheetSubmissions = baseCardSubmissions.filter(s => s.type === 'timesheet')
-  const allExpenseSubmissions = baseCardSubmissions.filter(s => s.type === 'expense')
-
-  // options for in-card filters (alpha by name)
-  const timesheetEmployeeOptions: Employee[] = Array.from(
-    new Map(
-      allTimesheetSubmissions
-        .filter(s => s.employee)
-        .map(s => [s.employee!.id, s.employee!])
-    ).values()
-  ).sort((a, b) =>
-    formatName(a.first_name, a.middle_name, a.last_name).localeCompare(
-      formatName(b.first_name, b.middle_name, b.last_name)
-    )
-  )
-
-  const weekOptions: string[] = Array.from(
-    new Set(
-      allTimesheetSubmissions
-        .map(s => s.week_range)
-        .filter(Boolean)
-    )
-  ) as string[]
-
-  const statusOptions = ['submitted', 'approved', 'rejected', 'draft']
-
-  // visible timesheets for cards (filter + sort)
-  const visibleTimesheetsAllTab = allTimesheetSubmissions
-    .filter(s => {
-      if (timesheetEmployeeFilter !== 'all' && s.employee?.id !== timesheetEmployeeFilter) return false
-      if (timesheetWeekFilter !== 'all' && s.week_range !== timesheetWeekFilter) return false
-      if (timesheetStatusCardFilter !== 'all' && s.status !== timesheetStatusCardFilter) return false
-      return true
-    })
-    .sort((a, b) => {
-      const nameA = formatName(a.employee?.first_name, a.employee?.middle_name, a.employee?.last_name)
-      const nameB = formatName(b.employee?.first_name, b.employee?.middle_name, b.employee?.last_name)
-
-      if (timesheetEmployeeSort) {
-        const cmp = nameA.localeCompare(nameB)
-        return timesheetEmployeeSort === 'asc' ? cmp : -cmp
-      }
-      if (timesheetWeekSort) {
-        const aWeek = a.week_range || ''
-        const bWeek = b.week_range || ''
-        const cmp = aWeek.localeCompare(bWeek)
-        return timesheetWeekSort === 'asc' ? cmp : -cmp
-      }
-      // Default: alpha by name
-      return nameA.localeCompare(nameB)
-    })
-
-    const visibleExpensesAllTab = allExpenseSubmissions
-    .filter(e => {
-      if (timesheetEmployeeFilter !== 'all' && e.employee?.id !== timesheetEmployeeFilter) return false
-      return true
-    })
-    .sort((a, b) => {
-      const nameA = formatName(
-        a.employee?.first_name,
-        a.employee?.middle_name,
-        a.employee?.last_name
-      )
-      const nameB = formatName(
-        b.employee?.first_name,
-        b.employee?.middle_name,
-        b.employee?.last_name
-      )
-      return nameA.localeCompare(nameB)
-    })  
-
-  const visibleTimesheetsCountAllTab = visibleTimesheetsAllTab.length
-  const visibleExpensesCountAllTab = visibleExpensesAllTab.length
 
   if (isLoading) {
     return (
@@ -838,35 +636,13 @@ export default function AdminPage() {
   }
 
   const getTimeBasedGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return 'Good morning'
-    if (hour < 17) return 'Good afternoon'
-    return 'Good evening'
-  }
-
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };  
   const greeting = getTimeBasedGreeting()
   const displayName = employee?.first_name || 'Admin'
-
-  const employeeFilterLabel =
-    timesheetEmployeeFilter !== 'all'
-      ? (() => {
-          const emp = employees.find(e => e.id === timesheetEmployeeFilter)
-          return emp ? formatName(emp.first_name, emp.middle_name, emp.last_name) : 'Employee'
-        })()
-      : null
-
-  const hasTimesheetFilters =
-    timesheetEmployeeFilter !== 'all' ||
-    timesheetWeekFilter !== 'all' ||
-    timesheetStatusCardFilter !== 'all'
-
-  const resetTimesheetFilters = () => {
-    setTimesheetEmployeeFilter('all')
-    setTimesheetWeekFilter('all')
-    setTimesheetStatusCardFilter('all')
-    setTimesheetEmployeeSort(null)
-    setTimesheetWeekSort(null)
-  }
 
   return (
     <div className="min-h-screen bg-[#F7F8FC]">
@@ -901,7 +677,7 @@ export default function AdminPage() {
                   <User className="h-4 w-4 text-white" />
                 </div>
                 <span className="text-sm text-gray-100 truncate max-w-[220px]">
-                  {greeting}, {displayName}
+                  {getTimeBasedGreeting()}, {employee?.first_name || 'Admin'}
                 </span>
               </div>
               <button
@@ -928,10 +704,10 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Navigation Tabs (top-level sections) */}
+      {/* Navigation Tabs - match manager style */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-6">
+          <div className="flex space-x-6 overflow-x-auto">
             <button 
               onClick={() => router.push('/admin')}
               className="py-3 text-sm font-medium text-[#05202E] border-b-2 border-[#e31c79] whitespace-nowrap"
@@ -998,50 +774,50 @@ export default function AdminPage() {
         </div>
       </div>
 
-{/* Quick Stats Bar */}
-<div className="bg-white border-b border-gray-200">
-  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="inline-flex items-center gap-2 text-sm text-gray-800">
-          <Users className="h-4 w-4 text-gray-500" />
-          <span className="text-gray-600">Employees:</span> 
-          <span className="font-semibold ml-1">{employees.length}</span>
-        </div>
-        <div className="inline-flex items-center gap-2 text-sm text-gray-800">
-          <DollarSign className="h-4 w-4 text-gray-500" />
-          <span className="text-gray-600">Pending amount:</span> 
-          <span className="font-semibold ml-1 text-[#e31c79]">
-            ${submissions
-              .filter(s => s.status === 'submitted')
-              .reduce((sum, s) => sum + s.amount, 0)
-              .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-        </div>
-        <div className="inline-flex items-center gap-2 text-sm text-gray-800">
-          <Clock className="h-4 w-4 text-gray-500" />
-          <span className="text-gray-600">Pending hours:</span> 
-          <span className="font-semibold ml-1">
-            {submissions
-              .filter(s => s.status === 'submitted' && s.type === 'timesheet')
-              .reduce((sum, s) => sum + (s.hours || 0), 0)
-              .toFixed(2)}
-          </span>
+      {/* Quick Stats Bar - tightened and centered */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="inline-flex items-center gap-2 text-sm text-gray-800">
+                <Users className="h-4 w-4 text-gray-500" />
+                <span className="text-gray-600">Employees:</span> 
+                <span className="font-semibold ml-1">{employees.length}</span>
+              </div>
+              <div className="inline-flex items-center gap-2 text-sm text-gray-800">
+                <DollarSign className="h-4 w-4 text-gray-500" />
+                <span className="text-gray-600">Pending amount:</span> 
+                <span className="font-semibold ml-1 text-[#e31c79]">
+                  ${submissions
+                    .filter(s => s.status === 'submitted')
+                    .reduce((sum, s) => sum + s.amount, 0)
+                    .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="inline-flex items-center gap-2 text-sm text-gray-800">
+                <Clock className="h-4 w-4 text-gray-500" />
+                <span className="text-gray-600">Pending hours:</span> 
+                <span className="font-semibold ml-1">
+                  {submissions
+                    .filter(s => s.status === 'submitted' && s.type === 'timesheet')
+                    .reduce((sum, s) => sum + (s.hours || 0), 0)
+                    .toFixed(2)}
+                </span>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <button 
+                onClick={loadSubmissions}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm text-gray-700 hover:text-gray-900 border border-gray-200 rounded-full hover:bg-gray-50"
+              >
+                <RotateCw className="h-3 w-3" />
+                Refresh data
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-      
-      <div className="flex items-center space-x-3">
-        <button 
-          onClick={loadSubmissions}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm text-gray-700 hover:text-gray-900 border border-gray-200 rounded-full hover:bg-gray-50"
-        >
-          <RotateCw className="h-3 w-3" />
-          Refresh data
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
 
       {/* Controls - filters line */}
       <div className="bg-white border-b border-gray-200">
@@ -1052,8 +828,10 @@ export default function AdminPage() {
                 <span className="text-sm text-gray-700">Department:</span>
                 <select className="text-sm px-3 py-1.5 border border-gray-200 rounded-lg bg-white">
                   <option value="all">All</option>
-                  <option value="engineering">Commerce</option>
-                  <option value="sales">Healthcare</option>
+                  <option value="engineering">Engineering</option>
+                  <option value="sales">Sales</option>
+                  <option value="marketing">Marketing</option>
+                  <option value="operations">Operations</option>
                 </select>
               </div>
 
@@ -1067,27 +845,12 @@ export default function AdminPage() {
                   <option value="all">All</option>
                   {employees
                     .filter(e => e.role === 'manager' || e.role === 'admin')
-                    .slice()
-                    .sort((a, b) =>
-                      formatName(a.first_name, a.middle_name, a.last_name).localeCompare(
-                        formatName(b.first_name, b.middle_name, b.last_name)
-                      )
-                    )
                     .map(manager => (
                       <option key={manager.id} value={manager.id}>
-                        {formatName(manager.first_name, manager.middle_name, manager.last_name)}
+                        {manager.first_name} {manager.last_name}
                       </option>
                     ))
                   }
-                </select>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-700">Project:</span>
-                <select
-                  className="text-sm px-3 py-1.5 border border-gray-200 rounded-lg bg-white"
-                >
-                  <option value="all">All</option>
                 </select>
               </div>
 
@@ -1099,18 +862,11 @@ export default function AdminPage() {
                   onChange={(e) => setEmployeeFilter(e.target.value)}
                 >
                   <option value="all">All</option>
-                  {employees
-                    .slice()
-                    .sort((a, b) =>
-                      formatName(a.first_name, a.middle_name, a.last_name).localeCompare(
-                        formatName(b.first_name, b.middle_name, b.last_name)
-                      )
-                    )
-                    .map(emp => (
-                      <option key={emp.id} value={emp.id}>
-                        {formatName(emp.first_name, emp.middle_name, emp.last_name)}
-                      </option>
-                    ))}
+                  {employees.map(emp => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.first_name} {emp.last_name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1194,27 +950,22 @@ export default function AdminPage() {
                       {draftTimesheetCount} unsubmitted timecard{draftTimesheetCount !== 1 ? 's' : ''}
                     </p>
                     {submissions
-  .filter(s => s.type === 'timesheet' && s.status === 'draft')
-  .slice(0, 5)
-  .map(submission => (
-    <div key={submission.id} className="flex justify-between items-center text-sm py-1">
-      <span className="text-gray-700">
-        {formatName(
-          submission.employee?.first_name,
-          submission.employee?.middle_name,
-          submission.employee?.last_name
-        )} — Week: {submission.week_range?.split(',')[0]}
-      </span>
-      <button
-        onClick={() => handleSendSubmittalReminder(submission)}
-        className="text-[#e31c79] hover:text-[#c71865] text-xs flex items-center gap-1"
-      >
-        <Send className="h-3 w-3" />
-        Send reminder
-      </button>
-    </div>
-  ))}
-
+                      .filter(s => s.type === 'timesheet' && s.status === 'draft')
+                      .slice(0, 5)
+                      .map(submission => (
+                        <div key={submission.id} className="flex justify-between items-center text-sm py-1">
+                          <span className="text-gray-700">
+                            {submission.employee?.first_name} {submission.employee?.last_name} — Week: {submission.week_range?.split(',')[0]}
+                          </span>
+                          <button
+                            onClick={() => handleSendSubmittalReminder(submission)}
+                            className="text-[#e31c79] hover:text-[#c71865] text-xs flex items-center gap-1"
+                          >
+                            <Send className="h-3 w-3" />
+                            Send reminder
+                          </button>
+                        </div>
+                      ))}
                     {draftTimesheetCount > 5 && (
                       <p className="text-xs text-gray-500 mt-2">
                         +{draftTimesheetCount - 5} more...
@@ -1312,159 +1063,404 @@ export default function AdminPage() {
         </div>
       </div>
 
-{/* MAIN CONTENT – Timesheets + Expenses WITH FILTERS/SORTING */}
-<div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-  {/* Search above cards */}
-  <div className="mb-4 flex justify-between items-center">
-    <div className="relative w-full sm:w-80">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-      <input
-        type="text"
-        placeholder="Search by employee, email, category..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
-      />
-    </div>
-  </div>
-
-  <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-    {/* TIMESHEETS CARD */}
-    <div className="border-b border-gray-100 rounded-t-2xl overflow-hidden">
-      <div className="bg-[#05202E] px-4 py-3 flex justify-between items-center">
-              <h3 className="text-sm font-semibold text-white">Timesheets</h3>
-              <div className="flex items-center space-x-2 text-xs text-gray-300">
-                <span>
-                  {visibleTimesheetsCountAllTab > 0 ? '1 – ' : '0 of '}
-                  {visibleTimesheetsCountAllTab} of {allTimesheetsCount}
-                </span>
-              </div>
-            </div>
-
-            {/* Currently filtered pill */}
-            {hasTimesheetFilters && (
-              <div className="px-4 pt-2 pb-3 bg-white">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-50 border border-gray-200 text-xs text-gray-700">
-                  <span className="font-semibold">Currently filtered by:</span>
-                  {employeeFilterLabel && <span>Employee: {employeeFilterLabel}</span>}
-                  {timesheetWeekFilter !== 'all' && <span>Week: {timesheetWeekFilter}</span>}
-                  {timesheetStatusCardFilter !== 'all' && (
-                    <span>
-                      Status:{' '}
-                      {timesheetStatusCardFilter.charAt(0).toUpperCase() +
-                        timesheetStatusCardFilter.slice(1)}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={resetTimesheetFilters}
-                    className="ml-2 text-blue-600 hover:text-blue-700 underline decoration-blue-300"
-                  >
-                    Reset filters
-                  </button>
-                </div>
-              </div>
-            )}
+      {/* Tabs row */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-0">
+            <button 
+              onClick={() => { setActiveTab('all'); setStatusFilter('all'); }}
+              className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                activeTab === 'all' 
+                  ? 'bg-white text-[#05202E] border-[#e31c79]' 
+                  : 'bg-gray-100 text-gray-600 border-transparent hover:bg-gray-50'
+              }`}
+            >
+              All ({submissions.length})
+            </button>
             
-            {allTimesheetsCount === 0 ? (
-              <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
-                No timesheets to display.
+            <button 
+              onClick={() => { setActiveTab('pending'); setStatusFilter('submitted'); }}
+              className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                activeTab === 'pending' 
+                  ? 'bg-white text-[#05202E] border-[#e31c79]' 
+                  : 'bg-gray-100 text-gray-600 border-transparent hover:bg-gray-50'
+              }`}
+            >
+              Pending ({timesheetPendingCount + expensePendingCount})
+            </button>
+            
+            <button 
+              onClick={() => { setActiveTab('approved'); setStatusFilter('approved'); }}
+              className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                activeTab === 'approved' 
+                  ? 'bg-white text-[#05202E] border-[#e31c79]' 
+                  : 'bg-gray-100 text-gray-600 border-transparent hover:bg-gray-50'
+              }`}
+            >
+              Approved ({approvedCount})
+            </button>
+            
+            <button 
+              onClick={() => { setActiveTab('rejected'); setStatusFilter('rejected'); }}
+              className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                activeTab === 'rejected' 
+                  ? 'bg-white text-[#05202E] border-[#e31c79]' 
+                  : 'bg-gray-100 text-gray-600 border-transparent hover:bg-gray-50'
+              }`}
+            >
+              Rejected ({rejectedTimesheetCount + rejectedExpenseCount})
+            </button>
+            
+            <button 
+              onClick={() => { setActiveTab('unsubmitted'); setStatusFilter('draft'); }}
+              className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                activeTab === 'unsubmitted' 
+                  ? 'bg-white text-[#05202E] border-[#e31c79]' 
+                  : 'bg-gray-100 text-gray-600 border-transparent hover:bg-gray-50'
+              }`}
+            >
+              Unsubmitted ({draftTimesheetCount + draftExpenseCount})
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+          
+          {/* ALL TAB CONTENT */}
+          {activeTab === 'all' && (
+            <div>
+              <div className="p-4">
+                <h2 className="text-lg font-semibold text-[#05202E] mb-4">All submissions</h2>
               </div>
-            ) : (
-              <>
-                {/* Filter row */}
-                <div className="px-4 py-2 bg-gray-50 flex items-center text-xs font-semibold text-gray-600 border-b border-gray-200">
-                  <div className="w-8" />
-                  <div className="flex-1 pr-2">
-                    <select
-                      value={timesheetEmployeeFilter}
-                      onChange={(e) => setTimesheetEmployeeFilter(e.target.value)}
-                      className="w-full text-xs px-2 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                    >
-                      <option value="all">Employee</option>
-                      {timesheetEmployeeOptions.map(emp => (
-                        <option key={emp.id} value={emp.id}>
-                          {formatName(emp.first_name, emp.middle_name, emp.last_name)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="w-40 pr-2">
-                    <select
-                      value={timesheetWeekFilter}
-                      onChange={(e) => setTimesheetWeekFilter(e.target.value)}
-                      className="w-full text-xs px-2 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                    >
-                      <option value="all">Week</option>
-                      {weekOptions.map(week => (
-                        <option key={week} value={week}>
-                          {week}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="w-32 pr-2">
-                    <select
-                      value={timesheetStatusCardFilter}
-                      onChange={(e) => setTimesheetStatusCardFilter(e.target.value)}
-                      className="w-full text-xs px-2 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                    >
-                      <option value="all">Status</option>
-                      {statusOptions.map(status => (
-                        <option key={status} value={status}>
-                          {status.charAt(0).toUpperCase() + status.slice(1)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="w-24 text-right uppercase tracking-wide">
-                    Hours
-                  </div>
-                  <div className="w-32 text-right uppercase tracking-wide">
-                    Actions
+
+              {/* Timecards Section */}
+              <div className="border-b border-gray-200">
+                <div className="bg-[#05202E] px-4 py-2 flex justify-between items-center">
+                  <h3 className="text-sm font-semibold text-white">Timesheets</h3>
+                  <div className="flex items-center space-x-2 text-xs text-gray-300">
+                    <span>1 - {allTimesheetsCount} of {allTimesheetsCount}</span>
                   </div>
                 </div>
-                
-                {visibleTimesheetsAllTab.map((submission, index) => (
-                  <div
-                    key={submission.id}
-                    className={`px-4 py-3 flex items-center text-sm ${
-                      index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                    } hover:bg-gray-100 border-b border-gray-100`}
-                  >
-                    <div className="w-8" />
-                    <div className="flex-1">
-                      <div className="text-gray-900 font-medium">
-                        {formatName(
-                          submission.employee?.first_name,
-                          submission.employee?.middle_name,
-                          submission.employee?.last_name
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {submission.employee?.department || 'No department'}
-                      </div>
-                    </div>
-                    <div className="w-40 text-sm text-gray-800">
-                      {submission.week_range}
-                    </div>
-                    <div className="w-32 text-center">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        submission.status === 'approved' ? 'bg-green-100 text-green-800' :
-                        submission.status === 'submitted' ? 'bg-yellow-100 text-yellow-800' :
-                        submission.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {submission.status === 'submitted' ? 'Pending' :
-                          submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+
+                {/* Expenses Section */}
+                <div className="border-b border-gray-200">
+                  <div className="bg-[#e31c79] px-4 py-2 flex justify-between items-center">
+                    <h3 className="text-sm font-semibold text-white">Expenses</h3>
+                    <div className="flex items-center space-x-2 text-xs text-pink-100">
+                      <span>
+                        {filteredSubmissions.filter(s => s.type === 'expense').length} expense
+                        {filteredSubmissions.filter(s => s.type === 'expense').length !== 1 ? 's' : ''}
                       </span>
                     </div>
-                    <div className="w-24 text-right font-medium">
-                      {submission.hours?.toFixed(2) || '0.00'}
+                  </div>
+
+                  {filteredSubmissions.filter(s => s.type === 'expense').length === 0 ? (
+                    <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
+                      None
                     </div>
-                    <div className="w-32 flex justify-end items-center gap-2">
-                      {submission.status === 'submitted' && (
-                        <>
+                  ) : (
+                    <>
+                      <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b border-gray-200">
+                        <div className="flex-1">Employee</div>
+                        <div className="w-32 text-center">Date</div>
+                        <div className="w-32 text-center">Category</div>
+                        <div className="w-24 text-right">Amount</div>
+                        <div className="w-32 text-center">Status</div>
+                        <div className="w-32 text-center">Actions</div>
+                      </div>
+
+                      {filteredSubmissions
+                        .filter(s => s.type === 'expense')
+                        .map((submission, index) => (
+                          <div
+                            key={submission.id}
+                            className={`px-4 py-3 flex items-center ${
+                              index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                            } hover:bg-gray-100 border-b border-gray-200`}
+                          >
+                            <div className="flex-1">
+                              <div className="text-sm text-gray-900">
+                                {submission.employee?.first_name} {submission.employee?.last_name}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {submission.employee?.email}
+                              </div>
+                            </div>
+                            <div className="w-32 text-center text-sm text-gray-700">
+                              {new Date(submission.date).toLocaleDateString()}
+                            </div>
+                            <div className="w-32 text-center text-sm text-gray-700">
+                              {submission.category || '—'}
+                            </div>
+                            <div className="w-24 text-right text-sm font-medium">
+                              ${submission.amount.toFixed(2)}
+                            </div>
+                            <div className="w-32 text-center">
+                              <span
+                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                  submission.status === 'approved'
+                                    ? 'bg-green-100 text-green-800'
+                                    : submission.status === 'submitted'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : submission.status === 'rejected'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}
+                              >
+                                {submission.status === 'submitted'
+                                  ? 'Pending'
+                                  : submission.status.charAt(0).toUpperCase() +
+                                    submission.status.slice(1)}
+                              </span>
+                            </div>
+                            <div className="w-32 flex justify-end items-center gap-2">
+                              <button
+                                onClick={() => handleViewExpense(submission)}
+                                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                                title="View details"
+                                disabled={processingId === submission.id}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+
+                              {submission.status === 'submitted' && (
+                                <>
+                                  <button
+                                    onClick={() => handleApprove(submission)}
+                                    className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                    title="Approve"
+                                  >
+                                    <CheckCircle className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleReject(submission)}
+                                    className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                    title="Reject"
+                                  >
+                                    <XCircle className="h-4 w-4" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                    </>
+                  )}
+                </div>
+                
+                {allTimesheetsCount === 0 ? (
+                  <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
+                    None
+                  </div>
+                ) : (
+                  <>
+                    <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b border-gray-200">
+                      <div className="w-8"></div>
+                      <div className="flex-1">Employee</div>
+                      <div className="w-32 text-center">Department</div>
+                      <div className="w-24 text-right">Hours</div>
+                      <div className="w-32 text-center">Status</div>
+                      <div className="w-24 text-center">Actions</div>
+                    </div>
+                    
+                    {filteredSubmissions.filter(s => s.type === 'timesheet').map((submission, index) => (
+                      <div key={submission.id} className={`px-4 py-3 flex items-center ${
+                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                      } hover:bg-gray-100 border-b border-gray-200`}>
+                        <div className="w-8"></div>
+                        <div className="flex-1">
+                          <div className="text-sm">
+                            <span className="font-medium">Week: </span>
+                            <span className="ml-1">{submission.week_range}</span>
+                          </div>
+                          <div className="text-sm text-gray-600 mt-0.5">
+                            {submission.employee?.first_name} {submission.employee?.last_name}
+                          </div>
+                        </div>
+                        <div className="w-32 text-center text-sm text-gray-600">
+                          {submission.employee?.department || 'N/A'}
+                        </div>
+                        <div className="w-24 text-right font-medium text-sm">
+                          {submission.hours?.toFixed(2) || '0.00'}
+                        </div>
+                        <div className="w-32 text-center">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            submission.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            submission.status === 'submitted' ? 'bg-yellow-100 text-yellow-800' :
+                            submission.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {submission.status === 'submitted' ? 'Pending' : 
+                             submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                          </span>
+                        </div>
+                        <div className="w-24 flex justify-end">
+                          <button 
+                            onClick={() => handleViewTimesheet(submission)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                            disabled={processingId === submission.id}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* PENDING TAB CONTENT */}
+          {activeTab === 'pending' && (
+            <div>
+              <div className="p-4">
+                <h2 className="text-lg font-semibold text-[#05202E] mb-4">Pending approvals</h2>
+              </div>
+
+              <div className="border-b border-gray-200">
+                <div className="bg-[#05202E] px-4 py-2 flex justify-between items-center">
+                  <h3 className="text-sm font-semibold text-white">Pending timesheets</h3>
+                  <div className="flex items-center space-x-2 text-xs text-gray-300">
+                    <span>{timesheetPendingCount} pending</span>
+                  </div>
+
+                  {/* Pending Expenses Section */}
+                  <div className="hidden" />
+                </div>
+
+                {/* Pending Expenses block (kept as-is, styled slightly above) */}
+                <div className="mt-0 border-t">
+                  <div className="bg-[#e31c79] px-4 py-2 flex justify-between items-center">
+                    <h3 className="text-sm font-semibold text-white">Pending expenses</h3>
+                    <div className="flex items-center space-x-2 text-xs text-pink-100">
+                      <span>{expensePendingCount} pending</span>
+                    </div>
+                  </div>
+
+                  {filteredSubmissions.filter(s => s.type === 'expense' && s.status === 'submitted').length === 0 ? (
+                    <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
+                      No pending expenses awaiting approval
+                    </div>
+                  ) : (
+                    <>
+                      <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b border-gray-200">
+                        <div className="flex-1">Employee</div>
+                        <div className="w-32 text-center">Date</div>
+                        <div className="w-32 text-center">Category</div>
+                        <div className="w-24 text-right">Amount</div>
+                        <div className="w-32 text-center">Actions</div>
+                      </div>
+
+                      {filteredSubmissions
+                        .filter(s => s.type === 'expense' && s.status === 'submitted')
+                        .map((submission, index) => (
+                          <div
+                            key={submission.id}
+                            className={`px-4 py-3 flex items-center ${
+                              index % 2 === 0 ? 'bg-yellow-50' : 'bg-white'
+                            } hover:bg-yellow-100 border-b border-gray-200`}
+                          >
+                            <div className="flex-1">
+                              <div className="text-sm text-gray-900">
+                                {submission.employee?.first_name} {submission.employee?.last_name}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {submission.employee?.email}
+                              </div>
+                            </div>
+                            <div className="w-32 text-center text-sm text-gray-700">
+                              {new Date(submission.date).toLocaleDateString()}
+                            </div>
+                            <div className="w-32 text-center text-sm text-gray-700">
+                              {submission.category || '—'}
+                            </div>
+                            <div className="w-24 text-right text-sm font-medium">
+                              ${submission.amount.toFixed(2)}
+                            </div>
+                            <div className="w-32 flex justify-end items-center gap-2">
+                              <button
+                                onClick={() => handleApprove(submission)}
+                                className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                title="Approve"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleReject(submission)}
+                                className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                title="Reject"
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </>
+                  )}
+                </div>
+              </div>
+              
+              {filteredSubmissions.filter(s => s.type === 'timesheet' && s.status === 'submitted').length === 0 ? (
+                <div className="px-4 py-8 text-center text-gray-500 bg-gray-50 rounded-b-2xl">
+                  No pending timesheets awaiting approval
+                </div>
+              ) : (
+                <div className="border-t border-gray-200 rounded-b-2xl">
+                  <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b border-gray-200">
+                    <input 
+                      type="checkbox" 
+                      className="mr-4" 
+                      onChange={(e) => e.target.checked ? selectAllVisible() : setSelectedItems(new Set())} 
+                    />
+                    <div className="w-8"></div>
+                    <div className="flex-1">Employee</div>
+                    <div className="w-32 text-center">Manager</div>
+                    <div className="w-32 text-center">Department</div>
+                    <div className="w-24 text-right">Hours</div>
+                    <div className="w-32 text-center">Actions</div>
+                  </div>
+                  
+                  {filteredSubmissions.filter(s => s.type === 'timesheet' && s.status === 'submitted').map((submission, index) => {
+                    const manager = submission.employee?.manager_id 
+                      ? employees.find(e => e.id === submission.employee?.manager_id)
+                      : null
+                    
+                    return (
+                      <div key={submission.id} className={`px-4 py-3 flex items-center ${
+                        index % 2 === 0 ? 'bg-yellow-50' : 'bg-white'
+                      } hover:bg-yellow-100 border-b border-gray-200`}>
+                        <input 
+                          type="checkbox"
+                          checked={selectedItems.has(submission.id)}
+                          onChange={() => toggleItemSelection(submission.id)}
+                          className="mr-4"
+                        />
+                        <div className="w-8">
+                          <AlertCircle className="h-5 w-5 text-yellow-600" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-sm">
+                            <span className="font-medium">Week: </span>
+                            <span className="ml-1">{submission.week_range}</span>
+                          </div>
+                          <div className="text-sm text-gray-600 mt-0.5">
+                            {submission.employee?.first_name} {submission.employee?.last_name}
+                          </div>
+                        </div>
+                        <div className="w-32 text-center text-sm text-gray-600">
+                          {manager ? `${manager.first_name} ${manager.last_name}` : 'Unassigned'}
+                        </div>
+                        <div className="w-32 text-center text-sm text-gray-600">
+                          {submission.employee?.department || 'N/A'}
+                        </div>
+                        <div className="w-24 text-right font-medium text-sm">
+                          {submission.hours?.toFixed(2) || '0.00'}
+                        </div>
+                        <div className="w-32 flex justify-end items-center gap-2">
                           <button 
                             onClick={() => handleApprove(submission)}
                             className="p-1 text-green-600 hover:bg-green-50 rounded"
@@ -1479,148 +1475,162 @@ export default function AdminPage() {
                           >
                             <XCircle className="h-4 w-4" />
                           </button>
-                        </>
-                      )}
+                          <button 
+                            onClick={() => handleViewTimesheet(submission)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                            disabled={processingId === submission.id}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+
+                  {timesheetPendingCount > 0 && (
+                    <div className="bg-gray-50 px-4 py-2 flex justify-between items-center rounded-b-2xl">
+                      <span className="text-sm font-bold">
+                        Total: {filteredSubmissions.filter(s => s.type === 'timesheet' && s.status === 'submitted')
+                          .reduce((sum, s) => sum + (s.hours || 0), 0).toFixed(2)} hours
+                      </span>
                       <button 
-                        onClick={() => handleViewTimesheet(submission)}
-                        className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                        disabled={processingId === submission.id}
-                        title="View timesheet"
+                        onClick={handleBulkApprove}
+                        disabled={selectedItems.size === 0}
+                        className={`px-6 py-2 rounded-full text-sm font-medium flex items-center ${
+                          selectedItems.size === 0 
+                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed' 
+                            : 'bg-green-600 text-white hover:bg-green-700'
+                        }`}
                       >
-                        <Eye className="h-4 w-4" />
+                        Approve selected ({selectedItems.size})
                       </button>
                     </div>
-                  </div>
-                ))}
-
-                <div className="bg-gray-50 px-4 py-2 flex justify-end items-center">
-                  <span className="text-sm font-semibold text-gray-800">
-                    Total hours:{' '}
-                    {visibleTimesheetsAllTab
-                      .reduce((sum, s) => sum + (s.hours || 0), 0)
-                      .toFixed(2)}
-                  </span>
+                  )}
                 </div>
-              </>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
-          {/* EXPENSES CARD */}
-          <div className="mt-6 rounded-2xl overflow-hidden border border-gray-100">
-            <div className="bg-[#e31c79] px-4 py-3 flex justify-between items-center">
-              <h3 className="text-sm font-semibold text-white">Expenses</h3>
-              <div className="flex items-center space-x-2 text-xs text-white/90">
-                <span>
-                  {visibleExpensesCountAllTab > 0 ? '1 – ' : '0 of '}
-                  {visibleExpensesCountAllTab} of {allExpenseSubmissions.length}
-                </span>
+          {/* APPROVED TAB */}
+          {activeTab === 'approved' && (
+            <div>
+              <div className="p-4">
+                <h2 className="text-lg font-semibold text-[#05202E] mb-4">Approved submissions</h2>
+              </div>
+              <div className="px-4 py-8 text-center text-gray-500 bg-gray-50 rounded-b-2xl">
+                {approvedCount === 0 ? 'No approved submissions' : `${approvedCount} approved submission(s)`}
               </div>
             </div>
-            
-            {visibleExpensesAllTab.length === 0 ? (
-              <div className="bg-gray-50 px-4 py-8 text-center text-gray-500">
-                {timesheetEmployeeFilter !== 'all'
-                  ? 'No expenses for the selected employee.'
-                  : 'No expenses to display.'}
+          )}
+
+          {/* REJECTED TAB */}
+          {activeTab === 'rejected' && (
+            <div>
+              <div className="p-4">
+                <h2 className="text-lg font-semibold text-[#05202E] mb-4">Rejected submissions</h2>
               </div>
-            ) : (
-              <>
-                {/* Header row */}
-                <div className="px-4 py-2 bg-gray-50 flex items-center text-xs font-semibold text-gray-600 border-b border-gray-200 uppercase tracking-wide">
-                  <div className="w-8" />
-                  <div className="flex-1">Employee</div>
-                  <div className="w-32">Type</div>
-                  <div className="w-40">Date</div>
-                  <div className="w-32 text-center">Status</div>
-                  <div className="w-24 text-right">Amount</div>
-                  <div className="w-32 text-right">Actions</div>
-                </div>
-                
-                {visibleExpensesAllTab.map((expense, index) => (
-                  <div
-                    key={expense.id}
-                    className={`px-4 py-3 flex items-center text-sm ${
-                      index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                    } hover:bg-gray-100 border-b border-gray-100`}
-                  >
-                    <div className="w-8" />
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">
-                        {formatName(
-                          expense.employee?.first_name,
-                          expense.employee?.middle_name,
-                          expense.employee?.last_name
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {expense.employee?.email}
-                      </div>
-                    </div>
-                    <div className="w-32 text-sm">
-                      {expense.category || '-'}
-                    </div>
-                    <div className="w-40 text-sm">
-                      {new Date(expense.date).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: '2-digit',
-                        year: 'numeric'
-                      })}
-                    </div>
-                    <div className="w-32 text-center">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        expense.status === 'approved' ? 'bg-green-100 text-green-800' :
-                        expense.status === 'submitted' ? 'bg-yellow-100 text-yellow-800' :
-                        expense.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {expense.status === 'submitted' ? 'Pending' :
-                          expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
-                      </span>
-                    </div>
-                    <div className="w-24 text-right font-medium">
-                      ${expense.amount.toFixed(2)}
-                    </div>
-                    <div className="w-32 flex justify-end items-center gap-2">
-                      {expense.status === 'submitted' && (
-                        <>
-                          <button 
-                            onClick={() => handleApprove(expense)}
-                            className="p-1 text-green-600 hover:bg-green-50 rounded"
-                            title="Approve"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </button>
-                          <button 
-                            onClick={() => handleReject(expense)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded"
-                            title="Reject"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </button>
-                        </>
-                      )}
-                      <button 
-                        onClick={() => handleViewExpense(expense)}
-                        className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                        title="View details"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                    </div>
+              <div className="px-4 py-8 text-center text-gray-500 bg-gray-50 rounded-b-2xl">
+                {rejectedTimesheetCount + rejectedExpenseCount === 0 ? 'No rejected submissions' : `${rejectedTimesheetCount + rejectedExpenseCount} rejected submission(s)`}
+              </div>
+            </div>
+          )}
+
+          {/* UNSUBMITTED TAB */}
+          {activeTab === 'unsubmitted' && (
+            <div>
+              <div className="p-4 flex justify-between items-center">
+                <h2 className="text-lg font-semibold text-[#05202E]">Unsubmitted timecards</h2>
+                <button
+                  onClick={handleBulkSubmittalReminders}
+                  disabled={draftTimesheetCount === 0}
+                  className={`px-4 py-2 text-sm rounded-full flex items-center gap-2 ${
+                    draftTimesheetCount === 0
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-[#e31c79] text-white hover:bg-[#c71865]'
+                  }`}
+                >
+                  <Send className="h-4 w-4" />
+                  Send reminders to all ({draftTimesheetCount})
+                </button>
+              </div>
+              
+              <div className="border-t border-gray-200 rounded-b-2xl">
+                <div className="bg-[#05202E] px-4 py-2 flex justify-between items-center">
+                  <h3 className="text-sm font-semibold text-white">Draft timesheets</h3>
+                  <div className="flex items-center space-x-2 text-xs text-gray-300">
+                    <span>{draftTimesheetCount} draft</span>
                   </div>
-                ))}
-                
-                <div className="bg-gray-50 px-4 py-2 flex justify-end items-center">
-                  <span className="text-sm font-semibold text-gray-800">
-                    Total: $
-                    {visibleExpensesAllTab
-                      .reduce((sum, s) => sum + s.amount, 0)
-                      .toFixed(2)}
-                  </span>
                 </div>
-              </>
-            )}
-          </div>
+                
+                {draftTimesheetCount === 0 ? (
+                  <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
+                    No unsubmitted timecards
+                  </div>
+                ) : (
+                  <>
+                    <div className="px-4 py-2 bg-gray-50 flex items-center text-sm font-medium text-gray-700 border-b border-gray-200">
+                      <div className="w-8"></div>
+                      <div className="flex-1">Employee</div>
+                      <div className="w-32 text-center">Manager</div>
+                      <div className="w-32 text-center">Department</div>
+                      <div className="w-24 text-right">Hours</div>
+                      <div className="w-40 text-center">Actions</div>
+                    </div>
+                    
+                    {filteredSubmissions.filter(s => s.type === 'timesheet' && s.status === 'draft').map((submission, index) => {
+                      const manager = submission.employee?.manager_id 
+                        ? employees.find(e => e.id === submission.employee?.manager_id)
+                        : null
+                      
+                      return (
+                        <div key={submission.id} className={`px-4 py-3 flex items-center ${
+                          index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                        } hover:bg-gray-100 border-b border-gray-200`}>
+                          <div className="w-8">
+                            <AlertCircle className="h-5 w-5 text-gray-400" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-sm">
+                              <span className="font-medium">Week: </span>
+                              <span className="ml-1">{submission.week_range}</span>
+                            </div>
+                            <div className="text-sm text-gray-600 mt-0.5">
+                              {submission.employee?.first_name} {submission.employee?.last_name}
+                            </div>
+                          </div>
+                          <div className="w-32 text-center text-sm text-gray-600">
+                            {manager ? `${manager.first_name} ${manager.last_name}` : 'Unassigned'}
+                          </div>
+                          <div className="w-32 text-center text-sm text-gray-600">
+                            {submission.employee?.department || 'N/A'}
+                          </div>
+                          <div className="w-24 text-right font-medium text-sm">
+                            {submission.hours?.toFixed(2) || '0.00'}
+                          </div>
+                          <div className="w-40 flex justify-end items-center gap-2">
+                            <button 
+                              onClick={() => handleSendSubmittalReminder(submission)}
+                              className="px-2 py-1 text-xs bg-[#e31c79] text-white rounded-full hover:bg-[#c71865] flex items-center gap-1"
+                            >
+                              <Send className="h-3 w-3" />
+                              Remind
+                            </button>
+                            <button 
+                              onClick={() => handleViewTimesheet(submission)}
+                              className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                              disabled={processingId === submission.id}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1661,12 +1671,7 @@ export default function AdminPage() {
               <div>
                 <span className="font-medium">Employee: </span>
                 {selectedExpense.employee
-                  ? `${formatName(
-                      selectedExpense.employee.first_name,
-                      selectedExpense.employee.middle_name,
-                      selectedExpense.employee.last_name,
-                      'firstLast'
-                    )} (${selectedExpense.employee.email})`
+                  ? `${selectedExpense.employee.first_name} ${selectedExpense.employee.last_name} (${selectedExpense.employee.email})`
                   : 'Unknown'}
               </div>
               <div>

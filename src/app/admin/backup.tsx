@@ -26,44 +26,18 @@ import {
   Bell,
   User,
   ArrowUpDown,
-  Search,
 } from 'lucide-react'
-
-// Shared helper for names: "Last, First Middle" by default
-function formatName(
-  first?: string,
-  middle?: string,
-  last?: string,
-  style: 'lastFirst' | 'firstLast' = 'lastFirst'
-) {
-  const safeFirst = first?.trim() || ''
-  const safeMiddle = middle?.trim() || ''
-  const safeLast = last?.trim() || ''
-
-  if (style === 'firstLast') {
-    // "First Middle Last"
-    return [safeFirst, safeMiddle, safeLast].filter(Boolean).join(' ')
-  }
-
-  // Default: "Last, First Middle"
-  const firstPart = [safeFirst, safeMiddle].filter(Boolean).join(' ')
-  if (!safeLast) return firstPart || ''
-  if (!firstPart) return safeLast
-  return `${safeLast}, ${firstPart}`
-}
 
 interface Employee {
   id: string
   first_name: string
-  middle_name?: string
   last_name: string
   email: string
   employee_id: string
   department: string | null
   hourly_rate: number
-  bill_rate: number | null
   manager_id: string | null
-  role: string               // 'employee' | 'manager' | 'admin'
+  role: string
 }
 
 interface Timesheet {
@@ -125,7 +99,6 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'approved' | 'pending' | 'rejected' | 'unsubmitted'>('pending')
   const [managerFilter, setManagerFilter] = useState<string>('all')
   const [employeeFilter, setEmployeeFilter] = useState<string>('all')
-  const [searchTerm, setSearchTerm] = useState<string>('')
 
   // Modal state
   const [selectedTimesheet, setSelectedTimesheet] = useState<any>(null)
@@ -189,8 +162,8 @@ export default function AdminPage() {
         .order('last_name', { ascending: true })
   
       if (allEmployees) {
-        setEmployees(allEmployees as Employee[])
-        const employeeIds = (allEmployees as Employee[]).map(e => e.id)
+        setEmployees(allEmployees)
+        const employeeIds = allEmployees.map(e => e.id)
         
         let allSubmissions: Submission[] = []
   
@@ -214,9 +187,9 @@ export default function AdminPage() {
             return {
               id: t.id,
               type: 'timesheet' as const,
-              employee: (allEmployees as Employee[]).find(e => e.id === t.employee_id),
+              employee: allEmployees.find(e => e.id === t.employee_id),
               date: t.week_ending,
-              amount: (t.total_hours || 0) * ((allEmployees as Employee[]).find(e => e.id === t.employee_id)?.hourly_rate || 0),
+              amount: (t.total_hours || 0) * (allEmployees.find(e => e.id === t.employee_id)?.hourly_rate || 0),
               hours: t.total_hours,
               overtime_hours: t.overtime_hours,
               status: t.status,
@@ -237,7 +210,7 @@ export default function AdminPage() {
           const expenseSubmissions = (expenses as any[]).map(e => ({
             id: e.id,
             type: 'expense' as const,
-            employee: (allEmployees as Employee[]).find(emp => emp.id === e.employee_id),
+            employee: allEmployees.find(emp => emp.id === e.employee_id),
             date: e.expense_date,
             amount: e.amount,
             status: e.status,
@@ -247,8 +220,7 @@ export default function AdminPage() {
           }))
           allSubmissions = [...allSubmissions, ...expenseSubmissions]
         }
-
-        // Keep submissions sorted by date (latest first) for raw list
+  
         allSubmissions.sort((a, b) => 
           new Date(b.date).getTime() - new Date(a.date).getTime()
         )
@@ -299,7 +271,7 @@ export default function AdminPage() {
           if (!pendingByManager.has(managerId)) {
             pendingByManager.set(managerId, {
               managerId,
-              managerName: formatName(manager.first_name, manager.middle_name, manager.last_name),
+              managerName: `${manager.first_name} ${manager.last_name}`,
               managerEmail: manager.email,
               count: 0,
               submissions: [],
@@ -309,8 +281,7 @@ export default function AdminPage() {
           }
         }
         
-        const key = managerId === 'unassigned' ? 'unassigned' : managerId
-        const data = pendingByManager.get(key)!
+        const data = pendingByManager.get(managerId === 'unassigned' ? 'unassigned' : managerId)!
         data.count++
         data.submissions.push(submission)
         data.totalHours += submission.hours || 0
@@ -326,14 +297,7 @@ export default function AdminPage() {
   const handleSendSubmittalReminder = async (submission: Submission) => {
     if (!submission.employee) return
     
-    const confirmed = confirm(
-      `Send reminder to ${formatName(
-        submission.employee.first_name,
-        submission.employee.middle_name,
-        submission.employee.last_name,
-        'firstLast'
-      )} for unsubmitted timecard?`
-    )
+    const confirmed = confirm(`Send reminder to ${submission.employee.first_name} ${submission.employee.last_name} for unsubmitted timecard?`)
     if (!confirmed) return
     
     try {
@@ -346,12 +310,7 @@ export default function AdminPage() {
           recipient_email: submission.employee.email,
           data: {
             week_ending: submission.date,
-            employee_name: formatName(
-              submission.employee.first_name,
-              submission.employee.middle_name,
-              submission.employee.last_name,
-              'firstLast'
-            ),
+            employee_name: `${submission.employee.first_name} ${submission.employee.last_name}`,
             status: 'unsubmitted'
           }
         })
@@ -376,12 +335,7 @@ export default function AdminPage() {
     }
 
     const pendingDetails = pendingSubmissions.map(s => ({
-      employee: formatName(
-        s.employee?.first_name,
-        s.employee?.middle_name,
-        s.employee?.last_name,
-        'firstLast'
-      ),
+      employee: `${s.employee?.first_name} ${s.employee?.last_name}`,
       week: s.week_range?.split(',')[0] || s.date
     }))
 
@@ -450,12 +404,7 @@ export default function AdminPage() {
             recipient_email: submission.employee!.email,
             data: {
               week_ending: submission.date,
-              employee_name: formatName(
-                submission.employee!.first_name,
-                submission.employee!.middle_name,
-                submission.employee!.last_name,
-                'firstLast'
-              ),
+              employee_name: `${submission.employee!.first_name} ${submission.employee!.last_name}`,
               status: 'unsubmitted'
             }
           })
@@ -484,7 +433,6 @@ export default function AdminPage() {
           employee:employees!timesheets_employee_id_fkey (
             id,
             first_name,
-            middle_name,
             last_name,
             email,
             department,
@@ -671,36 +619,15 @@ export default function AdminPage() {
   const draftExpenseCount = submissions.filter(s => s.status === 'draft' && s.type === 'expense').length
   const rejectedTimesheetCount = submissions.filter(s => s.status === 'rejected' && s.type === 'timesheet').length
   const rejectedExpenseCount = submissions.filter(s => s.status === 'rejected' && s.type === 'expense').length
-
-  // FILTERED SUBMISSIONS (tabs + top filters + search)
+  
   const filteredSubmissions = (() => {
     let filtered = submissions
-
-    // Search by employee name/email/category/description/week
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(s => {
-        const emp = s.employee
-        const nameFirstLast = formatName(emp?.first_name, emp?.middle_name, emp?.last_name, 'firstLast').toLowerCase()
-        const email = emp?.email?.toLowerCase() || ''
-        const cat = (s.category || '').toLowerCase()
-        const desc = (s.description || '').toLowerCase()
-        const week = (s.week_range || '').toLowerCase()
-        return (
-          nameFirstLast.includes(term) ||
-          email.includes(term) ||
-          cat.includes(term) ||
-          desc.includes(term) ||
-          week.includes(term)
-        )
-      })
-    }
   
-    if (activeTab === 'all') filtered = filtered
-    else if (activeTab === 'approved') filtered = filtered.filter(s => s.status === 'approved')
-    else if (activeTab === 'pending') filtered = filtered.filter(s => s.status === 'submitted')
-    else if (activeTab === 'rejected') filtered = filtered.filter(s => s.status === 'rejected')
-    else if (activeTab === 'unsubmitted') filtered = filtered.filter(s => s.status === 'draft')
+    if (activeTab === 'all') filtered = submissions
+    else if (activeTab === 'approved') filtered = submissions.filter(s => s.status === 'approved')
+    else if (activeTab === 'pending') filtered = submissions.filter(s => s.status === 'submitted')
+    else if (activeTab === 'rejected') filtered = submissions.filter(s => s.status === 'rejected')
+    else if (activeTab === 'unsubmitted') filtered = submissions.filter(s => s.status === 'draft')
   
     if (managerFilter && managerFilter !== 'all') {
       filtered = filtered.filter(s => s.employee?.manager_id === managerFilter)
@@ -720,29 +647,9 @@ export default function AdminPage() {
     s => s.type === 'expense' && s.status === 'submitted'
   )  
 
-  // CARD-LEVEL BASE DATA (respect top filters + search)
+  // CARD-LEVEL BASE DATA (respect top Manager/Employee filters)
   const baseCardSubmissions = (() => {
     let filtered = submissions
-
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(s => {
-        const emp = s.employee
-        const nameFirstLast = formatName(emp?.first_name, emp?.middle_name, emp?.last_name, 'firstLast').toLowerCase()
-        const email = emp?.email?.toLowerCase() || ''
-        const cat = (s.category || '').toLowerCase()
-        const desc = (s.description || '').toLowerCase()
-        const week = (s.week_range || '').toLowerCase()
-        return (
-          nameFirstLast.includes(term) ||
-          email.includes(term) ||
-          cat.includes(term) ||
-          desc.includes(term) ||
-          week.includes(term)
-        )
-      })
-    }
-
     if (managerFilter && managerFilter !== 'all') {
       filtered = filtered.filter(s => s.employee?.manager_id === managerFilter)
     }
@@ -755,17 +662,13 @@ export default function AdminPage() {
   const allTimesheetSubmissions = baseCardSubmissions.filter(s => s.type === 'timesheet')
   const allExpenseSubmissions = baseCardSubmissions.filter(s => s.type === 'expense')
 
-  // options for in-card filters (alpha by name)
+  // options for in-card filters
   const timesheetEmployeeOptions: Employee[] = Array.from(
     new Map(
       allTimesheetSubmissions
         .filter(s => s.employee)
         .map(s => [s.employee!.id, s.employee!])
     ).values()
-  ).sort((a, b) =>
-    formatName(a.first_name, a.middle_name, a.last_name).localeCompare(
-      formatName(b.first_name, b.middle_name, b.last_name)
-    )
   )
 
   const weekOptions: string[] = Array.from(
@@ -787,11 +690,10 @@ export default function AdminPage() {
       return true
     })
     .sort((a, b) => {
-      const nameA = formatName(a.employee?.first_name, a.employee?.middle_name, a.employee?.last_name)
-      const nameB = formatName(b.employee?.first_name, b.employee?.middle_name, b.employee?.last_name)
-
       if (timesheetEmployeeSort) {
-        const cmp = nameA.localeCompare(nameB)
+        const aName = `${a.employee?.first_name || ''} ${a.employee?.last_name || ''}`.trim()
+        const bName = `${b.employee?.first_name || ''} ${b.employee?.last_name || ''}`.trim()
+        const cmp = aName.localeCompare(bName)
         return timesheetEmployeeSort === 'asc' ? cmp : -cmp
       }
       if (timesheetWeekSort) {
@@ -800,28 +702,34 @@ export default function AdminPage() {
         const cmp = aWeek.localeCompare(bWeek)
         return timesheetWeekSort === 'asc' ? cmp : -cmp
       }
-      // Default: alpha by name
-      return nameA.localeCompare(nameB)
+      const aDate = new Date(a.date).getTime()
+      const bDate = new Date(b.date).getTime()
+      return bDate - aDate
     })
 
-    const visibleExpensesAllTab = allExpenseSubmissions
+  // visible expenses for cards (filter + sort)
+  const visibleExpensesAllTab = allExpenseSubmissions
     .filter(e => {
       if (timesheetEmployeeFilter !== 'all' && e.employee?.id !== timesheetEmployeeFilter) return false
       return true
     })
     .sort((a, b) => {
-      const nameA = formatName(
-        a.employee?.first_name,
-        a.employee?.middle_name,
-        a.employee?.last_name
-      )
-      const nameB = formatName(
-        b.employee?.first_name,
-        b.employee?.middle_name,
-        b.employee?.last_name
-      )
-      return nameA.localeCompare(nameB)
-    })  
+      if (expenseEmployeeSort) {
+        const aName = `${a.employee?.first_name || ''} ${a.employee?.last_name || ''}`.trim()
+        const bName = `${b.employee?.first_name || ''} ${b.employee?.last_name || ''}`.trim()
+        const cmp = aName.localeCompare(bName)
+        return expenseEmployeeSort === 'asc' ? cmp : -cmp
+      }
+      if (expenseDateSort) {
+        const aDate = new Date(a.date).getTime()
+        const bDate = new Date(b.date).getTime()
+        const cmp = aDate - bDate
+        return expenseDateSort === 'asc' ? cmp : -cmp
+      }
+      const aDate = new Date(a.date).getTime()
+      const bDate = new Date(b.date).getTime()
+      return bDate - aDate
+    })
 
   const visibleTimesheetsCountAllTab = visibleTimesheetsAllTab.length
   const visibleExpensesCountAllTab = visibleExpensesAllTab.length
@@ -851,7 +759,7 @@ export default function AdminPage() {
     timesheetEmployeeFilter !== 'all'
       ? (() => {
           const emp = employees.find(e => e.id === timesheetEmployeeFilter)
-          return emp ? formatName(emp.first_name, emp.middle_name, emp.last_name) : 'Employee'
+          return emp ? `${emp.first_name} ${emp.last_name}` : 'Employee'
         })()
       : null
 
@@ -998,50 +906,50 @@ export default function AdminPage() {
         </div>
       </div>
 
-{/* Quick Stats Bar */}
-<div className="bg-white border-b border-gray-200">
-  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="inline-flex items-center gap-2 text-sm text-gray-800">
-          <Users className="h-4 w-4 text-gray-500" />
-          <span className="text-gray-600">Employees:</span> 
-          <span className="font-semibold ml-1">{employees.length}</span>
-        </div>
-        <div className="inline-flex items-center gap-2 text-sm text-gray-800">
-          <DollarSign className="h-4 w-4 text-gray-500" />
-          <span className="text-gray-600">Pending amount:</span> 
-          <span className="font-semibold ml-1 text-[#e31c79]">
-            ${submissions
-              .filter(s => s.status === 'submitted')
-              .reduce((sum, s) => sum + s.amount, 0)
-              .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-        </div>
-        <div className="inline-flex items-center gap-2 text-sm text-gray-800">
-          <Clock className="h-4 w-4 text-gray-500" />
-          <span className="text-gray-600">Pending hours:</span> 
-          <span className="font-semibold ml-1">
-            {submissions
-              .filter(s => s.status === 'submitted' && s.type === 'timesheet')
-              .reduce((sum, s) => sum + (s.hours || 0), 0)
-              .toFixed(2)}
-          </span>
+      {/* Quick Stats Bar */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="inline-flex items-center gap-2 text-sm text-gray-800">
+                <Users className="h-4 w-4 text-gray-500" />
+                <span className="text-gray-600">Employees:</span> 
+                <span className="font-semibold ml-1">{employees.length}</span>
+              </div>
+              <div className="inline-flex items-center gap-2 text-sm text-gray-800">
+                <DollarSign className="h-4 w-4 text-gray-500" />
+                <span className="text-gray-600">Pending amount:</span> 
+                <span className="font-semibold ml-1 text-[#e31c79]">
+                  ${submissions
+                    .filter(s => s.status === 'submitted')
+                    .reduce((sum, s) => sum + s.amount, 0)
+                    .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="inline-flex items-center gap-2 text-sm text-gray-800">
+                <Clock className="h-4 w-4 text-gray-500" />
+                <span className="text-gray-600">Pending hours:</span> 
+                <span className="font-semibold ml-1">
+                  {submissions
+                    .filter(s => s.status === 'submitted' && s.type === 'timesheet')
+                    .reduce((sum, s) => sum + (s.hours || 0), 0)
+                    .toFixed(2)}
+                </span>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <button 
+                onClick={loadSubmissions}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm text-gray-700 hover:text-gray-900 border border-gray-200 rounded-full hover:bg-gray-50"
+              >
+                <RotateCw className="h-3 w-3" />
+                Refresh data
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-      
-      <div className="flex items-center space-x-3">
-        <button 
-          onClick={loadSubmissions}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm text-gray-700 hover:text-gray-900 border border-gray-200 rounded-full hover:bg-gray-50"
-        >
-          <RotateCw className="h-3 w-3" />
-          Refresh data
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
 
       {/* Controls - filters line */}
       <div className="bg-white border-b border-gray-200">
@@ -1067,15 +975,9 @@ export default function AdminPage() {
                   <option value="all">All</option>
                   {employees
                     .filter(e => e.role === 'manager' || e.role === 'admin')
-                    .slice()
-                    .sort((a, b) =>
-                      formatName(a.first_name, a.middle_name, a.last_name).localeCompare(
-                        formatName(b.first_name, b.middle_name, b.last_name)
-                      )
-                    )
                     .map(manager => (
                       <option key={manager.id} value={manager.id}>
-                        {formatName(manager.first_name, manager.middle_name, manager.last_name)}
+                        {manager.first_name} {manager.last_name}
                       </option>
                     ))
                   }
@@ -1099,18 +1001,11 @@ export default function AdminPage() {
                   onChange={(e) => setEmployeeFilter(e.target.value)}
                 >
                   <option value="all">All</option>
-                  {employees
-                    .slice()
-                    .sort((a, b) =>
-                      formatName(a.first_name, a.middle_name, a.last_name).localeCompare(
-                        formatName(b.first_name, b.middle_name, b.last_name)
-                      )
-                    )
-                    .map(emp => (
-                      <option key={emp.id} value={emp.id}>
-                        {formatName(emp.first_name, emp.middle_name, emp.last_name)}
-                      </option>
-                    ))}
+                  {employees.map(emp => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.first_name} {emp.last_name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1194,27 +1089,22 @@ export default function AdminPage() {
                       {draftTimesheetCount} unsubmitted timecard{draftTimesheetCount !== 1 ? 's' : ''}
                     </p>
                     {submissions
-  .filter(s => s.type === 'timesheet' && s.status === 'draft')
-  .slice(0, 5)
-  .map(submission => (
-    <div key={submission.id} className="flex justify-between items-center text-sm py-1">
-      <span className="text-gray-700">
-        {formatName(
-          submission.employee?.first_name,
-          submission.employee?.middle_name,
-          submission.employee?.last_name
-        )} — Week: {submission.week_range?.split(',')[0]}
-      </span>
-      <button
-        onClick={() => handleSendSubmittalReminder(submission)}
-        className="text-[#e31c79] hover:text-[#c71865] text-xs flex items-center gap-1"
-      >
-        <Send className="h-3 w-3" />
-        Send reminder
-      </button>
-    </div>
-  ))}
-
+                      .filter(s => s.type === 'timesheet' && s.status === 'draft')
+                      .slice(0, 5)
+                      .map(submission => (
+                        <div key={submission.id} className="flex justify-between items-center text-sm py-1">
+                          <span className="text-gray-700">
+                            {submission.employee?.first_name} {submission.employee?.last_name} — Week: {submission.week_range?.split(',')[0]}
+                          </span>
+                          <button
+                            onClick={() => handleSendSubmittalReminder(submission)}
+                            className="text-[#e31c79] hover:text-[#c71865] text-xs flex items-center gap-1"
+                          >
+                            <Send className="h-3 w-3" />
+                            Send reminder
+                          </button>
+                        </div>
+                      ))}
                     {draftTimesheetCount > 5 && (
                       <p className="text-xs text-gray-500 mt-2">
                         +{draftTimesheetCount - 5} more...
@@ -1312,26 +1202,12 @@ export default function AdminPage() {
         </div>
       </div>
 
-{/* MAIN CONTENT – Timesheets + Expenses WITH FILTERS/SORTING */}
-<div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-  {/* Search above cards */}
-  <div className="mb-4 flex justify-between items-center">
-    <div className="relative w-full sm:w-80">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-      <input
-        type="text"
-        placeholder="Search by employee, email, category..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
-      />
-    </div>
-  </div>
-
-  <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-    {/* TIMESHEETS CARD */}
-    <div className="border-b border-gray-100 rounded-t-2xl overflow-hidden">
-      <div className="bg-[#05202E] px-4 py-3 flex justify-between items-center">
+      {/* MAIN CONTENT – Timesheets + Expenses WITH FILTERS/SORTING */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+          {/* TIMESHEETS CARD */}
+          <div className="border-b border-gray-100 rounded-t-2xl overflow-hidden">
+            <div className="bg-[#05202E] px-4 py-3 flex justify-between items-center">
               <h3 className="text-sm font-semibold text-white">Timesheets</h3>
               <div className="flex items-center space-x-2 text-xs text-gray-300">
                 <span>
@@ -1341,7 +1217,7 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Currently filtered pill */}
+            {/* Currently filtered pill (same as manager) */}
             {hasTimesheetFilters && (
               <div className="px-4 pt-2 pb-3 bg-white">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-50 border border-gray-200 text-xs text-gray-700">
@@ -1372,7 +1248,7 @@ export default function AdminPage() {
               </div>
             ) : (
               <>
-                {/* Filter row */}
+                {/* Filter row inside card */}
                 <div className="px-4 py-2 bg-gray-50 flex items-center text-xs font-semibold text-gray-600 border-b border-gray-200">
                   <div className="w-8" />
                   <div className="flex-1 pr-2">
@@ -1384,7 +1260,7 @@ export default function AdminPage() {
                       <option value="all">Employee</option>
                       {timesheetEmployeeOptions.map(emp => (
                         <option key={emp.id} value={emp.id}>
-                          {formatName(emp.first_name, emp.middle_name, emp.last_name)}
+                          {emp.first_name} {emp.last_name}
                         </option>
                       ))}
                     </select>
@@ -1424,6 +1300,46 @@ export default function AdminPage() {
                     Actions
                   </div>
                 </div>
+
+                {/* Sort row for Timesheets */}
+                <div className="px-4 py-1 bg-white flex items-center text-[11px] text-gray-600 border-b border-gray-100">
+                  <div className="w-8" />
+                  <div className="flex-1 pr-2 flex items-center">
+                    <span className="mr-2 text-[10px] uppercase tracking-wide text-gray-500">
+                      Sort employee
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTimesheetEmployeeSort(prev => prev === 'asc' ? 'desc' : 'asc')
+                        setTimesheetWeekSort(null)
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 border border-gray-200 rounded bg-white hover:bg-gray-100"
+                    >
+                      <ArrowUpDown className="h-3 w-3" />
+                      {timesheetEmployeeSort === 'desc' ? 'Z-A' : 'A-Z'}
+                    </button>
+                  </div>
+                  <div className="w-40 pr-2 flex items-center">
+                    <span className="mr-2 text-[10px] uppercase tracking-wide text-gray-500">
+                      Sort week
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTimesheetWeekSort(prev => prev === 'asc' ? 'desc' : 'asc')
+                        setTimesheetEmployeeSort(null)
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 border border-gray-200 rounded bg-white hover:bg-gray-100"
+                    >
+                      <ArrowUpDown className="h-3 w-3" />
+                      {timesheetWeekSort === 'desc' ? 'Z-A' : 'A-Z'}
+                    </button>
+                  </div>
+                  <div className="w-32 pr-2" />
+                  <div className="w-24" />
+                  <div className="w-32" />
+                </div>
                 
                 {visibleTimesheetsAllTab.map((submission, index) => (
                   <div
@@ -1435,11 +1351,7 @@ export default function AdminPage() {
                     <div className="w-8" />
                     <div className="flex-1">
                       <div className="text-gray-900 font-medium">
-                        {formatName(
-                          submission.employee?.first_name,
-                          submission.employee?.middle_name,
-                          submission.employee?.last_name
-                        )}
+                        {submission.employee?.first_name} {submission.employee?.last_name}
                       </div>
                       <div className="text-xs text-gray-500">
                         {submission.employee?.department || 'No department'}
@@ -1535,6 +1447,47 @@ export default function AdminPage() {
                   <div className="w-24 text-right">Amount</div>
                   <div className="w-32 text-right">Actions</div>
                 </div>
+
+                {/* Sort row for Expenses */}
+                <div className="px-4 py-1 bg-white flex items-center text-[11px] text-gray-600 border-b border-gray-100">
+                  <div className="w-8" />
+                  <div className="flex-1 pr-2 flex items-center">
+                    <span className="mr-2 text-[10px] uppercase tracking-wide text-gray-500">
+                      Sort employee
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExpenseEmployeeSort(prev => prev === 'asc' ? 'desc' : 'asc')
+                        setExpenseDateSort(null)
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 border border-gray-200 rounded bg-white hover:bg-gray-100"
+                    >
+                      <ArrowUpDown className="h-3 w-3" />
+                      {expenseEmployeeSort === 'desc' ? 'Z-A' : 'A-Z'}
+                    </button>
+                  </div>
+                  <div className="w-32" />
+                  <div className="w-40 pr-2 flex items-center">
+                    <span className="mr-2 text-[10px] uppercase tracking-wide text-gray-500">
+                      Sort date
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExpenseDateSort(prev => prev === 'asc' ? 'desc' : 'asc')
+                        setExpenseEmployeeSort(null)
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 border border-gray-200 rounded bg-white hover:bg-gray-100"
+                    >
+                      <ArrowUpDown className="h-3 w-3" />
+                      {expenseDateSort === 'desc' ? 'Z-A' : 'A-Z'}
+                    </button>
+                  </div>
+                  <div className="w-32" />
+                  <div className="w-24" />
+                  <div className="w-32" />
+                </div>
                 
                 {visibleExpensesAllTab.map((expense, index) => (
                   <div
@@ -1546,11 +1499,7 @@ export default function AdminPage() {
                     <div className="w-8" />
                     <div className="flex-1">
                       <div className="font-medium text-gray-900">
-                        {formatName(
-                          expense.employee?.first_name,
-                          expense.employee?.middle_name,
-                          expense.employee?.last_name
-                        )}
+                        {expense.employee?.first_name} {expense.employee?.last_name}
                       </div>
                       <div className="text-xs text-gray-500">
                         {expense.employee?.email}
@@ -1661,12 +1610,7 @@ export default function AdminPage() {
               <div>
                 <span className="font-medium">Employee: </span>
                 {selectedExpense.employee
-                  ? `${formatName(
-                      selectedExpense.employee.first_name,
-                      selectedExpense.employee.middle_name,
-                      selectedExpense.employee.last_name,
-                      'firstLast'
-                    )} (${selectedExpense.employee.email})`
+                  ? `${selectedExpense.employee.first_name} ${selectedExpense.employee.last_name} (${selectedExpense.employee.email})`
                   : 'Unknown'}
               </div>
               <div>

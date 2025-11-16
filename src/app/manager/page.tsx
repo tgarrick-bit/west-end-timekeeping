@@ -20,12 +20,33 @@ import {
   User,
   RefreshCw,
   SlidersHorizontal,
-  ArrowUpDown
+  Search,
 } from 'lucide-react'
+
+function formatName(
+  first?: string,
+  middle?: string,
+  last?: string,
+  style: 'lastFirst' | 'firstLast' = 'lastFirst'
+) {
+  const safeFirst = first?.trim() || ''
+  const safeMiddle = middle?.trim() || ''
+  const safeLast = last?.trim() || ''
+
+  if (style === 'firstLast') {
+    return [safeFirst, safeMiddle, safeLast].filter(Boolean).join(' ')
+  }
+
+  const firstPart = [safeFirst, safeMiddle].filter(Boolean).join(' ')
+  if (!safeLast) return firstPart || ''
+  if (!firstPart) return safeLast
+  return `${safeLast}, ${firstPart}`
+}
 
 interface Employee {
   id: string
   first_name: string
+  middle_name?: string
   last_name: string
   email: string
   employee_id: string
@@ -125,12 +146,7 @@ export default function ManagerPage() {
   const [timesheetWeekFilter, setTimesheetWeekFilter] = useState<string>('all')
   const [timesheetStatusCardFilter, setTimesheetStatusCardFilter] = useState<string>('all')
 
-  // sort states (A–Z / Z–A)
-  const [timesheetEmployeeSort, setTimesheetEmployeeSort] = useState<'asc' | 'desc' | null>(null)
-  const [timesheetWeekSort, setTimesheetWeekSort] = useState<'asc' | 'desc' | null>(null)
-
-  const [expenseEmployeeSort, setExpenseEmployeeSort] = useState<'asc' | 'desc' | null>(null)
-  const [expenseDateSort, setExpenseDateSort] = useState<'asc' | 'desc' | null>(null)
+  const [searchTerm, setSearchTerm] = useState<string>('')
 
   useEffect(() => {
     fetchManagerId()
@@ -174,24 +190,31 @@ export default function ManagerPage() {
     setIsLoading(true)
     
     try {
-      const { data: allEmployees } = await supabase
+      // Only employees assigned to this manager (plus the manager themselves)
+      const { data: allEmployees, error: empError } = await supabase
         .from('employees')
         .select('*')
+        .or(`id.eq.${managerId},manager_id.eq.${managerId}`)
+        .order('last_name', { ascending: true })
+
+      if (empError) throw empError
 
       if (allEmployees) {
-        setEmployees(allEmployees)
-        const employeeIds = allEmployees.map(e => e.id)
+        setEmployees(allEmployees as Employee[])
+        const employeeIds = (allEmployees as Employee[]).map(e => e.id)
         
         let allSubmissions: Submission[] = []
 
         // TIMESHEETS
-        const { data: timesheets } = await supabase
+        const { data: timesheets, error: tsError } = await supabase
           .from('timesheets')
           .select('*')
           .in('employee_id', employeeIds)
 
+        if (tsError) throw tsError
+
         if (timesheets && timesheets.length > 0) {
-          const { data: timesheetEntries } = await supabase
+          const { data: timesheetEntries, error: entError } = await supabase
             .from('timesheet_entries')
             .select(`
               id,
@@ -204,6 +227,8 @@ export default function ManagerPage() {
               )
             `)
             .in('timesheet_id', (timesheets as any[]).map(t => t.id))
+
+          if (entError) throw entError
 
           const projectMap: Record<string, ProjectOption> = {}
           const tMap: Record<string, string[]> = {}
@@ -233,9 +258,9 @@ export default function ManagerPage() {
             return {
               id: t.id,
               type: 'timesheet' as const,
-              employee: allEmployees.find(e => e.id === t.employee_id),
+              employee: (allEmployees as Employee[]).find(e => e.id === t.employee_id),
               date: endDate.toISOString(),
-              amount: (t.total_hours || 0) * (allEmployees.find(e => e.id === t.employee_id)?.hourly_rate || 0),
+              amount: (t.total_hours || 0) * ((allEmployees as Employee[]).find(e => e.id === t.employee_id)?.hourly_rate || 0),
               hours: t.total_hours,
               overtime_hours: t.overtime_hours,
               status: t.status,
@@ -247,16 +272,18 @@ export default function ManagerPage() {
         }
 
         // EXPENSES
-        const { data: expenses } = await supabase
+        const { data: expenses, error: expError } = await supabase
           .from('expenses')
           .select('*')
           .in('employee_id', employeeIds)
+
+        if (expError) throw expError
 
         if (expenses) {
           const expenseSubmissions = (expenses as any[]).map(e => ({
             id: e.id,
             type: 'expense' as const,
-            employee: allEmployees.find(emp => emp.id === e.employee_id),
+            employee: (allEmployees as Employee[]).find(emp => emp.id === e.employee_id),
             date: e.expense_date,
             amount: e.amount,
             status: e.status,
@@ -267,6 +294,7 @@ export default function ManagerPage() {
           allSubmissions = [...allSubmissions, ...expenseSubmissions]
         }
 
+        // Sort raw submissions by date desc
         allSubmissions.sort((a, b) => 
           new Date(b.date).getTime() - new Date(a.date).getTime()
         )
@@ -293,6 +321,7 @@ export default function ManagerPage() {
           employee:employees!timesheets_employee_id_fkey (
             id,
             first_name,
+            middle_name,
             last_name,
             email,
             department,
@@ -431,17 +460,55 @@ export default function ManagerPage() {
   const expensePendingCount = submissions.filter(s => s.status === 'submitted' && s.type === 'expense').length
   const approvedTimesheetCount = submissions.filter(s => s.status === 'approved' && s.type === 'timesheet').length
   const approvedExpenseCount = submissions.filter(s => s.status === 'approved' && s.type === 'expense').length
-  
-  const allTimesheetSubmissions = submissions.filter(s => s.type === 'timesheet')
-  const allExpenseSubmissions = submissions.filter(s => s.type === 'expense')
 
-  // options for in-card filters
+  // Search + project filter applied before card-level filters
+  const baseFilteredSubmissions = (() => {
+    let filtered = submissions
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(s => {
+        const emp = s.employee
+        const name = formatName(emp?.first_name, emp?.middle_name, emp?.last_name, 'firstLast').toLowerCase()
+        const email = emp?.email?.toLowerCase() || ''
+        const cat = (s.category || '').toLowerCase()
+        const desc = (s.description || '').toLowerCase()
+        const week = (s.week_range || '').toLowerCase()
+        return (
+          name.includes(term) ||
+          email.includes(term) ||
+          cat.includes(term) ||
+          desc.includes(term) ||
+          week.includes(term)
+        )
+      })
+    }
+
+    if (projectFilter !== 'all') {
+      filtered = filtered.filter(s => {
+        if (s.type !== 'timesheet') return true
+        const projectIds = timesheetProjectMap[s.id] || []
+        return projectIds.includes(projectFilter)
+      })
+    }
+
+    return filtered
+  })()
+  
+  const allTimesheetSubmissions = baseFilteredSubmissions.filter(s => s.type === 'timesheet')
+  const allExpenseSubmissions = baseFilteredSubmissions.filter(s => s.type === 'expense')
+
+  // options for in-card filters (alpha)
   const timesheetEmployeeOptions: Employee[] = Array.from(
     new Map(
       allTimesheetSubmissions
         .filter(s => s.employee)
         .map(s => [s.employee!.id, s.employee!])
     ).values()
+  ).sort((a, b) =>
+    formatName(a.first_name, a.middle_name, a.last_name).localeCompare(
+      formatName(b.first_name, b.middle_name, b.last_name)
+    )
   )
 
   const weekOptions: string[] = Array.from(
@@ -454,59 +521,47 @@ export default function ManagerPage() {
 
   const statusOptions = ['submitted', 'approved', 'rejected', 'draft']
 
-  // visible timesheets: filter then sort (employee -> week -> date desc)
+  // visible timesheets: filters + alpha sort
   const visibleTimesheetsAllTab = allTimesheetSubmissions
     .filter(s => {
       if (timesheetEmployeeFilter !== 'all' && s.employee?.id !== timesheetEmployeeFilter) return false
       if (timesheetWeekFilter !== 'all' && s.week_range !== timesheetWeekFilter) return false
       if (timesheetStatusCardFilter !== 'all' && s.status !== timesheetStatusCardFilter) return false
-      if (projectFilter !== 'all') {
-        const projectIds = timesheetProjectMap[s.id] || []
-        if (!projectIds.includes(projectFilter)) return false
-      }
       return true
     })
-    .sort((a, b) => {
-      if (timesheetEmployeeSort) {
-        const aName = `${a.employee?.first_name || ''} ${a.employee?.last_name || ''}`.trim()
-        const bName = `${b.employee?.first_name || ''} ${b.employee?.last_name || ''}`.trim()
-        const cmp = aName.localeCompare(bName)
-        return timesheetEmployeeSort === 'asc' ? cmp : -cmp
-      }
-      if (timesheetWeekSort) {
-        const aWeek = a.week_range || ''
-        const bWeek = b.week_range || ''
-        const cmp = aWeek.localeCompare(bWeek)
-        return timesheetWeekSort === 'asc' ? cmp : -cmp
-      }
-      const aDate = new Date(a.date).getTime()
-      const bDate = new Date(b.date).getTime()
-      return bDate - aDate
-    })
+    .sort((a, b) =>
+      formatName(
+        a.employee?.first_name,
+        a.employee?.middle_name,
+        a.employee?.last_name
+      ).localeCompare(
+        formatName(
+          b.employee?.first_name,
+          b.employee?.middle_name,
+          b.employee?.last_name
+        )
+      )
+    )
 
-  // visible expenses: filter then sort (employee -> date)
+  // visible expenses: filters + alpha sort
   const visibleExpensesAllTab = allExpenseSubmissions
     .filter(e => {
       if (timesheetEmployeeFilter !== 'all' && e.employee?.id !== timesheetEmployeeFilter) return false
       return true
     })
-    .sort((a, b) => {
-      if (expenseEmployeeSort) {
-        const aName = `${a.employee?.first_name || ''} ${a.employee?.last_name || ''}`.trim()
-        const bName = `${b.employee?.first_name || ''} ${b.employee?.last_name || ''}`.trim()
-        const cmp = aName.localeCompare(bName)
-        return expenseEmployeeSort === 'asc' ? cmp : -cmp
-      }
-      if (expenseDateSort) {
-        const aDate = new Date(a.date).getTime()
-        const bDate = new Date(b.date).getTime()
-        const cmp = aDate - bDate
-        return expenseDateSort === 'asc' ? cmp : -cmp
-      }
-      const aDate = new Date(a.date).getTime()
-      const bDate = new Date(b.date).getTime()
-      return bDate - aDate
-    })
+    .sort((a, b) =>
+      formatName(
+        a.employee?.first_name,
+        a.employee?.middle_name,
+        a.employee?.last_name
+      ).localeCompare(
+        formatName(
+          b.employee?.first_name,
+          b.employee?.middle_name,
+          b.employee?.last_name
+        )
+      )
+    )
 
   const visibleTimesheetsCountAllTab = visibleTimesheetsAllTab.length
   const visibleExpensesCountAllTab = visibleExpensesAllTab.length
@@ -529,7 +584,7 @@ export default function ManagerPage() {
     timesheetEmployeeFilter !== 'all'
       ? (() => {
           const emp = employees.find(e => e.id === timesheetEmployeeFilter)
-          return emp ? `${emp.first_name} ${emp.last_name}` : 'Employee'
+          return emp ? formatName(emp.first_name, emp.middle_name, emp.last_name) : 'Employee'
         })()
       : null
 
@@ -542,8 +597,6 @@ export default function ManagerPage() {
     setTimesheetEmployeeFilter('all')
     setTimesheetWeekFilter('all')
     setTimesheetStatusCardFilter('all')
-    setTimesheetEmployeeSort(null)
-    setTimesheetWeekSort(null)
   }
 
   return (
@@ -740,8 +793,22 @@ export default function ManagerPage() {
         </div>
       </div>
 
-      {/* MAIN CONTENT – Timesheets + Expenses */}
+      {/* MAIN CONTENT – Timesheets + Expenses (with search above cards) */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Search above cards */}
+        <div className="mb-4 flex justify-between items-center">
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by employee, email, category..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+            />
+          </div>
+        </div>
+
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
           {/* TIMESHEETS */}
           <div className="border-b border-gray-100 rounded-t-2xl overflow-hidden">
@@ -755,7 +822,6 @@ export default function ManagerPage() {
               </div>
             </div>
 
-            {/* Currently filtered pill */}
             {hasTimesheetFilters && (
               <div className="px-4 pt-2 pb-3 bg-white">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-50 border border-gray-200 text-xs text-gray-700">
@@ -798,7 +864,7 @@ export default function ManagerPage() {
                       <option value="all">Employee</option>
                       {timesheetEmployeeOptions.map(emp => (
                         <option key={emp.id} value={emp.id}>
-                          {emp.first_name} {emp.last_name}
+                          {formatName(emp.first_name, emp.middle_name, emp.last_name)}
                         </option>
                       ))}
                     </select>
@@ -838,46 +904,6 @@ export default function ManagerPage() {
                     Actions
                   </div>
                 </div>
-
-                {/* Sort row for Timesheets */}
-                <div className="px-4 py-1 bg-white flex items-center text-[11px] text-gray-600 border-b border-gray-100">
-                  <div className="w-8" />
-                  <div className="flex-1 pr-2 flex items-center">
-                    <span className="mr-2 text-[10px] uppercase tracking-wide text-gray-500">
-                      Sort employee
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTimesheetEmployeeSort(prev => prev === 'asc' ? 'desc' : 'asc')
-                        setTimesheetWeekSort(null)
-                      }}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 border border-gray-200 rounded bg-white hover:bg-gray-100"
-                    >
-                      <ArrowUpDown className="h-3 w-3" />
-                      {timesheetEmployeeSort === 'desc' ? 'Z-A' : 'A-Z'}
-                    </button>
-                  </div>
-                  <div className="w-40 pr-2 flex items-center">
-                    <span className="mr-2 text-[10px] uppercase tracking-wide text-gray-500">
-                      Sort week
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTimesheetWeekSort(prev => prev === 'asc' ? 'desc' : 'asc')
-                        setTimesheetEmployeeSort(null)
-                      }}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 border border-gray-200 rounded bg-white hover:bg-gray-100"
-                    >
-                      <ArrowUpDown className="h-3 w-3" />
-                      {timesheetWeekSort === 'desc' ? 'Z-A' : 'A-Z'}
-                    </button>
-                  </div>
-                  <div className="w-32 pr-2" />
-                  <div className="w-24" />
-                  <div className="w-32" />
-                </div>
                 
                 {visibleTimesheetsAllTab.map((submission, index) => (
                   <div
@@ -889,7 +915,11 @@ export default function ManagerPage() {
                     <div className="w-8" />
                     <div className="flex-1">
                       <div className="text-gray-900 font-medium">
-                        {submission.employee?.first_name} {submission.employee?.last_name}
+                        {formatName(
+                          submission.employee?.first_name,
+                          submission.employee?.middle_name,
+                          submission.employee?.last_name
+                        )}
                       </div>
                     </div>
                     <div className="w-40 text-sm text-gray-800">
@@ -987,47 +1017,6 @@ export default function ManagerPage() {
                   <div className="w-24 text-right">Amount</div>
                   <div className="w-32 text-right">Actions</div>
                 </div>
-
-                {/* Sort row for Expenses */}
-                <div className="px-4 py-1 bg-white flex items-center text-[11px] text-gray-600 border-b border-gray-100">
-                  <div className="w-8" />
-                  <div className="flex-1 pr-2 flex items-center">
-                    <span className="mr-2 text-[10px] uppercase tracking-wide text-gray-500">
-                      Sort employee
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setExpenseEmployeeSort(prev => prev === 'asc' ? 'desc' : 'asc')
-                        setExpenseDateSort(null)
-                      }}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 border border-gray-200 rounded bg-white hover:bg-gray-100"
-                    >
-                      <ArrowUpDown className="h-3 w-3" />
-                      {expenseEmployeeSort === 'desc' ? 'Z-A' : 'A-Z'}
-                    </button>
-                  </div>
-                  <div className="w-32" />
-                  <div className="w-40 pr-2 flex items-center">
-                    <span className="mr-2 text-[10px] uppercase tracking-wide text-gray-500">
-                      Sort date
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setExpenseDateSort(prev => prev === 'asc' ? 'desc' : 'asc')
-                        setExpenseEmployeeSort(null)
-                      }}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 border border-gray-200 rounded bg-white hover:bg-gray-100"
-                    >
-                      <ArrowUpDown className="h-3 w-3" />
-                      {expenseDateSort === 'desc' ? 'Z-A' : 'A-Z'}
-                    </button>
-                  </div>
-                  <div className="w-32" />
-                  <div className="w-24" />
-                  <div className="w-32" />
-                </div>
                 
                 {visibleExpensesAllTab.map((expense, index) => (
                   <div
@@ -1039,7 +1028,11 @@ export default function ManagerPage() {
                     <div className="w-8" />
                     <div className="flex-1">
                       <div className="font-medium text-gray-900">
-                        {expense.employee?.first_name} {expense.employee?.last_name}
+                        {formatName(
+                          expense.employee?.first_name,
+                          expense.employee?.middle_name,
+                          expense.employee?.last_name
+                        )}
                       </div>
                     </div>
                     <div className="w-32 text-sm">
@@ -1188,8 +1181,12 @@ export default function ManagerPage() {
                 <div className="text-center p-4 bg-gray-50 rounded">
                   <p className="text-sm text-gray-600 mb-1">Employee</p>
                   <p className="text-lg font-bold">
-                    {selectedExpense.employee?.first_name}{' '}
-                    {selectedExpense.employee?.last_name}
+                    {formatName(
+                      selectedExpense.employee?.first_name,
+                      selectedExpense.employee?.middle_name,
+                      selectedExpense.employee?.last_name,
+                      'firstLast'
+                    )}
                   </p>
                 </div>
                 <div className="text-center p-4 bg-gray-50 rounded">
@@ -1244,8 +1241,12 @@ export default function ManagerPage() {
                       <tr className="hover:bg-gray-50">
                         <td className="py-3 px-4 font-medium">Employee</td>
                         <td className="py-3 px-4">
-                          {selectedExpense.employee?.first_name}{' '}
-                          {selectedExpense.employee?.last_name}
+                          {formatName(
+                            selectedExpense.employee?.first_name,
+                            selectedExpense.employee?.middle_name,
+                            selectedExpense.employee?.last_name,
+                            'firstLast'
+                          )}
                           <br />
                           <span className="text-sm text-gray-500">
                             {selectedExpense.employee?.email}

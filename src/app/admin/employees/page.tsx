@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import {
@@ -9,10 +10,10 @@ import {
   Search,
   Edit,
   Trash2,
-  ChevronLeft,
   X,
   UserCheck,
   Building2,
+  ChevronLeft,
 } from 'lucide-react';
 
 const US_STATES = [
@@ -68,9 +69,33 @@ const US_STATES = [
   { value: 'WY', label: 'Wyoming' },
 ];
 
+// Consistent name format helper: "Last, First Middle" by default
+function formatName(
+  first?: string,
+  middle?: string,
+  last?: string,
+  style: 'lastFirst' | 'firstLast' = 'lastFirst'
+) {
+  const safeFirst = first?.trim() || '';
+  const safeMiddle = middle?.trim() || '';
+  const safeLast = last?.trim() || '';
+
+  if (style === 'firstLast') {
+    // "First Middle Last"
+    return [safeFirst, safeMiddle, safeLast].filter(Boolean).join(' ');
+  }
+
+  // Default: "Last, First Middle"
+  const firstPart = [safeFirst, safeMiddle].filter(Boolean).join(' ');
+  if (!safeLast) return firstPart || '';
+  if (!firstPart) return safeLast;
+  return `${safeLast}, ${firstPart}`;
+}
+
 interface Employee {
   id: string;
   first_name: string;
+  middle_name?: string;
   last_name: string;
   email: string;
   phone?: string;
@@ -78,6 +103,7 @@ interface Employee {
   department?: string;
   hire_date?: string;
   hourly_rate?: number;
+  bill_rate?: number | null;
   is_active: boolean;
   is_exempt: boolean;
   state?: string;
@@ -90,9 +116,12 @@ interface Employee {
 interface Manager {
   id: string;
   first_name: string;
+  middle_name?: string;
   last_name: string;
   department?: string;
 }
+
+type RoleFilter = 'all' | 'employee' | 'manager' | 'admin';
 
 export default function EmployeeManagement() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -107,18 +136,23 @@ export default function EmployeeManagement() {
   const [isCreating, setIsCreating] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
+  const [managerFilter, setManagerFilter] = useState<string>('all');
+
   const supabase = createClientComponentClient();
   const router = useRouter();
 
   const [formData, setFormData] = useState({
     first_name: '',
+    middle_name: '',
     last_name: '',
     email: '',
     phone: '',
-    role: 'employee',
+    role: 'employee', // 'employee' | 'manager' | 'admin'
     department: '',
     hire_date: new Date().toISOString().split('T')[0],
     hourly_rate: 0,
+    bill_rate: 0,
     is_active: true,
     is_exempt: false,
     state: 'CA',
@@ -134,7 +168,7 @@ export default function EmployeeManagement() {
 
   useEffect(() => {
     filterEmployees();
-  }, [employees, searchTerm]);
+  }, [employees, searchTerm, roleFilter, managerFilter]);
 
   const checkAuthAndFetch = async () => {
     try {
@@ -190,10 +224,10 @@ export default function EmployeeManagement() {
     try {
       const { data, error } = await supabase
         .from('employees')
-        .select('id, first_name, last_name, department')
+        .select('id, first_name, middle_name, last_name, department')
         .in('role', ['manager', 'admin', 'time_approver'])
         .eq('is_active', true)
-        .order('first_name');
+        .order('last_name');
 
       if (error) throw error;
       setManagers(data || []);
@@ -205,15 +239,48 @@ export default function EmployeeManagement() {
   const filterEmployees = () => {
     let filtered = [...employees];
 
+    // Search
     if (searchTerm) {
+      const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (emp) =>
-          emp.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          emp.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          emp.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          emp.employee_id?.toLowerCase().includes(searchTerm.toLowerCase())
+          emp.first_name?.toLowerCase().includes(term) ||
+          emp.middle_name?.toLowerCase().includes(term) ||
+          emp.last_name?.toLowerCase().includes(term) ||
+          emp.email?.toLowerCase().includes(term) ||
+          emp.employee_id?.toLowerCase().includes(term)
       );
     }
+
+    // Role filter
+    if (roleFilter !== 'all') {
+      filtered = filtered.filter((emp) => emp.role === roleFilter);
+    }
+
+    // Manager filter – when a manager is selected, show only employees reporting to them
+    if (managerFilter !== 'all') {
+      filtered = filtered.filter(
+        (emp) =>
+          emp.role === 'employee' && emp.manager_id === managerFilter
+      );
+    }
+
+    // Always sort alphabetically by last, then first, then middle
+    filtered.sort((a, b) => {
+      const aLast = a.last_name || '';
+      const bLast = b.last_name || '';
+      const lastCmp = aLast.localeCompare(bLast);
+      if (lastCmp !== 0) return lastCmp;
+
+      const aFirst = a.first_name || '';
+      const bFirst = b.first_name || '';
+      const firstCmp = aFirst.localeCompare(bFirst);
+      if (firstCmp !== 0) return firstCmp;
+
+      const aMiddle = a.middle_name || '';
+      const bMiddle = b.middle_name || '';
+      return aMiddle.localeCompare(bMiddle);
+    });
 
     setFilteredEmployees(filtered);
   };
@@ -225,14 +292,24 @@ export default function EmployeeManagement() {
     setSuccess(null);
 
     try {
+      const isEmployee = formData.role === 'employee';
+
+      // Basic required fields
       if (
         !formData.email ||
         !formData.first_name ||
         !formData.last_name ||
         !formData.password ||
-        !formData.manager_id
+        (isEmployee && !formData.manager_id)
       ) {
-        setError('Please fill in all required fields');
+        let message = 'Please fill in all required fields.';
+
+        if (isEmployee && !formData.manager_id) {
+          message =
+            'Please fill in all required fields, including Time Approver, for employees.';
+        }
+
+        setError(message);
         setIsCreating(false);
         return;
       }
@@ -252,11 +329,13 @@ export default function EmployeeManagement() {
           email: formData.email,
           password: formData.password,
           firstName: formData.first_name,
+          middleName: formData.middle_name || null,
           lastName: formData.last_name,
           role: formData.role || 'employee',
           department: formData.department || null,
-          managerId: formData.manager_id,
-          hourlyRate: formData.hourly_rate || null,
+          managerId: isEmployee ? formData.manager_id : null,
+          hourlyRate: isEmployee ? formData.hourly_rate || null : null,
+          billRate: isEmployee ? formData.bill_rate || null : null,
           employeeId: formData.employee_id || null,
           mybasePayrollId: formData.mybase_payroll_id,
           hireDate: formData.hire_date || null,
@@ -274,7 +353,11 @@ export default function EmployeeManagement() {
       }
 
       setSuccess(
-        `Employee "${formData.first_name} ${formData.last_name}" created successfully!`
+        `Employee "${formatName(
+          formData.first_name,
+          formData.middle_name,
+          formData.last_name
+        )}" created successfully!`
       );
 
       await fetchEmployees();
@@ -298,6 +381,13 @@ export default function EmployeeManagement() {
     try {
       const updateData: any = { ...formData };
       delete updateData.password;
+
+      // Only keep pay rates and manager for employees
+      if (formData.role !== 'employee') {
+        updateData.hourly_rate = null;
+        updateData.bill_rate = null;
+        updateData.manager_id = null;
+      }
 
       const { error } = await supabase
         .from('employees')
@@ -336,6 +426,7 @@ export default function EmployeeManagement() {
     setSelectedEmployee(employee);
     setFormData({
       first_name: employee.first_name || '',
+      middle_name: employee.middle_name || '',
       last_name: employee.last_name || '',
       email: employee.email || '',
       phone: employee.phone || '',
@@ -343,6 +434,7 @@ export default function EmployeeManagement() {
       department: employee.department || '',
       hire_date: employee.hire_date || '',
       hourly_rate: employee.hourly_rate || 0,
+      bill_rate: employee.bill_rate || 0,
       is_active: employee.is_active !== false,
       is_exempt: employee.is_exempt || false,
       state: employee.state || 'CA',
@@ -357,6 +449,7 @@ export default function EmployeeManagement() {
   const resetForm = () => {
     setFormData({
       first_name: '',
+      middle_name: '',
       last_name: '',
       email: '',
       phone: '',
@@ -364,6 +457,7 @@ export default function EmployeeManagement() {
       department: '',
       hire_date: new Date().toISOString().split('T')[0],
       hourly_rate: 0,
+      bill_rate: 0,
       is_active: true,
       is_exempt: false,
       state: 'CA',
@@ -372,6 +466,13 @@ export default function EmployeeManagement() {
       manager_id: '',
       password: '',
     });
+  };
+
+  const getManagerName = (employee: Employee) => {
+    if (!employee.manager_id) return '—';
+    const manager = managers.find((m) => m.id === employee.manager_id);
+    if (!manager) return '—';
+    return formatName(manager.first_name, manager.middle_name, manager.last_name);
   };
 
   if (loading) {
@@ -387,29 +488,38 @@ export default function EmployeeManagement() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-[#05202E] shadow-lg">
+      {/* Header (match other admin pages) */}
+      <header className="bg-[#05202E] shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
+            {/* Left section: Back button + Logo + Title */}
             <div className="flex items-center gap-4">
+              {/* Back arrow */}
               <button
                 onClick={() => router.push('/admin')}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-200 hover:text-white"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
-              <div className="flex items-center gap-3">
-                <div className="bg-white/10 p-2 rounded-lg">
-                  <Users className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-semibold text-white">
-                    Employee Management
-                  </h1>
-                  <span className="text-xs text-gray-300">
-                    Manage workforce and permissions
-                  </span>
-                </div>
+
+              {/* Logo */}
+              <Image
+                src="/WE-logo-SEPT2024v3-WHT.png"
+                alt="West End Workforce"
+                width={180}
+                height={40}
+                className="h-9 w-auto"
+                priority
+              />
+
+              {/* Portal title */}
+              <div className="border-l border-gray-600 pl-3">
+                <p className="text-xs text-gray-300 uppercase tracking-wide">
+                  Admin Portal
+                </p>
+                <p className="text-sm text-gray-100">
+                  Employee Management
+                </p>
               </div>
             </div>
           </div>
@@ -420,8 +530,9 @@ export default function EmployeeManagement() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Actions Bar */}
         <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            {/* Left side: search */}
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
@@ -431,9 +542,11 @@ export default function EmployeeManagement() {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
               />
             </div>
+
+            {/* Right side: button */}
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865] flex items-center gap-2"
+              className="px-4 py-2 bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865] flex items-center gap-2 self-start md:self-auto"
             >
               <Plus className="h-4 w-4" />
               Add Employee
@@ -492,8 +605,9 @@ export default function EmployeeManagement() {
         {/* Employee Table */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <table className="min-w-full">
-            <thead className="bg-[#05202E] text-white">
-              <tr>
+            <thead>
+              {/* Main header row */}
+              <tr className="bg-[#05202E] text-white">
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Employee
                 </th>
@@ -504,20 +618,73 @@ export default function EmployeeManagement() {
                   Role
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Manager
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
+
+              {/* Filter row */}
+              <tr className="bg-gray-50 text-gray-700 text-xs">
+                {/* Employee column – no filter here */}
+                <th className="px-6 py-2" />
+
+                {/* Contact column – no filter here */}
+                <th className="px-6 py-2" />
+
+                {/* Role filter */}
+                <th className="px-6 py-2">
+                  <select
+                    value={roleFilter}
+                    onChange={(e) =>
+                      setRoleFilter(e.target.value as RoleFilter)
+                    }
+                    className="w-full text-xs px-2 py-1 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-[#e31c79]"
+                  >
+                    <option value="all">All</option>
+                    <option value="employee">Employees</option>
+                    <option value="manager">Managers</option>
+                    <option value="admin">Admins</option>
+                  </select>
+                </th>
+
+                {/* Manager filter */}
+                <th className="px-6 py-2">
+                  <select
+                    value={managerFilter}
+                    onChange={(e) => setManagerFilter(e.target.value)}
+                    className="w-full text-xs px-2 py-1 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-[#e31c79]"
+                  >
+                    <option value="all">All</option>
+                    {managers.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {formatName(m.first_name, m.middle_name, m.last_name)}
+                      </option>
+                    ))}
+                  </select>
+                </th>
+
+                {/* Status & Actions – no filters */}
+                <th className="px-6 py-2" />
+                <th className="px-6 py-2" />
+              </tr>
             </thead>
+
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredEmployees.map((employee) => (
                 <tr key={employee.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">
-                        {employee.first_name} {employee.last_name}
+                        {formatName(
+                          employee.first_name,
+                          employee.middle_name,
+                          employee.last_name
+                        )}
                       </div>
                       <div className="text-sm text-gray-500">
                         {employee.mybase_payroll_id ||
@@ -548,6 +715,11 @@ export default function EmployeeManagement() {
                       }`}
                     >
                       {employee.role}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm text-gray-700">
+                      {getManagerName(employee)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -624,40 +796,61 @@ export default function EmployeeManagement() {
               )}
 
               <div className="grid grid-cols-2 gap-4">
-                {/* First Name */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    First Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.first_name}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        first_name: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
-                  />
-                </div>
+                {/* First / Middle / Last Name */}
+                <div className="col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* First Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      First Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.first_name}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          first_name: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    />
+                  </div>
 
-                {/* Last Name */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Last Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.last_name}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        last_name: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
-                  />
+                  {/* Middle Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Middle Name
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.middle_name}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          middle_name: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    />
+                  </div>
+
+                  {/* Last Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Last Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.last_name}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          last_name: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    />
+                  </div>
                 </div>
 
                 {/* Email */}
@@ -694,6 +887,30 @@ export default function EmployeeManagement() {
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   />
+                </div>
+
+                {/* Role */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Role *
+                  </label>
+                  <select
+                    value={formData.role}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        role: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                  >
+                    <option value="employee">Employee</option>
+                    <option value="manager">Manager / Time Approver</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Managers and admins do not require pay rates or IDs.
+                  </p>
                 </div>
 
                 {/* Employee ID */}
@@ -737,57 +954,90 @@ export default function EmployeeManagement() {
                   </p>
                 </div>
 
-                {/* Time Approver */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Time Approver <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.manager_id}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        manager_id: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
-                    required
-                  >
-                    <option value="">Select Time Approver</option>
-                    {managers.map((manager) => (
-                      <option key={manager.id} value={manager.id}>
-                        {manager.first_name} {manager.last_name}
-                        {manager.department
-                          ? ` - ${manager.department}`
-                          : ''}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Timesheets will appear on this approver&apos;s dashboard
-                  </p>
-                </div>
+                {/* Time Approver – ONLY for employees */}
+                {formData.role === 'employee' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Time Approver <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.manager_id}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          manager_id: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                      required={formData.role === 'employee'}
+                    >
+                      <option value="">Select Time Approver</option>
+                      {managers.map((manager) => (
+                        <option key={manager.id} value={manager.id}>
+                          {formatName(
+                            manager.first_name,
+                            manager.middle_name,
+                            manager.last_name
+                          )}
+                          {manager.department ? ` - ${manager.department}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Timesheets will appear on this approver&apos;s dashboard
+                    </p>
+                  </div>
+                )}
 
-                {/* Hourly Rate */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Hourly Rate
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.hourly_rate}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setFormData({
-                        ...formData,
-                        hourly_rate:
-                          value === '' ? 0 : parseFloat(value),
-                      });
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
-                  />
-                </div>
+                {/* Hourly & Bill Rate – only for employees */}
+                {formData.role === 'employee' && (
+                  <>
+                    {/* Hourly Rate */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Hourly Rate
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.hourly_rate}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setFormData({
+                            ...formData,
+                            hourly_rate:
+                              value === '' ? 0 : parseFloat(value),
+                          });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                      />
+                    </div>
+
+                    {/* Bill Rate */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Bill Rate
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.bill_rate}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setFormData({
+                            ...formData,
+                            bill_rate:
+                              value === '' ? 0 : parseFloat(value),
+                          });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                      />
+                      <p className="text-xs text-gray-600 mt-1">
+                        Optional. Used for billing and margin calculations.
+                      </p>
+                    </div>
+                  </>
+                )}
 
                 {/* Hire Date */}
                 <div>
@@ -926,3 +1176,4 @@ export default function EmployeeManagement() {
     </div>
   );
 }
+
