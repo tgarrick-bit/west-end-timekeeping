@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { notificationService } from '@/lib/notificationService';
-import { emailService } from '@/lib/emailService';
 import { NOTIFICATION_TYPES, PRIORITIES } from '@/types/notifications';
 
 // POST /api/notifications/bulk - Send bulk notifications
@@ -48,8 +47,8 @@ export async function POST(request: NextRequest) {
     }
 
     const results = {
-      successful: [] as string[],
-      failed: [] as string[],
+      successful: [] as string[],   // userIds where notification was created
+      failed: [] as string[],       // userIds where notification failed
       notifications: [] as any[]
     };
 
@@ -79,38 +78,60 @@ export async function POST(request: NextRequest) {
     // Send bulk emails if requested
     if (sendEmail && results.successful.length > 0) {
       try {
-        // Get user emails (in real implementation, this would query the database)
-        const userEmails = results.successful.map(userId => `${userId}@westendworkforce.com`);
-        
-        // Create a sample notification for email template
-        const sampleNotification = {
-          id: 'bulk-notification',
-          type,
-          title,
-          message,
-          priority,
-          userId: 'bulk',
-          isRead: false,
-          isEmailSent: false,
-          createdAt: new Date()
-        };
+        const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-        const emailResults = await emailService.sendBulkEmailNotifications(
-          userEmails,
-          sampleNotification,
-          {
-            ...metadata,
-            bulkNotification: true,
-            totalRecipients: userIds.length
-          }
+        // TODO: replace this with a real lookup of user emails from your DB
+        const userEmails = results.successful.map(
+          (userId) => `${userId}@westendworkforce.com`
         );
 
-        // Update results with email status
-        results.successful = emailResults.success;
-        results.failed = [...results.failed, ...emailResults.failed];
+        // Send a simple email to each recipient using your existing send-email route
+        const emailPromises = userEmails.map(async (email) => {
+          const emailPayload = {
+            to: email,
+            subject: title,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background-color: #e31c79; padding: 16px; text-align: center;">
+                  <h1 style="color: white; margin: 0; font-size: 20px;">West End Workforce</h1>
+                </div>
+                <div style="background-color: #f5f5f5; padding: 20px;">
+                  <h2 style="color: #05202E; margin-top: 0;">${title}</h2>
+                  <p style="color: #333; font-size: 14px;">${message}</p>
+                </div>
+                <div style="background-color: #05202E; padding: 12px; text-align: center;">
+                  <p style="color: white; margin: 0; font-size: 11px;">© 2025 West End Workforce</p>
+                </div>
+              </div>
+            `
+          };
+
+          const res = await fetch(`${APP_URL}/api/notifications/send-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(emailPayload)
+          });
+
+          if (!res.ok) {
+            console.error(`Bulk email failed for ${email}:`, await res.text());
+          }
+
+          return { email, ok: res.ok };
+        });
+
+        const emailResults = await Promise.allSettled(emailPromises);
+
+        // Optional: log email failures separately
+        const emailFailures = emailResults
+          .filter((r) => r.status === 'fulfilled' && !r.value.ok)
+          .map((r: any) => r.value.email);
+
+        if (emailFailures.length > 0) {
+          console.warn('Some bulk emails failed:', emailFailures);
+        }
       } catch (error) {
         console.error('Failed to send bulk emails:', error);
-        // Don't fail the entire operation if emails fail
+        // Don’t fail the entire operation if email sending fails
       }
     }
 

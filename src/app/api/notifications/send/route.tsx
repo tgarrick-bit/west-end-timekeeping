@@ -131,7 +131,6 @@ export async function POST(request: NextRequest) {
     let emailSent = false;
     try {
       // Use your existing emailService if it has a send method
-      // await emailService.send(emailData);
       
       // Or call your send-email endpoint
       const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/notifications/send-email`, {

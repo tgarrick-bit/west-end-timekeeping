@@ -198,15 +198,32 @@ export class NotificationService {
     userId: string,
     relatedId?: string,
     relatedType?: 'timesheet' | 'expense' | 'employee' | 'system',
-    metadata?: Record<string, any>
+    metadata: Record<string, any> = {}
   ): Notification {
     const template = NOTIFICATION_TEMPLATES[type];
+
+    // Safely derive title, message, and priority
+    const title =
+      metadata.title ??
+      template?.title ??
+      'Notification';
+
+    const message =
+      metadata.message ??
+      template?.message ??
+      '';
+
+    const priority: Priority =
+      metadata.priority ??
+      template?.priority ??
+      PRIORITIES.MEDIUM;
+
     const notification: Notification = {
       id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type,
-      title: template.title,
-      message: template.message,
-      priority: template.priority,
+      title,
+      message,
+      priority,
       userId,
       relatedId,
       relatedType,
@@ -281,7 +298,7 @@ export class NotificationService {
       medium: unread.filter(n => n.priority === PRIORITIES.MEDIUM).length,
       low: unread.filter(n => n.priority === PRIORITIES.LOW).length,
       byType: Object.values(NOTIFICATION_TYPES).reduce((acc, type) => {
-        acc[type] = unread.filter(n => n.type === type).length;
+        acc[type as NotificationType] = unread.filter(n => n.type === type).length;
         return acc;
       }, {} as Record<NotificationType, number>)
     };
@@ -337,32 +354,35 @@ export class NotificationService {
   private async sendEmailNotification(notification: Notification): Promise<void> {
     try {
       // Get user email from metadata or user service
-      const userEmail = notification.metadata?.userEmail || `${notification.userId}@westendworkforce.com`;
-      
-      // Send email via API endpoint
-      try {
-        const response = await fetch('/api/notifications/send-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            to: userEmail,
-            notification,
-            customData: notification.metadata
-          }),
-        });
+      const userEmail =
+        notification.metadata?.userEmail ||
+        `${notification.userId}@westendworkforce.com`;
 
-        if (response.ok) {
-          notification.isEmailSent = true;
-        } else {
-          console.warn(`Failed to send email notification to ${userEmail}`);
-        }
-      } catch (error) {
-        console.error('Failed to send email notification via API:', error);
+      const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+      // Send email via API endpoint (absolute URL for server-side usage)
+      const response = await fetch(`${baseUrl}/api/notifications/send-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: userEmail,
+          notification,
+          customData: notification.metadata,
+        }),
+      });
+
+      if (response.ok) {
+        notification.isEmailSent = true;
+      } else {
+        console.warn(
+          `Failed to send email notification to ${userEmail}. Status: ${response.status}`,
+        );
       }
     } catch (error) {
-      console.error('Failed to send email notification:', error);
+      console.error('Failed to send email notification via API:', error);
     }
   }
 
@@ -396,7 +416,7 @@ export class NotificationService {
           ...n,
           createdAt: new Date(n.createdAt),
           readAt: n.readAt ? new Date(n.readAt) : undefined,
-          expiresAt: n.expiresAt ? new Date(n.expiresAt) : undefined
+          expiresAt: n.expiresAt ? new Date(n.expiresAt) : undefined,
         }));
       }
     } catch (error) {
