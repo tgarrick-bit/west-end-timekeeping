@@ -148,41 +148,96 @@ export default function ClientManagement() {
 
   const handleAddClient = async () => {
     try {
+      if (!formData.name.trim() || !formData.code.trim()) {
+        alert('Please enter at least a client name and code.');
+        return;
+      }
+  
+      const payload = {
+        name: formData.name.trim(),
+        code: formData.code.trim(),
+        contact_name: formData.contact_name.trim() || null,
+        contact_email: formData.contact_email.trim() || null,
+        contact_phone: formData.contact_phone.trim() || null,
+        address: formData.address.trim() || null,
+        city: formData.city.trim() || null,
+        state: formData.state || null,
+        zip: formData.zip.trim() || null,
+        bill_rate: isNaN(formData.bill_rate) ? null : formData.bill_rate,
+        contract_start: formData.contract_start || null,
+        contract_end: formData.contract_end || null,
+        active: formData.active,
+      };
+  
       const { error } = await supabase
         .from('clients')
-        .insert([formData]);
-
-      if (error) throw error;
-
+        .insert([payload]);
+  
+      if (error) {
+        console.error('Supabase insert error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        alert(`Error adding client: ${error.message}`);
+        return;
+      }
+  
       setShowAddModal(false);
       setFormData(initialFormData);
       fetchClients();
     } catch (error) {
-      console.error('Error adding client:', error);
-      alert('Error adding client');
+      console.error('Unexpected error adding client:', error);
+      alert('Unexpected error adding client. Check console for details.');
     }
-  };
+  };   
 
   const handleUpdateClient = async () => {
     if (!selectedClient) return;
-
+  
     try {
+      const payload = {
+        name: formData.name.trim(),
+        code: formData.code.trim(),
+        contact_name: formData.contact_name.trim() || null,
+        contact_email: formData.contact_email.trim() || null,
+        contact_phone: formData.contact_phone.trim() || null,
+        address: formData.address.trim() || null,
+        city: formData.city.trim() || null,
+        state: formData.state || null,
+        zip: formData.zip.trim() || null,
+        bill_rate: isNaN(formData.bill_rate) ? null : formData.bill_rate,
+        contract_start: formData.contract_start || null,
+        contract_end: formData.contract_end || null,
+        active: formData.active,
+      };
+  
       const { error } = await supabase
         .from('clients')
-        .update(formData)
+        .update(payload)
         .eq('id', selectedClient.id);
-
-      if (error) throw error;
-
+  
+      if (error) {
+        console.error('Supabase update error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        alert(`Error updating client: ${error.message}`);
+        return;
+      }
+  
       setShowEditModal(false);
       setSelectedClient(null);
       setFormData(initialFormData);
       fetchClients();
     } catch (error) {
-      console.error('Error updating client:', error);
-      alert('Error updating client');
+      console.error('Unexpected error updating client:', error);
+      alert('Unexpected error updating client. Check console for details.');
     }
-  };
+  };  
 
   const handleDeleteClient = async (id: string) => {
     if (!confirm('Are you sure you want to deactivate this client?')) return;
