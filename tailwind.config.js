@@ -5,6 +5,7 @@ module.exports = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  
   theme: {
     extend: {
       fontFamily: {
@@ -12,7 +13,9 @@ module.exports = {
         body: ['var(--font-body)', 'system-ui', 'sans-serif'],
         sohne: ['var(--font-heading)', 'system-ui', 'sans-serif'],
         montserrat: ['var(--font-body)', 'system-ui', 'sans-serif'],
-      },
+      // 🔥 NEW: use your custom OTF font for headers
+      header: ['SohneSchmal', 'system-ui', 'sans-serif'],
+    },
       colors: {
         'pink': '#e31c79',
         'dark-blue': '#05202E',

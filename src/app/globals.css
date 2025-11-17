@@ -6,10 +6,9 @@
 
 /* Custom Font Imports */
 @font-face {
-  font-family: 'Sohne Schmal';
-  src: url('/fonts/Sohne-Schmal-Dreiviertelfett.woff2') format('woff2'),
-       url('/fonts/Sohne-Schmal-Dreiviertelfett.woff') format('woff');
-  font-weight: 700;
+  font-family: 'SohneSchmal';
+  src: url('/fonts/TestSohneSchmal-Dreiviertelfett.otf') format('opentype');
+  font-weight: 700;       /* adjust if needed */
   font-style: normal;
   font-display: swap;
 }

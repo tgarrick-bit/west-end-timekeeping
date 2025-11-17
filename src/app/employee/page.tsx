@@ -68,6 +68,7 @@ export default function EmployeeDashboard() {
     totalHours: 0,
     pendingTimecards: 0,
     approvedTimecards: 0,
+    rejectedTimecards: 0,
     totalExpenses: 0,
     pendingExpenses: 0,
     approvedExpenses: 0,
@@ -177,12 +178,14 @@ export default function EmployeeDashboard() {
         const timecardStats = uniqueTimesheets.reduce((acc, tc) => ({
           totalHours: acc.totalHours + (tc.total_hours || 0),
           pendingTimecards: acc.pendingTimecards + (tc.status === 'submitted' ? 1 : 0),
-          approvedTimecards: acc.approvedTimecards + (tc.status === 'approved' ? 1 : 0)
+          approvedTimecards: acc.approvedTimecards + (tc.status === 'approved' ? 1 : 0),
+          rejectedTimecards: acc.rejectedTimecards + (tc.status === 'rejected' ? 1 : 0) // 👈 new
         }), {
           totalHours: 0,
           pendingTimecards: 0,
-          approvedTimecards: 0
-        });
+          approvedTimecards: 0,
+          rejectedTimecards: 0
+        })        
         
         setStats(prev => ({ ...prev, ...timecardStats }));
       } else {
@@ -325,6 +328,21 @@ export default function EmployeeDashboard() {
     };
     return colors[status] || 'bg-gray-100 text-gray-700 border-gray-300';
   };
+
+  const renderTimecardStatus = (status: Timecard['status']) => {
+    switch (status) {
+      case 'draft':
+        return 'Draft'
+      case 'submitted':
+        return 'Submitted'
+      case 'approved':
+        return 'Approved'
+      case 'rejected':
+        return 'Rejected – needs your review'
+      default:
+        return status
+    }
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -518,7 +536,9 @@ export default function EmployeeDashboard() {
                 <AlertCircle className="h-5 w-5 text-red-500" />
                 <span className="text-xs font-medium text-gray-500 uppercase">Rejected</span>
               </div>
-              <p className="text-3xl font-bold text-gray-500">0</p>
+              <p className="text-3xl font-bold text-gray-500">
+  {stats.rejectedTimecards}
+</p>
               <p className="text-sm text-gray-500 mt-1">Need Action</p>
             </div>
           </div>
@@ -664,10 +684,11 @@ export default function EmployeeDashboard() {
 
       {/* Timesheet Modal */}
       <TimesheetModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        timesheet={selectedTimesheet}
-      />
+  isOpen={isModalOpen}
+  onClose={handleCloseModal}
+  timesheet={selectedTimesheet}
+  isEmployeeView={true}
+/>
     </div>
   );
 }

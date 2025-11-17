@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { 
   Building2,
@@ -289,36 +290,57 @@ export default function ClientManagement() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header style={{ backgroundColor: '#05202e' }} className="text-white">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/admin')}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold">Client Management</h1>
-                <p className="text-sm text-gray-300">Manage client organizations and contracts</p>
-              </div>
-            </div>
-            <button 
-              onClick={() => router.push('/auth/logout')}
-              className="flex items-center gap-2 px-4 py-2 hover:bg-white/10 rounded transition-colors"
+      {/* Top Admin Navigation */}
+      <header className="bg-[#05202E] text-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+
+          {/* LEFT: Back arrow + Logo + Page Title */}
+          <div className="flex items-center gap-4">
+
+            {/* Back Arrow */}
+            <button
+              onClick={() => router.push('/admin')}
+              className="flex items-center justify-center h-8 w-8 rounded-full border border-white/20 hover:bg-white/10 transition"
             >
-              Sign Out
+              <ChevronLeft className="h-4 w-4" />
             </button>
+
+            {/* Logo */}
+            <Image
+              src="/WE-logo-SEPT2024v3-WHT.png"
+              alt="West End Workforce"
+              width={150}
+              height={40}
+              className="h-8 w-auto"
+              priority
+            />
+
+            {/* Page Title + Subtitle */}
+            <div className="border-l border-white/20 pl-4">
+              <h1 className="text-base font-semibold tracking-wide">Client Management</h1>
+              <p className="text-xs text-gray-300">
+                Manage client organizations and contracts
+              </p>
+            </div>
           </div>
+
+          {/* RIGHT: Sign Out */}
+          <button
+            onClick={() => router.push('/auth/logout')}
+            className="text-sm hover:underline flex items-center gap-2"
+          >
+            Sign Out
+          </button>
         </div>
       </header>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Actions Bar */}
-        <div className="bg-white rounded-lg shadow-sm mb-6 p-4" style={{ borderWidth: '1px', borderColor: '#05202e' }}>
+        <div
+          className="bg-white rounded-lg shadow-sm mb-6 p-4"
+          style={{ borderWidth: '1px', borderColor: '#05202e' }}
+        >
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -343,7 +365,10 @@ export default function ClientManagement() {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-6" style={{ borderWidth: '1px', borderColor: '#05202e' }}>
+          <div
+            className="bg-white rounded-lg shadow-sm p-6"
+            style={{ borderWidth: '1px', borderColor: '#05202e' }}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Clients</p>
@@ -352,18 +377,24 @@ export default function ClientManagement() {
               <Building2 className="h-8 w-8 text-gray-400" />
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6" style={{ borderWidth: '1px', borderColor: '#05202e' }}>
+          <div
+            className="bg-white rounded-lg shadow-sm p-6"
+            style={{ borderWidth: '1px', borderColor: '#05202e' }}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Active Clients</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {clients.filter(c => c.active).length}
+                  {clients.filter((c) => c.active).length}
                 </p>
               </div>
               <Users className="h-8 w-8 text-green-500" />
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6" style={{ borderWidth: '1px', borderColor: '#05202e' }}>
+          <div
+            className="bg-white rounded-lg shadow-sm p-6"
+            style={{ borderWidth: '1px', borderColor: '#05202e' }}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Projects</p>
@@ -379,10 +410,13 @@ export default function ClientManagement() {
         {/* Clients Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredClients.map((client) => (
-            <div 
-              key={client.id} 
+            <div
+              key={client.id}
               className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
-              style={{ borderWidth: '1px', borderColor: client.active ? '#05202e' : '#ccc' }}
+              style={{
+                borderWidth: '1px',
+                borderColor: client.active ? '#05202e' : '#ccc',
+              }}
             >
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
@@ -395,11 +429,13 @@ export default function ClientManagement() {
                       <p className="text-sm text-gray-500">Code: {client.code}</p>
                     </div>
                   </div>
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                    client.active 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      client.active
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
                     {client.active ? 'Active' : 'Inactive'}
                   </span>
                 </div>
@@ -428,10 +464,16 @@ export default function ClientManagement() {
                 <div className="flex items-center justify-between pt-4 border-t">
                   <div className="flex gap-4 text-sm">
                     <span className="text-gray-500">
-                      <span className="font-semibold text-gray-700">{client.employee_count}</span> employees
+                      <span className="font-semibold text-gray-700">
+                        {client.employee_count}
+                      </span>{' '}
+                      employees
                     </span>
                     <span className="text-gray-500">
-                      <span className="font-semibold text-gray-700">{client.project_count}</span> projects
+                      <span className="font-semibold text-gray-700">
+                        {client.project_count}
+                      </span>{' '}
+                      projects
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -486,7 +528,9 @@ export default function ClientManagement() {
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
                     required
                   />
@@ -499,7 +543,9 @@ export default function ClientManagement() {
                   <input
                     type="text"
                     value={formData.code}
-                    onChange={(e) => setFormData({...formData, code: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, code: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
                     placeholder="e.g., CHK001"
                     required
@@ -514,7 +560,12 @@ export default function ClientManagement() {
                     type="number"
                     step="0.01"
                     value={formData.bill_rate}
-                    onChange={(e) => setFormData({...formData, bill_rate: parseFloat(e.target.value)})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        bill_rate: parseFloat(e.target.value),
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
                   />
                 </div>
@@ -526,7 +577,12 @@ export default function ClientManagement() {
                   <input
                     type="text"
                     value={formData.contact_name}
-                    onChange={(e) => setFormData({...formData, contact_name: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        contact_name: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
                   />
                 </div>
@@ -538,7 +594,12 @@ export default function ClientManagement() {
                   <input
                     type="email"
                     value={formData.contact_email}
-                    onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        contact_email: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
                   />
                 </div>
@@ -550,7 +611,12 @@ export default function ClientManagement() {
                   <input
                     type="tel"
                     value={formData.contact_phone}
-                    onChange={(e) => setFormData({...formData, contact_phone: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        contact_phone: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
                   />
                 </div>
@@ -562,7 +628,12 @@ export default function ClientManagement() {
                   <input
                     type="date"
                     value={formData.contract_start}
-                    onChange={(e) => setFormData({...formData, contract_start: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        contract_start: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
                   />
                 </div>
@@ -574,7 +645,12 @@ export default function ClientManagement() {
                   <input
                     type="date"
                     value={formData.contract_end}
-                    onChange={(e) => setFormData({...formData, contract_end: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        contract_end: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
                   />
                 </div>
@@ -586,7 +662,12 @@ export default function ClientManagement() {
                   <input
                     type="text"
                     value={formData.address}
-                    onChange={(e) => setFormData({...formData, address: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        address: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
                   />
                 </div>
@@ -598,7 +679,12 @@ export default function ClientManagement() {
                   <input
                     type="text"
                     value={formData.city}
-                    onChange={(e) => setFormData({...formData, city: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        city: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
                   />
                 </div>
@@ -609,7 +695,12 @@ export default function ClientManagement() {
                   </label>
                   <select
                     value={formData.state}
-                    onChange={(e) => setFormData({...formData, state: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        state: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
                   >
                     <option value="OK">Oklahoma</option>
@@ -627,7 +718,12 @@ export default function ClientManagement() {
                   <input
                     type="text"
                     value={formData.zip}
-                    onChange={(e) => setFormData({...formData, zip: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        zip: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
                   />
                 </div>
@@ -638,7 +734,12 @@ export default function ClientManagement() {
                   </label>
                   <select
                     value={formData.active ? 'active' : 'inactive'}
-                    onChange={(e) => setFormData({...formData, active: e.target.value === 'active'})}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        active: e.target.value === 'active',
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
                   >
                     <option value="active">Active</option>

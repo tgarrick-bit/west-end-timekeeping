@@ -260,7 +260,6 @@ export default function TimesheetEntry() {
     return { dailyTotals, weekTotal, regularHours, overtimeHours };
   };
 
-  // 🔥 FIXED handleSubmit: align employee.id with auth user id & set employee_id on timesheets
   const handleSubmit = async (isDraft: boolean = false) => {
     setIsLoading(true);
     setErrorMessage('');
@@ -289,11 +288,15 @@ export default function TimesheetEntry() {
       const authUserId = user.id;
 
       // Get or create employee record whose id === auth.user.id
-      let { data: employee } = await supabase
+      let { data: employee, error: empError } = await supabase
         .from('employees')
         .select('id')
         .eq('id', authUserId)
         .single();
+
+      if (empError && empError.code !== 'PGRST116') {
+        throw empError;
+      }
 
       if (!employee) {
         const { data: newEmployee, error: empInsertError } = await supabase
@@ -325,20 +328,26 @@ export default function TimesheetEntry() {
 
       if (existingTimesheetId) {
         // Update existing timesheet: replace entries & update summary
-        await supabase
+        const { error: deleteError } = await supabase
           .from('timesheet_entries')
           .delete()
           .eq('timesheet_id', existingTimesheetId);
+
+        if (deleteError) throw deleteError;
+
+        const clearRejectionFields = !isDraft; // if resubmitting, clear comments/rejection_reason
 
         const { error: updateError } = await supabase
           .from('timesheets')
           .update({
             employee_id: employeeId,
+            week_ending: weekEndingDate,
             total_hours: weekTotal,
             overtime_hours: overtimeHours,
             status: isDraft ? 'draft' : 'submitted',
             submitted_at: isDraft ? null : new Date().toISOString(),
             updated_at: new Date().toISOString(),
+            ...(clearRejectionFields ? { comments: null, rejection_reason: null } : {}),
           })
           .eq('id', existingTimesheetId);
 
@@ -392,8 +401,12 @@ export default function TimesheetEntry() {
 
       setSuccessMessage(
         existingTimesheetId
-          ? 'Timesheet updated successfully!'
-          : `Timesheet ${isDraft ? 'saved as draft' : 'submitted successfully'}!`,
+          ? isDraft
+            ? 'Timesheet saved as draft.'
+            : 'Timesheet updated and resubmitted for approval!'
+          : isDraft
+          ? 'Timesheet saved as draft.'
+          : 'Timesheet submitted successfully!',
       );
 
       setTimeout(() => {

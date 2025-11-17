@@ -190,7 +190,7 @@ export default function ManagerPage() {
     setIsLoading(true)
     
     try {
-      // Only employees assigned to this manager (plus the manager themselves)
+      // 1) Get employees for this manager (same as before)
       const { data: allEmployees, error: empError } = await supabase
         .from('employees')
         .select('*')
@@ -198,23 +198,96 @@ export default function ManagerPage() {
         .order('last_name', { ascending: true })
 
       if (empError) throw empError
+      if (!allEmployees || allEmployees.length === 0) {
+        setEmployees([])
+        setSubmissions([])
+        setProjectOptions([])
+        setTimesheetProjectMap({})
+        return
+      }
 
-      if (allEmployees) {
-        setEmployees(allEmployees as Employee[])
-        const employeeIds = (allEmployees as Employee[]).map(e => e.id)
-        
-        let allSubmissions: Submission[] = []
+      setEmployees(allEmployees as Employee[])
+      const employeeIds = (allEmployees as Employee[]).map(e => e.id)
 
-        // TIMESHEETS
-        const { data: timesheets, error: tsError } = await supabase
+      // 2) Get projects this manager can approve (from time_approvers)
+      const { data: approverRows, error: approverError } = await supabase
+        .from('time_approvers')
+        .select('project_id')
+        .eq('employee_id', managerId)
+        .eq('can_approve', true)
+
+      if (approverError) throw approverError
+
+      const approverProjectIds = (approverRows || [])
+        .map(r => r.project_id)
+        .filter(Boolean)
+
+      let timesheets: any[] = []
+      let timesheetEntries: any[] = []
+
+      if (approverProjectIds.length > 0) {
+        // 3a) Manager has project-level approver assignments:
+        // find timesheet_entries that match those projects + employees
+        const { data: entryRows, error: entryError } = await supabase
+  .from('timesheet_entries')
+  .select('timesheet_id, project_id')
+  .in('project_id', approverProjectIds)
+
+        if (entryError) throw entryError
+
+        const timesheetIds = Array.from(
+          new Set((entryRows || []).map(e => e.timesheet_id).filter(Boolean))
+        )
+
+        if (timesheetIds.length === 0) {
+          // No relevant timesheets
+          setSubmissions([])
+          setProjectOptions([])
+          setTimesheetProjectMap({})
+          return
+        }
+
+        // Load only timesheets that have at least one entry on a project
+        // this manager approves, and belong to this manager's employees
+        const { data: tsData, error: tsError } = await supabase
+          .from('timesheets')
+          .select('*')
+          .in('id', timesheetIds)
+          .in('employee_id', employeeIds)
+
+        if (tsError) throw tsError
+        timesheets = tsData || []
+
+        // Also load entries with project metadata for those timesheets
+        const { data: fullEntries, error: fullEntryError } = await supabase
+          .from('timesheet_entries')
+          .select(`
+            id,
+            timesheet_id,
+            project_id,
+            project:projects!timesheet_entries_project_id_fkey (
+              id,
+              name,
+              code
+            )
+          `)
+          .in('timesheet_id', timesheetIds)
+
+        if (fullEntryError) throw fullEntryError
+        timesheetEntries = fullEntries || []
+      } else {
+        // 3b) No project-level approver rows yet:
+        // fallback to original behaviour (all timesheets for this manager's employees)
+        const { data: tsData, error: tsError } = await supabase
           .from('timesheets')
           .select('*')
           .in('employee_id', employeeIds)
 
         if (tsError) throw tsError
+        timesheets = tsData || []
 
-        if (timesheets && timesheets.length > 0) {
-          const { data: timesheetEntries, error: entError } = await supabase
+        if (timesheets.length > 0) {
+          const { data: fullEntries, error: fullEntryError } = await supabase
             .from('timesheet_entries')
             .select(`
               id,
@@ -226,83 +299,94 @@ export default function ManagerPage() {
                 code
               )
             `)
-            .in('timesheet_id', (timesheets as any[]).map(t => t.id))
+            .in('timesheet_id', timesheets.map(t => t.id))
 
-          if (entError) throw entError
-
-          const projectMap: Record<string, ProjectOption> = {}
-          const tMap: Record<string, string[]> = {}
-
-          if (timesheetEntries) {
-            (timesheetEntries as any[]).forEach(entry => {
-              if (!entry.project_id) return
-              if (!tMap[entry.timesheet_id]) {
-                tMap[entry.timesheet_id] = []
-              }
-              tMap[entry.timesheet_id].push(entry.project_id)
-              if (entry.project) {
-                projectMap[entry.project.id] = {
-                  id: entry.project.id,
-                  name: entry.project.name,
-                  code: entry.project.code
-                }
-              }
-            })
-          }
-
-          setTimesheetProjectMap(tMap)
-          setProjectOptions(Object.values(projectMap))
-
-          const timesheetSubmissions = (timesheets as any[]).map(t => {
-            const { label: week_range, endDate } = getWeekRange(t.week_ending)
-            return {
-              id: t.id,
-              type: 'timesheet' as const,
-              employee: (allEmployees as Employee[]).find(e => e.id === t.employee_id),
-              date: endDate.toISOString(),
-              amount: (t.total_hours || 0) * ((allEmployees as Employee[]).find(e => e.id === t.employee_id)?.hourly_rate || 0),
-              hours: t.total_hours,
-              overtime_hours: t.overtime_hours,
-              status: t.status,
-              week_range,
-              description: `Week ending ${endDate.toLocaleDateString()}`
-            }
-          })
-          allSubmissions = [...allSubmissions, ...timesheetSubmissions]
+          if (fullEntryError) throw fullEntryError
+          timesheetEntries = fullEntries || []
         }
-
-        // EXPENSES
-        const { data: expenses, error: expError } = await supabase
-          .from('expenses')
-          .select('*')
-          .in('employee_id', employeeIds)
-
-        if (expError) throw expError
-
-        if (expenses) {
-          const expenseSubmissions = (expenses as any[]).map(e => ({
-            id: e.id,
-            type: 'expense' as const,
-            employee: (allEmployees as Employee[]).find(emp => emp.id === e.employee_id),
-            date: e.expense_date,
-            amount: e.amount,
-            status: e.status,
-            description: e.description,
-            category: e.category,
-            receipt_url: e.receipt_url
-          }))
-          allSubmissions = [...allSubmissions, ...expenseSubmissions]
-        }
-
-        // Sort raw submissions by date desc
-        allSubmissions.sort((a, b) => 
-          new Date(b.date).getTime() - new Date(a.date).getTime()
-        )
-
-        setSubmissions(allSubmissions)
       }
+
+      // 4) Build project filter options + map of timesheet -> project ids
+      const projectMap: Record<string, ProjectOption> = {}
+      const tMap: Record<string, string[]> = {}
+
+      timesheetEntries.forEach((entry: any) => {
+        if (!entry.project_id) return
+        if (!tMap[entry.timesheet_id]) {
+          tMap[entry.timesheet_id] = []
+        }
+        tMap[entry.timesheet_id].push(entry.project_id)
+
+        if (entry.project) {
+          projectMap[entry.project.id] = {
+            id: entry.project.id,
+            name: entry.project.name,
+            code: entry.project.code
+          }
+        }
+      })
+
+      setTimesheetProjectMap(tMap)
+      setProjectOptions(Object.values(projectMap))
+
+      // 5) Build submission objects (timesheets + expenses like before)
+      let allSubmissions: Submission[] = []
+
+      const timesheetSubmissions = timesheets.map((t: any) => {
+        const { label: week_range, endDate } = getWeekRange(t.week_ending)
+        const emp = (allEmployees as Employee[]).find(e => e.id === t.employee_id)
+        const hourlyRate = emp?.hourly_rate || 0
+        return {
+          id: t.id,
+          type: 'timesheet' as const,
+          employee: emp,
+          date: endDate.toISOString(),
+          amount: (t.total_hours || 0) * hourlyRate,
+          hours: t.total_hours,
+          overtime_hours: t.overtime_hours,
+          status: t.status,
+          week_range,
+          description: `Week ending ${endDate.toLocaleDateString()}`
+        }
+      })
+
+      allSubmissions = [...allSubmissions, ...timesheetSubmissions]
+
+      // EXPENSES: unchanged – still by employees
+      const { data: expenses, error: expError } = await supabase
+        .from('expenses')
+        .select('*')
+        .in('employee_id', employeeIds)
+
+      if (expError) throw expError
+
+      if (expenses && expenses.length > 0) {
+        const expenseSubmissions = (expenses as any[]).map(e => ({
+          id: e.id,
+          type: 'expense' as const,
+          employee: (allEmployees as Employee[]).find(emp => emp.id === e.employee_id),
+          date: e.expense_date,
+          amount: e.amount,
+          status: e.status,
+          description: e.description,
+          category: e.category,
+          receipt_url: e.receipt_url
+        }))
+        allSubmissions = [...allSubmissions, ...expenseSubmissions]
+      }
+
+      // Sort by date desc (same as before)
+      allSubmissions.sort((a, b) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      )
+
+      setSubmissions(allSubmissions)
     } catch (error) {
       console.error('Error loading submissions:', error)
+      // On error, don't blow up the UI
+      setSubmissions([])
+      setProjectOptions([])
+      setTimesheetProjectMap({})
     } finally {
       setIsLoading(false)
     }

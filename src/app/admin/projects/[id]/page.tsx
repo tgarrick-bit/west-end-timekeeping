@@ -19,6 +19,7 @@ interface Project {
   track_time: boolean
   track_expenses: boolean
   is_billable: boolean
+  // invoicing / extras (UI only for now – NOT saved to DB):
   billing_rate?: number
   budget?: number
   active_po?: string
@@ -72,6 +73,31 @@ const TAB_ORDER: TabType[] = [
   'approvers',
   'time-settings',
 ]
+
+/**
+ * Only include columns that actually exist on the "projects" table.
+ * Adjust this list if your Supabase schema differs.
+ */
+const buildProjectPayload = (data: Partial<Project>) => {
+  return {
+    // required
+    client_id: data.client_id!, // validated before use
+    name: (data.name || '').trim(),
+
+    // likely columns
+    short_name: data.short_name ?? null,
+    project_number: data.project_number ?? null,
+    start_date: data.start_date ?? null,
+    end_date: data.end_date ?? null,
+    department: data.department ?? null,
+
+    // toggles
+    is_active: data.is_active ?? true,
+    track_time: data.track_time ?? true,
+    track_expenses: data.track_expenses ?? false,
+    is_billable: data.is_billable ?? true,
+  }
+}
 
 export default function ProjectEditPage() {
   const router = useRouter()
@@ -218,25 +244,30 @@ export default function ProjectEditPage() {
       return null
     }
 
+    const payload = buildProjectPayload(formData)
+
     setSaving(true)
     try {
       if (projectId === 'new') {
         const { data, error } = await supabase
           .from('projects')
-          .insert([{ ...formData }])
+          .insert([payload])
           .select()
           .single()
 
         if (error) throw error
 
-        setProject(data as Project)
-        setFormData((prev) => ({ ...prev, ...(data as Project) }))
+        const created = data as Project
+        setProject(created)
+        // keep any local-only fields (like client_name)
+        setFormData((prev) => ({ ...prev, ...created }))
+
         alert('Project created successfully!')
-        return data.id as string
+        return created.id as string
       } else {
         const { error } = await supabase
           .from('projects')
-          .update(formData)
+          .update(payload)
           .eq('id', projectId)
 
         if (error) throw error
@@ -244,9 +275,9 @@ export default function ProjectEditPage() {
         alert('Project saved successfully!')
         return projectId
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving project:', err)
-      alert('Error saving project')
+      alert(`Error saving project: ${err.message || 'Unknown error'}`)
       return null
     } finally {
       setSaving(false)
@@ -276,8 +307,6 @@ export default function ProjectEditPage() {
     if (!id) return
     const next = nextTabFor(activeTab)
     if (next) setActiveTab(next)
-    // For now, we do NOT change the URL on Save & Next for new projects
-    // to avoid losing the tab state. Save or Save & exit can handle routing.
   }
 
   const handleAddEmployee = async () => {
