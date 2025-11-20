@@ -6,21 +6,15 @@ import { createSupabaseClient } from '@/lib/supabase';
 import TimesheetModal from '@/components/TimesheetModal';
 import Image from 'next/image';
 import { 
-  CalendarDays, 
   Clock, 
   FileText,
-  Plus,
-  ChevronRight,
   User,
   LogOut,
-  Briefcase,
   Receipt,
-  CreditCard,
   AlertCircle,
   RefreshCw,
   DollarSign,
-  CheckCircle,
-  Calendar
+  CheckCircle
 } from 'lucide-react';
 
 interface Timecard {
@@ -29,11 +23,13 @@ interface Timecard {
   week_ending: string;
   status: 'draft' | 'submitted' | 'approved' | 'rejected';
   total_hours: number;
-  total_amount: number;
   submitted_at: string | null;
   approved_at: string | null;
   approved_by: string | null;
   created_at: string;
+  // New: optional fields for manager feedback
+  rejection_reason?: string | null;
+  manager_comment?: string | null;
 }
 
 interface Expense {
@@ -46,6 +42,19 @@ interface Expense {
   status: 'draft' | 'submitted' | 'approved' | 'rejected';
   project_id: string;
   receipt_url?: string;
+  submitted_at: string | null;
+  created_at: string;
+  // New: optional reason on rejected expenses
+  rejection_reason?: string | null;
+}
+
+interface ExpenseReport {
+  id: string;
+  employee_id: string;
+  title: string;
+  period_month: string | null;
+  status: 'draft' | 'submitted' | 'approved' | 'rejected';
+  total_amount: number;
   submitted_at: string | null;
   created_at: string;
 }
@@ -170,22 +179,22 @@ export default function EmployeeDashboard() {
         // Remove duplicates based on ID
         const uniqueTimesheets = Array.from(
           new Map(timesheetsData.map(item => [item.id, item])).values()
-        );
+        ) as Timecard[];
         
         setTimecards(uniqueTimesheets);
         
-        // Calculate stats - removed totalEarnings
+        // Calculate stats - hours and counts only (no pay)
         const timecardStats = uniqueTimesheets.reduce((acc, tc) => ({
           totalHours: acc.totalHours + (tc.total_hours || 0),
           pendingTimecards: acc.pendingTimecards + (tc.status === 'submitted' ? 1 : 0),
           approvedTimecards: acc.approvedTimecards + (tc.status === 'approved' ? 1 : 0),
-          rejectedTimecards: acc.rejectedTimecards + (tc.status === 'rejected' ? 1 : 0) // 👈 new
+          rejectedTimecards: acc.rejectedTimecards + (tc.status === 'rejected' ? 1 : 0)
         }), {
           totalHours: 0,
           pendingTimecards: 0,
           approvedTimecards: 0,
           rejectedTimecards: 0
-        })        
+        });        
         
         setStats(prev => ({ ...prev, ...timecardStats }));
       } else {
@@ -202,10 +211,11 @@ export default function EmployeeDashboard() {
       if (!expensesError && expensesData) {
         const uniqueExpenses = Array.from(
           new Map(expensesData.map(item => [item.id, item])).values()
-        );
+        ) as Expense[];
+
         setExpenses(uniqueExpenses);
         
-        // Calculate expense stats
+        // Calculate expense stats (these are reimbursement dollars, not pay)
         const expenseStats = uniqueExpenses.reduce((acc, exp) => ({
           totalExpenses: acc.totalExpenses + (exp.amount || 0),
           pendingExpenses: acc.pendingExpenses + (exp.status === 'submitted' ? exp.amount : 0),
@@ -259,7 +269,7 @@ export default function EmployeeDashboard() {
 
       // If we have entries, fetch project details
       if (formattedEntries.length > 0) {
-        const projectIds = [...new Set(formattedEntries.map(e => e.project_id).filter(Boolean))];
+        const projectIds = [...new Set(formattedEntries.map((e: any) => e.project_id).filter(Boolean))];
         
         if (projectIds.length > 0) {
           const { data: projectsData } = await supabase
@@ -270,7 +280,7 @@ export default function EmployeeDashboard() {
           console.log('Projects data:', projectsData);
 
           if (projectsData) {
-            formattedEntries = formattedEntries.map(entry => ({
+            formattedEntries = formattedEntries.map((entry: any) => ({
               ...entry,
               project_name: projectsData.find(p => p.id === entry.project_id)?.name || 'General Work',
               project_code: projectsData.find(p => p.id === entry.project_id)?.project_code,
@@ -326,30 +336,74 @@ export default function EmployeeDashboard() {
       approved: 'bg-emerald-50 text-emerald-700 border-emerald-300',
       rejected: 'bg-red-50 text-red-700 border-red-300'
     };
-    return colors[status] || 'bg-gray-100 text-gray-700 border-gray-300';
+    return `border ${colors[status] || 'bg-gray-100 text-gray-700 border-gray-300'}`;
   };
 
   const renderTimecardStatus = (status: Timecard['status']) => {
     switch (status) {
       case 'draft':
-        return 'Draft'
+        return 'Draft';
       case 'submitted':
-        return 'Submitted'
+        return 'Submitted';
       case 'approved':
-        return 'Approved'
+        return 'Approved';
       case 'rejected':
-        return 'Rejected – needs your review'
+        return 'Rejected – needs your review';
       default:
-        return status
+        return status;
     }
-  }
+  };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (dateString: string | Date) => {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+
+    return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
     });
+  };
+
+  // New: fiscal week helper (FY = Oct 1 – Sep 30)
+  const getFiscalWeekInfo = (weekEnding: string, totalHours: number) => {
+    const weekEnd = new Date(weekEnding);
+    if (Number.isNaN(weekEnd.getTime())) {
+      return {
+        title: `Week – ${totalHours.toFixed(1)} hrs`,
+        rangeLabel: ''
+      };
+    }
+
+    // Normalize
+    weekEnd.setHours(0, 0, 0, 0);
+
+    // Calendar week = Sunday–Saturday
+    const weekStart = new Date(weekEnd);
+    weekStart.setDate(weekEnd.getDate() - 6);
+
+    // Fiscal year starts Oct 1
+    const month = weekEnd.getMonth(); // 0‑11
+    const year = weekEnd.getFullYear();
+    const fiscalYearStartYear = month >= 9 ? year : year - 1; // 9 = October
+
+    const fiscalStartDate = new Date(fiscalYearStartYear, 9, 1); // Oct 1
+
+    // First fiscal week‑end: first Saturday on/after Oct 1
+    const firstWeekEnd = new Date(fiscalStartDate);
+    const day = firstWeekEnd.getDay(); // 0=Sun..6=Sat
+    const daysToSaturday = (6 - day + 7) % 7;
+    firstWeekEnd.setDate(firstWeekEnd.getDate() + daysToSaturday);
+
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const diffWeeks = Math.floor((weekEnd.getTime() - firstWeekEnd.getTime()) / msPerWeek);
+    const weekNumber = Math.max(1, diffWeeks + 1);
+
+    const rangeLabel = `${formatDate(weekStart)} – ${formatDate(weekEnd)}`;
+
+    return {
+      title: `Week ${weekNumber} – ${totalHours.toFixed(1)} hrs`,
+      rangeLabel
+    };
   };
 
   const formatCurrency = (amount: number) => {
@@ -388,7 +442,6 @@ export default function EmployeeDashboard() {
     return labels[category] || category;
   };
 
-  // Add greeting function HERE - before the if statement
   const getTimeBasedGreeting = () => {
     const hour = new Date().getHours();
     
@@ -475,7 +528,7 @@ export default function EmployeeDashboard() {
           </p>
         </div>
 
-        {/* Quick Actions - Swapped colors */}
+        {/* Quick Actions */}
         <div className="mb-8 flex gap-4">
           <button 
             onClick={() => router.push('/timesheet/entry')}
@@ -530,15 +583,15 @@ export default function EmployeeDashboard() {
               <p className="text-sm text-gray-500 mt-1">Completed</p>
             </div>
 
-            {/* Rejected Card - NEW */}
+            {/* Rejected Card */}
             <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <AlertCircle className="h-5 w-5 text-red-500" />
                 <span className="text-xs font-medium text-gray-500 uppercase">Rejected</span>
               </div>
               <p className="text-3xl font-bold text-gray-500">
-  {stats.rejectedTimecards}
-</p>
+                {stats.rejectedTimecards}
+              </p>
               <p className="text-sm text-gray-500 mt-1">Need Action</p>
             </div>
           </div>
@@ -611,27 +664,45 @@ export default function EmployeeDashboard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {timecards.map((timecard) => (
-                    <div
-                      key={timecard.id}
-                      className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => handleTimesheetClick(timecard)}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium text-[#05202E]">
-                            Week ending {formatDate(timecard.week_ending)}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {timecard.total_hours || 0} hrs
-                          </p>
-                        </div>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(timecard.status)}`}>
-                          {timecard.status.charAt(0).toUpperCase() + timecard.status.slice(1)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+{timecards.map((timecard) => {
+  const { title, rangeLabel } = getFiscalWeekInfo(
+    timecard.week_ending,
+    timecard.total_hours || 0
+  );
+
+  return (
+    <div
+      key={timecard.id}
+      className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+      onClick={() => handleTimesheetClick(timecard)}
+    >
+      <div className="flex justify-between items-start">
+        <div>
+          {/* Line 1: Week N – X.X hrs */}
+          <p className="font-medium text-[#05202E]">
+            {title}
+          </p>
+          {/* Line 2: calendar Sunday–Saturday range */}
+          <p className="text-sm text-gray-500">
+            {rangeLabel}
+          </p>
+
+          {timecard.status === 'rejected' && (timecard as any).rejection_reason && (
+            <p className="mt-1 text-xs text-red-600">
+              Reason: {(timecard as any).rejection_reason}
+            </p>
+          )}
+        </div>
+        <span
+          className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(timecard.status)}`}
+        >
+          {renderTimecardStatus(timecard.status)}
+        </span>
+      </div>
+    </div>
+  );
+})}
+
                 </div>
               )}
             </div>
@@ -668,6 +739,11 @@ export default function EmployeeDashboard() {
                           <p className="text-sm text-gray-500">
                             {formatCurrency(expense.amount)} • {formatDate(expense.expense_date)}
                           </p>
+                          {expense.status === 'rejected' && expense.rejection_reason && (
+                            <p className="mt-1 text-xs text-red-600">
+                              Reason: {expense.rejection_reason}
+                            </p>
+                          )}
                         </div>
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(expense.status)}`}>
                           {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
@@ -684,11 +760,11 @@ export default function EmployeeDashboard() {
 
       {/* Timesheet Modal */}
       <TimesheetModal
-  isOpen={isModalOpen}
-  onClose={handleCloseModal}
-  timesheet={selectedTimesheet}
-  isEmployeeView={true}
-/>
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        timesheet={selectedTimesheet}
+        isEmployeeView={true}
+      />
     </div>
   );
 }

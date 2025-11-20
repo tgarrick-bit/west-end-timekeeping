@@ -30,6 +30,8 @@ interface TimesheetRow {
   notes: { [key: string]: string };
 }
 
+type TimesheetStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
+
 export default function TimesheetEntry() {
   const [selectedWeek, setSelectedWeek] = useState<Date>(new Date());
   const [rows, setRows] = useState<TimesheetRow[]>([
@@ -46,6 +48,7 @@ export default function TimesheetEntry() {
   const [successMessage, setSuccessMessage] = useState('');
   const [attestation, setAttestation] = useState(false);
   const [existingTimesheetId, setExistingTimesheetId] = useState<string | null>(null);
+  const [timesheetStatus, setTimesheetStatus] = useState<TimesheetStatus | null>(null);
 
   const router = useRouter();
   const supabase = createSupabaseClient();
@@ -76,6 +79,12 @@ export default function TimesheetEntry() {
 
   const checkExistingTimesheet = async () => {
     try {
+      // Clear banners + state whenever week changes
+      setErrorMessage('');
+      setSuccessMessage('');
+      setExistingTimesheetId(null);
+      setTimesheetStatus(null);
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -88,26 +97,43 @@ export default function TimesheetEntry() {
         .eq('id', user.id)
         .single();
 
-      if (!employee) return;
+      if (!employee) {
+        // No employee yet – start blank
+        setRows([
+          {
+            id: '1',
+            project_id: '',
+            hours: {},
+            notes: {},
+          },
+        ]);
+        return;
+      }
 
       const weekEndingDate = getWeekEndingDate(selectedWeek);
 
-      const { data: existing } = await supabase
+      const { data: existing, error: existingError } = await supabase
         .from('timesheets')
         .select('id, status')
         .eq('employee_id', employee.id)
         .eq('week_ending', weekEndingDate)
-        .single();
+        .maybeSingle();
+
+      if (existingError) {
+        console.error('Error checking timesheet header:', existingError);
+      }
 
       if (existing) {
         setExistingTimesheetId(existing.id);
+        setTimesheetStatus(existing.status as TimesheetStatus);
+
         if (existing.status === 'approved') {
           setErrorMessage('This timesheet has been approved and cannot be edited.');
-        } else {
-          loadExistingEntries(existing.id);
         }
+
+        await loadExistingEntries(existing.id);
       } else {
-        setExistingTimesheetId(null);
+        // No timesheet for this week – reset to a single empty row
         setRows([
           {
             id: '1',
@@ -124,31 +150,48 @@ export default function TimesheetEntry() {
 
   const loadExistingEntries = async (timesheetId: string) => {
     try {
-      const { data: entries } = await supabase
+      const { data: entries, error } = await supabase
         .from('timesheet_entries')
         .select('*')
         .eq('timesheet_id', timesheetId)
         .order('date');
 
+      if (error) {
+        console.error('Error loading existing entries:', error);
+        return;
+      }
+
       if (entries && entries.length > 0) {
         const projectGroups: { [key: string]: TimesheetRow } = {};
 
         entries.forEach((entry: any) => {
-          if (!projectGroups[entry.project_id]) {
-            projectGroups[entry.project_id] = {
-              id: entry.project_id,
-              project_id: entry.project_id,
+          const projectKey = entry.project_id || 'unassigned';
+
+          if (!projectGroups[projectKey]) {
+            projectGroups[projectKey] = {
+              id: projectKey,
+              project_id: entry.project_id || '',
               hours: {},
               notes: {},
             };
           }
-          projectGroups[entry.project_id].hours[entry.date] = entry.hours;
+          projectGroups[projectKey].hours[entry.date] = entry.hours;
           if (entry.description) {
-            projectGroups[entry.project_id].notes[entry.date] = entry.description;
+            projectGroups[projectKey].notes[entry.date] = entry.description;
           }
         });
 
         setRows(Object.values(projectGroups));
+      } else {
+        // Timesheet exists but no entries – show one empty row
+        setRows([
+          {
+            id: '1',
+            project_id: '',
+            hours: {},
+            notes: {},
+          },
+        ]);
       }
     } catch (error) {
       console.error('Error loading existing entries:', error);
@@ -167,7 +210,7 @@ export default function TimesheetEntry() {
     const dates: Date[] = [];
     const startDate = new Date(selectedWeek);
     const day = startDate.getDay();
-    const diff = startDate.getDate() - day;
+    const diff = startDate.getDate() - day; // back to Sunday
     startDate.setDate(diff);
 
     for (let i = 0; i < 7; i++) {
@@ -222,9 +265,9 @@ export default function TimesheetEntry() {
   };
 
   const addRow = () => {
-    const newId = (Math.max(...rows.map((r) => parseInt(r.id))) + 1).toString();
-    setRows([
-      ...rows,
+    const newId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    setRows((prev) => [
+      ...prev,
       {
         id: newId,
         project_id: '',
@@ -264,7 +307,14 @@ export default function TimesheetEntry() {
     setIsLoading(true);
     setErrorMessage('');
     setSuccessMessage('');
-
+  
+    // Guard: approved timesheets are view-only
+    if (timesheetStatus === 'approved') {
+      setErrorMessage('This timesheet has already been approved and cannot be edited.');
+      setIsLoading(false);
+      return;
+    }
+  
     try {
       // Validate at least one row has project and hours
       const validRows = rows.filter((row) => {
@@ -272,116 +322,118 @@ export default function TimesheetEntry() {
         const hasHours = Object.values(row.hours).some((h) => h > 0);
         return hasProject && hasHours;
       });
-
+  
       if (validRows.length === 0) {
         setErrorMessage('Please add at least one project with hours before submitting.');
         setIsLoading(false);
         return;
       }
-
+  
       // Get current auth user
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error('No authenticated user');
-
+  
       const authUserId = user.id;
-
+  
       // Get or create employee record whose id === auth.user.id
       let { data: employee, error: empError } = await supabase
         .from('employees')
         .select('id')
         .eq('id', authUserId)
         .single();
-
-      if (empError && empError.code !== 'PGRST116') {
+  
+      if (empError && (empError as any).code !== 'PGRST116') {
         throw empError;
       }
-
+  
       if (!employee) {
         const { data: newEmployee, error: empInsertError } = await supabase
           .from('employees')
           .insert({
-            id: authUserId, // keep employee.id in sync with auth user id
+            id: authUserId,
             email: user.email,
             first_name: user.user_metadata?.first_name || 'Unknown',
             last_name: user.user_metadata?.last_name || 'User',
             role: 'employee',
             is_active: true,
-            hourly_rate: 0, // default; admins can update later
+            hourly_rate: 0,
             department: 'General',
           })
           .select('id')
           .single();
-
+  
         if (empInsertError || !newEmployee) {
           throw empInsertError || new Error('Could not create employee profile');
         }
         employee = newEmployee;
       }
-
+  
       const employeeId = employee.id;
       const weekEndingDate = getWeekEndingDate(selectedWeek);
       const { weekTotal, overtimeHours } = calculateTotals();
-
+  
       let timesheetId = existingTimesheetId;
-
+      const newStatus: TimesheetStatus = isDraft ? 'draft' : 'submitted';
+  
+      // 1) Upsert the timesheet HEADER (no deletes yet)
       if (existingTimesheetId) {
-        // Update existing timesheet: replace entries & update summary
-        const { error: deleteError } = await supabase
-          .from('timesheet_entries')
-          .delete()
-          .eq('timesheet_id', existingTimesheetId);
-
-        if (deleteError) throw deleteError;
-
-        const clearRejectionFields = !isDraft; // if resubmitting, clear comments/rejection_reason
-
+        const updatePayload: any = {
+          employee_id: employeeId,
+          week_ending: weekEndingDate,
+          total_hours: weekTotal,
+          overtime_hours: overtimeHours,
+          status: newStatus,
+          submitted_at: isDraft ? null : new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+  
+        // If resubmitting a previously rejected sheet, clear rejection_reason
+        if (!isDraft) {
+          updatePayload.rejection_reason = null; // <-- no 'comments' field here
+        }
+  
         const { error: updateError } = await supabase
           .from('timesheets')
-          .update({
+          .update(updatePayload)
+          .eq('id', existingTimesheetId);
+  
+        if (updateError) throw updateError;
+      } else {
+        const { data: newTimesheet, error: createError } = await supabase
+          .from('timesheets')
+          .insert({
             employee_id: employeeId,
             week_ending: weekEndingDate,
             total_hours: weekTotal,
             overtime_hours: overtimeHours,
-            status: isDraft ? 'draft' : 'submitted',
-            submitted_at: isDraft ? null : new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            ...(clearRejectionFields ? { comments: null, rejection_reason: null } : {}),
-          })
-          .eq('id', existingTimesheetId);
-
-        if (updateError) throw updateError;
-      } else {
-        // Create new timesheet
-        const { data: newTimesheet, error: createError } = await supabase
-          .from('timesheets')
-          .insert({
-            employee_id: employeeId, // 👈 critical fix
-            week_ending: weekEndingDate,
-            total_hours: weekTotal,
-            overtime_hours: overtimeHours,
-            status: isDraft ? 'draft' : 'submitted',
+            status: newStatus,
             submitted_at: isDraft ? null : new Date().toISOString(),
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
           .select()
           .single();
-
+  
         if (createError || !newTimesheet) throw createError;
         timesheetId = newTimesheet.id;
+        setExistingTimesheetId(newTimesheet.id);
       }
-
-      // Create timesheet entries
+  
+      if (!timesheetId) {
+        throw new Error('Unable to determine timesheet id after save.');
+      }
+  
+      // 2) Build the entries for this week
       const entries: any[] = [];
       const weekDates = getWeekDates();
-
+  
       for (const row of validRows) {
         for (const date of weekDates) {
           const dateStr = formatDate(date);
           const hours = row.hours[dateStr] || 0;
-
+  
           if (hours > 0) {
             entries.push({
               timesheet_id: timesheetId,
@@ -393,12 +445,24 @@ export default function TimesheetEntry() {
           }
         }
       }
-
+  
+      // 3) Replace detail rows atomically for this timesheet
+      const { error: deleteError } = await supabase
+        .from('timesheet_entries')
+        .delete()
+        .eq('timesheet_id', timesheetId);
+  
+      if (deleteError) throw deleteError;
+  
       if (entries.length > 0) {
-        const { error: entriesError } = await supabase.from('timesheet_entries').insert(entries);
+        const { error: entriesError } = await supabase
+          .from('timesheet_entries')
+          .insert(entries);
         if (entriesError) throw entriesError;
       }
-
+  
+      setTimesheetStatus(newStatus);
+  
       setSuccessMessage(
         existingTimesheetId
           ? isDraft
@@ -406,9 +470,9 @@ export default function TimesheetEntry() {
             : 'Timesheet updated and resubmitted for approval!'
           : isDraft
           ? 'Timesheet saved as draft.'
-          : 'Timesheet submitted successfully!',
+          : 'Timesheet submitted successfully!'
       );
-
+  
       setTimeout(() => {
         router.push('/employee');
       }, 1500);
@@ -418,7 +482,7 @@ export default function TimesheetEntry() {
     } finally {
       setIsLoading(false);
     }
-  };
+  };  
 
   const navigateWeek = (direction: number) => {
     const newDate = new Date(selectedWeek);
@@ -549,7 +613,8 @@ export default function TimesheetEntry() {
                         <select
                           value={row.project_id}
                           onChange={(e) => updateRowProject(row.id, e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#e31c79] focus:border-transparent"
+                          disabled={timesheetStatus === 'approved'}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#e31c79] focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
                         >
                           <option value="">Select a project...</option>
                           {projects.map((project) => (
@@ -576,7 +641,8 @@ export default function TimesheetEntry() {
                                   parseFloat(e.target.value) || 0,
                                 )
                               }
-                              className="w-full px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-[#e31c79] focus:border-transparent"
+                              disabled={timesheetStatus === 'approved'}
+                              className="w-full px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-[#e31c79] focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
                               placeholder="0"
                             />
                           </td>
@@ -588,8 +654,8 @@ export default function TimesheetEntry() {
                       <td className="px-2 py-3">
                         <button
                           onClick={() => removeRow(row.id)}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                          disabled={rows.length === 1}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={rows.length === 1 || timesheetStatus === 'approved'}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -604,10 +670,7 @@ export default function TimesheetEntry() {
                   {getWeekDates().map((date) => {
                     const dateStr = formatDate(date);
                     return (
-                      <td
-                        key={dateStr}
-                        className="px-2 py-3 text-center text-[#05202E]"
-                      >
+                      <td key={dateStr} className="px-2 py-3 text-center text-[#05202E]">
                         {dailyTotals[dateStr]?.toFixed(1) || '0.0'}
                       </td>
                     );
@@ -625,7 +688,8 @@ export default function TimesheetEntry() {
           <div className="px-4 py-3 border-t">
             <button
               onClick={addRow}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-[#05202E] hover:bg-gray-100 rounded-lg transition-colors"
+              disabled={timesheetStatus === 'approved'}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-[#05202E] hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="h-4 w-4" />
               Add Row
@@ -653,7 +717,11 @@ export default function TimesheetEntry() {
               </div>
             </div>
             <div className="text-sm text-gray-600">
-              Status: Non-Exempt Employee • State: TX
+              Status:{' '}
+              {timesheetStatus
+                ? timesheetStatus.charAt(0).toUpperCase() + timesheetStatus.slice(1)
+                : 'Not submitted'}{' '}
+              • Non-Exempt Employee • State: TX
             </div>
           </div>
         </div>
@@ -668,6 +736,7 @@ export default function TimesheetEntry() {
               type="checkbox"
               checked={attestation}
               onChange={(e) => setAttestation(e.target.checked)}
+              disabled={timesheetStatus === 'approved'}
               className="mt-1 h-5 w-5 text-[#e31c79] border-gray-300 rounded focus:ring-[#e31c79]"
             />
             <span className="text-gray-700">
@@ -680,7 +749,7 @@ export default function TimesheetEntry() {
         <div className="flex justify-end gap-3">
           <button
             onClick={() => handleSubmit(true)}
-            disabled={isLoading}
+            disabled={isLoading || timesheetStatus === 'approved'}
             className="flex items-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Save className="h-5 w-5" />
@@ -688,7 +757,7 @@ export default function TimesheetEntry() {
           </button>
           <button
             onClick={() => handleSubmit(false)}
-            disabled={isLoading || !attestation}
+            disabled={isLoading || !attestation || timesheetStatus === 'approved'}
             className="flex items-center gap-2 px-6 py-3 bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="h-5 w-5" />

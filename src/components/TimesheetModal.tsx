@@ -23,19 +23,19 @@ interface TimesheetDetail {
   employee_department?: string | null;
   week_ending: string;
   total_hours: number;
-  total_overtime?: number;  // From admin page
-  overtime_hours?: number;  // Alternative field name
-  total_amount?: number;    // From admin page
+  total_overtime?: number;
+  overtime_hours?: number;
+  total_amount?: number;
   status: 'draft' | 'submitted' | 'approved' | 'rejected';
   submitted_at?: string | null;
   approved_at?: string | null;
   approved_by?: string | null;
   approved_by_name?: string | null;
   notes?: string | null;
-  entries?: TimesheetEntry[];  // Optional to handle missing data
-  rejection_reason?: string | null;  // For rejected timesheets
+  entries?: TimesheetEntry[];
+  rejection_reason?: string | null;
   rejected_at?: string | null;
-  comments?: string | null;          // Manager comments (used for rejection reason too)
+  comments?: string | null;
 }
 
 interface TimesheetModalProps {
@@ -45,7 +45,7 @@ interface TimesheetModalProps {
   onApprove?: () => void;
   onReject?: () => void;
   processing?: boolean;
-  isEmployeeView?: boolean;  // Show approval info for employees
+  isEmployeeView?: boolean;
 }
 
 export default function TimesheetModal({
@@ -150,10 +150,8 @@ export default function TimesheetModal({
     }
   };
 
-  // Use fetched entries if available, otherwise fallback to passed entries
   const displayEntries = entries.length > 0 ? entries : timesheet.entries || [];
 
-  // Sort by date (ascending), safely handling bad dates
   const sortedEntries = [...displayEntries].sort((a, b) => {
     const dateA = a?.date ? new Date(a.date).getTime() : NaN;
     const dateB = b?.date ? new Date(b.date).getTime() : NaN;
@@ -163,7 +161,6 @@ export default function TimesheetModal({
     return dateA - dateB;
   });
 
-  // Totals
   const calculatedTotalHours = sortedEntries.reduce(
     (sum, e) => sum + (parseFloat(String(e.hours)) || 0),
     0
@@ -176,24 +173,24 @@ export default function TimesheetModal({
     timesheet.overtime_hours ??
     Math.max(0, totalHours - 40);
 
-  // Estimated totals (fallback if no total_amount from backend)
+  // dollars are only for non-employee views
+  const showAmounts = !isEmployeeView;
+
+  // Amount calculation (only used when showAmounts = true)
   const hourlyRate = 75;
-const regularAmount = totalRegular * hourlyRate;
-const overtimeAmount = totalOvertime * hourlyRate * 1.5;
+  const regularAmount = totalRegular * hourlyRate;
+  const overtimeAmount = totalOvertime * hourlyRate * 1.5;
 
-// Only use total_amount if it’s a positive number; otherwise, fall back to estimate
-const hasValidStoredTotal =
-  typeof timesheet.total_amount === 'number' && timesheet.total_amount > 0;
+  const hasValidStoredTotal =
+    typeof timesheet.total_amount === 'number' && timesheet.total_amount > 0;
 
-const estimatedTotal = hasValidStoredTotal
-  ? timesheet.total_amount!
-  : regularAmount + overtimeAmount;
+  const estimatedTotal = hasValidStoredTotal
+    ? timesheet.total_amount!
+    : regularAmount + overtimeAmount;
 
-  // Helpers
   const isValid = (d: Date) => !isNaN(d.getTime());
   const ymd = (d: Date) => (isValid(d) ? format(d, 'yyyy-MM-dd') : '');
 
-  // 🔎 Derived rejection info – supports both rejection_reason and comments
   const rejectionReason =
     timesheet.rejection_reason || timesheet.comments || null;
 
@@ -278,28 +275,27 @@ const estimatedTotal = hasValidStoredTotal
                 </div>
               )}
 
-{timesheet.status === 'rejected' && (
-  <div className="mt-3 space-y-2">
-
-    {/* Rejection Details Box */}
-    {rejectionReason && (
-      <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-900 text-sm shadow-sm">
-        <p className="font-semibold">
-          Reason: <span className="font-normal">{rejectionReason}</span>
-        </p>
-        <p className="mt-1 text-xs opacity-90">
-          Update this week’s hours in the time entry screen, then re-submit for approval.
-        </p>
-      </div>
-    )}
-  </div>
-)}
-
+              {timesheet.status === 'rejected' && (
+                <div className="mt-3 space-y-2">
+                  {rejectionReason && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-900 text-sm shadow-sm">
+                      <p className="font-semibold">
+                        Reason:{' '}
+                        <span className="font-normal">{rejectionReason}</span>
+                      </p>
+                      <p className="mt-1 text-xs opacity-90">
+                        Update this week’s hours in the time entry screen, then
+                        re-submit for approval.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Summary Cards */}
+        {/* Summary Cards (hours only) */}
         <div className="p-6 bg-gray-50">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white p-4 rounded-lg border">
@@ -320,14 +316,6 @@ const estimatedTotal = hasValidStoredTotal
               <p className="text-sm font-medium text-gray-500">Total Hours</p>
               <p className="text-2xl font-bold text-gray-900">
                 {totalHours.toFixed(1)}h
-              </p>
-            </div>
-            <div className="bg-white p-4 rounded-lg border">
-              <p className="text-sm font-medium text-gray-500">
-                Estimated Total
-              </p>
-              <p className="text-2xl font-bold text-green-600">
-                ${estimatedTotal.toFixed(2)}
               </p>
             </div>
           </div>
@@ -377,17 +365,19 @@ const estimatedTotal = hasValidStoredTotal
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       TOTAL
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      AMOUNT
-                    </th>
+                    {showAmounts && (
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        AMOUNT
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {sortedEntries.map((entry, index) => {
-                    // Running totals to determine OT split
                     const previousEntries = sortedEntries.slice(0, index);
                     const runningTotal = previousEntries.reduce(
-                      (sum, e) => sum + (parseFloat(String(e.hours)) || 0),
+                      (sum, e) =>
+                        sum + (parseFloat(String(e.hours)) || 0),
                       0
                     );
                     const entryHours =
@@ -401,12 +391,12 @@ const estimatedTotal = hasValidStoredTotal
                       entryHours - regularHours
                     );
 
-                    const regularAmount = regularHours * hourlyRate;
-                    const overtimeAmount =
+                    const entryRegularAmount = regularHours * hourlyRate;
+                    const entryOvertimeAmount =
                       overtimeHours * hourlyRate * 1.5;
-                    const totalAmount = regularAmount + overtimeAmount;
+                    const totalAmount =
+                      entryRegularAmount + entryOvertimeAmount;
 
-                    // Safe date formatting + showDate
                     const curr = entry?.date
                       ? new Date(entry.date)
                       : new Date('Invalid');
@@ -452,9 +442,11 @@ const estimatedTotal = hasValidStoredTotal
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-gray-900">
                           {entryHours.toFixed(1)}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-green-600">
-                          ${totalAmount.toFixed(2)}
-                        </td>
+                        {showAmounts && (
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-green-600">
+                            ${totalAmount.toFixed(2)}
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
@@ -476,9 +468,11 @@ const estimatedTotal = hasValidStoredTotal
                     <td className="px-4 py-3 text-right font-semibold text-gray-900">
                       {calculatedTotalHours.toFixed(1)}
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold text-green-600">
-                      ${estimatedTotal.toFixed(2)}
-                    </td>
+                    {showAmounts && (
+                      <td className="px-4 py-3 text-right font-semibold text-green-600">
+                        ${estimatedTotal.toFixed(2)}
+                      </td>
+                    )}
                   </tr>
                 </tbody>
               </table>
