@@ -27,7 +27,6 @@ interface Timecard {
   approved_at: string | null;
   approved_by: string | null;
   created_at: string;
-  // New: optional fields for manager feedback
   rejection_reason?: string | null;
   manager_comment?: string | null;
 }
@@ -44,7 +43,6 @@ interface Expense {
   receipt_url?: string;
   submitted_at: string | null;
   created_at: string;
-  // New: optional reason on rejected expenses
   rejection_reason?: string | null;
 }
 
@@ -71,6 +69,7 @@ export default function EmployeeDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [timecards, setTimecards] = useState<Timecard[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expenseReports, setExpenseReports] = useState<ExpenseReport[]>([]);
   const [selectedTimesheet, setSelectedTimesheet] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [stats, setStats] = useState({
@@ -94,7 +93,6 @@ export default function EmployeeDashboard() {
   }, []);
 
   const checkUserRoleAndRedirect = async () => {
-    // Prevent double loading
     if (hasLoadedRef.current) {
       return;
     }
@@ -107,14 +105,12 @@ export default function EmployeeDashboard() {
         return;
       }
 
-      // Check user's role in employees table
       const { data: employeeData } = await supabase
         .from('employees')
         .select('role, first_name, last_name, email')
         .eq('id', user.id)
         .single();
       
-      // If no employee record exists, check email pattern as fallback
       if (!employeeData) {
         const userEmail = user.email?.toLowerCase() || '';
         
@@ -129,7 +125,6 @@ export default function EmployeeDashboard() {
 
       const userRole = employeeData?.role?.toLowerCase().trim();
       
-      // Redirect admins and managers to their respective dashboards
       if (userRole === 'admin') {
         router.push('/admin');
         return;
@@ -140,7 +135,6 @@ export default function EmployeeDashboard() {
         return;
       }
       
-      // If employee role, stay on this dashboard and load data
       if (employeeData) {
         setProfile({
           id: user.id,
@@ -165,7 +159,7 @@ export default function EmployeeDashboard() {
     }
     
     try {
-      // Query from 'timesheets' table (correct table)
+      // Timesheets
       const { data: timesheetsData, error: timesheetsError } = await supabase
         .from('timesheets')
         .select('*')
@@ -176,14 +170,12 @@ export default function EmployeeDashboard() {
         console.error('Error fetching timesheets:', timesheetsError);
         setTimecards([]);
       } else if (timesheetsData && timesheetsData.length > 0) {
-        // Remove duplicates based on ID
         const uniqueTimesheets = Array.from(
           new Map(timesheetsData.map(item => [item.id, item])).values()
         ) as Timecard[];
         
         setTimecards(uniqueTimesheets);
         
-        // Calculate stats - hours and counts only (no pay)
         const timecardStats = uniqueTimesheets.reduce((acc, tc) => ({
           totalHours: acc.totalHours + (tc.total_hours || 0),
           pendingTimecards: acc.pendingTimecards + (tc.status === 'submitted' ? 1 : 0),
@@ -201,7 +193,7 @@ export default function EmployeeDashboard() {
         setTimecards([]);
       }
 
-      // Get user's expenses
+      // Expense lines (for stats)
       const { data: expensesData, error: expensesError } = await supabase
         .from('expenses')
         .select('*')
@@ -215,7 +207,6 @@ export default function EmployeeDashboard() {
 
         setExpenses(uniqueExpenses);
         
-        // Calculate expense stats (these are reimbursement dollars, not pay)
         const expenseStats = uniqueExpenses.reduce((acc, exp) => ({
           totalExpenses: acc.totalExpenses + (exp.amount || 0),
           pendingExpenses: acc.pendingExpenses + (exp.status === 'submitted' ? exp.amount : 0),
@@ -232,6 +223,20 @@ export default function EmployeeDashboard() {
       } else {
         setExpenses([]);
       }
+
+      // Expense reports (for recent list + editing)
+      const { data: reportsData, error: reportsError } = await supabase
+        .from('expense_reports')
+        .select('*')
+        .eq('employee_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (reportsError) {
+        console.error('Error fetching expense reports:', reportsError);
+        setExpenseReports([]);
+      } else {
+        setExpenseReports((reportsData || []) as ExpenseReport[]);
+      }
     } catch (error) {
       console.error('Dashboard error:', error);
     } finally {
@@ -247,7 +252,6 @@ export default function EmployeeDashboard() {
 
   const handleTimesheetClick = async (timecard: Timecard) => {
     try {
-      // Fetch full timesheet details
       const { data: timesheetData, error: timesheetError } = await supabase
         .from('timesheets')
         .select('*')
@@ -256,7 +260,6 @@ export default function EmployeeDashboard() {
 
       if (timesheetError) throw timesheetError;
 
-      // Fetch from timesheet_entries table
       const { data: entriesData, error: entriesError } = await supabase
         .from('timesheet_entries')
         .select('*')
@@ -267,7 +270,6 @@ export default function EmployeeDashboard() {
 
       let formattedEntries = entriesData || [];
 
-      // If we have entries, fetch project details
       if (formattedEntries.length > 0) {
         const projectIds = [...new Set(formattedEntries.map((e: any) => e.project_id).filter(Boolean))];
         
@@ -290,7 +292,6 @@ export default function EmployeeDashboard() {
         }
       }
 
-      // Format the data for the modal
       const formattedTimesheet = {
         ...timesheetData,
         employee_name: profile?.first_name && profile?.last_name 
@@ -305,7 +306,6 @@ export default function EmployeeDashboard() {
       setIsModalOpen(true);
     } catch (error) {
       console.error('Error loading timesheet details:', error);
-      // Still show modal with basic data
       const basicTimesheet = {
         ...timecard,
         employee_name: profile?.first_name && profile?.last_name 
@@ -364,7 +364,6 @@ export default function EmployeeDashboard() {
     });
   };
 
-  // New: fiscal week helper (FY = Oct 1 – Sep 30)
   const getFiscalWeekInfo = (weekEnding: string, totalHours: number) => {
     const weekEnd = new Date(weekEnding);
     if (Number.isNaN(weekEnd.getTime())) {
@@ -374,23 +373,18 @@ export default function EmployeeDashboard() {
       };
     }
 
-    // Normalize
     weekEnd.setHours(0, 0, 0, 0);
 
-    // Calendar week = Sunday–Saturday
     const weekStart = new Date(weekEnd);
     weekStart.setDate(weekEnd.getDate() - 6);
 
-    // Fiscal year starts Oct 1
-    const month = weekEnd.getMonth(); // 0‑11
+    const month = weekEnd.getMonth();
     const year = weekEnd.getFullYear();
-    const fiscalYearStartYear = month >= 9 ? year : year - 1; // 9 = October
+    const fiscalYearStartYear = month >= 9 ? year : year - 1;
 
-    const fiscalStartDate = new Date(fiscalYearStartYear, 9, 1); // Oct 1
-
-    // First fiscal week‑end: first Saturday on/after Oct 1
+    const fiscalStartDate = new Date(fiscalYearStartYear, 9, 1);
     const firstWeekEnd = new Date(fiscalStartDate);
-    const day = firstWeekEnd.getDay(); // 0=Sun..6=Sat
+    const day = firstWeekEnd.getDay();
     const daysToSaturday = (6 - day + 7) % 7;
     firstWeekEnd.setDate(firstWeekEnd.getDate() + daysToSaturday);
 
@@ -406,7 +400,7 @@ export default function EmployeeDashboard() {
     };
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrencyLocal = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
@@ -427,7 +421,6 @@ export default function EmployeeDashboard() {
       miscellaneous: 'Miscellaneous',
       parking: 'Parking',
       rental_car: 'Rental Car',
-      // Keep backward compatibility for any old entries
       travel: 'Travel',
       meals: 'Meals',
       accommodation: 'Accommodation',
@@ -490,14 +483,14 @@ export default function EmployeeDashboard() {
               <button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-200 hover:text-white transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-200 hover:text.white transition-colors disabled:opacity-50"
                 title="Refresh data"
               >
                 <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                 Refresh
               </button>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-white/10 rounded-full flex items.center justify-center">
                   <User className="h-4 w-4 text-white" />
                 </div>
                 <span className="text-sm text-gray-200">
@@ -609,7 +602,9 @@ export default function EmployeeDashboard() {
                 <DollarSign className="h-5 w-5 text-[#e31c79]" />
                 <span className="text-xs font-medium text-gray-500 uppercase">Total</span>
               </div>
-              <p className="text-2xl font-bold text-[#e31c79]">{formatCurrency(stats.totalExpenses)}</p>
+              <p className="text-2xl font-bold text-[#e31c79]">
+                {formatCurrencyLocal(stats.totalExpenses)}
+              </p>
               <p className="text-sm text-gray-500 mt-1">All Expenses</p>
             </div>
 
@@ -619,7 +614,9 @@ export default function EmployeeDashboard() {
                 <Receipt className="h-5 w-5 text-[#e31c79]" />
                 <span className="text-xs font-medium text-gray-500 uppercase">Pending</span>
               </div>
-              <p className="text-2xl font-bold text-[#e31c79]">{formatCurrency(stats.pendingExpenses)}</p>
+              <p className="text-2xl font-bold text-[#e31c79]">
+                {formatCurrencyLocal(stats.pendingExpenses)}
+              </p>
               <p className="text-sm text-gray-500 mt-1">Under Review</p>
             </div>
 
@@ -629,17 +626,21 @@ export default function EmployeeDashboard() {
                 <CheckCircle className="h-5 w-5 text-green-500" />
                 <span className="text-xs font-medium text-gray-500 uppercase">Approved</span>
               </div>
-              <p className="text-2xl font-bold text-[#e31c79]">{formatCurrency(stats.approvedExpenses)}</p>
+              <p className="text-2xl font-bold text-[#e31c79]">
+                {formatCurrencyLocal(stats.approvedExpenses)}
+              </p>
               <p className="text-sm text-gray-500 mt-1">Approved</p>
             </div>
 
             {/* Rejected Card */}
-            <div className="bg-white rounded-lg border border-[#e31c79]/20 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
+            <div className="bg.white rounded-lg border border-[#e31c79]/20 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <AlertCircle className="h-5 w-5 text-red-500" />
                 <span className="text-xs font-medium text-gray-500 uppercase">Rejected</span>
               </div>
-              <p className="text-2xl font-bold text-gray-500">{stats.rejectedExpenses}</p>
+              <p className="text-2xl font-bold text-gray-500">
+                {stats.rejectedExpenses}
+              </p>
               <p className="text-sm text-gray-500 mt-1">Need Action</p>
             </div>
           </div>
@@ -664,89 +665,94 @@ export default function EmployeeDashboard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-{timecards.map((timecard) => {
-  const { title, rangeLabel } = getFiscalWeekInfo(
-    timecard.week_ending,
-    timecard.total_hours || 0
-  );
+                  {timecards.map((timecard) => {
+                    const { title, rangeLabel } = getFiscalWeekInfo(
+                      timecard.week_ending,
+                      timecard.total_hours || 0
+                    );
 
-  return (
-    <div
-      key={timecard.id}
-      className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-      onClick={() => handleTimesheetClick(timecard)}
-    >
-      <div className="flex justify-between items-start">
-        <div>
-          {/* Line 1: Week N – X.X hrs */}
-          <p className="font-medium text-[#05202E]">
-            {title}
-          </p>
-          {/* Line 2: calendar Sunday–Saturday range */}
-          <p className="text-sm text-gray-500">
-            {rangeLabel}
-          </p>
+                    return (
+                      <div
+                        key={timecard.id}
+                        className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => handleTimesheetClick(timecard)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium text-[#05202E]">
+                              {title}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {rangeLabel}
+                            </p>
 
-          {timecard.status === 'rejected' && (timecard as any).rejection_reason && (
-            <p className="mt-1 text-xs text-red-600">
-              Reason: {(timecard as any).rejection_reason}
-            </p>
-          )}
-        </div>
-        <span
-          className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(timecard.status)}`}
-        >
-          {renderTimecardStatus(timecard.status)}
-        </span>
-      </div>
-    </div>
-  );
-})}
-
+                            {timecard.status === 'rejected' && (timecard as any).rejection_reason && (
+                              <p className="mt-1 text-xs text-red-600">
+                                Reason: {(timecard as any).rejection_reason}
+                              </p>
+                            )}
+                          </div>
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(timecard.status)}`}
+                          >
+                            {renderTimecardStatus(timecard.status)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Recent Expenses */}
+          {/* Recent Expense Reports (new) */}
           <div>
             <div className="bg-white rounded-t-lg border border-gray-200 px-6 py-4 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
               <h3 className="text-lg font-semibold text-[#05202E]">Recent Expenses</h3>
               <p className="text-sm text-gray-500">Your latest expense submissions</p>
             </div>
             <div className="bg-white rounded-b-lg border-x border-b border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
-              {expenses.length === 0 ? (
+              {expenseReports.length === 0 ? (
                 <div className="text-center py-8">
                   <Receipt className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-gray-600 font-medium">No expenses yet</p>
+                  <p className="text-gray-600 font-medium">No expense reports yet</p>
                   <p className="text-sm text-gray-500 mt-1">
                     Click "Submit Expense" to get started
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {expenses.map((expense) => (
+                  {expenseReports.map((report) => (
                     <div
-                      key={expense.id}
+                      key={report.id}
                       className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => router.push(`/expense/${expense.id}`)}
+                      onClick={() => router.push(`/expenses/${report.id}`)}
                     >
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="font-medium text-[#05202E]">
-                            {getCategoryLabel(expense.category)}
+                            {report.title || 'Expense Report'}
                           </p>
                           <p className="text-sm text-gray-500">
-                            {formatCurrency(expense.amount)} • {formatDate(expense.expense_date)}
+                            {formatCurrencyLocal(report.total_amount)} •{' '}
+                            {report.period_month
+                              ? formatDate(report.period_month)
+                              : formatDate(report.created_at)}
                           </p>
-                          {expense.status === 'rejected' && expense.rejection_reason && (
+                          {report.status === 'rejected' && (
                             <p className="mt-1 text-xs text-red-600">
-                              Reason: {expense.rejection_reason}
+                              Rejected – open to review details and resubmit.
                             </p>
                           )}
                         </div>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(expense.status)}`}>
-                          {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                            report.status
+                          )}`}
+                        >
+                          {report.status.charAt(0).toUpperCase() +
+                            report.status.slice(1)}
                         </span>
                       </div>
                     </div>
@@ -758,7 +764,6 @@ export default function EmployeeDashboard() {
         </div>
       </main>
 
-      {/* Timesheet Modal */}
       <TimesheetModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
