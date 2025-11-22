@@ -10,11 +10,8 @@ import {
   X,
   Eye,
   ChevronLeft,
-  AlertCircle,
-  FileText,
   Receipt,
   Clock,
-  Download,
   Search
 } from 'lucide-react';
 
@@ -33,6 +30,7 @@ interface Expense {
   project_id?: string;
   receipt_url?: string;
   created_at: string;
+  report_id?: string | null;   // 👈 link to expense_reports
   project?: {
     name: string;
     code: string;
@@ -50,14 +48,13 @@ export default function ExpenseApprovalPage() {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<'all' | 'submitted' | 'approved' | 'rejected'>('submitted');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
-  
+
   const supabase = createSupabaseClient();
   const router = useRouter();
 
   useEffect(() => {
     loadExpenses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
   const loadExpenses = async () => {
@@ -80,7 +77,6 @@ export default function ExpenseApprovalPage() {
         `)
         .order('submitted_at', { ascending: false });
 
-      // Apply status filter
       if (statusFilter !== 'all') {
         query = query.eq('status', statusFilter);
       }
@@ -90,14 +86,22 @@ export default function ExpenseApprovalPage() {
       if (error) {
         console.error('Error loading expenses:', error);
       } else if (data) {
-        console.log('Loaded expenses:', data);
-        setExpenses(data);
+        setExpenses(data as Expense[]);
       }
     } catch (error) {
       console.error('Error loading expenses:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // open the report-style manager page we just built
+  const handleViewExpenseReport = (reportId: string | null | undefined) => {
+    if (!reportId) {
+      alert('This expense is not linked to an expense report.');
+      return;
+    }
+    router.push(`/manager/expense/${reportId}`);
   };
 
   const handleSelectItem = (id: string) => {
@@ -152,8 +156,6 @@ export default function ExpenseApprovalPage() {
 
       alert(`Successfully approved ${itemsToApprove.length} expense(s)`);
       setSelectedItems(new Set());
-      setShowDetails(false);
-      setSelectedExpense(null);
       loadExpenses();
     } catch (error) {
       console.error('Error approving expenses:', error);
@@ -198,8 +200,6 @@ export default function ExpenseApprovalPage() {
 
       alert(`Successfully rejected ${itemsToReject.length} expense(s)`);
       setSelectedItems(new Set());
-      setShowDetails(false);
-      setSelectedExpense(null);
       loadExpenses();
     } catch (error) {
       console.error('Error rejecting expenses:', error);
@@ -209,7 +209,8 @@ export default function ExpenseApprovalPage() {
 
   const getFilteredExpenses = () => {
     return expenses.filter(expense => {
-      const matchesSearch = searchTerm === '' || 
+      const matchesSearch =
+        searchTerm === '' ||
         expense.employee?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         expense.employee?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         expense.employee?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -281,10 +282,12 @@ export default function ExpenseApprovalPage() {
               </button>
               <div>
                 <h1 className="text-2xl font-bold">Expense Management</h1>
-                <p className="text-sm text-gray-300">Review and approve employee expenses</p>
+                <p className="text-sm text-gray-300">
+                  Review and approve employee expenses
+                </p>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => router.push('/auth/logout')}
               className="px-4 py-2 hover:bg-white/10 rounded transition-colors"
             >
@@ -306,29 +309,33 @@ export default function ExpenseApprovalPage() {
               <Receipt className="h-8 w-8 text-purple-500" />
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex.items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Pending Approval</p>
-                <p className="text-2xl font-bold text-yellow-600">{pendingCount}</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {pendingCount}
+                </p>
               </div>
               <Clock className="h-8 w-8 text-yellow-500" />
             </div>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex.items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Approved</p>
-                <p className="text-2xl font-bold text-green-600">{approvedCount}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {approvedCount}
+                </p>
               </div>
               <Check className="h-8 w-8 text-green-500" />
             </div>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
+            <div className="flex.items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Amount</p>
                 <p className="text-2xl font-bold text-[#e31c79]">
@@ -415,19 +422,38 @@ export default function ExpenseApprovalPage() {
                     <th className="text-left py-3 px-4">
                       <input
                         type="checkbox"
-                        checked={selectedItems.size === filteredExpenses.length && filteredExpenses.length > 0}
+                        checked={
+                          selectedItems.size === filteredExpenses.length &&
+                          filteredExpenses.length > 0
+                        }
                         onChange={handleSelectAll}
                         className="rounded border-gray-300"
                       />
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Employee</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Date</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Category</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Vendor</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Project</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Amount</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Status</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Actions</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                      Employee
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                      Date
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                      Category
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                      Vendor
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                      Project
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                      Amount
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                      Status
+                    </th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -444,27 +470,44 @@ export default function ExpenseApprovalPage() {
                       <td className="py-3 px-4">
                         <div>
                           <p className="font-medium text-gray-900">
-                            {expense.employee?.first_name} {expense.employee?.last_name}
+                            {expense.employee?.first_name}{' '}
+                            {expense.employee?.last_name}
                           </p>
-                          <p className="text-sm text-gray-500">{expense.employee?.email}</p>
+                          <p className="text-sm text-gray-500">
+                            {expense.employee?.email}
+                          </p>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-sm">{formatDate(expense.expense_date)}</td>
-                      <td className="py-3 px-4 text-sm">{expense.category || '-'}</td>
-                      <td className="py-3 px-4 text-sm">{expense.vendor || '-'}</td>
+                      <td className="py-3 px-4 text-sm">
+                        {formatDate(expense.expense_date)}
+                      </td>
+                      <td className="py-3 px-4 text-sm">
+                        {expense.category || '-'}
+                      </td>
+                      <td className="py-3 px-4 text-sm">
+                        {expense.vendor || '-'}
+                      </td>
                       <td className="py-3 px-4">
                         {expense.project ? (
                           <div>
                             <p className="text-sm">{expense.project.name}</p>
-                            <p className="text-xs text-gray-500">{expense.project.code}</p>
+                            <p className="text-xs text-gray-500">
+                              {expense.project.code}
+                            </p>
                           </div>
                         ) : (
                           <span className="text-sm text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 font-semibold">{formatCurrency(expense.amount)}</td>
+                      <td className="py-3 px-4 font-semibold">
+                        {formatCurrency(expense.amount)}
+                      </td>
                       <td className="py-3 px-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(expense.status)}`}>
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(
+                            expense.status
+                          )}`}
+                        >
                           {expense.status}
                         </span>
                       </td>
@@ -489,12 +532,11 @@ export default function ExpenseApprovalPage() {
                             </>
                           )}
                           <button
-                            onClick={() => {
-                              setSelectedExpense(expense);
-                              setShowDetails(true);
-                            }}
+                            onClick={() =>
+                              handleViewExpenseReport(expense.report_id ?? null)
+                            }
                             className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                            title="View Details"
+                            title="View Report"
                           >
                             <Eye className="h-4 w-4" />
                           </button>
@@ -532,95 +574,6 @@ export default function ExpenseApprovalPage() {
             </div>
           )}
         </div>
-
-        {/* Expense Details Modal */}
-        {showDetails && selectedExpense && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">Expense Details</h2>
-                  <button
-                    onClick={() => {
-                      setShowDetails(false);
-                      setSelectedExpense(null);
-                    }}
-                    className="p-2 hover:bg-gray-100 rounded"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-6">
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <p className="text-sm text-gray-600">Employee</p>
-                    <p className="font-medium">
-                      {selectedExpense.employee?.first_name} {selectedExpense.employee?.last_name}
-                    </p>
-                    <p className="text-sm text-gray-500">{selectedExpense.employee?.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Status</p>
-                    <span className={`inline-flex px-2 py-1 text-sm font-semibold rounded-full ${getStatusBadgeClass(selectedExpense.status)}`}>
-                      {selectedExpense.status}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Date</p>
-                    <p className="font-medium">{formatDate(selectedExpense.expense_date)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Amount</p>
-                    <p className="font-medium text-lg">{formatCurrency(selectedExpense.amount)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Category</p>
-                    <p className="font-medium">{selectedExpense.category || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Vendor</p>
-                    <p className="font-medium">{selectedExpense.vendor || '-'}</p>
-                  </div>
-                  {selectedExpense.project && (
-                    <div className="col-span-2">
-                      <p className="text-sm text-gray-600">Project</p>
-                      <p className="font-medium">
-                        {selectedExpense.project.name} ({selectedExpense.project.code})
-                      </p>
-                    </div>
-                  )}
-                  {selectedExpense.description && (
-                    <div className="col-span-2">
-                      <p className="text-sm text-gray-600">Description</p>
-                      <p className="font-medium">{selectedExpense.description}</p>
-                    </div>
-                  )}
-                </div>
-
-                {selectedExpense.status === 'submitted' && (
-                  <div className="flex gap-3 pt-4 border-t">
-                    <button
-                      onClick={() => handleReject(selectedExpense.id)}
-                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2"
-                    >
-                      <X className="h-4 w-4" />
-                      Reject
-                    </button>
-                    <button
-                      onClick={() => handleApprove(selectedExpense.id)}
-                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
-                    >
-                      <Check className="h-4 w-4" />
-                      Approve
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

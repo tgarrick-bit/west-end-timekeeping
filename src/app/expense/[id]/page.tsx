@@ -40,6 +40,7 @@ interface ExpenseLine {
   project_name?: string | null;
   project_code?: string | null;
   client_name?: string | null;
+  rejection_reason?: string | null;
 }
 
 interface ProjectOption {
@@ -50,9 +51,8 @@ interface ProjectOption {
 }
 
 // === GSA / IRS helpers ===
-// Update these when rates change.
-const GSA_MILEAGE_RATE = 0.70; // IRS standard mileage rate (example)
-const GSA_BREAKFAST_LIMIT = 16; // example values
+const GSA_MILEAGE_RATE = 0.7;
+const GSA_BREAKFAST_LIMIT = 16;
 const GSA_LUNCH_LIMIT = 19;
 const GSA_DINNER_LIMIT = 28;
 const GSA_INCIDENTAL_LIMIT = 5;
@@ -98,7 +98,7 @@ const getCategoryLabel = (category: string) =>
 const formatDate = (dateString: string | null) => {
   if (!dateString) return '';
   const d = new Date(dateString);
-  if (isNaN(d.getTime())) return dateString;
+  if (Number.isNaN(d.getTime())) return dateString;
   return d.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -216,7 +216,9 @@ export default function ExpenseReportPage() {
         error: userError,
       } = await supabase.auth.getUser();
       if (userError || !user) {
-        setLoadErrorMessage('You must be signed in to view this expense report.');
+        setLoadErrorMessage(
+          'You must be signed in to view this expense report.'
+        );
         return;
       }
 
@@ -251,8 +253,6 @@ export default function ExpenseReportPage() {
         return;
       }
 
-      setReport(reportData as ExpenseReport);
-
       // 2) Load all lines that belong to this report
       const { data: lineData, error: lineError } = await supabase
         .from('expenses')
@@ -268,7 +268,27 @@ export default function ExpenseReportPage() {
 
       const baseLines = (lineData || []) as ExpenseLine[];
 
-      // 3) Load only the projects actually used in this report (respects RLS)
+      // derive overall report status from line statuses
+      const lineStatuses = baseLines.map((l) => l.status);
+      let derivedStatus = reportData.status as ExpenseReport['status'];
+
+      if (lineStatuses.includes('rejected')) {
+        derivedStatus = 'rejected';
+      } else if (lineStatuses.includes('submitted')) {
+        derivedStatus = 'submitted';
+      } else if (
+        lineStatuses.length > 0 &&
+        lineStatuses.every((s) => s === 'approved')
+      ) {
+        derivedStatus = 'approved';
+      }
+
+      setReport({
+        ...(reportData as ExpenseReport),
+        status: derivedStatus,
+      });
+
+      // 3) Load only the projects actually used in this report
       const projectIds = [
         ...new Set(
           baseLines
@@ -319,8 +339,12 @@ export default function ExpenseReportPage() {
     }
   };
 
+  const hasRejectedLine = lines.some((l) => l.status === 'rejected');
+
   const isEditable =
-    report?.status === 'draft' || report?.status === 'rejected';
+    report?.status === 'draft' ||
+    report?.status === 'rejected' ||
+    hasRejectedLine;
 
   const computedTotal = lines.reduce((sum, line) => {
     const value = Number.isFinite(line.amount) ? line.amount : 0;
@@ -535,9 +559,10 @@ export default function ExpenseReportPage() {
           const safeName = file.name.replace(/\s+/g, '-').toLowerCase();
           const path = `${report.employee_id}/${report.id}/${line.id}-${Date.now()}-${safeName}`;
 
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from(bucketName)
-            .upload(path, file, { upsert: true });
+          const { data: uploadData, error: uploadError } =
+            await supabase.storage.from(bucketName).upload(path, file, {
+              upsert: true,
+            });
 
           if (uploadError) {
             console.error('Error uploading receipt file:', uploadError);
@@ -573,13 +598,16 @@ export default function ExpenseReportPage() {
         });
       }
 
-      const existingPayloads = updatedLinesPayload.filter((item) => !item.isNew);
+      const existingPayloads = updatedLinesPayload.filter(
+        (item) => !item.isNew
+      );
       if (existingPayloads.length > 0) {
-        const updatePromises = existingPayloads.map(({ line, payload }) =>
-          supabase.from('expenses').update(payload).eq('id', line.id)
+        const results = await Promise.all(
+          existingPayloads.map(({ line, payload }) =>
+            supabase.from('expenses').update(payload).eq('id', line.id)
+          )
         );
 
-        const results = await Promise.all(updatePromises);
         for (const { error } of results) {
           if (error) {
             console.error('Error updating expense line:', error);
@@ -637,6 +665,21 @@ export default function ExpenseReportPage() {
     loadReport();
   };
 
+  // Auto-scroll to first rejected line
+  useEffect(() => {
+    if (!isLoading) {
+      const firstRejected = lines.find((l) => l.status === 'rejected');
+      if (firstRejected) {
+        const el = document.getElementById(
+          `expense-line-${firstRejected.id}`
+        );
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }
+  }, [isLoading, lines]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -664,9 +707,7 @@ export default function ExpenseReportPage() {
                 className="h-9 w-9 object-contain"
               />
               <span className="h-6 w-px bg-white/30" />
-              <span className="text-sm tracking-wide">
-  Employee Portal
-</span>
+              <span className="text-sm tracking-wide">Employee Portal</span>
             </div>
           </div>
           <div className="flex items-center gap-5 text-sm">
@@ -674,25 +715,26 @@ export default function ExpenseReportPage() {
               type="button"
               onClick={handleRefresh}
               className="inline-flex items-center gap-1 text-gray-200 hover:text-gray-100"
-              >
+            >
               <RotateCw className="h-4 w-4" />
               <span className="font-normal">Refresh</span>
-              </button>
-              <div className="hidden sm:flex items-center gap-2 text-gray-200">
-    <User className="h-4 w-4 opacity-80" />
-    <span className="font-normal">
-      Good day, {employeeName ? employeeName.split(' ')[0] : 'Employee'}
-    </span>
-  </div>
-  <button
-    type="button"
-    onClick={handleSignOut}
-    className="inline-flex items-center gap-1 text-gray-200 hover:text-gray-100"
-  >
-    <LogOut className="h-4 w-4" />
-    <span className="font-normal">Sign Out</span>
-  </button>
-</div>
+            </button>
+            <div className="hidden sm:flex items-center gap-2 text-gray-200">
+              <User className="h-4 w-4 opacity-80" />
+              <span className="font-normal">
+                Good day,{' '}
+                {employeeName ? employeeName.split(' ')[0] : 'Employee'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-1 text-gray-200 hover:text-gray-100"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="font-normal">Sign Out</span>
+            </button>
+          </div>
         </div>
       </div>
     </header>
@@ -714,7 +756,9 @@ export default function ExpenseReportPage() {
 
   if (!report) return null;
 
-  const editableEntryBg = isEditable ? 'bg-rose-50/60 border-rose-200' : 'bg-gray-50 border-gray-200';
+  const editableEntryBg = isEditable
+    ? 'bg-rose-50/60 border-rose-200'
+    : 'bg-gray-50 border-gray-200';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -722,7 +766,7 @@ export default function ExpenseReportPage() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-          {/* dark header */}
+          {/* header */}
           <div className="bg-[#022234] text-white px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 text-xs mb-1">
@@ -768,14 +812,16 @@ export default function ExpenseReportPage() {
 
           {/* body */}
           <div className="px-6 py-6 space-y-6 bg-gray-50">
-            {report.status === 'rejected' && (
+            {(report.status === 'rejected' || hasRejectedLine) && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-2">
                 <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
                 <div className="text-sm text-red-800">
-                  <p className="font-semibold">This expense report was rejected.</p>
+                  <p className="font-semibold">
+                    This expense report has rejected entries.
+                  </p>
                   <p className="mt-1">
-                    Review the entries below, make the required changes, and then
-                    resubmit this report for approval.
+                    Review the entries highlighted in red, make the required
+                    changes, and then resubmit this report for approval.
                   </p>
                 </div>
               </div>
@@ -784,7 +830,9 @@ export default function ExpenseReportPage() {
             {actionErrorMessage && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-2">
                 <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-                <span className="text-red-700 text-sm">{actionErrorMessage}</span>
+                <span className="text-red-700 text-sm">
+                  {actionErrorMessage}
+                </span>
               </div>
             )}
             {actionSuccessMessage && (
@@ -807,7 +855,8 @@ export default function ExpenseReportPage() {
                     className="w-full rounded-md border border-gray-200 bg-gray-50 text-sm px-3 py-2 text-gray-700"
                   />
                   <p className="mt-1 text-[11px] text-gray-500">
-                    This title appears in your Recent Expenses list as a single row.
+                    This title appears in your Recent Expenses list as a single
+                    row.
                   </p>
                 </div>
                 <div>
@@ -884,19 +933,25 @@ export default function ExpenseReportPage() {
                 ) : (
                   <div className="space-y-4">
                     {lines.map((line, idx) => {
-const isMileage = line.category === 'mileage';
-const gsaMealLimit = getGsaMealLimit(line.category);
+                      const isMileage = line.category === 'mileage';
+                      const gsaMealLimit = getGsaMealLimit(line.category);
 
-const milesInput =
-  mileageInputs[line.id] ??
-  (isMileage && line.amount
-    ? (line.amount / GSA_MILEAGE_RATE).toFixed(2)
-    : '');
+                      const milesInput =
+                        mileageInputs[line.id] ??
+                        (isMileage && line.amount
+                          ? (line.amount / GSA_MILEAGE_RATE).toFixed(2)
+                          : '');
+
+                      const isRejectedLine = line.status === 'rejected';
+                      const entryBg = isRejectedLine
+                        ? 'bg-red-50 border-red-300'
+                        : editableEntryBg;
 
                       return (
                         <div
                           key={line.id}
-                          className={`rounded-xl border ${editableEntryBg} px-4 py-4 sm:px-5 sm:py-5`}
+                          id={`expense-line-${line.id}`}
+                          className={`rounded-xl border ${entryBg} px-4 py-4 sm:px-5 sm:py-5`}
                         >
                           {/* entry header */}
                           <div className="flex items-center justify-between gap-3 mb-4">
@@ -909,9 +964,19 @@ const milesInput =
                                   Entry #{idx + 1}
                                 </span>
                                 <span className="text-[11px] text-gray-500">
-                                  Edit details for this expense line, then save or
-                                  resubmit your report.
+                                  Edit details for this expense line, then save
+                                  or resubmit your report.
                                 </span>
+                                {isRejectedLine && (
+                                  <span className="mt-1 inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-800 border border-red-200">
+                                    Fix now – this entry was rejected
+                                  </span>
+                                )}
+                                {isRejectedLine && line.rejection_reason && (
+                                  <span className="mt-1 text-[11px] text-red-700">
+                                    Reason: {line.rejection_reason}
+                                  </span>
+                                )}
                               </div>
                             </div>
                             {isEditable && (
@@ -926,47 +991,49 @@ const milesInput =
                             )}
                           </div>
 
-{/* inline GSA / IRS info – guideline only */}
-{(isMileage || gsaMealLimit !== null) && (
-  <div className="mb-3 flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2">
-    <AlertCircle className="h-3.5 w-3.5 text-amber-700 mt-0.5" />
-    <p className="text-[11px] text-amber-900">
-      {isMileage ? (
-        <>
-          Mileage amounts are based on guideline IRS rates only. Managers may
-          still approve amounts over these guidelines. See{' '}
-          <a
-            href="https://www.irs.gov/tax-professionals/standard-mileage-rates"
-            target="_blank"
-            rel="noreferrer"
-            className="underline font-semibold"
-          >
-            IRS mileage rates
-          </a>
-          .
-        </>
-      ) : gsaMealLimit !== null ? (
-        <>
-          GSA per diem guidelines for{' '}
-          <span className="font-semibold">
-            {getCategoryLabel(line.category)}
-          </span>{' '}
-          are provided for reference only. Managers may still approve amounts
-          over these guidelines. See{' '}
-          <a
-            href="https://www.gsa.gov/travel/plan-book/per-diem-rates"
-            target="_blank"
-            rel="noreferrer"
-            className="underline font-semibold"
-          >
-            GSA per diem rates
-          </a>
-          .
-        </>
-      ) : null}
-    </p>
-  </div>
-)}
+                          {/* inline GSA / IRS info – guideline only */}
+                          {(isMileage || gsaMealLimit !== null) && (
+                            <div className="mb-3 flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2">
+                              <AlertCircle className="h-3.5 w-3.5 text-amber-700 mt-0.5" />
+                              <p className="text-[11px] text-amber-900">
+                                {isMileage ? (
+                                  <>
+                                    Mileage amounts are based on guideline IRS
+                                    rates only. Managers may still approve
+                                    amounts over these guidelines. See{' '}
+                                    <a
+                                      href="https://www.irs.gov/tax-professionals/standard-mileage-rates"
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="underline font-semibold"
+                                    >
+                                      IRS mileage rates
+                                    </a>
+                                    .
+                                  </>
+                                ) : gsaMealLimit !== null ? (
+                                  <>
+                                    GSA per diem guidelines for{' '}
+                                    <span className="font-semibold">
+                                      {getCategoryLabel(line.category)}
+                                    </span>{' '}
+                                    are provided for reference only. Managers
+                                    may still approve amounts over these
+                                    guidelines. See{' '}
+                                    <a
+                                      href="https://www.gsa.gov/travel/plan-book/per-diem-rates"
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="underline font-semibold"
+                                    >
+                                      GSA per diem rates
+                                    </a>
+                                    .
+                                  </>
+                                ) : null}
+                              </p>
+                            </div>
+                          )}
 
                           {/* fields */}
                           <div className="space-y-4">
@@ -980,7 +1047,9 @@ const milesInput =
                                   <input
                                     type="date"
                                     className="w-full rounded-md border border-gray-200 bg-white text-sm px-3 py-2"
-                                    value={getDateInputValue(line.expense_date)}
+                                    value={getDateInputValue(
+                                      line.expense_date
+                                    )}
                                     onChange={(e) =>
                                       handleLineChange(
                                         idx,
@@ -1076,7 +1145,7 @@ const milesInput =
                               </div>
                             </div>
 
-                            {/* row 2: amount / mileage, locations or vendor, receipt */}
+                            {/* row 2: amount / mileage, vendor/trip, receipt */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                               {/* Amount / Mileage */}
                               <div>
@@ -1143,63 +1212,48 @@ const milesInput =
                                       />
                                     </div>
                                   </div>
-) : isEditable ? (
-  <div className="flex items-center">
-    <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-200 bg-gray-50 text-sm text-gray-600">
-      $
-    </span>
-    <input
-      type="text"
-      inputMode="decimal"
-      className="w-full rounded-r-md border border-gray-200 bg-white text-sm px-3 py-2 text-right"
-      value={
-        line.amount !== null && line.amount !== undefined
-          ? line.amount.toString()
-          : ''
-      }
-      onChange={(e) => {
-        const raw = e.target.value;
-        const numeric =
-          raw.trim() === ''
-            ? 0
-            : parseFloat(raw.replace(/,/g, ''));
-        handleLineChange(
-          idx,
-          'amount',
-          Number.isNaN(numeric) ? 0 : numeric
-        );
-      }}
-      placeholder="0.00"
-    />
-    {gsaMealLimit !== null && (
-      <p className="mt-1 text-[11px] text-gray-500">
-        Guideline up to{' '}
-        <span className="font-semibold">
-          {formatCurrency(gsaMealLimit)}
-        </span>{' '}
-        based on GSA per diem (informational only).
-      </p>
-    )}
-  </div>
-) : (
-  <div>
-    <input
-      type="text"
-      disabled
-      value={formatCurrency(line.amount)}
-      className="w-full rounded-md border border-gray-200 bg-gray-50 text-sm px-3 py-2 text-right text-gray-700"
-    />
-    {gsaMealLimit !== null && (
-      <p className="mt-1 text-[11px] text-gray-500">
-        Guideline up to{' '}
-        <span className="font-semibold">
-          {formatCurrency(gsaMealLimit)}
-        </span>{' '}
-        based on GSA per diem (informational only).
-      </p>
-    )}
-  </div>
-)}
+                                ) : isEditable ? (
+                                  <div className="flex items-center">
+                                    <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-200 bg-gray-50 text-sm text-gray-600">
+                                      $
+                                    </span>
+                                    <input
+                                      type="text"
+                                      inputMode="decimal"
+                                      className="w-full rounded-r-md border border-gray-200 bg-white text-sm px-3 py-2 text-right"
+                                      value={
+                                        line.amount !== null &&
+                                        line.amount !== undefined
+                                          ? line.amount.toString()
+                                          : ''
+                                      }
+                                      onChange={(e) => {
+                                        const raw = e.target.value;
+                                        const numeric =
+                                          raw.trim() === ''
+                                            ? 0
+                                            : parseFloat(
+                                                raw.replace(/,/g, '')
+                                              );
+                                        handleLineChange(
+                                          idx,
+                                          'amount',
+                                          Number.isNaN(numeric) ? 0 : numeric
+                                        );
+                                      }}
+                                      placeholder="0.00"
+                                    />
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <input
+                                      type="text"
+                                      disabled
+                                      value={formatCurrency(line.amount)}
+                                      className="w-full rounded-md border border-gray-200 bg-gray-50 text-sm px-3 py-2 text-right text-gray-700"
+                                    />
+                                  </div>
+                                )}
                               </div>
 
                               {/* Vendor / Locations */}
@@ -1238,9 +1292,10 @@ const milesInput =
                                       />
                                       {(line.vendor || line.description) && (
                                         <p className="text-[11px] text-gray-500">
-                                          Stored as “From: {line.vendor || '—'} ·
-                                          To: {line.description || '—'}” for
-                                          manager review.
+                                          Stored as “From:{' '}
+                                          {line.vendor || '—'} · To:{' '}
+                                          {line.description || '—'}” for manager
+                                          review.
                                         </p>
                                       )}
                                     </div>
@@ -1418,7 +1473,7 @@ const milesInput =
                         type="button"
                         onClick={handleResubmit}
                         disabled={isSaving}
-                        className="w-full sm:w-auto px-4 py-2 text-xs font-semibold rounded-md border border-[#e31c79] bg-white text-[#e31c79] hover:bg-[#ffe5f1] disabled:opacity-60"
+                        className="w-full sm:w-auto px-4 py-2 text-xs font-semibold rounded-md border border-[#e31c79] bg.white text-[#e31c79] hover:bg-[#ffe5f1] disabled:opacity-60"
                       >
                         {isSaving ? 'Submitting…' : 'Submit for Approval'}
                       </button>

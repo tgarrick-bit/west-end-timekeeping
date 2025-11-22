@@ -173,21 +173,6 @@ export default function TimesheetModal({
     timesheet.overtime_hours ??
     Math.max(0, totalHours - 40);
 
-  // dollars are only for non-employee views
-  const showAmounts = !isEmployeeView;
-
-  // Amount calculation (only used when showAmounts = true)
-  const hourlyRate = 75;
-  const regularAmount = totalRegular * hourlyRate;
-  const overtimeAmount = totalOvertime * hourlyRate * 1.5;
-
-  const hasValidStoredTotal =
-    typeof timesheet.total_amount === 'number' && timesheet.total_amount > 0;
-
-  const estimatedTotal = hasValidStoredTotal
-    ? timesheet.total_amount!
-    : regularAmount + overtimeAmount;
-
   const isValid = (d: Date) => !isNaN(d.getTime());
   const ymd = (d: Date) => (isValid(d) ? format(d, 'yyyy-MM-dd') : '');
 
@@ -295,7 +280,7 @@ export default function TimesheetModal({
           )}
         </div>
 
-        {/* Summary Cards (hours only) */}
+        {/* Summary Cards */}
         <div className="p-6 bg-gray-50">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white p-4 rounded-lg border">
@@ -365,11 +350,6 @@ export default function TimesheetModal({
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       TOTAL
                     </th>
-                    {showAmounts && (
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        AMOUNT
-                      </th>
-                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -390,12 +370,6 @@ export default function TimesheetModal({
                       0,
                       entryHours - regularHours
                     );
-
-                    const entryRegularAmount = regularHours * hourlyRate;
-                    const entryOvertimeAmount =
-                      overtimeHours * hourlyRate * 1.5;
-                    const totalAmount =
-                      entryRegularAmount + entryOvertimeAmount;
 
                     const curr = entry?.date
                       ? new Date(entry.date)
@@ -442,11 +416,6 @@ export default function TimesheetModal({
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-gray-900">
                           {entryHours.toFixed(1)}
                         </td>
-                        {showAmounts && (
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-green-600">
-                            ${totalAmount.toFixed(2)}
-                          </td>
-                        )}
                       </tr>
                     );
                   })}
@@ -468,11 +437,6 @@ export default function TimesheetModal({
                     <td className="px-4 py-3 text-right font-semibold text-gray-900">
                       {calculatedTotalHours.toFixed(1)}
                     </td>
-                    {showAmounts && (
-                      <td className="px-4 py-3 text-right font-semibold text-green-600">
-                        ${estimatedTotal.toFixed(2)}
-                      </td>
-                    )}
                   </tr>
                 </tbody>
               </table>
@@ -492,7 +456,7 @@ export default function TimesheetModal({
                   disabled={processing}
                   className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 w-4" />
                   Reject
                 </button>
                 <button

@@ -225,18 +225,63 @@ export default function EmployeeDashboard() {
       }
 
       // Expense reports (for recent list + editing)
-      const { data: reportsData, error: reportsError } = await supabase
-        .from('expense_reports')
-        .select('*')
-        .eq('employee_id', userId)
-        .order('created_at', { ascending: false });
+// Expense reports (for recent list + editing)
+// Also pull in line statuses so we can derive an overall report status
+const { data: reportsData, error: reportsError } = await supabase
+  .from('expense_reports')
+  .select(`
+    id,
+    employee_id,
+    title,
+    period_month,
+    status,
+    total_amount,
+    submitted_at,
+    created_at,
+    expenses (
+      status
+    )
+  `)
+  .eq('employee_id', userId)
+  .order('created_at', { ascending: false });
 
-      if (reportsError) {
-        console.error('Error fetching expense reports:', reportsError);
-        setExpenseReports([]);
-      } else {
-        setExpenseReports((reportsData || []) as ExpenseReport[]);
-      }
+if (reportsError) {
+  console.error('Error fetching expense reports:', reportsError);
+  setExpenseReports([]);
+} else {
+  const mappedReports: ExpenseReport[] = (reportsData || []).map((r: any) => {
+    const lineStatuses: string[] = (r.expenses || []).map((e: any) => e.status);
+
+    // Start from whatever is stored on the report
+    let derivedStatus: ExpenseReport['status'] = r.status;
+
+    // If any line is rejected → report is rejected
+    if (lineStatuses.includes('rejected')) {
+      derivedStatus = 'rejected';
+    }
+    // Else if any line is submitted → report is submitted
+    else if (lineStatuses.includes('submitted')) {
+      derivedStatus = 'submitted';
+    }
+    // Else if we have lines and all are approved → report is approved
+    else if (lineStatuses.length > 0 && lineStatuses.every((s) => s === 'approved')) {
+      derivedStatus = 'approved';
+    }
+
+    return {
+      id: r.id,
+      employee_id: r.employee_id,
+      title: r.title,
+      period_month: r.period_month,
+      status: derivedStatus,
+      total_amount: r.total_amount,
+      submitted_at: r.submitted_at,
+      created_at: r.created_at,
+    } as ExpenseReport;
+  });
+
+  setExpenseReports(mappedReports);
+}
     } catch (error) {
       console.error('Dashboard error:', error);
     } finally {
@@ -723,40 +768,40 @@ export default function EmployeeDashboard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {expenseReports.map((report) => (
-                    <div
-                      key={report.id}
-                      className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => router.push(`/expenses/${report.id}`)}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium text-[#05202E]">
-                            {report.title || 'Expense Report'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {formatCurrencyLocal(report.total_amount)} •{' '}
-                            {report.period_month
-                              ? formatDate(report.period_month)
-                              : formatDate(report.created_at)}
-                          </p>
-                          {report.status === 'rejected' && (
-                            <p className="mt-1 text-xs text-red-600">
-                              Rejected – open to review details and resubmit.
-                            </p>
-                          )}
-                        </div>
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                            report.status
-                          )}`}
-                        >
-                          {report.status.charAt(0).toUpperCase() +
-                            report.status.slice(1)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+{expenseReports.map((report) => (
+  <div
+    key={report.id}
+    className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+    onClick={() => router.push(`/expense/${report.id}`)}
+  >
+    <div className="flex justify-between items-start">
+      <div>
+        <p className="font-medium text-[#05202E]">
+          {report.title || 'Expense Report'}
+        </p>
+        <p className="text-sm text-gray-500">
+          {formatCurrencyLocal(report.total_amount)} •{' '}
+          {report.period_month
+            ? formatDate(report.period_month)
+            : formatDate(report.created_at)}
+        </p>
+        {report.status === 'rejected' && (
+          <p className="mt-1 text-xs text-red-600">
+            Rejected – open to review details and resubmit.
+          </p>
+        )}
+      </div>
+      <span
+        className={`px-2 py-1 text-xs font.medium rounded-full ${getStatusColor(
+          report.status
+        )}`}
+      >
+        {report.status.charAt(0).toUpperCase() +
+          report.status.slice(1)}
+      </span>
+    </div>
+  </div>
+))}
                 </div>
               )}
             </div>

@@ -6,25 +6,21 @@ import { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import ExpenseModal from '@/components/ExpenseModal';
-import { 
+import {
   Receipt,
   ChevronLeft,
   ChevronDown,
   ChevronRight,
-  Calendar,
   Check,
-  X,
   AlertCircle,
   Building2,
   DollarSign,
   Download,
-  Filter,
   Eye,
   MapPin,
   CreditCard,
   Briefcase,
   Building,
-  Image as ImageIcon
 } from 'lucide-react';
 
 interface Expense {
@@ -106,16 +102,19 @@ export default function AdminExpenses() {
   const [clientGroups, setClientGroups] = useState<ClientGroup[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [loading, setLoading] = useState(true);
-  const [selectedExpense, setSelectedExpense] = useState<ExpenseDetail | null>(null);
+  const [selectedExpense, setSelectedExpense] = useState<ExpenseDetail | null>(
+    null
+  );
   const [processing, setProcessing] = useState(false);
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  
+
   const supabase = createClientComponentClient();
   const router = useRouter();
 
   useEffect(() => {
     fetchExpenses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMonth, filterStatus, categoryFilter]);
 
   const getMonthDateRange = (date: Date) => {
@@ -130,7 +129,7 @@ export default function AdminExpenses() {
     try {
       setLoading(true);
       const { startDate, endDate } = getMonthDateRange(selectedMonth);
-      
+
       // Fetch all clients
       const { data: clients } = await supabase
         .from('clients')
@@ -141,20 +140,23 @@ export default function AdminExpenses() {
       // Fetch all employees with their client assignments
       const { data: employees } = await supabase
         .from('employees')
-        .select(`
+        .select(
+          `
           id,
           first_name,
           last_name,
           email,
           department,
           client_id
-        `)
+        `
+        )
         .eq('is_active', true);
 
       // Build expense query
       let expenseQuery = supabase
         .from('expenses')
-        .select(`
+        .select(
+          `
           *,
           employee:employees!employee_id (
             first_name,
@@ -168,14 +170,18 @@ export default function AdminExpenses() {
             name,
             code
           )
-        `)
+        `
+        )
         .gte('expense_date', startDate.toISOString().split('T')[0])
         .lte('expense_date', endDate.toISOString().split('T')[0])
         .order('expense_date', { ascending: false });
 
       // Apply status filter
       if (filterStatus !== 'all') {
-        expenseQuery = expenseQuery.eq('status', filterStatus === 'pending' ? 'submitted' : 'approved');
+        expenseQuery = expenseQuery.eq(
+          'status',
+          filterStatus === 'pending' ? 'submitted' : 'approved'
+        );
       }
 
       // Apply category filter
@@ -187,9 +193,10 @@ export default function AdminExpenses() {
 
       // Group by client
       const groups: ClientGroup[] = [];
-      
+
       for (const client of clients || []) {
-        const clientEmployees = employees?.filter(emp => emp.client_id === client.id) || [];
+        const clientEmployees =
+          employees?.filter((emp) => emp.client_id === client.id) || [];
         const employeeExpenses: EmployeeExpenses[] = [];
         let totalPending = 0;
         let totalApproved = 0;
@@ -197,27 +204,38 @@ export default function AdminExpenses() {
         let pendingAmount = 0;
 
         for (const employee of clientEmployees) {
-          const empExpenses = expenses?.filter(exp => exp.employee_id === employee.id) || [];
-          const empTotalAmount = empExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
-          const empPendingCount = empExpenses.filter(exp => exp.status === 'submitted').length;
+          const empExpenses =
+            expenses?.filter((exp) => exp.employee_id === employee.id) || [];
+          const empTotalAmount = empExpenses.reduce(
+            (sum, exp) => sum + (exp.amount || 0),
+            0
+          );
+          const empPendingCount = empExpenses.filter(
+            (exp) => exp.status === 'submitted'
+          ).length;
           const empPendingAmount = empExpenses
-            .filter(exp => exp.status === 'submitted')
+            .filter((exp) => exp.status === 'submitted')
             .reduce((sum, exp) => sum + (exp.amount || 0), 0);
 
           if (empExpenses.length > 0) {
             totalPending += empPendingCount;
-            totalApproved += empExpenses.filter(exp => exp.status === 'approved').length;
+            totalApproved += empExpenses.filter(
+              (exp) => exp.status === 'approved'
+            ).length;
             totalAmount += empTotalAmount;
             pendingAmount += empPendingAmount;
 
             employeeExpenses.push({
               employee_id: employee.id,
-              employee_name: `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || 'Unknown',
+              employee_name:
+                `${employee.first_name || ''} ${
+                  employee.last_name || ''
+                }`.trim() || 'Unknown',
               employee_email: employee.email,
               department: employee.department,
               expenses: empExpenses,
               totalAmount: empTotalAmount,
-              pendingCount: empPendingCount
+              pendingCount: empPendingCount,
             });
           }
         }
@@ -231,13 +249,14 @@ export default function AdminExpenses() {
             totalApproved,
             totalAmount,
             pendingAmount,
-            expanded: false
+            expanded: false,
           });
         }
       }
 
       // Add unassigned employees
-      const unassignedEmployees = employees?.filter(emp => !emp.client_id) || [];
+      const unassignedEmployees =
+        employees?.filter((emp) => !emp.client_id) || [];
       if (unassignedEmployees.length > 0) {
         const employeeExpenses: EmployeeExpenses[] = [];
         let totalPending = 0;
@@ -246,27 +265,38 @@ export default function AdminExpenses() {
         let pendingAmount = 0;
 
         for (const employee of unassignedEmployees) {
-          const empExpenses = expenses?.filter(exp => exp.employee_id === employee.id) || [];
-          const empTotalAmount = empExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
-          const empPendingCount = empExpenses.filter(exp => exp.status === 'submitted').length;
+          const empExpenses =
+            expenses?.filter((exp) => exp.employee_id === employee.id) || [];
+          const empTotalAmount = empExpenses.reduce(
+            (sum, exp) => sum + (exp.amount || 0),
+            0
+          );
+          const empPendingCount = empExpenses.filter(
+            (exp) => exp.status === 'submitted'
+          ).length;
           const empPendingAmount = empExpenses
-            .filter(exp => exp.status === 'submitted')
+            .filter((exp) => exp.status === 'submitted')
             .reduce((sum, exp) => sum + (exp.amount || 0), 0);
 
           if (empExpenses.length > 0) {
             totalPending += empPendingCount;
-            totalApproved += empExpenses.filter(exp => exp.status === 'approved').length;
+            totalApproved += empExpenses.filter(
+              (exp) => exp.status === 'approved'
+            ).length;
             totalAmount += empTotalAmount;
             pendingAmount += empPendingAmount;
 
             employeeExpenses.push({
               employee_id: employee.id,
-              employee_name: `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || 'Unknown',
+              employee_name:
+                `${employee.first_name || ''} ${
+                  employee.last_name || ''
+                }`.trim() || 'Unknown',
               employee_email: employee.email,
               department: employee.department,
               expenses: empExpenses,
               totalAmount: empTotalAmount,
-              pendingCount: empPendingCount
+              pendingCount: empPendingCount,
             });
           }
         }
@@ -280,7 +310,7 @@ export default function AdminExpenses() {
             totalApproved,
             totalAmount,
             pendingAmount,
-            expanded: false
+            expanded: false,
           });
         }
       }
@@ -294,55 +324,86 @@ export default function AdminExpenses() {
   };
 
   const toggleClientExpanded = (clientId: string) => {
-    setClientGroups(groups => 
-      groups.map(group => 
-        group.client_id === clientId 
+    setClientGroups((groups) =>
+      groups.map((group) =>
+        group.client_id === clientId
           ? { ...group, expanded: !group.expanded }
           : group
       )
     );
   };
 
+  // APPROVE via /api/expenses/[id]/status so emails fire
   const handleApproveExpense = async () => {
     if (!selectedExpense) return;
     setProcessing(true);
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      await supabase
-        .from('expenses')
-        .update({ 
-          status: 'approved',
-          approved_at: new Date().toISOString(),
-          approved_by: user?.id
-        })
-        .eq('id', selectedExpense.id);
-      
-      fetchExpenses();
+      const res = await fetch(`/api/expenses/${selectedExpense.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'approve' }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error('Error approving expense:', body);
+        alert(body.error || 'Failed to approve expense.');
+        return;
+      }
+
+      await fetchExpenses();
       setSelectedExpense(null);
     } catch (error) {
       console.error('Error approving expense:', error);
+      alert('Network error approving expense.');
     } finally {
       setProcessing(false);
     }
   };
 
+  // REJECT via /api/expenses/[id]/status with rejectionReason
   const handleRejectExpense = async () => {
     if (!selectedExpense) return;
+
+    const label =
+      selectedExpense.description ||
+      selectedExpense.category ||
+      selectedExpense.expense_date;
+
+    const reason = window.prompt(
+      `Enter a reason for rejecting "${label || 'this expense report'}":`
+    );
+
+    if (!reason || !reason.trim()) {
+      alert('A rejection reason is required.');
+      return;
+    }
+
     setProcessing(true);
+
     try {
-      await supabase
-        .from('expenses')
-        .update({ 
-          status: 'rejected',
-          comments: 'Please review and resubmit with proper documentation'
-        })
-        .eq('id', selectedExpense.id);
-      
-      fetchExpenses();
+      const res = await fetch(`/api/expenses/${selectedExpense.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'reject',
+          rejectionReason: reason.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error('Error rejecting expense report:', body);
+        alert(body.error || 'Failed to reject expense report.');
+        return;
+      }
+
+      await fetchExpenses();
       setSelectedExpense(null);
-    } catch (error) {
-      console.error('Error rejecting expense:', error);
+    } catch (err) {
+      console.error('Error rejecting expense report:', err);
+      alert('Network error rejecting expense report.');
     } finally {
       setProcessing(false);
     }
@@ -368,9 +429,9 @@ export default function AdminExpenses() {
       project_name: expense.project?.name,
       vendor: expense.vendor,
       payment_method: expense.payment_method,
-      notes: expense.comments
+      notes: expense.comments,
     };
-    
+
     setSelectedExpense(expenseDetail);
   };
 
@@ -378,22 +439,24 @@ export default function AdminExpenses() {
     if (!confirm('Approve all pending expenses for this client?')) return;
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const client = clientGroups.find(g => g.client_id === clientId);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const client = clientGroups.find((g) => g.client_id === clientId);
       if (!client) return;
 
       const pendingExpenses = client.expenses
-        .flatMap(emp => emp.expenses)
-        .filter(exp => exp.status === 'submitted');
+        .flatMap((emp) => emp.expenses)
+        .filter((exp) => exp.status === 'submitted');
 
       await Promise.all(
-        pendingExpenses.map(exp =>
+        pendingExpenses.map((exp) =>
           supabase
             .from('expenses')
-            .update({ 
+            .update({
               status: 'approved',
               approved_at: new Date().toISOString(),
-              approved_by: user?.id
+              approved_by: user?.id,
             })
             .eq('id', exp.id)
         )
@@ -406,12 +469,21 @@ export default function AdminExpenses() {
   };
 
   const exportToCSV = () => {
-    const headers = ['Client', 'Employee', 'Department', 'Date', 'Category', 'Amount', 'Status', 'Description'];
+    const headers = [
+      'Client',
+      'Employee',
+      'Department',
+      'Date',
+      'Category',
+      'Amount',
+      'Status',
+      'Description',
+    ];
     const rows: string[][] = [];
 
-    clientGroups.forEach(group => {
-      group.expenses.forEach(emp => {
-        emp.expenses.forEach(exp => {
+    clientGroups.forEach((group) => {
+      group.expenses.forEach((emp) => {
+        emp.expenses.forEach((exp) => {
           rows.push([
             group.client_name,
             emp.employee_name,
@@ -420,7 +492,7 @@ export default function AdminExpenses() {
             exp.category,
             exp.amount.toString(),
             exp.status,
-            exp.description || ''
+            exp.description || '',
           ]);
         });
       });
@@ -428,7 +500,7 @@ export default function AdminExpenses() {
 
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -441,21 +513,23 @@ export default function AdminExpenses() {
 
   const changeMonth = (direction: 'prev' | 'next') => {
     const newDate = new Date(selectedMonth);
-    newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
+    newDate.setMonth(
+      newDate.getMonth() + (direction === 'next' ? 1 : -1)
+    );
     setSelectedMonth(newDate);
   };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'USD',
     }).format(amount);
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
@@ -465,7 +539,7 @@ export default function AdminExpenses() {
       meals: CreditCard,
       supplies: Briefcase,
       equipment: Building,
-      other: Receipt
+      other: Receipt,
     };
     const Icon = icons[category.toLowerCase()] || Receipt;
     return <Icon className="h-4 w-4" />;
@@ -473,33 +547,53 @@ export default function AdminExpenses() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'submitted': return 'bg-yellow-100 text-yellow-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'submitted':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   // Get unique categories from all expenses
-  const categories = Array.from(new Set(
-    clientGroups.flatMap(g => g.expenses.flatMap(e => e.expenses.map(exp => exp.category)))
-  ));
+  const categories = Array.from(
+    new Set(
+      clientGroups.flatMap((g) =>
+        g.expenses.flatMap((e) => e.expenses.map((exp) => exp.category))
+      )
+    )
+  );
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e31c79] mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e31c79] mx-auto" />
           <p className="mt-4 text-gray-600">Loading expenses...</p>
         </div>
       </div>
     );
   }
 
-  const totalPendingCount = clientGroups.reduce((sum, g) => sum + g.totalPending, 0);
-  const totalPendingAmount = clientGroups.reduce((sum, g) => sum + g.pendingAmount, 0);
-  const totalApprovedCount = clientGroups.reduce((sum, g) => sum + g.totalApproved, 0);
-  const totalAmount = clientGroups.reduce((sum, g) => sum + g.totalAmount, 0);
+  const totalPendingCount = clientGroups.reduce(
+    (sum, g) => sum + g.totalPending,
+    0
+  );
+  const totalPendingAmount = clientGroups.reduce(
+    (sum, g) => sum + g.pendingAmount,
+    0
+  );
+  const totalApprovedCount = clientGroups.reduce(
+    (sum, g) => sum + g.totalApproved,
+    0
+  );
+  const totalAmount = clientGroups.reduce(
+    (sum, g) => sum + g.totalAmount,
+    0
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -516,10 +610,12 @@ export default function AdminExpenses() {
               </button>
               <div>
                 <h1 className="text-2xl font-bold">Expense Overview</h1>
-                <p className="text-sm text-gray-300">Review all expense reports across clients</p>
+                <p className="text-sm text-gray-300">
+                  Review all expense reports across clients
+                </p>
               </div>
             </div>
-            <button 
+            <button
               onClick={async () => {
                 await supabase.auth.signOut();
                 router.push('/auth/login');
@@ -547,7 +643,10 @@ export default function AdminExpenses() {
               <div className="text-center">
                 <p className="text-sm text-gray-600">Month</p>
                 <p className="font-semibold">
-                  {selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  {selectedMonth.toLocaleDateString('en-US', {
+                    month: 'long',
+                    year: 'numeric',
+                  })}
                 </p>
               </div>
               <button
@@ -561,7 +660,9 @@ export default function AdminExpenses() {
             <div className="flex items-center gap-4">
               <select
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as any)}
+                onChange={(e) =>
+                  setFilterStatus(e.target.value as 'all' | 'pending' | 'approved')
+                }
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e31c79] focus:border-transparent"
               >
                 <option value="all">All Expenses</option>
@@ -574,8 +675,10 @@ export default function AdminExpenses() {
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e31c79] focus:border-transparent"
               >
                 <option value="all">All Categories</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </option>
                 ))}
               </select>
               <button
@@ -606,8 +709,12 @@ export default function AdminExpenses() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Pending Approval</p>
-                <p className="text-2xl font-bold text-yellow-600">{totalPendingCount}</p>
-                <p className="text-xs text-gray-500">{formatCurrency(totalPendingAmount)}</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {totalPendingCount}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {formatCurrency(totalPendingAmount)}
+                </p>
               </div>
               <AlertCircle className="h-8 w-8 text-yellow-500" />
             </div>
@@ -616,7 +723,9 @@ export default function AdminExpenses() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Approved</p>
-                <p className="text-2xl font-bold text-green-600">{totalApprovedCount}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {totalApprovedCount}
+                </p>
               </div>
               <Check className="h-8 w-8 text-green-500" />
             </div>
@@ -625,7 +734,9 @@ export default function AdminExpenses() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Clients</p>
-                <p className="text-2xl font-bold text-gray-900">{clientGroups.length}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {clientGroups.length}
+                </p>
               </div>
               <Building2 className="h-8 w-8 text-gray-400" />
             </div>
@@ -640,13 +751,16 @@ export default function AdminExpenses() {
             </div>
           ) : (
             clientGroups.map((group) => (
-              <div 
-                key={group.client_id} 
+              <div
+                key={group.client_id}
                 className="bg-white rounded-lg shadow-sm overflow-hidden border"
-                style={{ borderColor: group.totalPending > 0 ? '#facc15' : '#e5e7eb' }}
+                style={{
+                  borderColor:
+                    group.totalPending > 0 ? '#facc15' : '#e5e7eb',
+                }}
               >
                 {/* Client Header */}
-                <div 
+                <div
                   className="p-4 cursor-pointer hover:bg-gray-50"
                   onClick={() => toggleClientExpanded(group.client_id)}
                 >
@@ -671,7 +785,8 @@ export default function AdminExpenses() {
                       {group.totalPending > 0 && (
                         <>
                           <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded">
-                            {group.totalPending} pending ({formatCurrency(group.pendingAmount)})
+                            {group.totalPending} pending (
+                            {formatCurrency(group.pendingAmount)})
                           </span>
                           <button
                             onClick={(e) => {
@@ -722,7 +837,9 @@ export default function AdminExpenses() {
                                 <p className="text-sm font-medium text-gray-900">
                                   {employee.employee_name}
                                 </p>
-                                <p className="text-xs text-gray-500">{employee.employee_email}</p>
+                                <p className="text-xs text-gray-500">
+                                  {employee.employee_email}
+                                </p>
                               </div>
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900">
@@ -731,12 +848,20 @@ export default function AdminExpenses() {
                             <td className="px-6 py-4">
                               <div className="space-y-1">
                                 {employee.expenses.slice(0, 3).map((exp) => (
-                                  <div key={exp.id} className="flex items-center gap-2">
+                                  <div
+                                    key={exp.id}
+                                    className="flex items-center gap-2"
+                                  >
                                     {getCategoryIcon(exp.category)}
                                     <span className="text-xs text-gray-600">
-                                      {formatDate(exp.expense_date)} - {formatCurrency(exp.amount)}
+                                      {formatDate(exp.expense_date)} -{' '}
+                                      {formatCurrency(exp.amount)}
                                     </span>
-                                    <span className={`px-1.5 py-0.5 text-xs font-semibold rounded ${getStatusColor(exp.status)}`}>
+                                    <span
+                                      className={`px-1.5 py-0.5 text-xs font-semibold rounded ${getStatusColor(
+                                        exp.status
+                                      )}`}
+                                    >
                                       {exp.status}
                                     </span>
                                     <button
@@ -769,9 +894,11 @@ export default function AdminExpenses() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // Open first expense for simplicity
                                   if (employee.expenses.length > 0) {
-                                    openExpenseDetail(employee.expenses[0], employee);
+                                    openExpenseDetail(
+                                      employee.expenses[0],
+                                      employee
+                                    );
                                   }
                                 }}
                                 className="text-sm text-blue-600 hover:text-blue-800"

@@ -145,18 +145,24 @@ export default function ExpenseEntryPage() {
   };
 
   const loadProjects = async () => {
+    // Try to load active projects first
     const { data, error } = await supabase
       .from('projects')
       .select('id, name, is_active')
-      .eq('is_active', true)
       .order('name');
-
+  
     if (error) {
       console.error('Error loading projects:', error);
-    } else {
-      setProjects(data || []);
+      setProjects([]);
+      return;
     }
-  };
+  
+    const all = data || [];
+    // Prefer active, but fall back to all if none are flagged active
+    const active = all.filter((p) => p.is_active === true);
+  
+    setProjects(active.length > 0 ? active : all);
+  };  
 
   const updateEntry = (
     entryId: string,
