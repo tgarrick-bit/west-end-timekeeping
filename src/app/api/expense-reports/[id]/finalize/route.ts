@@ -6,10 +6,10 @@ type LineStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }   // ✅ Next.js 15 required type
 ) {
+  const { id: reportId } = await params;           // ✅ Must await params
   const supabase = createRouteHandlerClient({ cookies });
-  const reportId = params.id;
 
   try {
     if (!reportId) {
@@ -26,6 +26,7 @@ export async function POST(
     const {
       data: { user },
     } = await supabase.auth.getUser();
+
     if (!user) {
       return NextResponse.json(
         { error: 'Not authenticated.' },
@@ -33,7 +34,7 @@ export async function POST(
       );
     }
 
-    // Load line statuses
+    // Load statuses for all lines in this report
     const { data: lines, error: lineError } = await supabase
       .from('expenses')
       .select('status')
@@ -48,6 +49,7 @@ export async function POST(
     }
 
     const statuses = lines.map((l) => l.status as LineStatus);
+
     const hasSubmitted = statuses.some((s) => s === 'submitted');
     const hasRejected = statuses.some((s) => s === 'rejected');
     const hasDraft = statuses.some((s) => s === 'draft');
@@ -62,6 +64,9 @@ export async function POST(
       );
     }
 
+    // -------------------------
+    // FINAL APPROVAL LOGIC
+    // -------------------------
     if (action === 'approve') {
       const { error: reportError } = await supabase
         .from('expense_reports')
@@ -80,10 +85,13 @@ export async function POST(
         );
       }
 
-      // TODO: send "Approved" email here
+      // TODO: send final approval email
       return NextResponse.json({ success: true, status: 'approved' });
     }
 
+    // -------------------------
+    // FINAL REJECTION LOGIC
+    // -------------------------
     if (action === 'reject') {
       const { error: rejectError } = await supabase
         .from('expense_reports')
@@ -102,7 +110,7 @@ export async function POST(
         );
       }
 
-      // TODO: send "Rejected" email here
+      // TODO: send final rejection email
       return NextResponse.json({ success: true, status: 'rejected' });
     }
 
