@@ -1,3 +1,5 @@
+// src/app/api/expenses/[id]/status/route.ts
+
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
@@ -6,10 +8,9 @@ type LineStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // ✅ Next.js 15 pattern
 ) {
-  const lineId = params.id;
-  // 👇 pass the cookies *function*, not cookies()
+  const { id: lineId } = await params;
   const supabase = createRouteHandlerClient({ cookies });
 
   try {
@@ -119,7 +120,7 @@ export async function PATCH(
       .from('expense_reports')
       .update({
         status: reportStatus,
-        // FINAL approval/rejection timestamps are set in your finalize API, not here
+        // FINAL approval timestamps are set in your finalize API, not here
       })
       .eq('id', reportId);
 
