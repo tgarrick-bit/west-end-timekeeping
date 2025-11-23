@@ -191,11 +191,6 @@ export default function ExpenseReportPage() {
 
   const reportId = params?.id as string | undefined;
 
-  useEffect(() => {
-    loadReport();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const loadReport = async () => {
     try {
       setIsLoading(true);
@@ -268,19 +263,25 @@ export default function ExpenseReportPage() {
 
       const baseLines = (lineData || []) as ExpenseLine[];
 
-      // derive overall report status from line statuses
+      // Derive overall report status from line statuses (canonical rules)
       const lineStatuses = baseLines.map((l) => l.status);
       let derivedStatus = reportData.status as ExpenseReport['status'];
 
-      if (lineStatuses.includes('rejected')) {
-        derivedStatus = 'rejected';
-      } else if (lineStatuses.includes('submitted')) {
-        derivedStatus = 'submitted';
-      } else if (
-        lineStatuses.length > 0 &&
-        lineStatuses.every((s) => s === 'approved')
-      ) {
-        derivedStatus = 'approved';
+      if (lineStatuses.length > 0) {
+        const allDraft = lineStatuses.every((s) => s === 'draft');
+        const allApproved = lineStatuses.every((s) => s === 'approved');
+        const hasSubmitted = lineStatuses.some((s) => s === 'submitted');
+        const hasRejected = lineStatuses.some((s) => s === 'rejected');
+
+        if (allDraft) {
+          derivedStatus = 'draft';
+        } else if (allApproved) {
+          derivedStatus = 'approved';
+        } else if (hasSubmitted) {
+          derivedStatus = 'submitted';
+        } else if (hasRejected) {
+          derivedStatus = 'rejected';
+        }
       }
 
       setReport({
@@ -288,63 +289,92 @@ export default function ExpenseReportPage() {
         status: derivedStatus,
       });
 
-      // 3) Load only the projects actually used in this report
-      const projectIds = [
-        ...new Set(
-          baseLines
-            .map((l) => l.project_id)
-            .filter((id): id is string => !!id)
-        ),
-      ];
+      // 3) Load ALL active projects (not just ones used in this report),
+      //    but fall back to just the projects referenced on this report
+      //    if the active-project query returns nothing.
+      let projectList: ProjectOption[] = [];
 
-      if (projectIds.length > 0) {
-        const {
-          data: projectsData,
-          error: projectsError,
-        } = await supabase
-          .from('projects')
-          .select('id, name, code, client_name')
-          .in('id', projectIds)
-          .order('name', { ascending: true });
+      // First try: all active projects
+      const {
+        data: activeProjects,
+        error: activeProjectsError,
+      } = await supabase
+        .from('projects')
+        .select('id, name, code, client_name')
+        .eq('is_active', true)
+        .order('name', { ascending: true });
 
-        if (projectsError) {
-          console.error('Error loading projects for expenses:', projectsError);
-          setProjects([]);
-          setLines(baseLines);
-        } else {
-          const projectList = (projectsData || []) as ProjectOption[];
-          setProjects(projectList);
-
-          const merged = baseLines.map((line) => {
-            const proj = projectList.find((p) => p.id === line.project_id);
-            return {
-              ...line,
-              project_name: proj?.name || null,
-              project_code: proj?.code || null,
-              client_name: proj?.client_name || null,
-            };
-          });
-
-          setLines(merged);
-        }
+      if (!activeProjectsError && activeProjects && activeProjects.length > 0) {
+        projectList = activeProjects as ProjectOption[];
       } else {
-        setProjects([]);
-        setLines(baseLines);
+        console.error(
+          'Active projects query returned no rows or errored, falling back to projects used on this report:',
+          activeProjectsError
+        );
+
+        // Fallback: only projects actually used on this report
+        const projectIds = [
+          ...new Set(
+            baseLines
+              .map((l) => l.project_id)
+              .filter((id): id is string => !!id)
+          ),
+        ];
+
+        if (projectIds.length > 0) {
+          const {
+            data: usedProjects,
+            error: usedProjectsError,
+          } = await supabase
+            .from('projects')
+            .select('id, name, code, client_name')
+            .in('id', projectIds)
+            .order('name', { ascending: true });
+
+          if (usedProjectsError) {
+            console.error(
+              'Error loading fallback projects for expenses:',
+              usedProjectsError
+            );
+          } else if (usedProjects) {
+            projectList = usedProjects as ProjectOption[];
+          }
+        }
       }
+
+      setProjects(projectList);
+
+      const merged = baseLines.map((line) => {
+        const proj = projectList.find((p) => p.id === line.project_id);
+        return {
+          ...line,
+          project_name: proj?.name || null,
+          project_code: proj?.code || null,
+          client_name: proj?.client_name || null,
+        };
+      });
+
+      setLines(merged);
     } catch (err) {
-      console.error('Unexpected error loading expense report:', err);
+      console.error('Unexpected error in loadReport:', err);
       setLoadErrorMessage('Something went wrong loading this expense report.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    loadReport();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const hasRejectedLine = lines.some((l) => l.status === 'rejected');
 
-  const isEditable =
-    report?.status === 'draft' ||
-    report?.status === 'rejected' ||
-    hasRejectedLine;
+  // Page is editable if report is still draft OR there is at least one draft/rejected line
+  const hasDraftOrRejectedLine = lines.some(
+    (l) => l.status === 'draft' || l.status === 'rejected'
+  );
+  const isEditable = report?.status === 'draft' || hasDraftOrRejectedLine;
 
   const computedTotal = lines.reduce((sum, line) => {
     const value = Number.isFinite(line.amount) ? line.amount : 0;
@@ -460,10 +490,11 @@ export default function ExpenseReportPage() {
 
   const saveReportAndLines = async (mode: 'draft' | 'submitted') => {
     if (!report) return;
-
+  
     setActionErrorMessage('');
     setActionSuccessMessage('');
-
+  
+    // For submit, validate required fields
     if (mode === 'submitted') {
       if (lines.length === 0) {
         setActionErrorMessage(
@@ -471,7 +502,7 @@ export default function ExpenseReportPage() {
         );
         return;
       }
-
+  
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         if (
@@ -488,52 +519,70 @@ export default function ExpenseReportPage() {
         }
       }
     }
-
+  
     try {
       setIsSaving(true);
-
-      const newTotal = lines.reduce((sum, line) => {
+  
+      // Determine per-line status changes
+      const updatedLines: ExpenseLine[] = lines.map((line) => {
+        let newStatus = line.status;
+  
+        if (mode === 'submitted') {
+          // Only move draft/rejected lines to submitted
+          if (line.status === 'draft' || line.status === 'rejected') {
+            newStatus = 'submitted';
+          }
+        }
+        // mode === 'draft' → do not change status
+  
+        return {
+          ...line,
+          status: newStatus,
+        };
+      });
+  
+      const newTotal = updatedLines.reduce((sum, line) => {
         const value = Number.isFinite(line.amount) ? line.amount : 0;
         return sum + (value || 0);
       }, 0);
+  
+      // Update report: Save as Draft should NEVER change status
+// Update report: Save as Draft should NEVER change status
+const reportUpdate: Partial<ExpenseReport> = {
+  total_amount: newTotal,
+};
 
-      const newStatus: ExpenseReport['status'] =
-        mode === 'submitted' ? 'submitted' : 'draft';
-
-      const submittedAt =
-        mode === 'submitted' ? new Date().toISOString() : null;
-
+if (mode === 'submitted') {
+  reportUpdate.status = 'submitted';
+  reportUpdate.submitted_at = new Date().toISOString();
+  // no approved_at / rejected_at columns in this table yet
+}    
+  
       const { error: reportError } = await supabase
         .from('expense_reports')
-        .update({
-          total_amount: newTotal,
-          status: newStatus,
-          submitted_at: submittedAt,
-        })
+        .update(reportUpdate)
         .eq('id', report.id);
-
+  
       if (reportError) {
         console.error('Error updating expense report:', reportError);
         throw reportError;
       }
-
-      const lineStatus: ExpenseLine['status'] =
-        mode === 'submitted' ? 'submitted' : 'draft';
-
+  
+      // Handle deletions
       if (linesToDelete.length > 0) {
         const { error: deleteError } = await supabase
           .from('expenses')
           .delete()
           .in('id', linesToDelete);
-
+  
         if (deleteError) {
           console.error('Error deleting expense lines:', deleteError);
           throw deleteError;
         }
       }
-
+  
       const bucketName = 'receipts';
-
+  
       const updatedLinesPayload: {
         line: ExpenseLine;
         isNew: boolean;
@@ -549,38 +598,46 @@ export default function ExpenseReportPage() {
           report_id: string;
         };
       }[] = [];
-
-      for (const line of lines) {
+  
+      // Build all line payloads using updated statuses
+      for (const line of updatedLines) {
         const isNew = line.id.startsWith('new-');
+  
+        // 🔒 IMPORTANT: do NOT try to update existing approved lines.
+        // RLS likely forbids employees from modifying approved entries.
+        if (!isNew && line.status === 'approved') {
+          continue;
+        }
+  
         const file = receiptFiles[line.id] || null;
         let receiptUrl = line.receipt_url || null;
-
+  
         if (file) {
           const safeName = file.name.replace(/\s+/g, '-').toLowerCase();
           const path = `${report.employee_id}/${report.id}/${line.id}-${Date.now()}-${safeName}`;
-
+  
           const { data: uploadData, error: uploadError } =
             await supabase.storage.from(bucketName).upload(path, file, {
               upsert: true,
             });
-
+  
           if (uploadError) {
             console.error('Error uploading receipt file:', uploadError);
             throw uploadError;
           }
-
+  
           const { data: publicData } = supabase.storage
             .from(bucketName)
             .getPublicUrl(uploadData.path);
-
+  
           receiptUrl = publicData.publicUrl;
         }
-
+  
         const numericAmount =
           Number.isFinite(line.amount) && line.amount !== null
             ? (line.amount as number)
             : 0;
-
+  
         updatedLinesPayload.push({
           line,
           isNew,
@@ -591,13 +648,14 @@ export default function ExpenseReportPage() {
             description: line.description || null,
             vendor: line.vendor || null,
             project_id: line.project_id,
-            status: lineStatus,
+            status: line.status, // IMPORTANT: use per-line status, do not override globally
             receipt_url: receiptUrl,
             report_id: report.id,
           },
         });
       }
-
+  
+      // Update existing (non-new) lines – only those we allowed above
       const existingPayloads = updatedLinesPayload.filter(
         (item) => !item.isNew
       );
@@ -607,7 +665,7 @@ export default function ExpenseReportPage() {
             supabase.from('expenses').update(payload).eq('id', line.id)
           )
         );
-
+  
         for (const { error } of results) {
           if (error) {
             console.error('Error updating expense line:', error);
@@ -615,26 +673,27 @@ export default function ExpenseReportPage() {
           }
         }
       }
-
+  
+      // Insert new lines
       const newPayloads = updatedLinesPayload.filter((item) => item.isNew);
       if (newPayloads.length > 0) {
         const insertPayloads = newPayloads.map(({ payload }) => payload);
         const { error: insertError } = await supabase
           .from('expenses')
           .insert(insertPayloads);
-
+  
         if (insertError) {
           console.error('Error inserting new expense lines:', insertError);
           throw insertError;
         }
       }
-
+  
       setActionSuccessMessage(
         mode === 'submitted'
           ? 'Expenses updated and resubmitted for approval.'
           : 'Expenses updated and saved as draft.'
       );
-
+  
       await loadReport();
     } catch (err) {
       console.error('Error saving expense changes:', err);
@@ -645,6 +704,7 @@ export default function ExpenseReportPage() {
       setIsSaving(false);
     }
   };
+  
 
   const handleSaveDraft = () => {
     if (!isEditable) return;
@@ -658,7 +718,7 @@ export default function ExpenseReportPage() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push('/login');
+    router.push('/auth/login');
   };
 
   const handleRefresh = () => {
@@ -757,7 +817,7 @@ export default function ExpenseReportPage() {
   if (!report) return null;
 
   const editableEntryBg = isEditable
-    ? 'bg-rose-50/60 border-rose-200'
+    ? 'bg-white border-gray-200'
     : 'bg-gray-50 border-gray-200';
 
   return (
@@ -943,6 +1003,9 @@ export default function ExpenseReportPage() {
                           : '');
 
                       const isRejectedLine = line.status === 'rejected';
+                      const isLineEditable =
+                        line.status === 'draft' || line.status === 'rejected';
+
                       const entryBg = isRejectedLine
                         ? 'bg-red-50 border-red-300'
                         : editableEntryBg;
@@ -979,7 +1042,7 @@ export default function ExpenseReportPage() {
                                 )}
                               </div>
                             </div>
-                            {isEditable && (
+                            {isLineEditable && (
                               <button
                                 type="button"
                                 onClick={() => handleRemoveLine(idx)}
@@ -1043,7 +1106,7 @@ export default function ExpenseReportPage() {
                                 <label className="block text-xs font-semibold text-gray-600 mb-1">
                                   Date
                                 </label>
-                                {isEditable ? (
+                                {isLineEditable ? (
                                   <input
                                     type="date"
                                     className="w-full rounded-md border border-gray-200 bg-white text-sm px-3 py-2"
@@ -1072,7 +1135,7 @@ export default function ExpenseReportPage() {
                                 <label className="block text-xs font-semibold text-gray-600 mb-1">
                                   Project
                                 </label>
-                                {isEditable ? (
+                                {isLineEditable ? (
                                   <select
                                     className="w-full rounded-md border border-gray-200 bg-white text-sm px-3 py-2"
                                     value={line.project_id || ''}
@@ -1115,7 +1178,7 @@ export default function ExpenseReportPage() {
                                 <label className="block text-xs font-semibold text-gray-600 mb-1">
                                   Category
                                 </label>
-                                {isEditable ? (
+                                {isLineEditable ? (
                                   <select
                                     className="w-full rounded-md border border-gray-200 bg-white text-sm px-3 py-2"
                                     value={line.category || ''}
@@ -1153,7 +1216,7 @@ export default function ExpenseReportPage() {
                                   {isMileage ? 'Mileage' : 'Amount'}
                                 </label>
 
-                                {isMileage && isEditable ? (
+                                {isMileage && isLineEditable ? (
                                   <div className="space-y-2">
                                     <div className="flex items-center gap-2">
                                       <input
@@ -1212,7 +1275,7 @@ export default function ExpenseReportPage() {
                                       />
                                     </div>
                                   </div>
-                                ) : isEditable ? (
+                                ) : isLineEditable ? (
                                   <div className="flex items-center">
                                     <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-200 bg-gray-50 text-sm text-gray-600">
                                       $
@@ -1262,7 +1325,7 @@ export default function ExpenseReportPage() {
                                   {isMileage ? 'Trip Details' : 'Vendor'}
                                 </label>
                                 {isMileage ? (
-                                  isEditable ? (
+                                  isLineEditable ? (
                                     <div className="space-y-2">
                                       <input
                                         type="text"
@@ -1315,7 +1378,7 @@ export default function ExpenseReportPage() {
                                       </p>
                                     </div>
                                   )
-                                ) : isEditable ? (
+                                ) : isLineEditable ? (
                                   <input
                                     type="text"
                                     className="w-full rounded-md border border-gray-200 bg-white text-sm px-3 py-2"
@@ -1361,7 +1424,7 @@ export default function ExpenseReportPage() {
                                     </p>
                                   )}
 
-                                  {isEditable && (
+                                  {isLineEditable && (
                                     <label className="mt-1 flex items-center justify-center gap-1 border border-dashed border-gray-300 rounded-md px-3 py-2 text-[11px] text-gray-600 bg-white cursor-pointer hover:border-[#e31c79]/70 hover:text-[#e31c79]">
                                       <Receipt className="h-3 w-3" />
                                       <span>
@@ -1402,7 +1465,7 @@ export default function ExpenseReportPage() {
                                 <label className="block text-xs font-semibold text-gray-600 mb-1">
                                   Description
                                 </label>
-                                {isEditable ? (
+                                {isLineEditable ? (
                                   <textarea
                                     className="w-full rounded-md border border-gray-200 bg-white text-sm px-3 py-2 min-h-[60px]"
                                     value={line.description || ''}
@@ -1473,7 +1536,7 @@ export default function ExpenseReportPage() {
                         type="button"
                         onClick={handleResubmit}
                         disabled={isSaving}
-                        className="w-full sm:w-auto px-4 py-2 text-xs font-semibold rounded-md border border-[#e31c79] bg.white text-[#e31c79] hover:bg-[#ffe5f1] disabled:opacity-60"
+                        className="w-full sm:w-auto px-4 py-2 text-xs font-semibold rounded-md border border-[#e31c79] bg-white text-[#e31c79] hover:bg-[#ffe5f1] disabled:opacity-60"
                       >
                         {isSaving ? 'Submitting…' : 'Submit for Approval'}
                       </button>

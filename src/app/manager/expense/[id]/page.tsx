@@ -175,7 +175,9 @@ export default function ManagerExpenseReportPage() {
       // Load report + basic employee info
       const { data: reportData, error: reportError } = await supabase
         .from('expense_reports')
-        .select('*, employees!expense_reports_employee_id_fkey(first_name,last_name)')
+        .select(
+          '*, employees!expense_reports_employee_id_fkey(first_name,last_name)'
+        )
         .eq('id', reportId)
         .single();
 
@@ -220,19 +222,29 @@ export default function ManagerExpenseReportPage() {
 
       const baseLines = (lineData || []) as ExpenseLine[];
 
-      // Derive report status from line statuses
+      // 🔧 Derive report status from line statuses with correct rules
       const lineStatuses = baseLines.map((l) => l.status);
-      let derivedStatus = cleanReport.status;
+      let derivedStatus: ExpenseReport['status'] = cleanReport.status;
 
-      if (lineStatuses.includes('rejected')) {
-        derivedStatus = 'rejected';
-      } else if (lineStatuses.includes('submitted')) {
-        derivedStatus = 'submitted';
-      } else if (
-        lineStatuses.length > 0 &&
-        lineStatuses.every((s) => s === 'approved')
-      ) {
-        derivedStatus = 'approved';
+      if (lineStatuses.length > 0) {
+        const allDraft = lineStatuses.every((s) => s === 'draft');
+        const allApproved = lineStatuses.every((s) => s === 'approved');
+        const hasSubmitted = lineStatuses.some((s) => s === 'submitted');
+        const hasRejected = lineStatuses.some((s) => s === 'rejected');
+
+        if (allDraft) {
+          derivedStatus = 'draft';
+        } else if (allApproved) {
+          derivedStatus = 'approved';
+        } else if (hasSubmitted) {
+          // While anything is still being reviewed, show "submitted"
+          derivedStatus = 'submitted';
+        } else if (hasRejected) {
+          // Only once there are no submitted lines left and at least one rejected
+          derivedStatus = 'rejected';
+        } else {
+          derivedStatus = cleanReport.status;
+        }
       }
 
       setReport({
@@ -240,7 +252,7 @@ export default function ManagerExpenseReportPage() {
         status: derivedStatus,
       });
 
-      // Load any projects referenced
+      // Load any projects referenced (for display only)
       const projectIds = [
         ...new Set(
           baseLines
@@ -290,6 +302,52 @@ export default function ManagerExpenseReportPage() {
       setIsLoading(false);
     }
   };
+
+  const approveReport = async () => {
+    if (!report) return;
+  
+    if (
+      !window.confirm(
+        'Approve this entire expense report? This will finalize all approved/submitted lines.'
+      )
+    ) {
+      return;
+    }
+  
+    try {
+      setIsWorking(true);
+      setActionError(null);
+      setActionMessage(null);
+  
+      const res = await fetch(`/api/expense-reports/${report.id}/finalize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'approve' }),
+      });
+  
+      const data = await res.json().catch(() => ({}));
+  
+      if (!res.ok) {
+        console.error('Approve report error:', data);
+        setActionError(
+          data.error ||
+            'Unable to approve this report. Please check for any remaining submitted or rejected lines.'
+        );
+        return;
+      }
+  
+      // optional toast/banner if you want
+      // setActionMessage('Expense report approved.');
+  
+      // 🔁 redirect back to manager dashboard after final approval
+      router.push('/manager');
+    } catch (err) {
+      console.error('Approve report network error:', err);
+      setActionError('Network error approving this report.');
+    } finally {
+      setIsWorking(false);
+    }
+  };   
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -424,6 +482,12 @@ export default function ManagerExpenseReportPage() {
   const totalApproved = lines.filter((l) => l.status === 'approved').length;
   const hasRejected = totalRejected > 0;
 
+  const canFinalApprove =
+  totalSubmitted === 0 &&
+  totalRejected === 0 &&
+  lines.length > 0 &&
+  totalApproved === lines.length;
+
   const computedTotal = lines.reduce((sum, line) => {
     const value = Number.isFinite(line.amount) ? line.amount : 0;
     return sum + (value || 0);
@@ -522,7 +586,7 @@ export default function ManagerExpenseReportPage() {
                   {report.status.charAt(0).toUpperCase() +
                     report.status.slice(1)}
                 </span>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-white/10 border border-white/30 text-white">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-white/10 border border.white/30 text-white">
                   Manager View
                 </span>
               </div>
@@ -648,26 +712,14 @@ export default function ManagerExpenseReportPage() {
 
             {/* expense entry section */}
             <div className="rounded-xl overflow-hidden border border-gray-200 bg-white">
-              <div className="bg-[#022234] text-white px-4 py-2 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-gray-100" />
-                  <span className="text-xs font-semibold tracking-wide">
-                    Expense Entries
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-[11px]">
-                  <button
-                    type="button"
-                    onClick={approveAllSubmitted}
-                    disabled={isWorking || totalSubmitted === 0}
-                    className="inline-flex items-center gap-1 px-3 py-1 rounded-md border border-emerald-300 bg-emerald-50/10 text-emerald-100 hover:bg-emerald-50/20 disabled:opacity-40"
-                  >
-                    <CheckCircle2 className="h-3 w-3" />
-                    Approve all submitted
-                  </button>
-                </div>
-              </div>
-
+  <div className="bg-[#022234] text-white px-4 py-2 flex items-center">
+    <div className="flex items-center gap-2">
+      <FileText className="h-4 w-4 text-gray-100" />
+      <span className="text-xs font-semibold tracking-wide">
+        Expense Entries
+      </span>
+    </div>
+  </div>
               <div className="p-4 sm:p-5 space-y-4">
                 {lines.length === 0 ? (
                   <p className="text-sm text-gray-500">
@@ -677,7 +729,6 @@ export default function ManagerExpenseReportPage() {
                   <div className="space-y-4">
                     {lines.map((line, idx) => {
                       const isRejectedLine = line.status === 'rejected';
-                      const isSubmittedLine = line.status === 'submitted';
                       const entryBg = isRejectedLine
                         ? 'bg-red-50 border-red-300'
                         : 'bg-gray-50 border-gray-200';
@@ -688,7 +739,7 @@ export default function ManagerExpenseReportPage() {
                           className={`rounded-xl border ${entryBg} px-4 py-4 sm:px-5 sm:py-5`}
                         >
                           {/* line header */}
-                          <div className="flex items-center justify-between gap-3 mb-3">
+                          <div className="flex items.center justify-between gap-3 mb-3">
                             <div className="flex items-center gap-2">
                               <div className="h-6 w-6 rounded-full bg-[#ff3b96] text-white text-xs font-semibold flex items-center justify-center">
                                 {idx + 1}
@@ -835,35 +886,57 @@ export default function ManagerExpenseReportPage() {
 
                 {/* footer */}
                 <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-dashed border-gray-200">
-                  <div className="flex items-center gap-6">
-                    <div>
-                      <p className="text-xs font-semibold text-gray-600">
-                        Total Expenses
-                      </p>
-                      <p className="text-base font-bold text-[#e31c79]">
-                        {formatCurrency(computedTotal)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-gray-600">
-                        Entries
-                      </p>
-                      <p className="text-sm text-gray-800">
-                        {lines.length} of {lines.length}
-                      </p>
-                    </div>
-                  </div>
+  <div className="flex items-center gap-6">
+    <div>
+      <p className="text-xs font-semibold text-gray-600">
+        Total Expenses
+      </p>
+      <p className="text-base font-bold text-[#e31c79]">
+        {formatCurrency(computedTotal)}
+      </p>
+    </div>
+    <div>
+      <p className="text-xs font-semibold text-gray-600">
+        Entries
+      </p>
+      <p className="text-sm text-gray-800">
+        {lines.length} of {lines.length}
+      </p>
+    </div>
+  </div>
 
-                  <div className="flex justify-end w-full">
-                    <button
-                      type="button"
-                      onClick={() => router.push('/manager')}
-                      className="px-4 py-2 text-xs font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      Back to Manager Dashboard
-                    </button>
-                  </div>
-                </div>
+  <div className="flex justify-end w-full gap-2">
+    {/* Final Approve Report – hook this into your existing handler */}
+    <button
+  type="button"
+  onClick={approveReport}
+  disabled={!canFinalApprove || isWorking}
+  title={
+    !canFinalApprove
+      ? 'All entries must be approved before finalizing'
+      : 'Approve the full expense report'
+  }
+  className={`
+    px-4 py-2 text-xs font-semibold rounded-md 
+    transition-colors
+    ${canFinalApprove 
+      ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
+      : 'bg-gray-300 text-gray-500 cursor-not-allowed'}
+  `}
+>
+  Final Approve Report
+</button>
+
+    {/* Back to dashboard – now dark blue with white text */}
+    <button
+      type="button"
+      onClick={() => router.push('/manager')}
+      className="px-4 py-2 text-xs font-semibold rounded-md bg-[#05202E] text-white hover:bg-[#03141f] transition-colors"
+    >
+      Back to Manager Dashboard
+    </button>
+  </div>
+</div>
               </div>
             </div>
           </div>

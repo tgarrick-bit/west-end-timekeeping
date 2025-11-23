@@ -41,6 +41,23 @@ function formatName(
   return `${safeLast}, ${firstPart}`;
 }
 
+type LineStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
+
+function deriveReportStatusFromLines(statuses: LineStatus[]): ManagerExpenseReport['status'] {
+  if (!statuses.length) return 'draft';
+
+  const allDraft = statuses.every((s) => s === 'draft');
+  const allApproved = statuses.every((s) => s === 'approved');
+  const hasSubmitted = statuses.some((s) => s === 'submitted');
+  const hasRejected = statuses.some((s) => s === 'rejected');
+
+  if (allDraft) return 'draft';
+  if (allApproved) return 'approved';
+  if (hasSubmitted) return 'submitted';
+  if (hasRejected) return 'rejected';
+  return 'draft';
+}
+
 interface Employee {
   id: string;
   first_name: string;
@@ -314,35 +331,68 @@ export default function ManagerPage() {
 
       setSubmissions(timesheetSubmissions);
 
-      // expense reports for this manager's team
-      const { data: reports, error: reportsError } = await supabase
-        .from('expense_reports')
-        .select(
-          `
-          *,
-          employee:employee_id (
-            id,
-            first_name,
-            middle_name,
-            last_name,
-            email,
-            department,
-            hourly_rate,
-            employee_id,
-            manager_id,
-            role
-          )
-        `
-        )
-        .in('employee_id', employeeIds)
-        .order('created_at', { ascending: false });
+// expense reports for this manager's team
+const { data: reports, error: reportsError } = await supabase
+  .from('expense_reports')
+  .select(
+    `
+    *,
+    employee:employee_id (
+      id,
+      first_name,
+      middle_name,
+      last_name,
+      email,
+      department,
+      hourly_rate,
+      employee_id,
+      manager_id,
+      role
+    )
+  `
+  )
+  .in('employee_id', employeeIds)
+  .order('created_at', { ascending: false });
 
-      if (reportsError) {
-        console.error('Error loading expense reports:', reportsError);
-        setExpenseReports([]);
-      } else {
-        setExpenseReports((reports || []) as ManagerExpenseReport[]);
-      }
+if (reportsError || !reports) {
+  console.error('Error loading expense reports:', reportsError);
+  setExpenseReports([]);
+} else {
+  const baseReports = reports as ManagerExpenseReport[];
+  const reportIds = baseReports.map((r) => r.id);
+
+  // load line statuses for these reports
+  const { data: expenseLines, error: expenseLinesError } = await supabase
+    .from('expenses')
+    .select('id, report_id, status')
+    .in('report_id', reportIds);
+
+  if (expenseLinesError || !expenseLines) {
+    console.error('Error loading expense line statuses:', expenseLinesError);
+    // fall back to stored report.status if line fetch fails
+    setExpenseReports(baseReports);
+  } else {
+    const statusMap = new Map<string, LineStatus[]>();
+
+    (expenseLines as { report_id: string; status: LineStatus }[]).forEach((line) => {
+      const list = statusMap.get(line.report_id) || [];
+      list.push(line.status);
+      statusMap.set(line.report_id, list);
+    });
+
+    const normalizedReports: ManagerExpenseReport[] = baseReports.map((report) => {
+      const lineStatuses = statusMap.get(report.id) || [];
+      const derivedStatus = deriveReportStatusFromLines(lineStatuses);
+      return {
+        ...report,
+        status: derivedStatus,
+      };
+    });
+
+    setExpenseReports(normalizedReports);
+  }
+}
+
     } catch (error) {
       console.error('Error loading submissions:', error);
       setSubmissions([]);

@@ -1,277 +1,146 @@
-// src/app/api/expenses/[id]/status/route.ts
-
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { ExpenseStatus } from '@/lib/status';
 
-// Simple helper to send emails through your existing notifications API
-async function sendEmail(payload: {
-  to: string;
-  subject: string;
-  html: string;
-}) {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-
-    const res = await fetch(`${baseUrl}/api/notifications/send-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      console.error('Failed to send email:', await res.text());
-    }
-  } catch (err) {
-    console.error('Email send error:', err);
-  }
-}
+type LineStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
 
 export async function PATCH(
-  req: NextRequest,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
-  // Use cookies via callback to keep Next.js happy
-  const supabase = createRouteHandlerClient({
-    cookies: () => cookies(),
-  });
+  const lineId = params.id;
+  // 👇 pass the cookies *function*, not cookies()
+  const supabase = createRouteHandlerClient({ cookies });
 
-  const { id } = params;
-  const body = (await req.json()) as {
-    action: 'save' | 'submit' | 'approve' | 'reject';
-    rejectionReason?: string;
-  };
+  try {
+    if (!lineId) {
+      return NextResponse.json(
+        { error: 'Missing expense line id.' },
+        { status: 400 }
+      );
+    }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+    const body = await req.json();
+    const action = body.action as 'approve' | 'reject';
+    const rejectionReason: string | undefined = body.rejectionReason;
 
-  if (userError || !user) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  }
+    if (!action) {
+      return NextResponse.json(
+        { error: 'Missing action (approve or reject).' },
+        { status: 400 }
+      );
+    }
 
-  // Look up the expense record
-  const { data: existing, error: fetchError } = await supabase
-    .from('expenses')
-    .select('*')
-    .eq('id', id)
-    .single();
+    // 1) Load the line so we know which report it belongs to
+    const { data: line, error: lineError } = await supabase
+      .from('expenses')
+      .select('id, report_id, status')
+      .eq('id', lineId)
+      .single();
 
-  if (fetchError || !existing) {
-    console.error('Expense fetch error:', fetchError);
-    return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
-  }
+    if (lineError || !line) {
+      console.error('Line not found:', lineError);
+      return NextResponse.json(
+        { error: 'Expense line not found.' },
+        { status: 404 }
+      );
+    }
 
-  let nextStatus: ExpenseStatus = existing.status as ExpenseStatus;
-  const updates: Record<string, any> = {};
+    const reportId = line.report_id as string;
 
-  switch (body.action) {
-    case 'save':
-      nextStatus = 'draft';
-      break;
+    // 2) Build update payload for this line
+    const updatePayload: Record<string, any> = {};
 
-    case 'submit':
-      nextStatus = 'submitted';
-      updates.submitted_at = new Date().toISOString();
-      break;
-
-    case 'approve':
-      nextStatus = 'approved';
-      updates.approved_at = new Date().toISOString();
-      updates.rejected_at = null;
-      updates.rejected_by = null;
-      updates.rejection_reason = null;
-      break;
-
-    case 'reject':
-      if (!body.rejectionReason || !body.rejectionReason.trim()) {
+    if (action === 'approve') {
+      updatePayload.status = 'approved';
+      updatePayload.rejection_reason = null;
+      updatePayload.rejected_at = null;
+      updatePayload.approved_at = new Date().toISOString();
+      // TODO: set approved_by using auth if you want
+    } else {
+      // reject
+      if (!rejectionReason || !rejectionReason.trim()) {
         return NextResponse.json(
-          { error: 'Rejection reason is required' },
+          { error: 'Rejection reason is required.' },
           { status: 400 }
         );
       }
-      nextStatus = 'rejected';
-      updates.rejected_at = new Date().toISOString();
-      updates.rejected_by = user.id;
-      updates.rejection_reason = body.rejectionReason.trim();
-      break;
+      updatePayload.status = 'rejected';
+      updatePayload.rejection_reason = rejectionReason.trim();
+      updatePayload.rejected_at = new Date().toISOString();
+      updatePayload.approved_at = null;
+    }
 
-    default:
-      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-  }
+    const { error: updateLineError } = await supabase
+      .from('expenses')
+      .update(updatePayload)
+      .eq('id', lineId);
 
-  updates.status = nextStatus;
+    if (updateLineError) {
+      console.error('Error updating expense line:', updateLineError);
+      return NextResponse.json(
+        { error: 'Failed to update expense line.' },
+        { status: 500 }
+      );
+    }
 
-  const { data: updated, error: updateError } = await supabase
-    .from('expenses')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
+    // 3) Recalculate the report's *intermediate* status based on all line statuses
+    const { data: allLines, error: allLinesError } = await supabase
+      .from('expenses')
+      .select('status')
+      .eq('report_id', reportId);
 
-  if (updateError || !updated) {
-    console.error('Expense update error:', updateError);
+    if (allLinesError || !allLines) {
+      console.error('Error loading all lines for report:', allLinesError);
+      return NextResponse.json(
+        { error: 'Failed to recalculate report status.' },
+        { status: 500 }
+      );
+    }
+
+    const statuses = (allLines as { status: LineStatus }[]).map(
+      (l) => l.status
+    );
+
+    const allDraft = statuses.every((s) => s === 'draft');
+    const allApproved = statuses.every((s) => s === 'approved');
+    const hasSubmitted = statuses.some((s) => s === 'submitted');
+    const hasRejected = statuses.some((s) => s === 'rejected');
+
+    let reportStatus: 'draft' | 'submitted' | 'approved' | 'rejected';
+
+    if (allDraft) reportStatus = 'draft';
+    else if (allApproved) reportStatus = 'approved';
+    else if (hasSubmitted) reportStatus = 'submitted';
+    else if (hasRejected) reportStatus = 'rejected';
+    else reportStatus = 'draft';
+
+    const { error: reportUpdateError } = await supabase
+      .from('expense_reports')
+      .update({
+        status: reportStatus,
+        // FINAL approval/rejection timestamps are set in your finalize API, not here
+      })
+      .eq('id', reportId);
+
+    if (reportUpdateError) {
+      console.error('Error updating expense report status:', reportUpdateError);
+      return NextResponse.json(
+        { error: 'Failed to update expense report.' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      lineStatus: updatePayload.status,
+      reportStatus,
+    });
+  } catch (err) {
+    console.error('Unexpected error in PATCH /api/expenses/[id]/status:', err);
     return NextResponse.json(
-      { error: updateError?.message || 'Failed to update expense' },
+      { error: 'Unexpected error updating line.' },
       { status: 500 }
     );
   }
-
-  // 🔁 SYNC THE LINKED EXPENSE REPORT (so employee page sees the new status)
-  try {
-    const reportId =
-      (updated as any).expense_report_id || (updated as any).report_id;
-
-    if (reportId) {
-      await supabase
-        .from('expense_reports')
-        .update({ status: nextStatus })
-        .eq('id', reportId);
-    }
-  } catch (syncError) {
-    console.error('Error syncing expense_reports status:', syncError);
-    // don't fail the whole request for this
-  }
-
-  // === EMAIL NOTIFICATIONS ===
-  try {
-    const { data: employee } = await supabase
-      .from('employees')
-      .select('id, first_name, last_name, email, manager_id')
-      .eq('id', updated.employee_id)
-      .single();
-
-    let manager:
-      | {
-          id: string;
-          first_name: string | null;
-          last_name: string | null;
-          email: string | null;
-        }
-      | null = null;
-
-    if (employee?.manager_id) {
-      const { data: mgr } = await supabase
-        .from('employees')
-        .select('id, first_name, last_name, email')
-        .eq('id', employee.manager_id)
-        .single();
-      manager = mgr;
-    }
-
-    const periodLabel =
-      (updated as any).period_month || updated.created_at || 'this period';
-
-    const employeeName = employee
-      ? `${employee.first_name || ''} ${employee.last_name || ''}`.trim() ||
-        'Employee'
-      : 'Employee';
-
-    const managerName = manager
-      ? `${manager.first_name || ''} ${manager.last_name || ''}`.trim() ||
-        'Manager'
-      : 'Manager';
-
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const title = (updated as any).title || 'Expense report';
-
-    if (body.action === 'submit' && manager?.email) {
-      await sendEmail({
-        to: manager.email,
-        subject: `Expense submitted by ${employeeName}: ${title}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background-color: #e31c79; padding: 20px; text-align: center;">
-              <h1 style="color: white; margin: 0;">West End Workforce</h1>
-            </div>
-            <div style="background-color: #f5f5f5; padding: 20px;">
-              <h2 style="color: #05202E;">Expense Submitted</h2>
-              <p>Hello ${managerName},</p>
-              <p>${employeeName} has submitted an expense report (<strong>${title}</strong>) for <strong>${periodLabel}</strong>.</p>
-              <p>Please review and approve it at your earliest convenience.</p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${appUrl}/manager" 
-                   style="background-color: #e31c79; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                  Review Expense
-                </a>
-              </div>
-            </div>
-            <div style="background-color: #05202E; padding: 15px; text-align: center;">
-              <p style="color: white; margin: 0; font-size: 12px;">© 2025 West End Workforce</p>
-            </div>
-          </div>
-        `,
-      });
-    }
-
-    if (body.action === 'approve' && employee?.email) {
-      await sendEmail({
-        to: employee.email,
-        subject: `Your expense "${title}" was approved`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background-color: #e31c79; padding: 20px; text-align: center;">
-              <h1 style="color: white; margin: 0;">West End Workforce</h1>
-            </div>
-            <div style="background-color: #f5f5f5; padding: 20px;">
-              <h2 style="color: #05202E;">Expense Approved</h2>
-              <p>Hello ${employeeName},</p>
-              <p>Your expense report <strong>${title}</strong> for <strong>${periodLabel}</strong> has been <strong>approved</strong>.</p>
-              <p>No further action is required.</p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${appUrl}/employee/expenses" 
-                   style="background-color: #e31c79; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                  View Expense
-                </a>
-              </div>
-            </div>
-            <div style="background-color: #05202E; padding: 15px; text-align: center;">
-              <p style="color: white; margin: 0; font-size: 12px;">© 2025 West End Workforce</p>
-            </div>
-          </div>
-        `,
-      });
-    }
-
-    if (body.action === 'reject' && employee?.email) {
-      const reason =
-        updates.rejection_reason || (updated as any).rejection_reason || '';
-      await sendEmail({
-        to: employee.email,
-        subject: `Your expense "${title}" was rejected`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background-color: #e31c79; padding: 20px; text-align: center;">
-              <h1 style="color: white; margin: 0;">West End Workforce</h1>
-            </div>
-            <div style="background-color: #f5f5f5; padding: 20px;">
-              <h2 style="color: #05202E;">Expense Rejected</h2>
-              <p>Hello ${employeeName},</p>
-              <p>Your expense report <strong>${title}</strong> for <strong>${periodLabel}</strong> has been <strong>rejected</strong>.</p>
-              ${
-                reason
-                  ? `<p><strong>Reason:</strong> ${reason}</p>`
-                  : `<p>Please review and update your expense report, then resubmit for approval.</p>`
-              }
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${appUrl}/employee/expenses" 
-                   style="background-color: #e31c79; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                  Fix and Resubmit
-                </a>
-              </div>
-            </div>
-            <div style="background-color: #05202E; padding: 15px; text-align: center;">
-              <p style="color: white; margin: 0; font-size: 12px;">© 2025 West End Workforce</p>
-            </div>
-          </div>
-        `,
-      });
-    }
-  } catch (emailError) {
-    console.error('Expense status email error:', emailError);
-  }
-
-  return NextResponse.json({ expense: updated });
 }
