@@ -39,9 +39,8 @@ export function buildFinalApprovalEmailHtml(args: {
       .footer { text-align: center; padding: 18px 20px 22px; font-size: 12px; color: #6b7280;
                 background: #ffffff; border-top: 1px solid #e31c79; line-height: 1.6; }
   
-      @media only infix screen and (max-width: 600px) {
-        .main { width: 100% !important; border-radius: 0 ! !
-        }
+      @media only screen and (max-width: 600px) {
+        .main { width: 100% !important; border-radius: 0 !important; }
         .content { padding: 24px 18px 28px !important; font-size: 14px !important; }
         .header-title { font-size: 26px !important; }
         .content h2 { font-size: 22px !important; }
@@ -94,7 +93,7 @@ export function buildFinalApprovalEmailHtml(args: {
             </td>
           </tr>
   
-          <!-- FOOTER (employee version) -->
+          <!-- FOOTER -->
           <tr>
             <td class="footer">
               <p>You are receiving this notification because you submitted an expense
@@ -172,9 +171,11 @@ export function buildFinalApprovalEmailHtml(args: {
       @media only screen and (max-width: 600px) {
         .main { width: 100% !important; border-radius: 0 !important; }
         .content { padding: 24px 18px 28px !important; font-size: 14px !important; }
-        .header-title { font-size: 26 !important; }
-        .content h2 { font-size: 22 }    
-        ;}
+        .header-title { font-size: 26px !important; }
+        .content h2 { font-size: 22px !important; }
+        .button { width: 100% !important; box-sizing: border-box !important; }
+      }
+  
       @media (prefers-color-scheme: dark) {
         body { background: #020617; }
         .wrapper { background: #020617; }
@@ -231,7 +232,7 @@ export function buildFinalApprovalEmailHtml(args: {
             </td>
           </tr>
   
-          <!-- FOOTER (employee version) -->
+          <!-- FOOTER -->
           <tr>
             <td class="footer">
               <p>You are receiving this notification because you submitted an expense

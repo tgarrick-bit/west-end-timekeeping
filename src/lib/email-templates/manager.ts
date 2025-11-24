@@ -115,7 +115,7 @@ export function buildManagerSubmissionEmailHtml(args: {
             </td>
           </tr>
   
-          <!-- FOOTER (manager version) -->
+          <!-- FOOTER -->
           <tr>
             <td class="footer">
               <p>You are receiving this notification because you are a designated
