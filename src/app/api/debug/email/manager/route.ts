@@ -3,9 +3,7 @@
 import { NextResponse } from 'next/server';
 
 // IMPORTANT: import your real function so the preview matches production
-import { 
-  buildManagerSubmissionEmailHtml 
-} from '@/app/api/expense-reports/[id]/submit/route'; 
+import { buildManagerSubmissionEmailHtml } from '@/app/api/expense-reports/[id]/submit/route';
 // ^ If the import path is different in your project, adjust accordingly.
 
 export const runtime = 'nodejs'; // ensures HTML renders correctly
