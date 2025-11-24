@@ -1,3 +1,5 @@
+// src/app/manager/page.tsx
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -43,7 +45,9 @@ function formatName(
 
 type LineStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
 
-function deriveReportStatusFromLines(statuses: LineStatus[]): ManagerExpenseReport['status'] {
+function deriveReportStatusFromLines(
+  statuses: LineStatus[]
+): ManagerExpenseReport['status'] {
   if (!statuses.length) return 'draft';
 
   const allDraft = statuses.every((s) => s === 'draft');
@@ -114,20 +118,28 @@ export default function ManagerPage() {
 
   const [projectFilter, setProjectFilter] = useState<string>('all');
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
-  const [timesheetProjectMap, setTimesheetProjectMap] = useState<Record<string, string[]>>({});
+  const [timesheetProjectMap, setTimesheetProjectMap] = useState<
+    Record<string, string[]>
+  >({});
 
-  const [timesheetEmployeeFilter, setTimesheetEmployeeFilter] = useState<string>('all');
-  const [timesheetWeekFilter, setTimesheetWeekFilter] = useState<string>('all');
-  const [timesheetStatusCardFilter, setTimesheetStatusCardFilter] = useState<string>('all');
+  const [timesheetEmployeeFilter, setTimesheetEmployeeFilter] =
+    useState<string>('all');
+  const [timesheetWeekFilter, setTimesheetWeekFilter] =
+    useState<string>('all');
+  const [timesheetStatusCardFilter, setTimesheetStatusCardFilter] =
+    useState<string>('all');
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedTimesheet, setSelectedTimesheet] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const [expenseReports, setExpenseReports] = useState<ManagerExpenseReport[]>([]);
-  const [expenseStatusFilter, setExpenseStatusFilter] =
-    useState<'all' | 'submitted' | 'approved' | 'rejected'>('all');
+  const [expenseReports, setExpenseReports] = useState<ManagerExpenseReport[]>(
+    []
+  );
+  const [expenseStatusFilter, setExpenseStatusFilter] = useState<
+    'all' | 'submitted' | 'approved' | 'rejected'
+  >('all');
 
   useEffect(() => {
     fetchManagerId();
@@ -150,7 +162,7 @@ export default function ManagerPage() {
     }
   };
 
-  // Sunday–Saturday range
+  // Sunday–Saturday range for display
   const getWeekRange = (dateStr: string) => {
     const d = new Date(dateStr);
     const day = d.getDay();
@@ -175,7 +187,7 @@ export default function ManagerPage() {
     setIsLoading(true);
 
     try {
-      // employees for this manager
+      // Employees for this manager
       const { data: allEmployees, error: empError } = await supabase
         .from('employees')
         .select('*')
@@ -204,7 +216,9 @@ export default function ManagerPage() {
 
       if (approverError) throw approverError;
 
-      const approverProjectIds = (approverRows || []).map((r) => r.project_id).filter(Boolean);
+      const approverProjectIds = (approverRows || [])
+        .map((r) => r.project_id)
+        .filter(Boolean);
 
       let timesheets: any[] = [];
       let timesheetEntries: any[] = [];
@@ -218,7 +232,11 @@ export default function ManagerPage() {
         if (entryError) throw entryError;
 
         const timesheetIds = Array.from(
-          new Set((entryRows || []).map((e) => e.timesheet_id).filter(Boolean))
+          new Set(
+            (entryRows || [])
+              .map((e) => e.timesheet_id)
+              .filter((id) => !!id)
+          )
         );
 
         if (timesheetIds.length > 0) {
@@ -305,10 +323,12 @@ export default function ManagerPage() {
       setTimesheetProjectMap(tMap);
       setProjectOptions(Object.values(projectMap));
 
-      // timesheet submissions
+      // timesheet submissions for cards/list
       const timesheetSubmissions: Submission[] = timesheets.map((t: any) => {
         const { label: week_range, endDate } = getWeekRange(t.week_ending);
-        const emp = (allEmployees as Employee[]).find((e) => e.id === t.employee_id);
+        const emp = (allEmployees as Employee[]).find(
+          (e) => e.id === t.employee_id
+        );
         const hourlyRate = emp?.hourly_rate || 0;
 
         return {
@@ -331,68 +351,72 @@ export default function ManagerPage() {
 
       setSubmissions(timesheetSubmissions);
 
-// expense reports for this manager's team
-const { data: reports, error: reportsError } = await supabase
-  .from('expense_reports')
-  .select(
-    `
-    *,
-    employee:employee_id (
-      id,
-      first_name,
-      middle_name,
-      last_name,
-      email,
-      department,
-      hourly_rate,
-      employee_id,
-      manager_id,
-      role
-    )
-  `
-  )
-  .in('employee_id', employeeIds)
-  .order('created_at', { ascending: false });
+      // Expense reports for this manager's team
+      const { data: reports, error: reportsError } = await supabase
+        .from('expense_reports')
+        .select(
+          `
+          *,
+          employee:employee_id (
+            id,
+            first_name,
+            middle_name,
+            last_name,
+            email,
+            department,
+            hourly_rate,
+            employee_id,
+            manager_id,
+            role
+          )
+        `
+        )
+        .in('employee_id', employeeIds)
+        .order('created_at', { ascending: false });
 
-if (reportsError || !reports) {
-  console.error('Error loading expense reports:', reportsError);
-  setExpenseReports([]);
-} else {
-  const baseReports = reports as ManagerExpenseReport[];
-  const reportIds = baseReports.map((r) => r.id);
+      if (reportsError || !reports) {
+        console.error('Error loading expense reports:', reportsError);
+        setExpenseReports([]);
+      } else {
+        const baseReports = reports as ManagerExpenseReport[];
+        const reportIds = baseReports.map((r) => r.id);
 
-  // load line statuses for these reports
-  const { data: expenseLines, error: expenseLinesError } = await supabase
-    .from('expenses')
-    .select('id, report_id, status')
-    .in('report_id', reportIds);
+        const { data: expenseLines, error: expenseLinesError } = await supabase
+          .from('expenses')
+          .select('id, report_id, status')
+          .in('report_id', reportIds);
 
-  if (expenseLinesError || !expenseLines) {
-    console.error('Error loading expense line statuses:', expenseLinesError);
-    // fall back to stored report.status if line fetch fails
-    setExpenseReports(baseReports);
-  } else {
-    const statusMap = new Map<string, LineStatus[]>();
+        if (expenseLinesError || !expenseLines) {
+          console.error(
+            'Error loading expense line statuses:',
+            expenseLinesError
+          );
+          setExpenseReports(baseReports);
+        } else {
+          const statusMap = new Map<string, LineStatus[]>();
 
-    (expenseLines as { report_id: string; status: LineStatus }[]).forEach((line) => {
-      const list = statusMap.get(line.report_id) || [];
-      list.push(line.status);
-      statusMap.set(line.report_id, list);
-    });
+          (expenseLines as { report_id: string; status: LineStatus }[]).forEach(
+            (line) => {
+              const list = statusMap.get(line.report_id) || [];
+              list.push(line.status);
+              statusMap.set(line.report_id, list);
+            }
+          );
 
-    const normalizedReports: ManagerExpenseReport[] = baseReports.map((report) => {
-      const lineStatuses = statusMap.get(report.id) || [];
-      const derivedStatus = deriveReportStatusFromLines(lineStatuses);
-      return {
-        ...report,
-        status: derivedStatus,
-      };
-    });
+          const normalizedReports: ManagerExpenseReport[] = baseReports.map(
+            (report) => {
+              const lineStatuses = statusMap.get(report.id) || [];
+              const derivedStatus = deriveReportStatusFromLines(lineStatuses);
+              return {
+                ...report,
+                status: derivedStatus,
+              };
+            }
+          );
 
-    setExpenseReports(normalizedReports);
-  }
-}
-
+          setExpenseReports(normalizedReports);
+        }
+      }
     } catch (error) {
       console.error('Error loading submissions:', error);
       setSubmissions([]);
@@ -404,6 +428,7 @@ if (reportsError || !reports) {
     }
   };
 
+  // === Timesheet details / modal ===
   const handleViewTimesheet = async (submission: Submission) => {
     try {
       setProcessingId(submission.id);
@@ -466,58 +491,77 @@ if (reportsError || !reports) {
     }
   };
 
+  // === TIMESHEET STATUS: call API route so emails + state machine are used ===
+  const callTimesheetStatus = async (
+    timesheetId: string,
+    body: { action: 'approve' | 'reject'; rejectionReason?: string }
+  ) => {
+    const res = await fetch(`/api/timesheets/${timesheetId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      let message = 'Failed to update timesheet.';
+      try {
+        const data = await res.json();
+        if (data?.error) message = data.error;
+      } catch {
+        // ignore parse error
+      }
+      throw new Error(message);
+    }
+
+    return res.json();
+  };
+
   const handleApproveTimesheet = async (submission: Submission) => {
-    if (!managerId) return;
-
-    const { error } = await supabase
-      .from('timesheets')
-      .update({
-        status: 'approved',
-        approved_at: new Date().toISOString(),
-        approved_by: managerId,
-      })
-      .eq('id', submission.id);
-
-    if (!error) {
+    try {
+      if (!submission.id) return;
+      await callTimesheetStatus(submission.id, { action: 'approve' });
+      alert('Timesheet approved successfully.');
       await loadSubmissions();
       if (selectedTimesheet?.id === submission.id) {
         setIsModalOpen(false);
         setSelectedTimesheet(null);
       }
-    } else {
+    } catch (error: any) {
       console.error('Error approving timesheet:', error);
+      alert(error?.message || 'An error occurred while approving the timesheet.');
     }
   };
 
   const handleRejectTimesheet = async (submission: Submission) => {
-    if (!managerId) return;
+    try {
+      if (!submission.id) return;
 
-    const reason = prompt(
-      'Please provide a reason for rejection (this will be visible to the employee):'
-    );
-    if (!reason) return;
+      const reason = window.prompt(
+        'Please provide a reason for rejection (this will be visible to the employee):'
+      );
+      if (!reason || !reason.trim()) {
+        alert('A rejection reason is required.');
+        return;
+      }
 
-    const { error } = await supabase
-      .from('timesheets')
-      .update({
-        status: 'rejected',
-        approved_at: new Date().toISOString(),
-        approved_by: managerId,
-        comments: reason,
-      })
-      .eq('id', submission.id);
+      await callTimesheetStatus(submission.id, {
+        action: 'reject',
+        rejectionReason: reason.trim(),
+      });
 
-    if (!error) {
+      alert('Timesheet rejected successfully.');
       await loadSubmissions();
       if (selectedTimesheet?.id === submission.id) {
         setIsModalOpen(false);
         setSelectedTimesheet(null);
       }
-    } else {
+    } catch (error: any) {
       console.error('Error rejecting timesheet:', error);
+      alert(error?.message || 'An error occurred while rejecting the timesheet.');
     }
   };
 
+  // Modal handlers wrap the same approve/reject
   const handleModalApprove = async () => {
     if (!selectedTimesheet) return;
     const submission = submissions.find((s) => s.id === selectedTimesheet.id);
@@ -534,35 +578,36 @@ if (reportsError || !reports) {
     }
   };
 
+  // === EXPENSE REPORT APPROVE / REJECT using finalize API (emails + logic) ===
   const handleApproveExpenseReport = async (report: ManagerExpenseReport) => {
-    if (!managerId) return;
-
     try {
       setProcessingId(report.id);
 
-      // update report
-      const { error: reportError } = await supabase
-        .from('expense_reports')
-        .update({ status: 'approved' })
-        .eq('id', report.id);
+      const res = await fetch(
+        `/api/expense-reports/${report.id}/finalize`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'approve' }),
+        }
+      );
 
-      if (reportError) throw reportError;
+      if (!res.ok) {
+        let message = 'Failed to approve expense report.';
+        try {
+          const data = await res.json();
+          if (data?.error) message = data.error;
+        } catch {
+          // ignore parse error
+        }
+        throw new Error(message);
+      }
 
-      // cascade to lines by report_id
-      const { error: linesError } = await supabase
-        .from('expenses')
-        .update({
-          status: 'approved',
-          approved_at: new Date().toISOString(),
-          approved_by: managerId,
-        })
-        .eq('report_id', report.id);
-
-      if (linesError) throw linesError;
-
+      alert('Expense report approved successfully.');
       await loadSubmissions();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error approving expense report:', error);
+      alert(error?.message || 'An error occurred while approving the report.');
     } finally {
       setProcessingId(null);
     }
@@ -570,39 +615,51 @@ if (reportsError || !reports) {
 
   const handleRejectExpenseReport = async (report: ManagerExpenseReport) => {
     const reason = window.prompt(
-      `Enter a reason for rejecting "${report.title ?? 'this expense report'}":`
+      `Enter a reason for rejecting "${
+        report.title ?? 'this expense report'
+      }":`
     );
-  
+
     if (!reason || !reason.trim()) {
-      // optional: alert and bail out
       alert('A rejection reason is required.');
       return;
     }
-  
+
     try {
-      const res = await fetch(`/api/expenses/${report.id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'reject',
-          rejectionReason: reason.trim(),
-        }),
-      });
-  
+      setProcessingId(report.id);
+
+      const res = await fetch(
+        `/api/expense-reports/${report.id}/finalize`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'reject',
+            reason: reason.trim(),
+          }),
+        }
+      );
+
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        console.error('Error rejecting expense report:', body);
-        alert(body.error || 'Failed to reject expense report.');
-        return;
+        let message = 'Failed to reject expense report.';
+        try {
+          const data = await res.json();
+          if (data?.error) message = data.error;
+        } catch {
+          // ignore parse error
+        }
+        throw new Error(message);
       }
-  
-      // everything worked – refresh the list / UI
-      router.refresh();
-    } catch (err) {
+
+      alert('Expense report rejected successfully.');
+      await loadSubmissions();
+    } catch (err: any) {
       console.error('Error rejecting expense report:', err);
-      alert('Network error rejecting expense report.');
+      alert(err?.message || 'An error occurred while rejecting the report.');
+    } finally {
+      setProcessingId(null);
     }
-  }; 
+  };
 
   const getTimeBasedGreeting = () => {
     const hour = new Date().getHours();
@@ -690,9 +747,15 @@ if (reportsError || !reports) {
 
   const visibleTimesheetsAllTab = allTimesheetSubmissions
     .filter((s) => {
-      if (timesheetEmployeeFilter !== 'all' && s.employee?.id !== timesheetEmployeeFilter)
+      if (
+        timesheetEmployeeFilter !== 'all' &&
+        s.employee?.id !== timesheetEmployeeFilter
+      )
         return false;
-      if (timesheetWeekFilter !== 'all' && s.week_range !== timesheetWeekFilter)
+      if (
+        timesheetWeekFilter !== 'all' &&
+        s.week_range !== timesheetWeekFilter
+      )
         return false;
       if (
         timesheetStatusCardFilter !== 'all' &&
@@ -734,12 +797,18 @@ if (reportsError || !reports) {
         ).toLowerCase();
         const email = emp?.email?.toLowerCase() || '';
         const title = (r.title || '').toLowerCase();
-        return name.includes(term) || email.includes(term) || title.includes(term);
+        return (
+          name.includes(term) ||
+          email.includes(term) ||
+          title.includes(term)
+        );
       });
     }
 
     if (timesheetEmployeeFilter !== 'all') {
-      filtered = filtered.filter((r) => r.employee_id === timesheetEmployeeFilter);
+      filtered = filtered.filter(
+        (r) => r.employee_id === timesheetEmployeeFilter
+      );
     }
 
     if (expenseStatusFilter !== 'all') {
@@ -1033,12 +1102,18 @@ if (reportsError || !reports) {
               <div className="px-4 pt-2 pb-3 bg-white">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-50 border border-gray-200 text-xs text-gray-700">
                   <span className="font-semibold">Currently filtered by:</span>
-                  {employeeFilterLabel && <span>Employee: {employeeFilterLabel}</span>}
-                  {timesheetWeekFilter !== 'all' && <span>Week: {timesheetWeekFilter}</span>}
+                  {employeeFilterLabel && (
+                    <span>Employee: {employeeFilterLabel}</span>
+                  )}
+                  {timesheetWeekFilter !== 'all' && (
+                    <span>Week: {timesheetWeekFilter}</span>
+                  )}
                   {timesheetStatusCardFilter !== 'all' && (
                     <span>
                       Status:{' '}
-                      {timesheetStatusCardFilter.charAt(0).toUpperCase() +
+                      {timesheetStatusCardFilter
+                        .charAt(0)
+                        .toUpperCase() +
                         timesheetStatusCardFilter.slice(1)}
                     </span>
                   )}
@@ -1097,7 +1172,9 @@ if (reportsError || !reports) {
                   <div className="w-32 pr-2">
                     <select
                       value={timesheetStatusCardFilter}
-                      onChange={(e) => setTimesheetStatusCardFilter(e.target.value)}
+                      onChange={(e) =>
+                        setTimesheetStatusCardFilter(e.target.value)
+                      }
                       className="w-full text-xs px-2 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                     >
                       <option value="all">Status</option>
@@ -1355,6 +1432,7 @@ if (reportsError || !reports) {
                             }}
                             className="p-1 text-green-600 hover:bg-green-50 rounded"
                             title="Approve report"
+                            disabled={processingId === report.id}
                           >
                             <CheckCircle className="h-4 w-4" />
                           </button>
@@ -1365,6 +1443,7 @@ if (reportsError || !reports) {
                             }}
                             className="p-1 text-red-600 hover:bg-red-50 rounded"
                             title="Reject report"
+                            disabled={processingId === report.id}
                           >
                             <XCircle className="h-4 w-4" />
                           </button>

@@ -8,9 +8,9 @@ type LineStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
 
 export async function PATCH(
   req: Request,
-  { params }: { params: Promise<{ id: string }> } // ✅ Next.js 15 pattern
+  { params }: { params: Promise<{ id: string }> } // ✅ Next.js 15-compatible
 ) {
-  const { id: lineId } = await params;
+  const { id: lineId } = await params;            // ✅ await params and keep lineId name
   const supabase = createRouteHandlerClient({ cookies });
 
   try {
@@ -120,7 +120,7 @@ export async function PATCH(
       .from('expense_reports')
       .update({
         status: reportStatus,
-        // FINAL approval timestamps are set in your finalize API, not here
+        // FINAL approval/rejection timestamps are set in your finalize API, not here
       })
       .eq('id', reportId);
 

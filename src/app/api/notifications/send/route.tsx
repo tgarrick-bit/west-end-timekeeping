@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin" 
                    style="background-color: #e31c79; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                  Review Timecards
+                  Review Timesheets
                 </a>
               </div>
             </div>

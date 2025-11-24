@@ -1,3 +1,5 @@
+// src/app/employee/page.tsx
+
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
@@ -5,8 +7,8 @@ import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
 import TimesheetModal from '@/components/TimesheetModal';
 import Image from 'next/image';
-import { 
-  Clock, 
+import {
+  Clock,
   FileText,
   User,
   LogOut,
@@ -14,7 +16,7 @@ import {
   AlertCircle,
   RefreshCw,
   DollarSign,
-  CheckCircle
+  CheckCircle,
 } from 'lucide-react';
 
 interface Timecard {
@@ -80,26 +82,29 @@ export default function EmployeeDashboard() {
     totalExpenses: 0,
     pendingExpenses: 0,
     approvedExpenses: 0,
-    rejectedExpenses: 0
+    rejectedExpenses: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const hasLoadedRef = useRef(false);
   const router = useRouter();
   const supabase = createSupabaseClient();
-  
+
   useEffect(() => {
     checkUserRoleAndRedirect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkUserRoleAndRedirect = async () => {
     if (hasLoadedRef.current) {
       return;
     }
-    
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) {
         router.push('/auth/login');
         return;
@@ -110,41 +115,44 @@ export default function EmployeeDashboard() {
         .select('role, first_name, last_name, email')
         .eq('id', user.id)
         .single();
-      
+
       if (!employeeData) {
         const userEmail = user.email?.toLowerCase() || '';
-        
+
         if (userEmail.includes('admin')) {
           router.push('/admin');
           return;
-        } else if (userEmail.includes('manager') || userEmail === 'sarah.johnson@westend-test.com') {
+        } else if (
+          userEmail.includes('manager') ||
+          userEmail === 'sarah.johnson@westend-test.com'
+        ) {
           router.push('/manager');
           return;
         }
       }
 
       const userRole = employeeData?.role?.toLowerCase().trim();
-      
+
       if (userRole === 'admin') {
         router.push('/admin');
         return;
       }
-      
+
       if (userRole === 'manager') {
         router.push('/manager');
         return;
       }
-      
+
       if (employeeData) {
         setProfile({
           id: user.id,
           email: employeeData.email || user.email || '',
           first_name: employeeData.first_name,
           last_name: employeeData.last_name,
-          role: employeeData.role
+          role: employeeData.role,
         });
       }
-      
+
       hasLoadedRef.current = true;
       await loadDashboardData(user.id);
     } catch (error) {
@@ -157,7 +165,7 @@ export default function EmployeeDashboard() {
     if (isRefresh) {
       setIsRefreshing(true);
     }
-    
+
     try {
       // Timesheets
       const { data: timesheetsData, error: timesheetsError } = await supabase
@@ -171,24 +179,30 @@ export default function EmployeeDashboard() {
         setTimecards([]);
       } else if (timesheetsData && timesheetsData.length > 0) {
         const uniqueTimesheets = Array.from(
-          new Map(timesheetsData.map(item => [item.id, item])).values()
+          new Map(timesheetsData.map((item) => [item.id, item])).values()
         ) as Timecard[];
-        
+
         setTimecards(uniqueTimesheets);
-        
-        const timecardStats = uniqueTimesheets.reduce((acc, tc) => ({
-          totalHours: acc.totalHours + (tc.total_hours || 0),
-          pendingTimecards: acc.pendingTimecards + (tc.status === 'submitted' ? 1 : 0),
-          approvedTimecards: acc.approvedTimecards + (tc.status === 'approved' ? 1 : 0),
-          rejectedTimecards: acc.rejectedTimecards + (tc.status === 'rejected' ? 1 : 0)
-        }), {
-          totalHours: 0,
-          pendingTimecards: 0,
-          approvedTimecards: 0,
-          rejectedTimecards: 0
-        });        
-        
-        setStats(prev => ({ ...prev, ...timecardStats }));
+
+        const timecardStats = uniqueTimesheets.reduce(
+          (acc, tc) => ({
+            totalHours: acc.totalHours + (tc.total_hours || 0),
+            pendingTimecards:
+              acc.pendingTimecards + (tc.status === 'submitted' ? 1 : 0),
+            approvedTimecards:
+              acc.approvedTimecards + (tc.status === 'approved' ? 1 : 0),
+            rejectedTimecards:
+              acc.rejectedTimecards + (tc.status === 'rejected' ? 1 : 0),
+          }),
+          {
+            totalHours: 0,
+            pendingTimecards: 0,
+            approvedTimecards: 0,
+            rejectedTimecards: 0,
+          }
+        );
+
+        setStats((prev) => ({ ...prev, ...timecardStats }));
       } else {
         setTimecards([]);
       }
@@ -202,86 +216,99 @@ export default function EmployeeDashboard() {
 
       if (!expensesError && expensesData) {
         const uniqueExpenses = Array.from(
-          new Map(expensesData.map(item => [item.id, item])).values()
+          new Map(expensesData.map((item) => [item.id, item])).values()
         ) as Expense[];
 
         setExpenses(uniqueExpenses);
-        
-        const expenseStats = uniqueExpenses.reduce((acc, exp) => ({
-          totalExpenses: acc.totalExpenses + (exp.amount || 0),
-          pendingExpenses: acc.pendingExpenses + (exp.status === 'submitted' ? exp.amount : 0),
-          approvedExpenses: acc.approvedExpenses + (exp.status === 'approved' ? exp.amount : 0),
-          rejectedExpenses: acc.rejectedExpenses + (exp.status === 'rejected' ? 1 : 0)
-        }), {
-          totalExpenses: 0,
-          pendingExpenses: 0,
-          approvedExpenses: 0,
-          rejectedExpenses: 0
-        });
 
-        setStats(prev => ({ ...prev, ...expenseStats }));
+        const expenseStats = uniqueExpenses.reduce(
+          (acc, exp) => ({
+            totalExpenses: acc.totalExpenses + (exp.amount || 0),
+            pendingExpenses:
+              acc.pendingExpenses +
+              (exp.status === 'submitted' ? exp.amount : 0),
+            approvedExpenses:
+              acc.approvedExpenses +
+              (exp.status === 'approved' ? exp.amount : 0),
+            rejectedExpenses:
+              acc.rejectedExpenses + (exp.status === 'rejected' ? 1 : 0),
+          }),
+          {
+            totalExpenses: 0,
+            pendingExpenses: 0,
+            approvedExpenses: 0,
+            rejectedExpenses: 0,
+          }
+        );
+
+        setStats((prev) => ({ ...prev, ...expenseStats }));
       } else {
         setExpenses([]);
       }
 
       // Expense reports (for recent list + editing)
-// Expense reports (for recent list + editing)
-// Also pull in line statuses so we can derive an overall report status
-const { data: reportsData, error: reportsError } = await supabase
-  .from('expense_reports')
-  .select(`
-    id,
-    employee_id,
-    title,
-    period_month,
-    status,
-    total_amount,
-    submitted_at,
-    created_at,
-    expenses (
-      status
-    )
-  `)
-  .eq('employee_id', userId)
-  .order('created_at', { ascending: false });
+      const { data: reportsData, error: reportsError } = await supabase
+        .from('expense_reports')
+        .select(`
+          id,
+          employee_id,
+          title,
+          period_month,
+          status,
+          total_amount,
+          submitted_at,
+          created_at,
+          expenses (
+            status
+          )
+        `)
+        .eq('employee_id', userId)
+        .order('created_at', { ascending: false });
 
-if (reportsError) {
-  console.error('Error fetching expense reports:', reportsError);
-  setExpenseReports([]);
-} else {
-  const mappedReports: ExpenseReport[] = (reportsData || []).map((r: any) => {
-    const lineStatuses: string[] = (r.expenses || []).map((e: any) => e.status);
+      if (reportsError) {
+        console.error('Error fetching expense reports:', reportsError);
+        setExpenseReports([]);
+      } else {
+        const mappedReports: ExpenseReport[] = (reportsData || []).map(
+          (r: any) => {
+            const lineStatuses: string[] = (r.expenses || []).map(
+              (e: any) => e.status
+            );
 
-    // Start from whatever is stored on the report
-    let derivedStatus: ExpenseReport['status'] = r.status;
+            // Start from whatever is stored on the report
+            let derivedStatus: ExpenseReport['status'] = r.status;
 
-    // If any line is rejected → report is rejected
-    if (lineStatuses.includes('rejected')) {
-      derivedStatus = 'rejected';
-    }
-    // Else if any line is submitted → report is submitted
-    else if (lineStatuses.includes('submitted')) {
-      derivedStatus = 'submitted';
-    }
-    // Else if we have lines and all are approved → report is approved
-    else if (lineStatuses.length > 0 && lineStatuses.every((s) => s === 'approved')) {
-      derivedStatus = 'approved';
-    }
+            // If any line is rejected → report is rejected
+            if (lineStatuses.includes('rejected')) {
+              derivedStatus = 'rejected';
+            }
+            // Else if any line is submitted → report is submitted
+            else if (lineStatuses.includes('submitted')) {
+              derivedStatus = 'submitted';
+            }
+            // Else if we have lines and all are approved → report is approved
+            else if (
+              lineStatuses.length > 0 &&
+              lineStatuses.every((s) => s === 'approved')
+            ) {
+              derivedStatus = 'approved';
+            }
 
-    return {
-      id: r.id,
-      employee_id: r.employee_id,
-      title: r.title,
-      period_month: r.period_month,
-      status: derivedStatus,
-      total_amount: r.total_amount,
-      submitted_at: r.submitted_at,
-      created_at: r.created_at,
-    } as ExpenseReport;
-  });
+            return {
+              id: r.id,
+              employee_id: r.employee_id,
+              title: r.title,
+              period_month: r.period_month,
+              status: derivedStatus,
+              total_amount: r.total_amount,
+              submitted_at: r.submitted_at,
+              created_at: r.created_at,
+            } as ExpenseReport;
+          }
+        );
 
-  setExpenseReports(mappedReports);
-}
+        setExpenseReports(mappedReports);
+      }
     } catch (error) {
       console.error('Dashboard error:', error);
     } finally {
@@ -316,8 +343,12 @@ if (reportsError) {
       let formattedEntries = entriesData || [];
 
       if (formattedEntries.length > 0) {
-        const projectIds = [...new Set(formattedEntries.map((e: any) => e.project_id).filter(Boolean))];
-        
+        const projectIds = [
+          ...new Set(
+            formattedEntries.map((e: any) => e.project_id).filter(Boolean)
+          ),
+        ];
+
         if (projectIds.length > 0) {
           const { data: projectsData } = await supabase
             .from('projects')
@@ -329,9 +360,13 @@ if (reportsError) {
           if (projectsData) {
             formattedEntries = formattedEntries.map((entry: any) => ({
               ...entry,
-              project_name: projectsData.find(p => p.id === entry.project_id)?.name || 'General Work',
-              project_code: projectsData.find(p => p.id === entry.project_id)?.project_code,
-              client_name: projectsData.find(p => p.id === entry.project_id)?.client_name
+              project_name:
+                projectsData.find((p) => p.id === entry.project_id)?.name ||
+                'General Work',
+              project_code: projectsData.find((p) => p.id === entry.project_id)
+                ?.project_code,
+              client_name: projectsData.find((p) => p.id === entry.project_id)
+                ?.client_name,
             }));
           }
         }
@@ -339,11 +374,12 @@ if (reportsError) {
 
       const formattedTimesheet = {
         ...timesheetData,
-        employee_name: profile?.first_name && profile?.last_name 
-          ? `${profile.first_name} ${profile.last_name}` 
-          : 'John Employee',
+        employee_name:
+          profile?.first_name && profile?.last_name
+            ? `${profile.first_name} ${profile.last_name}`
+            : 'John Employee',
         employee_email: profile?.email || '',
-        entries: formattedEntries
+        entries: formattedEntries,
       };
 
       console.log('Final formatted timesheet:', formattedTimesheet);
@@ -353,11 +389,12 @@ if (reportsError) {
       console.error('Error loading timesheet details:', error);
       const basicTimesheet = {
         ...timecard,
-        employee_name: profile?.first_name && profile?.last_name 
-          ? `${profile.first_name} ${profile.last_name}` 
-          : 'John Employee',
+        employee_name:
+          profile?.first_name && profile?.last_name
+            ? `${profile.first_name} ${profile.last_name}`
+            : 'John Employee',
         employee_email: profile?.email || '',
-        entries: []
+        entries: [],
       };
       setSelectedTimesheet(basicTimesheet);
       setIsModalOpen(true);
@@ -379,7 +416,7 @@ if (reportsError) {
       draft: 'bg-gray-100 text-gray-700 border-gray-300',
       submitted: 'bg-amber-50 text-amber-700 border-amber-300',
       approved: 'bg-emerald-50 text-emerald-700 border-emerald-300',
-      rejected: 'bg-red-50 text-red-700 border-red-300'
+      rejected: 'bg-red-50 text-red-700 border-red-300',
     };
     return `border ${colors[status] || 'bg-gray-100 text-gray-700 border-gray-300'}`;
   };
@@ -400,12 +437,13 @@ if (reportsError) {
   };
 
   const formatDate = (dateString: string | Date) => {
-    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    const date =
+      typeof dateString === 'string' ? new Date(dateString) : dateString;
 
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
@@ -414,7 +452,7 @@ if (reportsError) {
     if (Number.isNaN(weekEnd.getTime())) {
       return {
         title: `Week – ${totalHours.toFixed(1)} hrs`,
-        rangeLabel: ''
+        rangeLabel: '',
       };
     }
 
@@ -434,21 +472,23 @@ if (reportsError) {
     firstWeekEnd.setDate(firstWeekEnd.getDate() + daysToSaturday);
 
     const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-    const diffWeeks = Math.floor((weekEnd.getTime() - firstWeekEnd.getTime()) / msPerWeek);
+    const diffWeeks = Math.floor(
+      (weekEnd.getTime() - firstWeekEnd.getTime()) / msPerWeek
+    );
     const weekNumber = Math.max(1, diffWeeks + 1);
 
     const rangeLabel = `${formatDate(weekStart)} – ${formatDate(weekEnd)}`;
 
     return {
       title: `Week ${weekNumber} – ${totalHours.toFixed(1)} hrs`,
-      rangeLabel
+      rangeLabel,
     };
   };
 
   const formatCurrencyLocal = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'USD',
     }).format(amount);
   };
 
@@ -475,14 +515,14 @@ if (reportsError) {
       training: 'Training',
       communication: 'Communication',
       shipping: 'Shipping',
-      other: 'Other'
+      other: 'Other',
     };
     return labels[category] || category;
   };
 
   const getTimeBasedGreeting = () => {
     const hour = new Date().getHours();
-    
+
     if (hour < 12) {
       return 'Good morning';
     } else if (hour < 17) {
@@ -528,18 +568,21 @@ if (reportsError) {
               <button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-200 hover:text.white transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-200 hover:text-white transition-colors disabled:opacity-50"
                 title="Refresh data"
               >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
+                />
                 Refresh
               </button>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-white/10 rounded-full flex items.center justify-center">
+                <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
                   <User className="h-4 w-4 text-white" />
                 </div>
                 <span className="text-sm text-gray-200">
-                  {getTimeBasedGreeting()}, {profile?.first_name || 'Employee'}
+                  {getTimeBasedGreeting()},{' '}
+                  {profile?.first_name || 'Employee'}
                 </span>
               </div>
               <button
@@ -561,22 +604,20 @@ if (reportsError) {
           <h2 className="text-3xl font-bold text-[#05202E] mb-2">
             Welcome back{profile?.first_name ? `, ${profile.first_name}` : ''}!
           </h2>
-          <p className="text-gray-600">
-            Manage your timesheets and expenses
-          </p>
+          <p className="text-gray-600">Manage your timesheets and expenses</p>
         </div>
 
         {/* Quick Actions */}
-        <div className="mb-8 flex gap-4">
-          <button 
+        <div className="mb-8 flex flex-wrap gap-4">
+          <button
             onClick={() => router.push('/timesheet/entry')}
             className="flex items-center gap-3 px-6 py-3 bg-[#05202E] text-white rounded-lg hover:bg-[#0a2a3d] transition-all duration-200 font-medium shadow-lg"
           >
             <FileText className="h-5 w-5" />
             Access Timecards
           </button>
-          
-          <button 
+
+          <button
             onClick={() => router.push('/expense/entry')}
             className="flex items-center gap-3 px-6 py-3 bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865] transition-all duration-200 font-medium shadow-lg"
           >
@@ -595,9 +636,13 @@ if (reportsError) {
             <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <Clock className="h-5 w-5 text-[#05202E]" />
-                <span className="text-xs font-medium text-gray-500 uppercase">All Time</span>
+                <span className="text-xs font-medium text-gray-500 uppercase">
+                  All Time
+                </span>
               </div>
-              <p className="text-3xl font-bold text-[#05202E]">{stats.totalHours.toFixed(1)}</p>
+              <p className="text-3xl font-bold text-[#05202E]">
+                {stats.totalHours.toFixed(1)}
+              </p>
               <p className="text-sm text-gray-500 mt-1">Total Hours</p>
             </div>
 
@@ -605,9 +650,13 @@ if (reportsError) {
             <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <FileText className="h-5 w-5 text-[#05202E]" />
-                <span className="text-xs font-medium text-gray-500 uppercase">Pending</span>
+                <span className="text-xs font-medium text-gray-500 uppercase">
+                  Pending
+                </span>
               </div>
-              <p className="text-3xl font-bold text-[#05202E]">{stats.pendingTimecards}</p>
+              <p className="text-3xl font-bold text-[#05202E]">
+                {stats.pendingTimecards}
+              </p>
               <p className="text-sm text-gray-500 mt-1">Awaiting Review</p>
             </div>
 
@@ -615,9 +664,13 @@ if (reportsError) {
             <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <CheckCircle className="h-5 w-5 text-green-500" />
-                <span className="text-xs font-medium text-gray-500 uppercase">Approved</span>
+                <span className="text-xs font-medium text-gray-500 uppercase">
+                  Approved
+                </span>
               </div>
-              <p className="text-3xl font-bold text-[#05202E]">{stats.approvedTimecards}</p>
+              <p className="text-3xl font-bold text-[#05202E]">
+                {stats.approvedTimecards}
+              </p>
               <p className="text-sm text-gray-500 mt-1">Completed</p>
             </div>
 
@@ -625,7 +678,9 @@ if (reportsError) {
             <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <AlertCircle className="h-5 w-5 text-red-500" />
-                <span className="text-xs font-medium text-gray-500 uppercase">Rejected</span>
+                <span className="text-xs font-medium text-gray-500 uppercase">
+                  Rejected
+                </span>
               </div>
               <p className="text-3xl font-bold text-gray-500">
                 {stats.rejectedTimecards}
@@ -645,7 +700,9 @@ if (reportsError) {
             <div className="bg-white rounded-lg border border-[#e31c79]/20 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <DollarSign className="h-5 w-5 text-[#e31c79]" />
-                <span className="text-xs font-medium text-gray-500 uppercase">Total</span>
+                <span className="text-xs font-medium text-gray-500 uppercase">
+                  Total
+                </span>
               </div>
               <p className="text-2xl font-bold text-[#e31c79]">
                 {formatCurrencyLocal(stats.totalExpenses)}
@@ -657,7 +714,9 @@ if (reportsError) {
             <div className="bg-white rounded-lg border border-[#e31c79]/20 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <Receipt className="h-5 w-5 text-[#e31c79]" />
-                <span className="text-xs font-medium text-gray-500 uppercase">Pending</span>
+                <span className="text-xs font-medium text-gray-500 uppercase">
+                  Pending
+                </span>
               </div>
               <p className="text-2xl font-bold text-[#e31c79]">
                 {formatCurrencyLocal(stats.pendingExpenses)}
@@ -669,7 +728,9 @@ if (reportsError) {
             <div className="bg-white rounded-lg border border-[#e31c79]/20 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <CheckCircle className="h-5 w-5 text-green-500" />
-                <span className="text-xs font-medium text-gray-500 uppercase">Approved</span>
+                <span className="text-xs font-medium text-gray-500 uppercase">
+                  Approved
+                </span>
               </div>
               <p className="text-2xl font-bold text-[#e31c79]">
                 {formatCurrencyLocal(stats.approvedExpenses)}
@@ -678,10 +739,12 @@ if (reportsError) {
             </div>
 
             {/* Rejected Card */}
-            <div className="bg.white rounded-lg border border-[#e31c79]/20 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
+            <div className="bg-white rounded-lg border border-[#e31c79]/20 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <AlertCircle className="h-5 w-5 text-red-500" />
-                <span className="text-xs font-medium text-gray-500 uppercase">Rejected</span>
+                <span className="text-xs font-medium text-gray-500 uppercase">
+                  Rejected
+                </span>
               </div>
               <p className="text-2xl font-bold text-gray-500">
                 {stats.rejectedExpenses}
@@ -695,11 +758,15 @@ if (reportsError) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
           {/* Recent Timecards */}
           <div>
-            <div className="bg-white rounded-t-lg border border-[#05202E]-200 px-6 py-4 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
-              <h3 className="text-lg font-semibold text-[#05202E]">Recent Timecards</h3>
-              <p className="text-sm text-gray-500">Your latest timesheet submissions</p>
+            <div className="bg-white rounded-t-lg border border-gray-200 px-6 py-4 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
+              <h3 className="text-lg font-semibold text-[#05202E]">
+                Recent Timecards
+              </h3>
+              <p className="text-sm text-gray-500">
+                Your latest timesheet submissions
+              </p>
             </div>
-            <div className="bg-white rounded-b-lg border-x border-b border-[#05202E]-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
+            <div className="bg-white rounded-b-lg border-x border-b border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
               {timecards.length === 0 ? (
                 <div className="text-center py-8">
                   <FileText className="h-12 w-12 mx-auto mb-3 text-gray-300" />
@@ -716,10 +783,18 @@ if (reportsError) {
                       timecard.total_hours || 0
                     );
 
+                    const isRejected = timecard.status === 'rejected';
+                    const rejectionReason =
+                      (timecard as any).rejection_reason || null;
+
                     return (
                       <div
                         key={timecard.id}
-                        className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                        className={`p-4 border rounded-lg transition-colors cursor-pointer ${
+                          isRejected
+                            ? 'border-red-200 bg-red-50/40 hover:bg-red-50'
+                            : 'border-gray-100 hover:bg-gray-50'
+                        }`}
                         onClick={() => handleTimesheetClick(timecard)}
                       >
                         <div className="flex justify-between items-start">
@@ -731,14 +806,22 @@ if (reportsError) {
                               {rangeLabel}
                             </p>
 
-                            {timecard.status === 'rejected' && (timecard as any).rejection_reason && (
+                            {isRejected && rejectionReason && (
                               <p className="mt-1 text-xs text-red-600">
-                                Reason: {(timecard as any).rejection_reason}
+                                Reason: {rejectionReason}
+                              </p>
+                            )}
+                            {isRejected && (
+                              <p className="mt-1 text-xs text-red-700">
+                                Update this week’s hours in the time entry
+                                screen, then re-submit for approval.
                               </p>
                             )}
                           </div>
                           <span
-                            className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(timecard.status)}`}
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                              timecard.status
+                            )}`}
                           >
                             {renderTimecardStatus(timecard.status)}
                           </span>
@@ -751,57 +834,63 @@ if (reportsError) {
             </div>
           </div>
 
-          {/* Recent Expense Reports (new) */}
+          {/* Recent Expense Reports */}
           <div>
             <div className="bg-white rounded-t-lg border border-gray-200 px-6 py-4 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
-              <h3 className="text-lg font-semibold text-[#05202E]">Recent Expenses</h3>
-              <p className="text-sm text-gray-500">Your latest expense submissions</p>
+              <h3 className="text-lg font-semibold text-[#05202E]">
+                Recent Expenses
+              </h3>
+              <p className="text-sm text-gray-500">
+                Your latest expense submissions
+              </p>
             </div>
             <div className="bg-white rounded-b-lg border-x border-b border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
               {expenseReports.length === 0 ? (
                 <div className="text-center py-8">
                   <Receipt className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-gray-600 font-medium">No expense reports yet</p>
+                  <p className="text-gray-600 font-medium">
+                    No expense reports yet
+                  </p>
                   <p className="text-sm text-gray-500 mt-1">
                     Click "Submit Expense" to get started
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-{expenseReports.map((report) => (
-  <div
-    key={report.id}
-    className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-    onClick={() => router.push(`/expense/${report.id}`)}
-  >
-    <div className="flex justify-between items-start">
-      <div>
-        <p className="font-medium text-[#05202E]">
-          {report.title || 'Expense Report'}
-        </p>
-        <p className="text-sm text-gray-500">
-          {formatCurrencyLocal(report.total_amount)} •{' '}
-          {report.period_month
-            ? formatDate(report.period_month)
-            : formatDate(report.created_at)}
-        </p>
-        {report.status === 'rejected' && (
-          <p className="mt-1 text-xs text-red-600">
-            Rejected – open to review details and resubmit.
-          </p>
-        )}
-      </div>
-      <span
-        className={`px-2 py-1 text-xs font.medium rounded-full ${getStatusColor(
-          report.status
-        )}`}
-      >
-        {report.status.charAt(0).toUpperCase() +
-          report.status.slice(1)}
-      </span>
-    </div>
-  </div>
-))}
+                  {expenseReports.map((report) => (
+                    <div
+                      key={report.id}
+                      className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => router.push(`/expense/${report.id}`)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-[#05202E]">
+                            {report.title || 'Expense Report'}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {formatCurrencyLocal(report.total_amount)} •{' '}
+                            {report.period_month
+                              ? formatDate(report.period_month)
+                              : formatDate(report.created_at)}
+                          </p>
+                          {report.status === 'rejected' && (
+                            <p className="mt-1 text-xs text-red-600">
+                              Rejected – open to review details and resubmit.
+                            </p>
+                          )}
+                        </div>
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                            report.status
+                          )}`}
+                        >
+                          {report.status.charAt(0).toUpperCase() +
+                            report.status.slice(1)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

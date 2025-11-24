@@ -1,3 +1,5 @@
+// src/app/manager/timesheets/page.tsx
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -37,15 +39,17 @@ export default function ManagerTimesheets() {
 
   useEffect(() => {
     loadTimesheets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   const loadTimesheets = async () => {
     try {
       setLoading(true);
-      
+
       let query = supabase
         .from('timesheets')
-        .select(`
+        .select(
+          `
           *,
           employee:employees(
             id,
@@ -55,7 +59,8 @@ export default function ManagerTimesheets() {
             department,
             hourly_rate
           )
-        `)
+        `
+        )
         .order('week_ending', { ascending: false });
 
       // Apply filter
@@ -68,7 +73,7 @@ export default function ManagerTimesheets() {
       if (error) {
         console.error('Error loading timesheets:', error);
       } else {
-        setTimesheets(data || []);
+        setTimesheets((data || []) as Timesheet[]);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -77,82 +82,76 @@ export default function ManagerTimesheets() {
     }
   };
 
+  const callTimesheetStatus = async (
+    timesheetId: string,
+    body: { action: 'approve' | 'reject'; rejectionReason?: string }
+  ) => {
+    const res = await fetch(`/api/timesheets/${timesheetId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      let message = 'Failed to update timesheet.';
+      try {
+        const data = await res.json();
+        if (data?.error) {
+          message = data.error;
+        }
+      } catch {
+        // ignore JSON parse errors
+      }
+      throw new Error(message);
+    }
+
+    return res.json();
+  };
+
   const handleApproveTimesheet = async (timesheetId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const { error } = await supabase
-        .from('timesheets')
-        .update({
-          status: 'approved',
-          approved_at: new Date().toISOString(),
-          approved_by: user?.id,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', timesheetId);
-
-      if (error) {
-        console.error('Error approving timesheet:', error);
-        alert('Failed to approve timesheet: ' + error.message);
-      } else {
-        alert('Timesheet approved successfully!');
-        await loadTimesheets(); // Reload data
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('An error occurred while approving the timesheet');
+      await callTimesheetStatus(timesheetId, { action: 'approve' });
+      alert('Timesheet approved successfully.');
+      await loadTimesheets();
+    } catch (error: any) {
+      console.error('Error approving timesheet:', error);
+      alert(error?.message || 'An error occurred while approving the timesheet.');
     }
   };
 
   const handleRejectTimesheet = async (timesheetId: string) => {
     try {
-      // Get rejection reason
       const reason = prompt('Please provide a reason for rejection:');
-      
+
       if (!reason || reason.trim() === '') {
-        alert('Rejection reason is required');
+        alert('Rejection reason is required.');
         return;
       }
 
-      console.log('Rejecting timesheet:', timesheetId, 'Reason:', reason);
+      await callTimesheetStatus(timesheetId, {
+        action: 'reject',
+        rejectionReason: reason.trim(),
+      });
 
-      const { data, error } = await supabase
-        .from('timesheets')
-        .update({
-          status: 'rejected',
-          rejection_reason: reason,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', timesheetId)
-        .select(); // Return the updated record
-
-      console.log('Update result:', data);
-      console.log('Update error:', error);
-
-      if (error) {
-        console.error('Error rejecting timesheet:', error);
-        alert('Failed to reject timesheet: ' + error.message);
-      } else {
-        alert('Timesheet rejected successfully!');
-        await loadTimesheets(); // Reload data
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('An error occurred while rejecting the timesheet');
+      alert('Timesheet rejected successfully.');
+      await loadTimesheets();
+    } catch (error: any) {
+      console.error('Error rejecting timesheet:', error);
+      alert(error?.message || 'An error occurred while rejecting the timesheet.');
     }
   };
 
   const handleViewTimesheet = (timesheet: Timesheet) => {
-    // You can implement a modal or navigate to a detail page
-    console.log('View timesheet:', timesheet);
-    // For now, just show an alert with details
+    // You can replace this with a modal in the future
     alert(`
-      Employee: ${timesheet.employee?.first_name} ${timesheet.employee?.last_name}
-      Week Ending: ${new Date(timesheet.week_ending).toLocaleDateString()}
-      Total Hours: ${timesheet.total_hours}
-      Overtime: ${timesheet.overtime_hours || 0}
-      Status: ${timesheet.status}
-      ${timesheet.rejection_reason ? `Rejection Reason: ${timesheet.rejection_reason}` : ''}
+Employee: ${timesheet.employee?.first_name} ${timesheet.employee?.last_name}
+Week Ending: ${new Date(timesheet.week_ending).toLocaleDateString()}
+Total Hours: ${timesheet.total_hours}
+Overtime: ${timesheet.overtime_hours || 0}
+Status: ${timesheet.status}
+${timesheet.rejection_reason ? `Rejection Reason: ${timesheet.rejection_reason}` : ''}
     `);
   };
 
