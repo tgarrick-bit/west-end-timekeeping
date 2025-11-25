@@ -59,7 +59,7 @@ The West End Workforce operational reporting system is **complete and production
 
 ### **Colors & Styling**
 - **Primary Pink**: #e31c79 (main actions, headers, primary elements)
-- **Dark Blue**: #05202E (secondary elements, navigation, text)
+- **Dark Blue**: #33393c (secondary elements, navigation, text)
 - **Light Beige**: #E5DDD8 (tertiary elements, backgrounds, subtle accents)
 - **Card Layout**: Same rounded corners, shadows, and spacing as admin dashboard
 - **Typography**: Identical font weights, sizes, and hierarchy

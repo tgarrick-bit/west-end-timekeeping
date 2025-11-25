@@ -30,7 +30,7 @@ A comprehensive, enterprise-grade timesheet and expense tracking system built fo
 
 The system uses West End Workforce's official brand colors:
 - **Primary Pink**: #e31c79 (main CTA buttons, headers, active states)
-- **Dark Navy**: #05202E (navigation, text, backgrounds)
+- **Dark Navy**: #33393c (navigation, text, backgrounds)
 - **Light Gray**: #e5ddd8 (cards, subtle backgrounds)
 - **Dark Gray**: #232020 (body text)
 - **Blue Accent**: #465079 (secondary buttons, links)

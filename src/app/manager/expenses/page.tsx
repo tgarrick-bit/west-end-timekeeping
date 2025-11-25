@@ -184,7 +184,7 @@ export default function ExpenseApprovalPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-[#05202E] text-white">
+      <header className="bg-[#33393c] text-white">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">

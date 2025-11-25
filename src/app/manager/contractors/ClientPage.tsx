@@ -22,7 +22,7 @@ export default function ContractorsIndexClient() {
       <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6">
         <button
           onClick={() => router.push('/manager')}
-          className="px-4 py-2 bg-[#05202E] text-white rounded-lg hover:bg-[#0a2f3f] transition-colors"
+          className="px-4 py-2 bg-[#33393c] text-white rounded-lg hover:bg-[#0a2f3f] transition-colors"
         >
           Back to Manager
         </button>

@@ -283,6 +283,33 @@ export default function TimesheetEntry() {
     }
   };
 
+  const callTimesheetStatusApi = async (
+    timesheetId: string,
+    action: 'save' | 'submit'
+  ) => {
+    try {
+      const res = await fetch(`/api/timesheets/${timesheetId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        console.error(
+          'Timesheet status API failed',
+          res.status,
+          data || res.statusText
+        );
+      } else {
+        const data = await res.json().catch(() => null);
+        console.log('Timesheet status API success', data);
+      }
+    } catch (err) {
+      console.error('Error calling timesheet status API:', err);
+    }
+  };
+
   const calculateTotals = () => {
     const dailyTotals: { [key: string]: number } = {};
     let weekTotal = 0;
@@ -295,7 +322,7 @@ export default function TimesheetEntry() {
       });
       dailyTotals[dateStr] = dayTotal;
       weekTotal += dayTotal;
-    });
+    });  
 
     const regularHours = Math.min(weekTotal, 40);
     const overtimeHours = Math.max(0, weekTotal - 40);
@@ -460,6 +487,13 @@ export default function TimesheetEntry() {
           .insert(entries);
         if (entriesError) throw entriesError;
       }
+
+            // 3b) Call status API to trigger emails and central status machine
+            if (timesheetId) {
+              // For drafts, we still call with 'save' so the route can keep state coherent if needed
+              const action = isDraft ? 'save' : 'submit';
+              await callTimesheetStatusApi(timesheetId, action);
+            }      
   
       setTimesheetStatus(newStatus);
   
@@ -495,7 +529,7 @@ export default function TimesheetEntry() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-[#05202E] shadow-lg">
+      <header className="bg-[#33393c] shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-4">
@@ -525,7 +559,7 @@ export default function TimesheetEntry() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <Calendar className="h-5 w-5 text-[#e31c79]" />
-              <span className="text-lg font-semibold text-[#05202E]">
+              <span className="text-lg font-semibold text-[#33393c]">
                 Week Ending: {getWeekEndingDate(selectedWeek)}
               </span>
             </div>
@@ -586,7 +620,7 @@ export default function TimesheetEntry() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-[#05202E] text-white">
+                <tr className="bg-[#33393c] text-white">
                   <th className="text-left px-4 py-3 font-medium">PROJECT</th>
                   {getWeekDates().map((date) => {
                     const header = formatDateHeader(date);
@@ -648,7 +682,7 @@ export default function TimesheetEntry() {
                           </td>
                         );
                       })}
-                      <td className="px-4 py-3 text-center font-medium text-[#05202E]">
+                      <td className="px-4 py-3 text-center font-medium text-[#33393c]">
                         {rowTotal.toFixed(1)}
                       </td>
                       <td className="px-2 py-3">
@@ -666,11 +700,11 @@ export default function TimesheetEntry() {
               </tbody>
               <tfoot>
                 <tr className="bg-gray-50 font-medium">
-                  <td className="px-4 py-3 text-[#05202E]">Daily Totals:</td>
+                  <td className="px-4 py-3 text-[#33393c]">Daily Totals:</td>
                   {getWeekDates().map((date) => {
                     const dateStr = formatDate(date);
                     return (
-                      <td key={dateStr} className="px-2 py-3 text-center text-[#05202E]">
+                      <td key={dateStr} className="px-2 py-3 text-center text-[#33393c]">
                         {dailyTotals[dateStr]?.toFixed(1) || '0.0'}
                       </td>
                     );
@@ -689,7 +723,7 @@ export default function TimesheetEntry() {
             <button
               onClick={addRow}
               disabled={timesheetStatus === 'approved'}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-[#05202E] hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-[#33393c] hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="h-4 w-4" />
               Add Row
@@ -728,7 +762,7 @@ export default function TimesheetEntry() {
 
         {/* Attestation */}
         <div className="bg-white rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-[#05202E] mb-4">
+          <h3 className="text-lg font-semibold text-[#33393c] mb-4">
             Timesheet Attestation
           </h3>
           <label className="flex items-start gap-3 cursor-pointer">

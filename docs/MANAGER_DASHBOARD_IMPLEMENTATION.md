@@ -97,7 +97,7 @@ This document describes the implementation of the dedicated manager approval int
 
 ## Color Scheme (West End Workforce Branding)
 - **Primary Pink**: #e31c79 (action buttons, approved status)
-- **Dark Blue**: #05202E (headers, text, navigation)
+- **Dark Blue**: #33393c (headers, text, navigation)
 - **Light Beige**: #E5DDD8 (section backgrounds, cards)
 - **Success Green**: For approved items
 - **Warning Orange**: For pending items

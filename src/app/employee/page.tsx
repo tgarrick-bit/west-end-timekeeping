@@ -614,7 +614,7 @@ export default function EmployeeDashboard() {
             className="flex items-center gap-3 px-6 py-3 bg-[#05202E] text-white rounded-lg hover:bg-[#0a2a3d] transition-all duration-200 font-medium shadow-lg"
           >
             <FileText className="h-5 w-5" />
-            Access Timecards
+            Access Timesheet
           </button>
 
           <button
@@ -671,7 +671,7 @@ export default function EmployeeDashboard() {
               <p className="text-3xl font-bold text-[#05202E]">
                 {stats.approvedTimecards}
               </p>
-              <p className="text-sm text-gray-500 mt-1">Completed</p>
+              <p className="text-sm text-gray-500 mt-1">Approved</p>
             </div>
 
             {/* Rejected Card */}
@@ -701,13 +701,13 @@ export default function EmployeeDashboard() {
               <div className="flex items-start justify-between mb-3">
                 <DollarSign className="h-5 w-5 text-[#e31c79]" />
                 <span className="text-xs font-medium text-gray-500 uppercase">
-                  Total
+                  All Time
                 </span>
               </div>
               <p className="text-2xl font-bold text-[#e31c79]">
                 {formatCurrencyLocal(stats.totalExpenses)}
               </p>
-              <p className="text-sm text-gray-500 mt-1">All Expenses</p>
+              <p className="text-sm text-gray-500 mt-1">Total Expenses</p>
             </div>
 
             {/* Pending Card */}
@@ -721,7 +721,7 @@ export default function EmployeeDashboard() {
               <p className="text-2xl font-bold text-[#e31c79]">
                 {formatCurrencyLocal(stats.pendingExpenses)}
               </p>
-              <p className="text-sm text-gray-500 mt-1">Under Review</p>
+              <p className="text-sm text-gray-500 mt-1">Awaiting Review</p>
             </div>
 
             {/* Approved Card */}
@@ -760,7 +760,7 @@ export default function EmployeeDashboard() {
           <div>
             <div className="bg-white rounded-t-lg border border-gray-200 px-6 py-4 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
               <h3 className="text-lg font-semibold text-[#05202E]">
-                Recent Timecards
+                Recent Timesheets
               </h3>
               <p className="text-sm text-gray-500">
                 Your latest timesheet submissions

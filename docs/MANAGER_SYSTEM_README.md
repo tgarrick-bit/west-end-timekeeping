@@ -24,7 +24,7 @@ A comprehensive manager/time approver system that provides external client manag
 ### **Visual Consistency:**
 - ✅ **Same header styling**: Clean white background, same typography
 - ✅ **Same card designs**: Identical shadows, borders, spacing
-- ✅ **Same color scheme**: Pink (#e31c79), Dark Blue (#05202E), Light Beige (#E5DDD8)
+- ✅ **Same color scheme**: Pink (#e31c79), Dark Blue (#33393c), Light Beige (#E5DDD8)
 - ✅ **Same layout structure**: Grid systems, spacing, responsive design
 - ✅ **Same button styling**: Hover effects, colors, typography
 - ✅ **Same professional appearance**: Enterprise-grade look and feel
@@ -276,7 +276,7 @@ GET /api/manager/reports         - Generate reports
 
 ### **Color Usage:**
 - **Pink (#e31c79)**: Primary actions, your projects, approved status
-- **Dark Blue (#05202E)**: Text, headers, secondary actions
+- **Dark Blue (#33393c)**: Text, headers, secondary actions
 - **Light Beige (#E5DDD8)**: Card backgrounds, section dividers
 - **Orange**: Pending status indicators
 - **Green**: Approved/completed status

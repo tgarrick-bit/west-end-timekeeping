@@ -43,7 +43,7 @@ export default function TopNavigation() {
   const role: UserRole = (profile.role as UserRole) ?? 'employee';
 
   return (
-    <div className="w-full bg-[#05202E] text-white">  {/* Changed to dark blue background */}
+    <div className="w-full bg-[#33393c] text-white">  {/* Changed to dark blue background */}
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Replace the text with the logo */}
         <div className="flex items-center space-x-3">

@@ -153,7 +153,7 @@ export default function ContractorDetailPage() {
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#05202E] transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#33393c] transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -273,7 +273,7 @@ export default function ContractorDetailPage() {
                   {contractor.phone && (
                     <button
                       onClick={() => handleContact('phone')}
-                      className="bg-[#05202E] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center space-x-2"
+                      className="bg-[#33393c] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center space-x-2"
                     >
                       <Phone className="h-4 w-4" />
                       <span>Call</span>
@@ -349,7 +349,7 @@ export default function ContractorDetailPage() {
                 </button>
                 <button
                   onClick={handleViewExpenses}
-                  className="bg-[#05202E] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center justify-center space-x-2"
+                  className="bg-[#33393c] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center justify-center space-x-2"
                 >
                   <DollarSign className="h-5 w-5" />
                   <span>Review Expenses</span>

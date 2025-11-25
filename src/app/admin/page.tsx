@@ -871,7 +871,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-[#F7F8FC]">
       {/* Header */}
-      <header className="bg-[#05202E] shadow-sm">
+      <header className="bg-[#33393c] shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-4">
@@ -920,7 +920,7 @@ export default function AdminPage() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-4">
-            <h1 className="text-2xl font-semibold text-[#05202E]">Admin dashboard</h1>
+            <h1 className="text-2xl font-semibold text-[#33393c]">Admin dashboard</h1>
             <p className="text-sm text-gray-500 mt-1">
               Monitor submissions, approvals, and reminders across the organization.
             </p>
@@ -934,41 +934,41 @@ export default function AdminPage() {
           <div className="flex space-x-6">
             <button 
               onClick={() => router.push('/admin')}
-              className="py-3 text-sm font-medium text-[#05202E] border-b-2 border-[#e31c79] whitespace-nowrap"
+              className="py-3 text-sm font-medium text-[#33393c] border-b-2 border-[#e31c79] whitespace-nowrap"
             >
               Review & Approve
             </button>
             
             <button 
               onClick={() => router.push('/admin/employees')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#05202E] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
+              className="py-3 text-sm font-medium text-gray-500 hover:text-[#33393c] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
             >
               Employees
             </button>
             
             <button 
               onClick={() => router.push('/admin/clients')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#05202E] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
+              className="py-3 text-sm font-medium text-gray-500 hover:text-[#33393c] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
             >
               Clients
             </button>
             
             <button 
               onClick={() => router.push('/admin/projects')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#05202E] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
+              className="py-3 text-sm font-medium text-gray-500 hover:text-[#33393c] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
             >
               Projects
             </button>
 
             <button 
               onClick={() => router.push('/admin/billing')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#05202E] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
+              className="py-3 text-sm font-medium text-gray-500 hover:text-[#33393c] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
             >
               Billing
             </button>
 
             <div className="relative group">
-              <button className="py-3 text-sm font-medium text-gray-500 hover:text-[#05202E] flex items-center gap-1 border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap">
+              <button className="py-3 text-sm font-medium text-gray-500 hover:text-[#33393c] flex items-center gap-1 border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap">
                 Reports
                 <ChevronDown className="h-4 w-4" />
               </button>
@@ -989,7 +989,7 @@ export default function AdminPage() {
 
             <button 
               onClick={() => router.push('/admin/settings')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#05202E] border-b-2 border-transparent hover:border-gray-200 flex items-center gap-2 whitespace-nowrap"
+              className="py-3 text-sm font-medium text-gray-500 hover:text-[#33393c] border-b-2 border-transparent hover:border-gray-200 flex items-center gap-2 whitespace-nowrap"
             >
               <Settings className="h-4 w-4" />
               Settings
@@ -1156,7 +1156,7 @@ export default function AdminPage() {
       {/* Monitoring Dashboard */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h3 className="text-lg font-semibold text-[#05202E] mb-4 flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-[#33393c] mb-4 flex items-center gap-2">
             <Bell className="h-5 w-5 text-[#e31c79]" />
             Monitoring dashboard
           </h3>
@@ -1331,7 +1331,7 @@ export default function AdminPage() {
   <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
     {/* TIMESHEETS CARD */}
     <div className="border-b border-gray-100 rounded-t-2xl overflow-hidden">
-      <div className="bg-[#05202E] px-4 py-3 flex justify-between items-center">
+      <div className="bg-[#33393c] px-4 py-3 flex justify-between items-center">
               <h3 className="text-sm font-semibold text-white">Timesheets</h3>
               <div className="flex items-center space-x-2 text-xs text-gray-300">
                 <span>

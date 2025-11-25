@@ -119,7 +119,7 @@ export default function AdminProjectsPage() {
   return (
     <div className="min-h-screen bg-[#F7F8FC] text-gray-900">
       {/* Admin Portal blue nav with back arrow */}
-      <header className="bg-[#05202E] shadow-sm">
+      <header className="bg-[#33393c] shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
@@ -159,7 +159,7 @@ export default function AdminProjectsPage() {
               <span className="text-gray-400">/</span>
               <span>Projects</span>
             </div>
-            <h1 className="text-xl font-semibold text-[#05202E]">Projects</h1>
+            <h1 className="text-xl font-semibold text-[#33393c]">Projects</h1>
             <p className="mt-1 text-xs text-gray-500">
               Manage client-scoped projects that employees can bill time and expenses to.
             </p>
@@ -194,7 +194,7 @@ export default function AdminProjectsPage() {
               onClick={() => setShowActiveOnly((prev) => !prev)}
               className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                 showActiveOnly
-                  ? 'border-[#05202E] bg-[#05202E] text-white'
+                  ? 'border-[#33393c] bg-[#33393c] text-white'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-[#e31c79] hover:text-[#e31c79]'
               }`}
             >

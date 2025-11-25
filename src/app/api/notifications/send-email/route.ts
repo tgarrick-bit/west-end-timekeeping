@@ -356,7 +356,7 @@ ${baseData.companyName} Team
               <h1 style="color:white; margin: 0;">West End Workforce</h1>
             </div>
             <div style="padding: 24px; background:#f9fafb;">
-              <h2 style="color:#05202E;">Timecard Submission Reminder</h2>
+              <h2 style="color:#33393c;">Timecard Submission Reminder</h2>
               <p>Hello ${baseData.employee_name || 'Employee'},</p>
               <p>
                 This is a reminder that your timecard for the week ending
@@ -373,7 +373,7 @@ ${baseData.companyName} Team
 
               <p>Thank you,<br/>West End Workforce</p>
             </div>
-            <div style="background-color:#05202E; padding:12px; text-align:center;">
+            <div style="background-color:#33393c; padding:12px; text-align:center;">
               <p style="color:white; font-size:12px; margin:0;">© ${new Date().getFullYear()} West End Workforce</p>
             </div>
           </div>

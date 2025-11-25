@@ -413,7 +413,7 @@ export default function TimeByClassReport() {
                 {reportData.length > 0 && (
                   <button 
                     onClick={handleExportToExcel}
-                    className="px-6 py-2 bg-[#05202E] text-white rounded-md hover:bg-gray-800 font-medium flex items-center"
+                    className="px-6 py-2 bg-[#33393c] text-white rounded-md hover:bg-gray-800 font-medium flex items-center"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Export to Excel

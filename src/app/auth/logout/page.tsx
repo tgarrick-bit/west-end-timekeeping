@@ -173,7 +173,7 @@ export default function LogoutPage() {
   }, [status]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#05202E] to-[#0a3044]">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#33393c] to-[#0a3044]">
       <div className="max-w-md w-full">
         <div className="bg-white rounded-lg shadow-2xl p-8">
           <div className="text-center">

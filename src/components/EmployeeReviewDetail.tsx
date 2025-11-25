@@ -102,7 +102,7 @@ export default function EmployeeReviewDetail({
       <div className="mb-8">
         <button
           onClick={onBack}
-          className="flex items-center space-x-2 text-[#05202E] hover:text-[#e31c79] transition-colors mb-4"
+          className="flex items-center space-x-2 text-[#33393c] hover:text-[#e31c79] transition-colors mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Approvals</span>
@@ -111,7 +111,7 @@ export default function EmployeeReviewDetail({
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-[#05202E] mb-2">
+              <h1 className="text-3xl font-bold text-[#33393c] mb-2">
                 Employee Review: {employee.name}
               </h1>
               <p className="text-lg text-gray-600 mb-1">{employee.role}</p>
@@ -184,7 +184,7 @@ export default function EmployeeReviewDetail({
       {/* Timesheet Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-[#05202E] flex items-center">
+          <h2 className="text-xl font-semibold text-[#33393c] flex items-center">
             <Clock className="w-5 h-5 mr-2" />
             Weekly Timesheet
           </h2>
@@ -209,7 +209,7 @@ export default function EmployeeReviewDetail({
               
               return (
                 <div key={day} className="text-center">
-                  <div className="font-medium text-[#05202E] mb-2">{day}</div>
+                  <div className="font-medium text-[#33393c] mb-2">{day}</div>
                   <div className="space-y-2">
                     {yourHours > 0 && (
                       <div className="bg-[#e31c79] bg-opacity-10 p-2 rounded border border-[#e31c79] border-opacity-30">
@@ -231,7 +231,7 @@ export default function EmployeeReviewDetail({
 
           {/* Project Breakdown */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-[#05202E]">Project Breakdown</h3>
+            <h3 className="text-lg font-medium text-[#33393c]">Project Breakdown</h3>
             {timeEntries.map((entry) => (
               <div key={entry.id} className={`p-3 rounded border ${
                 entry.isYourProject 
@@ -269,7 +269,7 @@ export default function EmployeeReviewDetail({
       {expenses.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-[#05202E] flex items-center">
+            <h2 className="text-xl font-semibold text-[#33393c] flex items-center">
               <DollarSign className="w-5 h-5 mr-2" />
               Pending Expenses
             </h2>
@@ -326,8 +326,8 @@ export default function EmployeeReviewDetail({
       )}
 
       {/* Approval Actions */}
-      <div className="bg-[#E5DDD8] rounded-lg border border-[#05202E] border-opacity-20 p-6">
-        <h3 className="text-lg font-medium text-[#05202E] mb-4">Approval Actions</h3>
+      <div className="bg-[#E5DDD8] rounded-lg border border-[#33393c] border-opacity-20 p-6">
+        <h3 className="text-lg font-medium text-[#33393c] mb-4">Approval Actions</h3>
         <div className="flex flex-wrap gap-3">
           <button 
             onClick={() => onApprove('both')}
@@ -363,7 +363,7 @@ export default function EmployeeReviewDetail({
             <span>Reject All</span>
           </button>
           
-          <button className="bg-[#05202E] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center space-x-2">
+          <button className="bg-[#33393c] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center space-x-2">
             <MessageSquare className="w-5 h-5" />
             <span>Request Changes</span>
           </button>
@@ -374,7 +374,7 @@ export default function EmployeeReviewDetail({
       {showRejectionModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-medium text-[#05202E] mb-4">
+            <h3 className="text-lg font-medium text-[#33393c] mb-4">
               Reject {rejectionType === 'both' ? 'Everything' : rejectionType === 'timesheet' ? 'Timesheet' : 'Expenses'}
             </h3>
             <textarea

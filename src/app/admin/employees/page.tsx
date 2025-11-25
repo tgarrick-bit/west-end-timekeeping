@@ -489,7 +489,7 @@ export default function EmployeeManagement() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header (match other admin pages) */}
-      <header className="bg-[#05202E] shadow-sm">
+      <header className="bg-[#33393c] shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Left section: Back button + Logo + Title */}
@@ -607,7 +607,7 @@ export default function EmployeeManagement() {
           <table className="min-w-full">
             <thead>
               {/* Main header row */}
-              <tr className="bg-[#05202E] text-white">
+              <tr className="bg-[#33393c] text-white">
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Employee
                 </th>

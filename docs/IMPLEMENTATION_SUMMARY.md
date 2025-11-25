@@ -19,7 +19,7 @@
 
 ### 3. **West End Workforce Branding - COMPLETED**
 - **Primary color**: Pink (#e31c79) for timesheets and main actions
-- **Secondary color**: Dark Blue (#05202E) for expenses and secondary elements  
+- **Secondary color**: Dark Blue (#33393c) for expenses and secondary elements  
 - **Accent color**: Light Beige (#E5DDD8) for profile and tertiary elements
 - **Consistent styling** - All employee-facing components use brand colors
 - **Maintained transparency** - Same opacity levels for clean, professional appearance

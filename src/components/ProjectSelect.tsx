@@ -87,9 +87,9 @@ export default function ProjectSelect({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-[#05202E] focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79] transition-all text-sm text-left flex items-center justify-between"
+        className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-[#33393c] focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79] transition-all text-sm text-left flex items-center justify-between"
       >
-        <span className={value ? 'text-[#05202E]' : 'text-gray-500'}>
+        <span className={value ? 'text-[#33393c]' : 'text-gray-500'}>
           {displayValue || placeholder}
         </span>
         <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -135,7 +135,7 @@ export default function ProjectSelect({
                         type="button"
                         onClick={() => handleSelect(project.id)}
                         className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
-                          project.id === value ? 'bg-[#e31c79] bg-opacity-10 text-[#e31c79]' : 'text-[#05202E]'
+                          project.id === value ? 'bg-[#e31c79] bg-opacity-10 text-[#e31c79]' : 'text-[#33393c]'
                         }`}
                       >
                         <div className="font-medium">{project.name}</div>

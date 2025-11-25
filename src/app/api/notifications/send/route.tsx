@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
               <h1 style="color: white; margin: 0;">West End Workforce</h1>
             </div>
             <div style="background-color: #f5f5f5; padding: 20px;">
-              <h2 style="color: #05202E;">Timecard Submission Reminder</h2>
+              <h2 style="color: #33393c;">Timecard Submission Reminder</h2>
               <p>Hello ${data.employee_name || 'Employee'},</p>
               <p>This is a reminder that your timecard for the week ending <strong>${data.week_ending}</strong> has not been submitted yet.</p>
               <p>Your timecard is currently in <strong>draft</strong> status.</p>
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
                 </a>
               </div>
             </div>
-            <div style="background-color: #05202E; padding: 15px; text-align: center;">
+            <div style="background-color: #33393c; padding: 15px; text-align: center;">
               <p style="color: white; margin: 0; font-size: 12px;">© 2025 West End Workforce</p>
             </div>
           </div>
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
               <h1 style="color: white; margin: 0;">West End Workforce</h1>
             </div>
             <div style="background-color: #f5f5f5; padding: 20px;">
-              <h2 style="color: #05202E;">Pending Approvals Reminder</h2>
+              <h2 style="color: #33393c;">Pending Approvals Reminder</h2>
               <p>Hello ${data.manager_name || 'Manager'},</p>
               <p>You have <strong style="color: #e31c79;">${data.pending_count}</strong> timecard(s) pending your approval.</p>
               <p>Please review and approve these timecards at your earliest convenience to ensure timely payroll processing.</p>
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
                 </a>
               </div>
             </div>
-            <div style="background-color: #05202E; padding: 15px; text-align: center;">
+            <div style="background-color: #33393c; padding: 15px; text-align: center;">
               <p style="color: white; margin: 0; font-size: 12px;">© 2025 West End Workforce</p>
             </div>
           </div>

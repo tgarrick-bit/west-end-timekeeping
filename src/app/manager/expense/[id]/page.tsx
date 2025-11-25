@@ -931,7 +931,7 @@ export default function ManagerExpenseReportPage() {
     <button
       type="button"
       onClick={() => router.push('/manager')}
-      className="px-4 py-2 text-xs font-semibold rounded-md bg-[#05202E] text-white hover:bg-[#03141f] transition-colors"
+      className="px-4 py-2 text-xs font-semibold rounded-md bg-[#33393c] text-white hover:bg-[#03141f] transition-colors"
     >
       Back to Manager Dashboard
     </button>

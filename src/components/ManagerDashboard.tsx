@@ -182,7 +182,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-[#05202E]">
+              <h1 className="text-3xl font-bold text-[#33393c]">
                 West End Workforce - Manager Portal
               </h1>
               <p className="text-lg text-gray-600 mt-1">
@@ -194,7 +194,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
             </div>
             <div className="text-right">
               <div className="text-sm text-gray-500">Current Week</div>
-              <div className="text-lg font-semibold text-[#05202E]">January 13-19, 2025</div>
+              <div className="text-lg font-semibold text-[#33393c]">January 13-19, 2025</div>
             </div>
           </div>
         </div>
@@ -210,7 +210,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Pending Timesheets</p>
-                <p className="text-2xl font-bold text-[#05202E]">{stats.pendingTimesheets}</p>
+                <p className="text-2xl font-bold text-[#33393c]">{stats.pendingTimesheets}</p>
               </div>
             </div>
           </div>
@@ -222,7 +222,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Pending Expenses</p>
-                <p className="text-2xl font-bold text-[#05202E]">{stats.pendingExpenses}</p>
+                <p className="text-2xl font-bold text-[#33393c]">{stats.pendingExpenses}</p>
               </div>
             </div>
           </div>
@@ -234,7 +234,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Amount</p>
-                <p className="text-2xl font-bold text-[#05202E]">${stats.totalAmount.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-[#33393c]">${stats.totalAmount.toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -246,7 +246,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Your Contractors</p>
-                <p className="text-2xl font-bold text-[#05202E]">{stats.totalContractors}</p>
+                <p className="text-2xl font-bold text-[#33393c]">{stats.totalContractors}</p>
               </div>
             </div>
           </div>
@@ -258,15 +258,15 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
             <FileText className="w-5 h-5" />
             <span>Review Timesheets</span>
           </button>
-          <button className="bg-[#05202E] text-white px-4 py-3 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center justify-center space-x-2">
+          <button className="bg-[#33393c] text-white px-4 py-3 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center justify-center space-x-2">
             <DollarSign className="w-5 h-5" />
             <span>Review Expenses</span>
           </button>
-          <button className="bg-[#E5DDD8] text-[#05202E] px-4 py-3 rounded-lg font-medium hover:bg-[#d4cac3] transition-colors flex items-center justify-center space-x-2">
+          <button className="bg-[#E5DDD8] text-[#33393c] px-4 py-3 rounded-lg font-medium hover:bg-[#d4cac3] transition-colors flex items-center justify-center space-x-2">
             <BarChart3 className="w-5 h-5" />
             <span>Generate Reports</span>
           </button>
-          <button className="bg-[#E5DDD8] text-[#05202E] px-4 py-3 rounded-lg font-medium hover:bg-[#d4cac3] transition-colors flex items-center justify-center space-x-2">
+          <button className="bg-[#E5DDD8] text-[#33393c] px-4 py-3 rounded-lg font-medium hover:bg-[#d4cac3] transition-colors flex items-center justify-center space-x-2">
             <Users className="w-5 h-5" />
             <span>Contractor List</span>
           </button>
@@ -275,7 +275,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
         {/* Contractor List */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-[#05202E]">Your Contractors - Pending Approvals</h2>
+            <h2 className="text-xl font-semibold text-[#33393c]">Your Contractors - Pending Approvals</h2>
           </div>
           <div className="divide-y divide-gray-200">
             {contractors.map((contractor) => (
@@ -289,7 +289,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
                         </span>
                       </div>
                       <div>
-                        <h3 className="text-lg font-medium text-[#05202E]">{contractor.name}</h3>
+                        <h3 className="text-lg font-medium text-[#33393c]">{contractor.name}</h3>
                         <p className="text-sm text-gray-600">Employee ID: {contractor.employeeId}</p>
                         <p className="text-sm text-gray-600">{contractor.role}</p>
                       </div>
@@ -324,7 +324,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
                         </button>
                       ) : null}
                       {contractor.status === 'expense_pending' || contractor.status === 'both_pending' ? (
-                        <button className="bg-[#05202E] text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-[#0a2f3f] transition-colors">
+                        <button className="bg-[#33393c] text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-[#0a2f3f] transition-colors">
                           Review Expenses
                         </button>
                       ) : null}
@@ -333,7 +333,7 @@ export default function ManagerDashboard({ user }: ManagerDashboardProps) {
                           Review All
                         </button>
                       )}
-                      <button className="bg-[#E5DDD8] text-[#05202E] px-3 py-2 rounded-md text-sm font-medium hover:bg-[#d4cac3] transition-colors">
+                      <button className="bg-[#E5DDD8] text-[#33393c] px-3 py-2 rounded-md text-sm font-medium hover:bg-[#d4cac3] transition-colors">
                         View Details
                       </button>
                     </div>

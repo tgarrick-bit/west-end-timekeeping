@@ -24,7 +24,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: reportId } = await params;
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = createRouteHandlerClient({
+    cookies: () => cookies(),
+  });
 
   try {
     if (!reportId) {

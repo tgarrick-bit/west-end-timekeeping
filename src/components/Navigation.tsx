@@ -33,7 +33,7 @@ export function Navigation() {
   }
 
   return (
-    <nav className="bg-[#05202E] text-white shadow-lg">
+    <nav className="bg-[#33393c] text-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo and Brand */}
@@ -99,7 +99,7 @@ export function Navigation() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium hover:bg-[#05202E] transition-colors"
+                className="flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium hover:bg-[#33393c] transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <item.icon className="w-5 h-5" />
@@ -112,7 +112,7 @@ export function Navigation() {
               </div>
               <button
                 onClick={handleSignOut}
-                className="flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium hover:bg-[#05202E] transition-colors w-full"
+                className="flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium hover:bg-[#33393c] transition-colors w-full"
               >
                 <LogOut className="w-5 h-5" />
                 <span>Sign Out</span>

@@ -291,7 +291,7 @@ export default function ClientManagement() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Admin Navigation */}
-      <header className="bg-[#05202E] text-white shadow-sm">
+      <header className="bg-[#33393c] text-white shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
 
           {/* LEFT: Back arrow + Logo + Page Title */}

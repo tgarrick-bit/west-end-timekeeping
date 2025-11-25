@@ -39,8 +39,8 @@ export default function EmployeeDashboard({ user }: EmployeeDashboardProps) {
   }) => {
     const colorClasses = {
       pink: 'bg-pink-50 text-pink-700 border-pink-200',
-      darkBlue: 'bg-[#05202E]/10 text-[#05202E] border-[#05202E]/20',
-      lightBeige: 'bg-[#E5DDD8]/50 text-[#05202E] border-[#E5DDD8]'
+      darkBlue: 'bg-[#33393c]/10 text-[#33393c] border-[#33393c]/20',
+      lightBeige: 'bg-[#E5DDD8]/50 text-[#33393c] border-[#E5DDD8]'
     };
 
     return (
@@ -62,8 +62,8 @@ export default function EmployeeDashboard({ user }: EmployeeDashboardProps) {
   }) => {
     const colorClasses = {
       pink: 'bg-pink-50 border-pink-200 hover:bg-pink-100 text-pink-700',
-      darkBlue: 'bg-[#05202E]/10 border-[#05202E]/20 hover:bg-[#05202E]/20 text-[#05202E]',
-      lightBeige: 'bg-[#E5DDD8]/50 border-[#E5DDD8] hover:bg-[#E5DDD8]/70 text-[#05202E]'
+      darkBlue: 'bg-[#33393c]/10 border-[#33393c]/20 hover:bg-[#33393c]/20 text-[#33393c]',
+      lightBeige: 'bg-[#E5DDD8]/50 border-[#E5DDD8] hover:bg-[#E5DDD8]/70 text-[#33393c]'
     };
 
     return (
@@ -187,7 +187,7 @@ export default function EmployeeDashboard({ user }: EmployeeDashboardProps) {
           
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center space-x-3">
-              <FileText className="h-5 w-5 text-[#05202E]" />
+              <FileText className="h-5 w-5 text-[#33393c]" />
               <span className="text-gray-700">Hours this month</span>
             </div>
             <span className="font-medium text-gray-900">
@@ -221,7 +221,7 @@ export default function EmployeeDashboard({ user }: EmployeeDashboardProps) {
           
           <Link
             href="/expenses"
-            className="flex items-center justify-center p-4 bg-[#05202E]/10 border border-[#05202E]/20 rounded-lg hover:bg-[#05202E]/20 transition-colors text-[#05202E] font-medium"
+            className="flex items-center justify-center p-4 bg-[#33393c]/10 border border-[#33393c]/20 rounded-lg hover:bg-[#33393c]/20 transition-colors text-[#33393c] font-medium"
           >
             <Receipt className="h-5 w-5 mr-2" />
             Submit Expense

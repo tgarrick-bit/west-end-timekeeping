@@ -146,7 +146,7 @@ export default function ManagerFinancialPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-[#05202E] mb-2">
+              <h1 className="text-2xl font-bold text-[#33393c] mb-2">
                 Financial Overview
               </h1>
               <p className="text-gray-600">
@@ -228,7 +228,7 @@ export default function ManagerFinancialPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Cost</p>
-                  <p className="text-2xl font-bold text-[#05202E]">
+                  <p className="text-2xl font-bold text-[#33393c]">
                     {formatCurrency(financialData.totalCost)}
                   </p>
                   <p className="text-xs text-gray-500">
@@ -245,7 +245,7 @@ export default function ManagerFinancialPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Approved</p>
-                  <p className="text-2xl font-bold text-[#05202E]">
+                  <p className="text-2xl font-bold text-[#33393c]">
                     {formatCurrency(totalApproved)}
                   </p>
                   <p className="text-xs text-gray-500">
@@ -262,7 +262,7 @@ export default function ManagerFinancialPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Pending</p>
-                  <p className="text-2xl font-bold text-[#05202E]">
+                  <p className="text-2xl font-bold text-[#33393c]">
                     {formatCurrency(totalPending)}
                   </p>
                   <p className="text-xs text-gray-500">
@@ -279,7 +279,7 @@ export default function ManagerFinancialPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Monthly Trend</p>
-                  <p className="text-2xl font-bold text-[#05202E]">
+                  <p className="text-2xl font-bold text-[#33393c]">
                     {costChange > 0 ? '+' : ''}{costChange.toFixed(1)}%
                   </p>
                   <p className="text-xs text-gray-500">
@@ -293,7 +293,7 @@ export default function ManagerFinancialPage() {
           {/* Cost Breakdown */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-[#05202E]">Cost Breakdown by Hourly Rate</h2>
+              <h2 className="text-lg font-semibold text-[#33393c]">Cost Breakdown by Hourly Rate</h2>
             </div>
             <div className="p-6">
               <div className="space-y-4">
@@ -304,7 +304,7 @@ export default function ManagerFinancialPage() {
                         <span className="text-[#e31c79] font-bold text-lg">${rate.rate}</span>
                       </div>
                       <div>
-                        <div className="font-medium text-[#05202E]">${rate.rate}/hr</div>
+                        <div className="font-medium text-[#33393c]">${rate.rate}/hr</div>
                         <div className="text-sm text-gray-600">{formatHours(rate.hours)}</div>
                       </div>
                     </div>
@@ -330,7 +330,7 @@ export default function ManagerFinancialPage() {
           {/* Contractor Breakdown */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-[#05202E]">Contractor Cost Breakdown</h2>
+              <h2 className="text-lg font-semibold text-[#33393c]">Contractor Cost Breakdown</h2>
             </div>
             <div className="p-6">
               <div className="space-y-4">
@@ -343,7 +343,7 @@ export default function ManagerFinancialPage() {
                         </span>
                       </div>
                       <div>
-                        <div className="font-medium text-[#05202E]">{contractor.name}</div>
+                        <div className="font-medium text-[#33393c]">{contractor.name}</div>
                         <div className="text-sm text-gray-600">{formatHours(contractor.hours)}</div>
                       </div>
                     </div>
@@ -408,7 +408,7 @@ export default function ManagerFinancialPage() {
           {/* Monthly Trends */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-[#05202E]">Monthly Trends</h2>
+              <h2 className="text-lg font-semibold text-[#33393c]">Monthly Trends</h2>
             </div>
             <div className="p-6">
               <div className="space-y-4">
@@ -419,7 +419,7 @@ export default function ManagerFinancialPage() {
                         <Calendar className="w-6 h-6 text-[#e31c79]" />
                       </div>
                       <div>
-                        <div className="font-medium text-[#05202E]">{month.month}</div>
+                        <div className="font-medium text-[#33393c]">{month.month}</div>
                         <div className="text-sm text-gray-600">{formatHours(month.hours)}</div>
                       </div>
                     </div>
@@ -445,7 +445,7 @@ export default function ManagerFinancialPage() {
           {/* Trend Analysis */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-[#05202E] mb-4">Hours Trend</h3>
+              <h3 className="text-lg font-semibold text-[#33393c] mb-4">Hours Trend</h3>
               <div className="text-center">
                 <div className={`text-3xl font-bold ${hoursChange > 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {hoursChange > 0 ? '+' : ''}{hoursChange.toFixed(1)}%
@@ -458,7 +458,7 @@ export default function ManagerFinancialPage() {
             </div>
 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-[#05202E] mb-4">Cost Trend</h3>
+              <h3 className="text-lg font-semibold text-[#33393c] mb-4">Cost Trend</h3>
               <div className="text-center">
                 <div className={`text-3xl font-bold ${costChange > 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {costChange > 0 ? '+' : ''}{costChange.toFixed(1)}%

@@ -96,10 +96,10 @@ export async function POST(request: NextRequest) {
                   <h1 style="color: white; margin: 0; font-size: 20px;">West End Workforce</h1>
                 </div>
                 <div style="background-color: #f5f5f5; padding: 20px;">
-                  <h2 style="color: #05202E; margin-top: 0;">${title}</h2>
+                  <h2 style="color: #33393c; margin-top: 0;">${title}</h2>
                   <p style="color: #333; font-size: 14px;">${message}</p>
                 </div>
-                <div style="background-color: #05202E; padding: 12px; text-align: center;">
+                <div style="background-color: #33393c; padding: 12px; text-align: center;">
                   <p style="color: white; margin: 0; font-size: 11px;">© 2025 West End Workforce</p>
                 </div>
               </div>

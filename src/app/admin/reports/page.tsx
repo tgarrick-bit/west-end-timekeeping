@@ -516,7 +516,7 @@ export default function ManagerPage() {
 
               {/* Timecards Section */}
               <div className="border-b">
-                <div className="bg-[#05202E] px-4 py-2 flex justify-between items-center">
+                <div className="bg-[#33393c] px-4 py-2 flex justify-between items-center">
                   <h3 className="text-sm font-semibold text-white">Timecards</h3>
                   <div className="flex items-center space-x-2 text-xs text-gray-300">
                     <span>1 - {filteredSubmissions.filter(s => s.type === 'timesheet').length} of {filteredSubmissions.filter(s => s.type === 'timesheet').length}</span>
@@ -600,7 +600,7 @@ export default function ManagerPage() {
 
               {/* Timecards Section */}
               <div className="border-b">
-                <div className="bg-[#05202E] px-4 py-2">
+                <div className="bg-[#33393c] px-4 py-2">
                   <h3 className="text-sm font-semibold text-white">Timecards</h3>
                 </div>
                 
@@ -714,7 +714,7 @@ export default function ManagerPage() {
 
               {/* Timecards Section */}
               <div className="border-b">
-                <div className="bg-[#05202E] px-4 py-2 flex justify-between items-center">
+                <div className="bg-[#33393c] px-4 py-2 flex justify-between items-center">
                   <h3 className="text-sm font-semibold text-white">Timecards</h3>
                   <div className="flex items-center space-x-2 text-xs text-gray-300">
                     <span>1 - {timesheetPendingCount} of {timesheetPendingCount}</span>

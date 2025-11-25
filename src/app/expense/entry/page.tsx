@@ -1,7 +1,9 @@
+// src/app/expense/entry/page.tsx
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
 import {
   ArrowLeft,
@@ -12,10 +14,7 @@ import {
   Calendar,
   Upload,
   DollarSign,
-  Receipt,
   AlertCircle,
-  ChevronLeft,
-  ChevronRight,
   RotateCw,
   LogOut,
   User,
@@ -40,6 +39,14 @@ interface Project {
   is_active: boolean;
 }
 
+interface ExpenseReportRow {
+  id: string;
+  employee_id: string;
+  title: string | null;
+  period_month: string | null;
+  status: 'draft' | 'submitted' | 'approved' | 'rejected';
+}
+
 // === GSA / IRS helpers ===
 // Update these when rates change.
 const GSA_MILEAGE_RATE = 0.7; // IRS standard mileage rate (example)
@@ -56,7 +63,6 @@ const expenseCategories = [
   { value: 'incidental', label: 'Incidental' },
   { value: 'lodging', label: 'Lodging' },
   { value: 'lunch', label: 'Lunch' },
-  // legacy only: { value: 'meals_and_incidentals_gsa', label: 'Meals and Incidentals(GSA)' },
   { value: 'mileage', label: 'Mileage' },
   { value: 'miscellaneous', label: 'Miscellaneous' },
   { value: 'parking', label: 'Parking' },
@@ -89,7 +95,10 @@ const formatCurrency = (amount: number | null | undefined) => {
 
 export default function ExpenseEntryPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createSupabaseClient();
+
+  const [reportId, setReportId] = useState<string | null>(null);
 
   const [reportTitle, setReportTitle] = useState('');
   const [expensePeriod, setExpensePeriod] = useState('');
@@ -111,18 +120,19 @@ export default function ExpenseEntryPage() {
   const [userEmail, setUserEmail] = useState('');
   const [userId, setUserId] = useState('');
   const [employeeName, setEmployeeName] = useState<string | null>(null);
-  // miles input helper per entry id
   const [mileageInputs, setMileageInputs] = useState<Record<string, string>>({});
+  const [hasLoadedExisting, setHasLoadedExisting] = useState(false);
 
   useEffect(() => {
     checkAuth();
     loadProjects();
 
-    // Default to current month
+    // Default to current *date* for new reports
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
-    setExpensePeriod(`${year}-${month}`);
+    const day = String(today.getDate()).padStart(2, '0');
+    setExpensePeriod(`${year}-${month}-${day}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -145,24 +155,108 @@ export default function ExpenseEntryPage() {
   };
 
   const loadProjects = async () => {
-    // Try to load active projects first
     const { data, error } = await supabase
       .from('projects')
       .select('id, name, is_active')
       .order('name');
-  
+
     if (error) {
       console.error('Error loading projects:', error);
       setProjects([]);
       return;
     }
-  
+
     const all = data || [];
-    // Prefer active, but fall back to all if none are flagged active
     const active = all.filter((p) => p.is_active === true);
-  
     setProjects(active.length > 0 ? active : all);
-  };  
+  };
+
+  // Load an existing report + lines when ?id=<reportId> or ?reportId=<reportId> present
+  useEffect(() => {
+    const idFromQuery =
+      searchParams.get('id') || searchParams.get('reportId');
+
+    if (!idFromQuery || !userId || hasLoadedExisting || reportId) return;
+
+    const loadExistingReport = async (existingId: string) => {
+      try {
+        console.log('🧾 Loading existing expense report:', existingId);
+
+        const { data: report, error: reportError } = await supabase
+          .from('expense_reports')
+          .select('id, employee_id, title, period_month, status')
+          .eq('id', existingId)
+          .single<ExpenseReportRow>();
+
+        if (reportError || !report) {
+          console.error(
+            '🧾 Error loading existing report:',
+            reportError
+          );
+          return;
+        }
+
+        if (report.employee_id !== userId) {
+          console.warn(
+            '🧾 Current user does not own this report, skipping load.'
+          );
+          return;
+        }
+
+        setReportId(report.id);
+        setReportTitle(report.title || '');
+
+        if (report.period_month) {
+          // Ensure YYYY-MM-DD for <input type="date">
+          const dateOnly = report.period_month.slice(0, 10);
+          setExpensePeriod(dateOnly);
+        }
+
+        const { data: lines, error: linesError } = await supabase
+          .from('expenses')
+          .select(
+            'id, expense_date, project_id, category, amount, vendor, description, receipt_url'
+          )
+          .eq('report_id', existingId)
+          .order('expense_date', { ascending: true });
+
+        if (linesError || !lines) {
+          console.error(
+            '🧾 Error loading expense lines for existing report:',
+            linesError
+          );
+          return;
+        }
+
+        const mapped: ExpenseEntry[] = lines.map((line) => ({
+          id: line.id,
+          date: line.expense_date,
+          project_id: line.project_id || '',
+          project_name: '', // will be filled via dropdown selection
+          category: line.category || '',
+          amount: line.amount || 0,
+          vendor: line.vendor || '',
+          description: line.description || '',
+          receipt_file: null, // existing receipts not re-uploaded here
+          receipt_url: line.receipt_url || undefined,
+        }));
+
+        if (mapped.length > 0) {
+          setEntries(mapped);
+        }
+
+        setHasLoadedExisting(true);
+        console.log(
+          '🧾 Existing report + lines loaded for editing:',
+          existingId
+        );
+      } catch (err) {
+        console.error('🧾 Unexpected error loading existing report:', err);
+      }
+    };
+
+    loadExistingReport(idFromQuery);
+  }, [searchParams, supabase, userId, hasLoadedExisting, reportId]);
 
   const updateEntry = (
     entryId: string,
@@ -263,12 +357,36 @@ export default function ExpenseEntryPage() {
     }
   };
 
+  // 🔥 Helper to call the server route that sends manager email
+  const callSubmitRoute = async (reportId: string) => {
+    console.log('🔥 calling submit API for report:', reportId);
+    try {
+      const res = await fetch(`/api/expense-reports/${reportId}/submit`, {
+        method: 'POST',
+      });
+
+      const text = await res.text();
+      console.log('🔥 submit API response status:', res.status);
+      console.log('🔥 submit API response body:', text);
+
+      if (!res.ok) {
+        throw new Error(
+          `Expense submit route failed with status ${res.status}. Body: ${text}`
+        );
+      }
+
+      console.log('🔥 Expense submit route succeeded for report:', reportId);
+    } catch (err) {
+      console.error('🔥 Error calling expense submit route:', err);
+      throw err;
+    }
+  };
+
   const handleSubmit = async (isDraft: boolean = false) => {
     setIsLoading(true);
     try {
       if (!userId) {
         alert('Please login to submit expenses');
-        setIsLoading(false);
         return;
       }
 
@@ -276,7 +394,6 @@ export default function ExpenseEntryPage() {
         alert(
           'Please provide a title for this expense submission (e.g., "Trip to HQ").'
         );
-        setIsLoading(false);
         return;
       }
 
@@ -285,7 +402,6 @@ export default function ExpenseEntryPage() {
       );
       if (validEntries.length === 0) {
         alert('Please complete at least one expense entry');
-        setIsLoading(false);
         return;
       }
 
@@ -294,7 +410,6 @@ export default function ExpenseEntryPage() {
       } = await supabase.auth.getUser();
       if (!user) {
         alert('Please login to submit expenses');
-        setIsLoading(false);
         return;
       }
 
@@ -337,29 +452,77 @@ export default function ExpenseEntryPage() {
         (sum, e) => sum + (e.amount || 0),
         0
       );
-      const periodMonth = expensePeriod ? `${expensePeriod}-01` : null;
+      const periodMonth = expensePeriod || null;
 
-      // 1) Create the expense report
-      const { data: report, error: reportError } = await supabase
-        .from('expense_reports')
-        .insert({
-          employee_id: employeeId,
-          title: reportTitle.trim(),
-          period_month: periodMonth,
-          status: isDraft ? 'draft' : 'submitted',
-          total_amount: totalAmount,
-          submitted_at: isDraft ? null : new Date().toISOString(),
-        })
-        .select('id')
-        .single();
+      let currentReportId = reportId;
 
-      if (reportError || !report) {
-        throw reportError || new Error('Could not create expense report');
+      // 1) Create or update the expense report
+      if (!currentReportId) {
+        const { data: report, error: reportError } = await supabase
+          .from('expense_reports')
+          .insert({
+            employee_id: employeeId,
+            title: reportTitle.trim(),
+            period_month: periodMonth,
+            status: isDraft ? 'draft' : 'submitted',
+            total_amount: totalAmount,
+            submitted_at: isDraft ? null : new Date().toISOString(),
+          })
+          .select('id')
+          .single();
+
+        if (reportError || !report) {
+          throw reportError || new Error('Could not create expense report');
+        }
+
+        currentReportId = report.id;
+        setReportId(report.id);
+        console.log('🔥 created expense report:', report.id);
+      } else {
+        console.log('🧾 Updating existing expense report:', currentReportId);
+
+        const { error: updateReportError } = await supabase
+          .from('expense_reports')
+          .update({
+            title: reportTitle.trim(),
+            period_month: periodMonth,
+            status: isDraft ? 'draft' : 'submitted',
+            total_amount: totalAmount,
+            submitted_at: isDraft ? null : new Date().toISOString(),
+          })
+          .eq('id', currentReportId);
+
+        if (updateReportError) {
+          console.error(
+            '🧾 Error updating existing expense report:',
+            updateReportError
+          );
+          throw updateReportError;
+        }
       }
 
-      // 2) Insert one expense row per valid entry, linked to this report
+      if (!currentReportId) {
+        throw new Error('Missing report id after create/update.');
+      }
+
+      // 2) Replace existing lines with current entries
+      console.log('🧾 Replacing lines for report:', currentReportId);
+
+      const { error: deleteLinesError } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('report_id', currentReportId);
+
+      if (deleteLinesError) {
+        console.error(
+          '🧾 Error deleting existing expense lines:',
+          deleteLinesError
+        );
+        throw deleteLinesError;
+      }
+
       for (const entry of validEntries) {
-        let receipt_url: string | null = null;
+        let receipt_url: string | null = entry.receipt_url || null;
 
         if (entry.receipt_file) {
           receipt_url = await uploadReceipt(entry.receipt_file);
@@ -367,7 +530,7 @@ export default function ExpenseEntryPage() {
 
         const { error } = await supabase.from('expenses').insert({
           employee_id: employeeId,
-          report_id: report.id,
+          report_id: currentReportId,
           project_id: entry.project_id,
           expense_date: entry.date,
           category: entry.category,
@@ -379,7 +542,26 @@ export default function ExpenseEntryPage() {
           submitted_at: isDraft ? null : new Date().toISOString(),
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error(
+            '🧾 Error inserting expense line for report',
+            currentReportId,
+            'entry',
+            entry,
+            'error:',
+            error
+          );
+          throw error;
+        }
+      }
+
+      // 3) If this is a real submission, trigger the server route for manager email
+      if (!isDraft && currentReportId) {
+        console.log(
+          '🔥 triggering submit route for expense report:',
+          currentReportId
+        );
+        await callSubmitRoute(currentReportId);
       }
 
       alert(
@@ -387,29 +569,14 @@ export default function ExpenseEntryPage() {
           ? 'Expense report saved as draft!'
           : 'Expense report submitted successfully!'
       );
+
       router.push('/employee');
     } catch (error: any) {
       console.error('Error submitting expenses:', error);
-      alert(error.message || 'Error submitting expenses. Please try again.');
+      alert(error?.message || 'Error submitting expenses. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    const [year, month] = expensePeriod.split('-').map(Number);
-    const date = new Date(year, month - 1);
-    date.setMonth(date.getMonth() + (direction === 'next' ? 1 : -1));
-    const newYear = date.getFullYear();
-    const newMonth = String(date.getMonth() + 1).padStart(2, '0');
-    setExpensePeriod(`${newYear}-${newMonth}`);
-  };
-
-  const formatPeriod = () => {
-    if (!expensePeriod) return '';
-    const [year, month] = expensePeriod.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   };
 
   const total = calculateTotal();
@@ -485,11 +652,11 @@ export default function ExpenseEntryPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Report Title + Period Selector */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6 space-y-4">
-          {/* Report Title */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex-1">
+        {/* Report Title + Expense Report Date */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+            {/* Report Title */}
+            <div className="w-full md:w-[60%]">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Report Title <span className="text-red-500">*</span>
               </label>
@@ -500,61 +667,30 @@ export default function ExpenseEntryPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
                 placeholder='e.g., "Trip to HQ" or "November Client Visits"'
               />
+              <p className="mt-2 text-sm text-gray-500">
+                This title will appear in your Recent Expenses list as a single row, with
+                each line item listed when you open the report.
+              </p>
             </div>
 
-            {/* Period Selector */}
-            <div className="md:w-[320px]">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-5 w-5 text-[#e31c79]" />
-                  <label className="text-sm font-medium text-gray-700">
-                    Expense Period:
-                  </label>
-                </div>
-                <input
-                  type="month"
-                  value={expensePeriod}
-                  onChange={(e) => setExpensePeriod(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
-                />
-              </div>
-              <div className="mt-2 flex items-center justify-between">
-                <div className="text-sm text-gray-600">{formatPeriod()}</div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => navigateMonth('prev')}
-                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <ChevronLeft className="h-4 w-4 text-gray-600" />
-                  </button>
-                  <button
-                    onClick={() =>
-                      setExpensePeriod(new Date().toISOString().slice(0, 7))
-                    }
-                    className="px-2 py-1 text-xs text-gray-600 hover:text-gray-900"
-                  >
-                    Current
-                  </button>
-                  <button
-                    onClick={() => navigateMonth('next')}
-                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <ChevronRight className="h-4 w-4 text-gray-600" />
-                  </button>
-                </div>
-              </div>
+            {/* Expense Report Date */}
+            <div className="w-full md:w-[32%]">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Expense Report Date
+              </label>
+              <input
+                type="date"
+                value={expensePeriod}
+                onChange={(e) => setExpensePeriod(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+              />
             </div>
-          </div>
-
-          <div className="text-sm text-gray-500">
-            This title will appear in your Recent Expenses list as a single row, with
-            each line item listed when you open the report.
           </div>
         </div>
 
         {/* Expense Entries */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
-          <div className="bg-[#05202E] text-white px-4 py-3">
+          <div className="bg-[#33393c] text-white px-4 py-3">
             <h2 className="text-sm font-medium">EXPENSE ENTRY</h2>
           </div>
           <div className="p-6">
@@ -767,7 +903,9 @@ export default function ExpenseEntryPage() {
                               <DollarSign className="h-5 w-5" />
                             </div>
                             <input
-                              type="text"
+                              type="number"
+                              step="0.01"
+                              min="0"
                               inputMode="decimal"
                               value={
                                 entry.amount !== null &&
@@ -845,7 +983,7 @@ export default function ExpenseEntryPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Receipt
                       </label>
-                      <div className="flex.items-center gap-3">
+                      <div className="flex items-center gap-3">
                         <label className="flex-1 flex items-center justify-center px-4 py-2 bg-gray-50 border-2 border-dashed border-gray-300 rounded-md hover:bg-gray-100 hover:border-gray-400 cursor-pointer transition-colors">
                           <Upload className="h-5 w-5 mr-2 text-gray-500" />
                           <span className="text-gray-600 text-sm">

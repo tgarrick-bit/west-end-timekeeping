@@ -1,5 +1,3 @@
-// src/app/api/timesheets/[id]/status/route.ts
-
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
@@ -12,7 +10,7 @@ interface Body {
   rejectionReason?: string;
 }
 
-export const runtime = 'nodejs'; // we use supabase-js + fetch
+export const runtime = 'nodejs';
 
 // tiny helper so logging bad responses is easier
 async function $fetchText(res: Response) {
@@ -24,11 +22,7 @@ async function $fetchText(res: Response) {
 }
 
 // Shared helper for sending emails via your notifications API
-async function sendEmail(payload: {
-  to: string;
-  subject: string;
-  html: string;
-}) {
+async function sendEmail(payload: { to: string; subject: string; html: string }) {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
@@ -59,7 +53,6 @@ export async function PATCH(
     );
   }
 
-  // ✅ Correct cookies usage in App Router
   const supabase = createRouteHandlerClient({ cookies });
 
   const body = (await req.json()) as Body;
@@ -90,16 +83,11 @@ export async function PATCH(
   let nextStatus: TimesheetStatus = currentStatus;
   const updates: Record<string, any> = {};
 
-  // Simple ownership + manager check helpers
   const isOwner = existing.employee_id === user.id;
-
-  // If you later add manager logic, you can look up employee + manager here
-  // and enforce that the current user is the manager for approve/reject.
 
   // === BASIC STATE MACHINE ===
   switch (body.action) {
     case 'save': {
-      // Only the owner can save their timesheet
       if (!isOwner) {
         return NextResponse.json(
           { error: 'You can only edit your own timesheets.' },
@@ -107,13 +95,13 @@ export async function PATCH(
         );
       }
 
-      // Don’t allow editing approved timesheets
       if (currentStatus === 'approved') {
         return NextResponse.json(
           { error: 'Approved timesheets cannot be modified.' },
           { status: 400 }
         );
       }
+
       nextStatus = 'draft';
       break;
     }
@@ -126,39 +114,37 @@ export async function PATCH(
         );
       }
 
-      // Only draft or rejected can be submitted
-      if (!['draft', 'rejected'].includes(currentStatus)) {
+      // Allow from draft, rejected, or already submitted (idempotent)
+      if (!['draft', 'rejected', 'submitted'].includes(currentStatus)) {
         return NextResponse.json(
-          { error: 'Only draft or rejected timesheets can be submitted.' },
+          {
+            error:
+              'Only draft, rejected, or already submitted timesheets can be submitted.',
+          },
           { status: 400 }
         );
       }
+
       nextStatus = 'submitted';
       updates.submitted_at = new Date().toISOString();
       break;
     }
 
     case 'approve': {
-      // Manager check can be added later (after we finalize employees RLS)
-      // For now, just ensure you don't approve your own timesheets unless intended.
-
-      // Only submitted can be approved
       if (currentStatus !== 'submitted') {
         return NextResponse.json(
           { error: 'Only submitted timesheets can be approved.' },
           { status: 400 }
         );
       }
+
       nextStatus = 'approved';
       updates.approved_at = new Date().toISOString();
-      // Clear any old rejection note
       updates.rejection_reason = null;
       break;
     }
 
     case 'reject': {
-      // Manager check can be added here as well.
-
       if (currentStatus !== 'submitted') {
         return NextResponse.json(
           { error: 'Only submitted timesheets can be rejected.' },
@@ -205,10 +191,17 @@ export async function PATCH(
     const weekEnding =
       (updated as any).week_ended_on ?? updated.week_ending ?? 'this period';
 
-    const testManagerEmail = process.env.MANAGER_TEST_EMAIL || null;
+    console.log('TIMESHEET EMAIL: env snapshot', {
+      appUrl,
+      nextStatus,
+      timesheetId,
+    });
 
     // Employee record
-    const { data: employee, error: employeeError } = await supabase
+    const {
+      data: employee,
+      error: employeeError,
+    } = await supabase
       .from('employees')
       .select('id, first_name, last_name, email, manager_id')
       .eq('id', updated.employee_id)
@@ -225,6 +218,34 @@ export async function PATCH(
       employee && (employee.first_name || employee.last_name)
         ? `${employee.first_name || ''} ${employee.last_name || ''}`.trim()
         : 'Employee';
+
+    // Manager lookup
+    let managerEmail: string | null = null;
+    let managerName: string | null = null;
+
+    if (employee?.manager_id) {
+      const { data: manager, error: managerError } = await supabase
+        .from('employees')
+        .select('id, first_name, last_name, email')
+        .eq('id', employee.manager_id)
+        .single();
+
+      if (managerError) {
+        console.error('Error loading manager for timesheet email:', managerError);
+      } else if (manager) {
+        managerEmail = manager.email ?? null;
+        managerName =
+          (manager.first_name || manager.last_name
+            ? `${manager.first_name || ''} ${manager.last_name || ''}`.trim()
+            : null) ?? 'Manager';
+      }
+    }
+
+    // Fallback manager notification recipient (same as expenses, if configured)
+    const fallbackManagerEmail =
+      process.env.EXPENSE_MANAGER_NOTIFY_EMAIL || null;
+
+    const managerRecipient = managerEmail || fallbackManagerEmail;
 
     const year = new Date().getFullYear().toString();
 
@@ -263,60 +284,73 @@ export async function PATCH(
       </tr>
     `;
 
-    // === TEMP: HARD-CODED MANAGER TEST EMAIL ON SUBMIT ===
-    if (nextStatus === 'submitted' && testManagerEmail) {
-      console.log('TIMESHEET → manager TEST email branch entered', {
-        timesheetId,
-        currentStatus,
-        nextStatus,
-        employeeId: employee?.id,
-        testManagerEmail,
-      });
-
+    // === MANAGER EMAIL: SUBMITTED ===
+    if (nextStatus === 'submitted' && managerRecipient) {
       const html = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Timesheet Submitted (Test Manager)</title>
-  <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
-</head>
-<body style="margin:0;padding:0;background:#f3f6f9;font-family:'Montserrat',Arial,sans-serif;">
-  <table role="presentation" width="100%" style="table-layout:fixed;background:#f3f6f9;padding:24px 0;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="100%" style="max-width:620px;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #e5e7eb;">
-
-          <!-- HEADER -->
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Timesheet Submitted</title>
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+      </head>
+      <body style="margin:0;padding:0;background:#f3f6f9;font-family:'Montserrat',Arial,sans-serif;">
+        <table role="presentation" width="100%" style="table-layout:fixed;background:#f3f6f9;padding:24px 0;">
           <tr>
-            <td style="padding:28px 20px 18px;background:#05202E;border-bottom:3px solid #e31c79;text-align:center;">
-              <div style="font-family:'Antonio',Arial,sans-serif;font-size:28px;margin:0;color:#ffffff;font-weight:700;letter-spacing:0.4px;">
-                West End Workforce
-              </div>
-              <img src="${logoUrl}" alt="West End Workforce Logo" width="72" style="display:block;margin:14px auto 0;" />
-            </td>
-          </tr>
+            <td align="center">
+              <table role="presentation" width="100%" style="max-width:620px;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #e5e7eb;">
+      
+                <!-- HEADER -->
+                <tr>
+                  <td style="
+                    padding:18px 24px 14px;
+                    background:#33393c;
+                    border-bottom:3px solid #e31c79;
+                    text-align:center;
+                  ">
+                    <div style="
+                      font-family:'Montserrat',Arial,sans-serif;
+                      font-size:18px;
+                      font-weight:700;
+                      margin:0;
+                      color:#ffffff;
+                      letter-spacing:0.3px;
+                      line-height:1.25;
+                    ">
+                      West End Workforce
+                    </div>
+                    <img
+                      src="${logoUrl}"
+                      alt="West End Workforce Logo"
+                      width="48"
+                      style="display:block;margin:10px auto 0;"
+                    />
+                  </td>
+                </tr>
+      
+                <!-- BODY -->
+                <tr>
+                  <td style="
+                    padding:14px 28px 24px;
+                    font-size:12px;
+                    color:#374151;
+                    line-height:1.7;
+                    font-family:'Montserrat',Arial,sans-serif;
+                  ">
+                    <h2 style="
+                      margin:10px 0 20px;
+                      font-family:'Montserrat',Arial,sans-serif;
+                      font-size:14px;
+                      font-weight:700;
+                      line-height:1.3;
+                      color:#e31c79;
+                    ">
+                      New Timesheet Submitted
+                    </h2>
 
-          <!-- BODY -->
-          <tr>
-            <td style="padding:26px 28px 34px;font-size:14px;color:#374151;line-height:1.7;font-family:'Montserrat',Arial,sans-serif;">
-              <h2 style="
-                margin:0 0 12px;
-                font-family:'Antonio', Arial, sans-serif;
-                font-size:22px;
-                font-weight:700;
-                color:#111827;
-              ">
-                New Timesheet Submitted (Test)
-              </h2>
-              <p>Hello,</p>
-              <p>This is a <strong>test manager notification</strong> sent from the timesheet status route.</p>
+              <p>Hello ${managerName || 'Manager'},</p>
               <p><strong>${employeeName}</strong> has submitted a timesheet for the week ending <strong>${weekEnding}</strong>.</p>
-
-              <p style="margin-top:18px;font-size:13px;color:#6b7280;">
-                If you are seeing this email at <code>${testManagerEmail}</code>, the manager notification path is working.
-              </p>
 
               <div style="text-align:center;margin:30px 0 10px;">
                 <a href="${appUrl}/manager"
@@ -342,13 +376,13 @@ export async function PATCH(
       `;
 
       await sendEmail({
-        to: testManagerEmail,
-        subject: `TEST: Timesheet submitted by ${employeeName}`,
+        to: managerRecipient,
+        subject: `Timesheet submitted by ${employeeName}`,
         html,
       });
 
       console.log(
-        `TIMESHEET → manager TEST email SENT to ${testManagerEmail}`
+        `TIMESHEET → manager email SENT to ${managerRecipient}`
       );
     }
 
@@ -371,23 +405,48 @@ export async function PATCH(
 
           <!-- HEADER -->
           <tr>
-            <td style="padding:28px 20px 18px;background:#05202E;border-bottom:3px solid #e31c79;text-align:center;">
-              <div style="font-family:'Antonio',Arial,sans-serif;font-size:28px;margin:0;color:#ffffff;font-weight:700;letter-spacing:0.4px;">
+            <td style="
+              padding:18px 24px 14px;
+              background:#33393c;                /* 🔥 bring back dark header */
+              border-bottom:3px solid #e31c79;
+              text-align:center;
+            ">
+              <div style="
+                font-family:'Montserrat', Arial, sans-serif;
+                font-size:24px;
+                font-weight:700;
+                margin:0;
+                color:#ffffff;
+                line-height:1.25;
+                letter-spacing:0.3px;
+              ">
                 West End Workforce
               </div>
-              <img src="${logoUrl}" alt="West End Workforce Logo" width="72" style="display:block;margin:14px auto 0;" />
+
+              <img
+                src="${logoUrl}"
+                alt="West End Workforce Logo"
+                width="48"
+                style="display:block;margin:10px auto 0;"
+              />
             </td>
           </tr>
 
           <!-- BODY -->
           <tr>
-            <td style="padding:26px 28px 34px;font-size:14px;color:#374151;line-height:1.7;font-family:'Montserrat',Arial,sans-serif;">
+            <td style="
+  padding:14px 28px 24px;
+  font-size:14px;
+  color:#374151;
+  line-height:1.7;
+  font-family:'Montserrat', Arial, sans-serif;
+">
               <h2 style="
-                margin:0 0 14px;
-                font-family:'Antonio', Arial, sans-serif;
-                font-size:26px;
-                font-weight:700;
-                color:#111827;
+font-family:'Montserrat', Arial, sans-serif;
+  font-size:22px;
+  font-weight:700;
+  line-height:1.3;
+  color:#33393c;
               ">
                 Timesheet Approved
               </h2>
@@ -432,11 +491,6 @@ export async function PATCH(
       const html = `
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Timesheet Rejected</title>
-  <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body style="margin:0;padding:0;background:#f3f6f9;font-family:'Montserrat',Arial,sans-serif;">
   <table role="presentation" width="100%" style="table-layout:fixed;background:#f3f6f9;padding:24px 0;">
@@ -446,24 +500,32 @@ export async function PATCH(
 
           <!-- HEADER -->
           <tr>
-            <td style="padding:28px 20px 18px;background:#05202E;border-bottom:3px solid #e31c79;text:text-align:center;">
-              <div style="font-family:'Antonio',Arial,sans-serif;font-size:28px;margin:0;color:#ffffff;font-weight:700;letter-spacing:0.4px;">
+            <td style="
+              padding:18px 24px 14px;
+              background:#33393c;                /* 🔥 bring back dark header */
+              border-bottom:3px solid #e31c79;
+              text-align:center;
+            ">
+              <div style="
+                font-family:'Montserrat', Arial, sans-serif;
+                font-size:24px;
+                font-weight:700;
+                margin:0;
+                color:#ffffff;
+                line-height:1.25;
+                letter-spacing:0.3px;
+              ">
                 West End Workforce
               </div>
-              <img src="${logoUrl}" alt="West End Workforce Logo" width="72" style="display:block;margin:14px auto 0;" />
+
+              <img
+                src="${logoUrl}"
+                alt="West End Workforce Logo"
+                width="48"
+                style="display:block;margin:10px auto 0;"
+              />
             </td>
           </tr>
-
-          <!-- BODY -->
-          <tr>
-            <td style="padding:26px 28px 34px;font-size:14px;color:#374151;line-height:1.7;font-family:'Montserrat',Arial,sans-serif;">
-              <h2 style="
-                margin:0 0 14px;
-                font-family:'Antonio', Arial, sans-serif;
-                font-size:26px;
-                font-weight:700;
-                color:#b91c1c;
-              ">
                 Timesheet Rejected
               </h2>
               <p>Hello ${employeeName},</p>
