@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import TimesheetModal from '@/components/TimesheetModal';
 
 import {
@@ -22,6 +22,7 @@ import {
   SlidersHorizontal,
   Search,
 } from 'lucide-react';
+import NotificationBell from '@/components/NotificationBell';
 
 function formatName(
   first?: string,
@@ -109,7 +110,7 @@ interface ManagerExpenseReport {
 export default function ManagerPage() {
   const router = useRouter();
   const { employee } = useAuth();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -187,11 +188,26 @@ export default function ManagerPage() {
     setIsLoading(true);
 
     try {
-      // Employees for this manager
+      // Check for active delegations — managers who delegated to this user
+      const today = new Date().toISOString().split('T')[0]
+      const { data: delegations } = await supabase
+        .from('approval_delegations')
+        .select('delegator_id')
+        .eq('delegate_id', managerId)
+        .eq('is_active', true)
+        .lte('start_date', today)
+        .or(`end_date.is.null,end_date.gte.${today}`)
+
+      const delegatedManagerIds = (delegations || []).map(d => d.delegator_id)
+
+      // Employees for this manager + any delegated managers' teams
+      const managerIds = [managerId, ...delegatedManagerIds]
+      const orFilter = managerIds.map(id => `manager_id.eq.${id}`).join(',')
+
       const { data: allEmployees, error: empError } = await supabase
         .from('employees')
         .select('*')
-        .or(`id.eq.${managerId},manager_id.eq.${managerId}`)
+        .or(`id.eq.${managerId},${orFilter}`)
         .order('last_name', { ascending: true });
 
       if (empError) throw empError;
@@ -912,6 +928,7 @@ export default function ManagerPage() {
                   {greeting}, {displayName}
                 </span>
               </div>
+              <NotificationBell />
               <button
                 onClick={async () => {
                   await supabase.auth.signOut();

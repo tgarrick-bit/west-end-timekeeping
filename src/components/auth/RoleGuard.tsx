@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import type { UserRole, Employee } from '@/types';
 
 interface RoleGuardProps {
@@ -22,7 +22,7 @@ export default function RoleGuard({
   const [isLoading, setIsLoading] = useState(true);
   const [employee, setEmployee] = useState<Employee | null>(null);
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   useEffect(() => {
     checkAuthorization();

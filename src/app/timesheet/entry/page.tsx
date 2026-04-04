@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
+import { getOTConfig, calculateOvertime } from '@/lib/overtime';
 import {
   ArrowLeft,
   Calendar,
@@ -14,7 +15,9 @@ import {
   Plus,
   Trash2,
   Briefcase,
+  Copy,
 } from 'lucide-react';
+import TimeTimer from '@/components/TimeTimer';
 
 interface Project {
   id: string;
@@ -28,9 +31,10 @@ interface TimesheetRow {
   project_id: string;
   hours: { [key: string]: number };
   notes: { [key: string]: string };
+  is_billable?: boolean;  // defaults to true if not set
 }
 
-type TimesheetStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
+type TimesheetStatus = 'draft' | 'submitted' | 'approved' | 'payroll_approved' | 'rejected';
 
 export default function TimesheetEntry() {
   const [selectedWeek, setSelectedWeek] = useState<Date>(new Date());
@@ -40,6 +44,7 @@ export default function TimesheetEntry() {
       project_id: '',
       hours: {},
       notes: {},
+      is_billable: true,
     },
   ]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -49,6 +54,9 @@ export default function TimesheetEntry() {
   const [attestation, setAttestation] = useState(false);
   const [existingTimesheetId, setExistingTimesheetId] = useState<string | null>(null);
   const [timesheetStatus, setTimesheetStatus] = useState<TimesheetStatus | null>(null);
+  const [isExempt, setIsExempt] = useState(false);
+  const [employeeState, setEmployeeState] = useState<string | null>(null);
+  const isLocked = timesheetStatus === 'approved' || timesheetStatus === 'submitted' || timesheetStatus === 'payroll_approved';
 
   const router = useRouter();
   const supabase = createSupabaseClient();
@@ -61,17 +69,40 @@ export default function TimesheetEntry() {
 
   const loadProjects = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Load all active projects
+      const { data: allProjects, error } = await supabase
         .from('projects')
         .select('id, name, code')
         .eq('is_active', true)
         .order('name');
 
-      if (!error && data) {
-        setProjects(data);
-      } else {
+      if (error || !allProjects) {
         console.error('Error loading projects:', error);
+        return;
       }
+
+      // Load this employee's assigned projects for prioritization
+      if (user?.id) {
+        const { data: assignments } = await supabase
+          .from('project_employees')
+          .select('project_id')
+          .eq('employee_id', user.id)
+          .eq('is_active', true);
+
+        const assignedIds = new Set((assignments || []).map(a => a.project_id));
+
+        if (assignedIds.size > 0) {
+          // Assigned projects first, then the rest
+          const assigned = allProjects.filter(p => assignedIds.has(p.id));
+          const other = allProjects.filter(p => !assignedIds.has(p.id));
+          setProjects([...assigned, { id: '__separator', name: '── Other Projects ──', code: '' }, ...other]);
+          return;
+        }
+      }
+
+      setProjects(allProjects);
     } catch (error) {
       console.error('Error loading projects:', error);
     }
@@ -93,9 +124,12 @@ export default function TimesheetEntry() {
       // Look up employee by auth user id (NOT email)
       const { data: employee } = await supabase
         .from('employees')
-        .select('id')
+        .select('id, is_exempt, state')
         .eq('id', user.id)
         .single();
+
+      if (employee?.is_exempt) setIsExempt(true);
+      if (employee?.state) setEmployeeState(employee.state);
 
       if (!employee) {
         // No employee yet – start blank
@@ -105,6 +139,7 @@ export default function TimesheetEntry() {
             project_id: '',
             hours: {},
             notes: {},
+            is_billable: true,
           },
         ]);
         return;
@@ -234,6 +269,8 @@ export default function TimesheetEntry() {
   };
 
   const updateRowHours = (rowId: string, dateStr: string, hours: number) => {
+    // Cap individual entry at 24 hours
+    const capped = Math.min(Math.max(hours, 0), 24);
     setRows((prev) =>
       prev.map((row) => {
         if (row.id === rowId) {
@@ -241,7 +278,7 @@ export default function TimesheetEntry() {
             ...row,
             hours: {
               ...row.hours,
-              [dateStr]: hours,
+              [dateStr]: capped,
             },
           };
         }
@@ -273,8 +310,70 @@ export default function TimesheetEntry() {
         project_id: '',
         hours: {},
         notes: {},
+        is_billable: true,
       },
     ]);
+  };
+
+  const copyPreviousWeek = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Calculate previous week ending
+      const prevWeek = new Date(selectedWeek);
+      prevWeek.setDate(prevWeek.getDate() - 7);
+      const day = prevWeek.getDay();
+      const prevSaturday = new Date(prevWeek);
+      prevSaturday.setDate(prevWeek.getDate() + (6 - day));
+      const prevWeekEnding = prevSaturday.toISOString().split('T')[0];
+
+      // Find previous week's timesheet
+      const { data: prevTs } = await supabase
+        .from('timesheets')
+        .select('id')
+        .eq('employee_id', user.id)
+        .eq('week_ending', prevWeekEnding)
+        .single();
+
+      if (!prevTs) {
+        alert('No timesheet found for the previous week.');
+        return;
+      }
+
+      // Get the entries from previous week
+      const { data: prevEntries } = await supabase
+        .from('timesheet_entries')
+        .select('project_id')
+        .eq('timesheet_id', prevTs.id);
+
+      if (!prevEntries || prevEntries.length === 0) {
+        alert('Previous week timesheet has no entries to copy.');
+        return;
+      }
+
+      // Get unique project IDs from previous week
+      const uniqueProjectIds = [...new Set(prevEntries.map(e => e.project_id).filter(Boolean))];
+
+      if (uniqueProjectIds.length === 0) {
+        alert('No projects found in previous week.');
+        return;
+      }
+
+      // Create rows for each project (with empty hours)
+      const newRows: TimesheetRow[] = uniqueProjectIds.map((projectId, i) => ({
+        id: `copy-${Date.now()}-${i}`,
+        project_id: projectId,
+        hours: {},
+        notes: {},
+        is_billable: true,
+      }));
+
+      setRows(newRows);
+    } catch (err) {
+      console.error('Error copying previous week:', err);
+      alert('Failed to copy previous week');
+    }
   };
 
   const removeRow = (rowId: string) => {
@@ -324,10 +423,18 @@ export default function TimesheetEntry() {
       weekTotal += dayTotal;
     });  
 
-    const regularHours = Math.min(weekTotal, 40);
-    const overtimeHours = Math.max(0, weekTotal - 40);
+    // Use OT engine with state-specific rules
+    const otConfig = getOTConfig(employeeState, { ot_week_hours: 40 });
+    const dailyHoursArray = getWeekDates().map(date => dailyTotals[formatDate(date)] || 0);
+    const otResult = calculateOvertime(dailyHoursArray, otConfig, isExempt);
 
-    return { dailyTotals, weekTotal, regularHours, overtimeHours };
+    return {
+      dailyTotals,
+      weekTotal,
+      regularHours: otResult.regularHours,
+      overtimeHours: otResult.overtimeHours,
+      doubleTimeHours: otResult.doubleTimeHours,
+    };
   };
 
   const handleSubmit = async (isDraft: boolean = false) => {
@@ -335,9 +442,13 @@ export default function TimesheetEntry() {
     setErrorMessage('');
     setSuccessMessage('');
   
-    // Guard: approved timesheets are view-only
-    if (timesheetStatus === 'approved') {
-      setErrorMessage('This timesheet has already been approved and cannot be edited.');
+    // Guard: submitted/approved timesheets are view-only
+    if (isLocked) {
+      setErrorMessage(
+        timesheetStatus === 'approved'
+          ? 'This timesheet has already been approved and cannot be edited.'
+          : 'This timesheet has been submitted and is pending approval. It cannot be edited until it is returned.'
+      );
       setIsLoading(false);
       return;
     }
@@ -355,7 +466,20 @@ export default function TimesheetEntry() {
         setIsLoading(false);
         return;
       }
-  
+
+      // Validate no day exceeds 24 hours across all rows
+      const weekDatesForValidation = getWeekDates();
+      for (const date of weekDatesForValidation) {
+        const dateStr = formatDate(date);
+        const dayTotal = rows.reduce((sum, row) => sum + (row.hours[dateStr] || 0), 0);
+        if (dayTotal > 24) {
+          const dayLabel = date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+          setErrorMessage(`${dayLabel} has ${dayTotal} hours — maximum is 24 hours per day.`);
+          setIsLoading(false);
+          return;
+        }
+      }
+
       // Get current auth user
       const {
         data: { user },
@@ -411,6 +535,8 @@ export default function TimesheetEntry() {
           week_ending: weekEndingDate,
           total_hours: weekTotal,
           overtime_hours: overtimeHours,
+          total_minutes: Math.round(weekTotal * 60),
+          overtime_minutes: Math.round(overtimeHours * 60),
           status: newStatus,
           submitted_at: isDraft ? null : new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -435,6 +561,8 @@ export default function TimesheetEntry() {
             week_ending: weekEndingDate,
             total_hours: weekTotal,
             overtime_hours: overtimeHours,
+            total_minutes: Math.round(weekTotal * 60),
+            overtime_minutes: Math.round(overtimeHours * 60),
             status: newStatus,
             submitted_at: isDraft ? null : new Date().toISOString(),
             created_at: new Date().toISOString(),
@@ -467,7 +595,9 @@ export default function TimesheetEntry() {
               date: dateStr,
               project_id: row.project_id,
               hours,
+              minutes: Math.round(hours * 60),
               description: row.notes[dateStr] || '',
+              is_billable: row.is_billable !== false,
             });
           }
         }
@@ -524,7 +654,7 @@ export default function TimesheetEntry() {
     setSelectedWeek(newDate);
   };
 
-  const { dailyTotals, weekTotal, regularHours, overtimeHours } = calculateTotals();
+  const { dailyTotals, weekTotal, regularHours, overtimeHours, doubleTimeHours } = calculateTotals();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -554,7 +684,7 @@ export default function TimesheetEntry() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Week Selector */}
+        {/* Week Selector + Timer */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -562,6 +692,20 @@ export default function TimesheetEntry() {
               <span className="text-lg font-semibold text-[#33393c]">
                 Week Ending: {getWeekEndingDate(selectedWeek)}
               </span>
+              <TimeTimer
+                disabled={isLocked}
+                onStop={(hours) => {
+                  if (hours < 0.01) return;
+                  const today = formatDate(new Date());
+                  // Add hours to first row with a project, or first row
+                  const targetRow = rows.find(r => r.project_id) || rows[0];
+                  if (targetRow) {
+                    const existing = targetRow.hours[today] || 0;
+                    updateRowHours(targetRow.id, today, Math.round((existing + hours) * 100) / 100);
+                  }
+                  alert(`Added ${hours.toFixed(2)} hours to today (${today})`);
+                }}
+              />
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -615,8 +759,70 @@ export default function TimesheetEntry() {
           </div>
         )}
 
-        {/* Time Entry Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+        {/* Mobile Time Entry — card per day */}
+        <div className="md:hidden space-y-3 mb-6">
+          {getWeekDates().map((date) => {
+            const dateStr = formatDate(date);
+            const dayLabel = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            const dayTotal = rows.reduce((sum, row) => sum + (row.hours[dateStr] || 0), 0);
+            const isToday = formatDate(new Date()) === dateStr;
+
+            return (
+              <div key={dateStr} className={`bg-white rounded-lg shadow-sm border ${isToday ? 'border-[#e31c79] ring-1 ring-[#e31c79]/20' : 'border-gray-200'}`}>
+                <div className={`px-4 py-2 flex justify-between items-center ${isToday ? 'bg-[#e31c79]/5' : 'bg-gray-50'} rounded-t-lg`}>
+                  <span className={`text-sm font-semibold ${isToday ? 'text-[#e31c79]' : 'text-[#33393c]'}`}>
+                    {dayLabel} {isToday && '(Today)'}
+                  </span>
+                  <span className={`text-sm font-bold ${dayTotal > 0 ? 'text-[#e31c79]' : 'text-gray-400'}`}>
+                    {dayTotal.toFixed(1)} hrs
+                  </span>
+                </div>
+                <div className="p-3 space-y-2">
+                  {rows.map((row) => (
+                    <div key={row.id} className="flex items-center gap-2">
+                      <select
+                        value={row.project_id}
+                        onChange={(e) => updateRowProject(row.id, e.target.value)}
+                        disabled={isLocked}
+                        className="flex-1 text-sm px-2 py-1.5 border border-gray-300 rounded focus:ring-[#e31c79] focus:border-[#e31c79] disabled:bg-gray-100"
+                      >
+                        <option value="">Project...</option>
+                        {projects.map((p) =>
+                          p.id === '__separator' ? (
+                            <option key="__sep_m" disabled>──────</option>
+                          ) : (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          )
+                        )}
+                      </select>
+                      <input
+                        type="number"
+                        min="0"
+                        max="24"
+                        step="0.5"
+                        value={row.hours[dateStr] || ''}
+                        onChange={(e) => updateRowHours(row.id, dateStr, parseFloat(e.target.value) || 0)}
+                        disabled={isLocked}
+                        placeholder="0"
+                        className="w-16 text-center text-sm px-2 py-1.5 border border-gray-300 rounded focus:ring-[#e31c79] focus:border-[#e31c79] disabled:bg-gray-100"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Mobile total */}
+          <div className="bg-[#33393c] rounded-lg p-4 text-white text-center">
+            <span className="text-sm">Week Total:</span>
+            <span className="text-2xl font-bold ml-2">{weekTotal.toFixed(1)}</span>
+            <span className="text-sm ml-1">hrs</span>
+          </div>
+        </div>
+
+        {/* Desktop Time Entry Table */}
+        <div className="hidden md:block bg-white rounded-lg shadow-sm overflow-hidden mb-6">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -647,15 +853,19 @@ export default function TimesheetEntry() {
                         <select
                           value={row.project_id}
                           onChange={(e) => updateRowProject(row.id, e.target.value)}
-                          disabled={timesheetStatus === 'approved'}
+                          disabled={isLocked}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#e31c79] focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
                         >
                           <option value="">Select a project...</option>
-                          {projects.map((project) => (
-                            <option key={project.id} value={project.id}>
-                              {project.name} {project.code && `(${project.code})`}
-                            </option>
-                          ))}
+                          {projects.map((project) =>
+                            project.id === '__separator' ? (
+                              <option key="__sep" disabled>──────────────</option>
+                            ) : (
+                              <option key={project.id} value={project.id}>
+                                {project.name} {project.code && `(${project.code})`}
+                              </option>
+                            )
+                          )}
                         </select>
                       </td>
                       {getWeekDates().map((date) => {
@@ -675,7 +885,7 @@ export default function TimesheetEntry() {
                                   parseFloat(e.target.value) || 0,
                                 )
                               }
-                              disabled={timesheetStatus === 'approved'}
+                              disabled={isLocked}
                               className="w-full px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-[#e31c79] focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
                               placeholder="0"
                             />
@@ -685,11 +895,23 @@ export default function TimesheetEntry() {
                       <td className="px-4 py-3 text-center font-medium text-[#33393c]">
                         {rowTotal.toFixed(1)}
                       </td>
-                      <td className="px-2 py-3">
+                      <td className="px-2 py-3 flex items-center gap-1">
+                        <button
+                          onClick={() => setRows(prev => prev.map(r => r.id === row.id ? { ...r, is_billable: !r.is_billable } : r))}
+                          disabled={isLocked}
+                          title={(row.is_billable !== false) ? 'Billable (click to toggle)' : 'Non-billable (click to toggle)'}
+                          className={`p-1 rounded text-xs font-bold transition-colors ${
+                            (row.is_billable !== false)
+                              ? 'text-green-600 hover:bg-green-50'
+                              : 'text-gray-400 hover:bg-gray-100'
+                          }`}
+                        >
+                          $
+                        </button>
                         <button
                           onClick={() => removeRow(row.id)}
                           className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={rows.length === 1 || timesheetStatus === 'approved'}
+                          disabled={rows.length === 1 || isLocked}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -718,15 +940,23 @@ export default function TimesheetEntry() {
             </table>
           </div>
 
-          {/* Add Row Button */}
-          <div className="px-4 py-3 border-t">
+          {/* Add Row + Copy Previous Week */}
+          <div className="px-4 py-3 border-t flex items-center gap-3">
             <button
               onClick={addRow}
-              disabled={timesheetStatus === 'approved'}
+              disabled={isLocked}
               className="flex items-center gap-2 px-4 py-2 text-sm text-[#33393c] hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="h-4 w-4" />
               Add Row
+            </button>
+            <button
+              onClick={copyPreviousWeek}
+              disabled={isLocked}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-[#e31c79] hover:bg-pink-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-[#e31c79]/20"
+            >
+              <Copy className="h-4 w-4" />
+              Copy Previous Week
             </button>
           </div>
         </div>
@@ -743,6 +973,12 @@ export default function TimesheetEntry() {
                 <span className="text-sm">Overtime:</span>
                 <span className="font-bold text-lg">{overtimeHours.toFixed(1)}</span>
               </div>
+              {doubleTimeHours > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">Double Time:</span>
+                  <span className="font-bold text-lg text-red-600">{doubleTimeHours.toFixed(1)}</span>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <span className="text-sm">Total Hours:</span>
                 <span className="font-bold text-lg text-[#e31c79]">
@@ -770,7 +1006,7 @@ export default function TimesheetEntry() {
               type="checkbox"
               checked={attestation}
               onChange={(e) => setAttestation(e.target.checked)}
-              disabled={timesheetStatus === 'approved'}
+              disabled={isLocked}
               className="mt-1 h-5 w-5 text-[#e31c79] border-gray-300 rounded focus:ring-[#e31c79]"
             />
             <span className="text-gray-700">
@@ -783,7 +1019,7 @@ export default function TimesheetEntry() {
         <div className="flex justify-end gap-3">
           <button
             onClick={() => handleSubmit(true)}
-            disabled={isLoading || timesheetStatus === 'approved'}
+            disabled={isLoading || isLocked}
             className="flex items-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Save className="h-5 w-5" />
@@ -791,7 +1027,7 @@ export default function TimesheetEntry() {
           </button>
           <button
             onClick={() => handleSubmit(false)}
-            disabled={isLoading || !attestation || timesheetStatus === 'approved'}
+            disabled={isLoading || !attestation || isLocked}
             className="flex items-center gap-2 px-6 py-3 bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="h-5 w-5" />

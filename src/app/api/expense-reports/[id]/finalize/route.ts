@@ -1,8 +1,8 @@
 // src/app/api/expense-reports/[id]/finalize/route.ts
 
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createClient as createServerClient } from '@/lib/supabase/server';
+import { writeAuditLog } from '@/lib/auditLog';
 import nodemailer from 'nodemailer';
 
 import {
@@ -24,9 +24,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: reportId } = await params;
-  const supabase = createRouteHandlerClient({
-    cookies: () => cookies(),
-  });
+  const supabase = await createServerClient();
 
   try {
     if (!reportId) {
@@ -162,6 +160,18 @@ export async function POST(
         }
       }
 
+      await writeAuditLog(supabase, {
+        user_id: user.id,
+        action: 'expense_report.approve',
+        metadata: {
+          entity_type: 'expense_report',
+          entity_id: reportId,
+          old_status: report.status,
+          new_status: 'approved',
+          employee_id: report.employee_id,
+        },
+      });
+
       return NextResponse.json({ success: true, status: 'approved' });
     }
 
@@ -231,6 +241,19 @@ export async function POST(
           console.error('Error sending final rejection email:', emailErr);
         }
       }
+
+      await writeAuditLog(supabase, {
+        user_id: user.id,
+        action: 'expense_report.reject',
+        metadata: {
+          entity_type: 'expense_report',
+          entity_id: reportId,
+          old_status: report.status,
+          new_status: 'rejected',
+          employee_id: report.employee_id,
+          reason,
+        },
+      });
 
       return NextResponse.json({ success: true, status: 'rejected' });
     }

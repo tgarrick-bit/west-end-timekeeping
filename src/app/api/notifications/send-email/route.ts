@@ -31,18 +31,25 @@ export async function POST(request: NextRequest) {
     console.log('SMTP_PASS present?', !!process.env.SMTP_PASS);
 
     // Create SMTP transporter using env vars only
-    const transporter = nodemailer.createTransport({
+    // Supports both authenticated (Gmail App Password) and relay (Google Workspace SMTP Relay) modes
+    const smtpConfig: any = {
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: false,
-      auth: {
-        user: process.env.SMTP_USER, // set in env
-        pass: process.env.SMTP_PASS, // set in env
-      },
       tls: {
         rejectUnauthorized: false,
       },
-    });
+    };
+
+    // Only add auth if SMTP_PASS is provided (SMTP Relay doesn't need it)
+    if (process.env.SMTP_PASS) {
+      smtpConfig.auth = {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      };
+    }
+
+    const transporter = nodemailer.createTransport(smtpConfig);
 
     let subject: string;
     let htmlBody: string;

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 
@@ -103,7 +103,7 @@ export default function ProjectEditPage() {
   const router = useRouter()
   const params = useParams()
   const projectId = params?.id as string
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
 
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [project, setProject] = useState<Project | null>(null)

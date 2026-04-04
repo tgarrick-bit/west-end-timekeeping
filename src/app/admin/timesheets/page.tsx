@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import TimesheetModal from '@/components/TimesheetModal';
 import { 
@@ -79,7 +79,7 @@ export default function AdminTimesheets() {
   const [filterWeek, setFilterWeek] = useState<string>('all');
   const [filterManager, setFilterManager] = useState<string>('all');
   
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const router = useRouter();
 
   useEffect(() => {

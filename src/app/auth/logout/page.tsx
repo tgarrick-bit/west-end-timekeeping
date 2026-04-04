@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import { LogOut, CheckCircle, Loader2, AlertCircle, Shield } from 'lucide-react';
 
 type LogoutStatus = 'logging-out' | 'success' | 'error' | 'clearing';
@@ -18,7 +18,7 @@ export default function LogoutPage() {
   const [stats, setStats] = useState<LogoutStats>({});
   const [progress, setProgress] = useState(0);
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   // Calculate session statistics
   const calculateSessionStats = useCallback(() => {

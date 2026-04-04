@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Calendar, Clock, User, Building2, Check } from 'lucide-react';
 import { format } from 'date-fns';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 
 interface TimesheetEntry {
   id: string;
@@ -60,7 +60,7 @@ export default function TimesheetModal({
   const [entries, setEntries] = useState<TimesheetEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [approverName, setApproverName] = useState<string | null>(null);
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   useEffect(() => {
     if (isOpen && timesheet?.id) {

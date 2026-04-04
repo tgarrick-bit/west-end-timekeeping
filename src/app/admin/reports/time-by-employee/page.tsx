@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
 import { 
   Clock, 
@@ -37,7 +37,7 @@ interface ReportData {
 export default function TimeByEmployeeReport() {
   const router = useRouter()
   const { user } = useAuth()
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
   
   const [startDate, setStartDate] = useState('2025-09-07')
   const [endDate, setEndDate] = useState('2025-09-13')
@@ -111,7 +111,30 @@ export default function TimeByEmployeeReport() {
       if (error) {
         console.error('Error fetching report data:', error)
       } else if (data) {
-        setReportData(data as ReportData[])
+        // Resolve approver names from approved_by IDs
+        const approverIds = [...new Set(
+          (data as any[]).map(r => r.approved_by).filter(Boolean)
+        )]
+        let approverMap: Record<string, string> = {}
+        if (approverIds.length > 0) {
+          const { data: approvers } = await supabase
+            .from('employees')
+            .select('id, first_name, last_name')
+            .in('id', approverIds)
+          if (approvers) {
+            approverMap = Object.fromEntries(
+              approvers.map(a => [
+                a.id,
+                `${(a.first_name || '')[0] || ''}${(a.last_name || '')[0] || ''}`.toUpperCase()
+              ])
+            )
+          }
+        }
+        const enriched = (data as any[]).map(r => ({
+          ...r,
+          approved_by_name: r.approved_by ? (approverMap[r.approved_by] || '') : ''
+        }))
+        setReportData(enriched as ReportData[])
       }
     } catch (error) {
       console.error('Error generating report:', error)
@@ -132,18 +155,31 @@ export default function TimeByEmployeeReport() {
       const hourlyRate = row.employees?.hourly_rate || 0
       const regularAmount = regularHours * hourlyRate
       const overtimeAmount = overtimeHours * hourlyRate * 1.5
-      
+
+      const weekEndDate = new Date(row.week_ending + 'T00:00:00')
+      const dayOfWeek = weekEndDate.toLocaleDateString('en-US', { weekday: 'long' })
+      const monthName = weekEndDate.toLocaleDateString('en-US', { month: 'long' })
+      // ISO week number
+      const startOfYear = new Date(weekEndDate.getFullYear(), 0, 1)
+      const daysSinceStart = Math.floor((weekEndDate.getTime() - startOfYear.getTime()) / 86400000)
+      const weekNumber = Math.ceil((daysSinceStart + startOfYear.getDay() + 1) / 7)
+
       const rowData: any = {
         'Employee': `${row.employees?.first_name} ${row.employees?.last_name}`,
         'Department': row.employees?.department || '',
-        'Employee Type': row.employees?.employee_type || 'Regular',
+        'Employee Type': row.employees?.employee_type || '',
         'Project': row.projects?.name || 'No Project Assigned',
         'Project Code': row.projects?.code || '',
         'Week Ending': row.week_ending,
+        'DOW': dayOfWeek,
+        'Week #': weekNumber,
+        'Month': monthName,
         'Regular Hours': regularHours.toFixed(2),
         'Overtime Hours': overtimeHours.toFixed(2),
         'Total Hours': row.total_hours?.toFixed(2) || '0.00',
-        'Status': row.status.charAt(0).toUpperCase() + row.status.slice(1)
+        'Type': overtimeHours > 0 ? 'OT' : 'Reg',
+        'Status': row.status.charAt(0).toUpperCase() + row.status.slice(1),
+        'Approved By': (row as any).approved_by_name || '',
       }
 
       if (includePayRates) {
@@ -232,33 +268,33 @@ export default function TimeByEmployeeReport() {
           <div className="w-64 bg-white rounded-lg shadow-sm p-4">
             <h3 className="font-semibold text-gray-900 mb-4">Time Reports</h3>
             <div className="space-y-1">
-              <a href="/manager/reports/time-by-project" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/time-by-project" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                 Time by Project
               </a>
-              <a href="/manager/reports/time-by-employee" className="flex items-center justify-between px-3 py-2 text-sm bg-gray-100 text-gray-900 rounded">
+              <a href="/admin/reports/time-by-employee" className="flex items-center justify-between px-3 py-2 text-sm bg-gray-100 text-gray-900 rounded">
                 Time by Employee
                 <ChevronRight className="h-4 w-4" />
               </a>
-              <a href="/manager/reports/time-by-class" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/time-by-class" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                 Time by Class
               </a>
-              <a href="/manager/reports/time-by-approver" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/time-by-approver" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                 Time by Approver
               </a>
-              <a href="/manager/reports/time-missing" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/time-missing" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                 Time Missing
               </a>
             </div>
 
             <h3 className="font-semibold text-gray-900 mt-6 mb-4">Expense Reports</h3>
             <div className="space-y-1">
-              <a href="/manager/reports/expenses-by-employee" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/expenses-by-employee" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                 Expenses by Employee
               </a>
-              <a href="/manager/reports/expenses-by-project" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/expenses-by-project" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                 Expenses by Project
               </a>
-              <a href="/manager/reports/expenses-by-approver" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/expenses-by-approver" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                 Expenses by Approver
               </a>
             </div>

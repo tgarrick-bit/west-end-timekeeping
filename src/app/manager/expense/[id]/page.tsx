@@ -862,15 +862,27 @@ export default function ManagerExpenseReportPage() {
                                 Receipt
                               </p>
                               {line.receipt_url ? (
-                                <a
-                                  href={line.receipt_url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-1 text-[#e31c79] hover:underline"
-                                >
-                                  <Receipt className="h-3 w-3" />
-                                  <span>View receipt</span>
-                                </a>
+                                <div>
+                                  {/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(line.receipt_url) ? (
+                                    <a href={line.receipt_url} target="_blank" rel="noreferrer">
+                                      <img
+                                        src={line.receipt_url}
+                                        alt="Receipt"
+                                        className="mt-2 max-w-[200px] max-h-[200px] rounded-lg border border-gray-200 object-cover hover:opacity-80 transition-opacity cursor-zoom-in"
+                                      />
+                                    </a>
+                                  ) : (
+                                    <a
+                                      href={line.receipt_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-1 text-[#e31c79] hover:underline mt-1"
+                                    >
+                                      <Receipt className="h-3 w-3" />
+                                      <span>View receipt</span>
+                                    </a>
+                                  )}
+                                </div>
                               ) : (
                                 <p className="text-gray-500">
                                   No receipt attached.

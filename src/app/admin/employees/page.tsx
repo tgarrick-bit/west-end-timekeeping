@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import {
   Users,
@@ -111,6 +111,7 @@ interface Employee {
   client_id?: string;
   manager_id?: string;
   mybase_payroll_id?: string;
+  employee_type?: string;
 }
 
 interface Manager {
@@ -139,7 +140,7 @@ export default function EmployeeManagement() {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [managerFilter, setManagerFilter] = useState<string>('all');
 
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const router = useRouter();
 
   const [formData, setFormData] = useState({
@@ -160,6 +161,7 @@ export default function EmployeeManagement() {
     mybase_payroll_id: '',
     manager_id: '',
     password: '',
+    employee_type: '',
   });
 
   useEffect(() => {
@@ -342,6 +344,7 @@ export default function EmployeeManagement() {
           state: formData.state || null,
           isActive: formData.is_active,
           isExempt: formData.is_exempt,
+          employeeType: formData.employee_type || null,
         }),
       });
 
@@ -442,6 +445,7 @@ export default function EmployeeManagement() {
       mybase_payroll_id: employee.mybase_payroll_id || '',
       manager_id: employee.manager_id || '',
       password: '',
+      employee_type: employee.employee_type || '',
     });
     setShowEditModal(true);
   };
@@ -465,6 +469,7 @@ export default function EmployeeManagement() {
       mybase_payroll_id: '',
       manager_id: '',
       password: '',
+      employee_type: '',
     });
   };
 
@@ -1038,6 +1043,29 @@ export default function EmployeeManagement() {
                     </div>
                   </>
                 )}
+
+                {/* Employee Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Employee Type
+                  </label>
+                  <select
+                    value={formData.employee_type}
+                    onChange={(e) =>
+                      setFormData({ ...formData, employee_type: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                  >
+                    <option value="">Select type...</option>
+                    <option value="WE">WE (West End)</option>
+                    <option value="MBP">MBP</option>
+                    <option value="CNDH">CNDH</option>
+                    <option value="CNDC">CNDC</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Used for reporting and consultant stratification
+                  </p>
+                </div>
 
                 {/* Hire Date */}
                 <div>

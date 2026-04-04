@@ -134,35 +134,33 @@ function getNavigationItems(role: string) {
     case 'employee':
       return [
         ...baseItems,
-        { href: '/timesheets', label: 'Timesheets', icon: Calendar },
-        { href: '/expenses', label: 'Expenses', icon: Receipt },
-        { href: '/projects', label: 'Projects', icon: Building },
-        { href: '/profile', label: 'Profile', icon: User },
+        { href: '/timesheet/entry', label: 'Timesheets', icon: Calendar },
+        { href: '/expense/entry', label: 'Expenses', icon: Receipt },
+        { href: '/employee', label: 'My Portal', icon: User },
       ]
-    
+
     case 'client_approver':
       return [
         ...baseItems,
-        { href: '/approvals', label: 'Approvals', icon: FileText },
-        { href: '/reports', label: 'Reports', icon: BarChart3 },
+        { href: '/employee', label: 'Approvals', icon: FileText },
+        { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
       ]
-    
+
     case 'admin':
       return [
         ...baseItems,
+        { href: '/admin', label: 'Admin', icon: Settings },
         { href: '/admin/employees', label: 'Employees', icon: Users },
         { href: '/admin/clients', label: 'Clients', icon: Building },
         { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
-        { href: '/admin/settings', label: 'Settings', icon: Settings },
       ]
-    
+
     case 'payroll':
       return [
         ...baseItems,
-        { href: '/timesheets', label: 'Timesheets', icon: Calendar },
-        { href: '/expenses', label: 'Expenses', icon: Receipt },
-        { href: '/reports', label: 'Reports', icon: BarChart3 },
-        { href: '/export', label: 'Export', icon: FileText },
+        { href: '/admin/timesheets', label: 'Timesheets', icon: Calendar },
+        { href: '/admin/expenses', label: 'Expenses', icon: Receipt },
+        { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
       ]
     
     default:

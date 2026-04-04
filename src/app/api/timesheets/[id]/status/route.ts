@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 import { TimesheetStatus } from '@/lib/status';
+import { writeAuditLog } from '@/lib/auditLog';
+import { createNotification } from '@/lib/notify';
 
-type Action = 'save' | 'submit' | 'approve' | 'reject';
+type Action = 'save' | 'submit' | 'approve' | 'reject' | 'finalize' | 'client_approve';
 
 interface Body {
   action: Action;
@@ -42,9 +43,9 @@ async function sendEmail(payload: { to: string; subject: string; html: string })
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: timesheetId } = params;
+  const { id: timesheetId } = await params;
 
   if (!timesheetId) {
     return NextResponse.json(
@@ -53,7 +54,7 @@ export async function PATCH(
     );
   }
 
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = await createServerClient();
 
   const body = (await req.json()) as Body;
 
@@ -162,6 +163,30 @@ export async function PATCH(
       break;
     }
 
+    case 'finalize': {
+      if (currentStatus !== 'approved' && currentStatus !== 'client_approved') {
+        return NextResponse.json(
+          { error: 'Only approved or client-approved timesheets can be finalized for payroll.' },
+          { status: 400 }
+        );
+      }
+      nextStatus = 'payroll_approved';
+      updates.payroll_approved_at = new Date().toISOString();
+      break;
+    }
+
+    case 'client_approve': {
+      if (currentStatus !== 'approved') {
+        return NextResponse.json(
+          { error: 'Only manager-approved timesheets can be client-approved.' },
+          { status: 400 }
+        );
+      }
+      nextStatus = 'client_approved';
+      updates.client_approved_at = new Date().toISOString();
+      break;
+    }
+
     default:
       return NextResponse.json({ error: 'Invalid action.' }, { status: 400 });
   }
@@ -181,6 +206,60 @@ export async function PATCH(
       { error: updateError?.message || 'Failed to update timesheet.' },
       { status: 500 }
     );
+  }
+
+  // === AUDIT LOG ===
+  await writeAuditLog(supabase, {
+    user_id: user.id,
+    action: `timesheet.${body.action}`,
+    metadata: {
+      entity_type: 'timesheet',
+      entity_id: timesheetId,
+      old_status: currentStatus,
+      new_status: nextStatus,
+      employee_id: existing.employee_id,
+      reason: body.rejectionReason || undefined,
+    },
+  });
+
+  // === IN-APP NOTIFICATIONS ===
+  const weekLabel = updated.week_ending || 'this period';
+  if (nextStatus === 'submitted' && existing.employee_id) {
+    // Notify manager that employee submitted
+    const { data: emp } = await supabase.from('employees').select('manager_id, first_name, last_name').eq('id', existing.employee_id).single();
+    if (emp?.manager_id) {
+      await createNotification(supabase, {
+        user_id: emp.manager_id,
+        title: 'Timesheet submitted',
+        message: `${emp.first_name} ${emp.last_name} submitted their timesheet for week ending ${weekLabel}`,
+        type: 'info',
+        link: '/manager',
+      });
+    }
+  } else if (nextStatus === 'approved') {
+    await createNotification(supabase, {
+      user_id: existing.employee_id,
+      title: 'Timesheet approved',
+      message: `Your timesheet for week ending ${weekLabel} has been approved`,
+      type: 'success',
+      link: '/employee',
+    });
+  } else if (nextStatus === 'rejected') {
+    await createNotification(supabase, {
+      user_id: existing.employee_id,
+      title: 'Timesheet rejected',
+      message: `Your timesheet for week ending ${weekLabel} was rejected. ${body.rejectionReason || ''}`.trim(),
+      type: 'error',
+      link: '/timesheet/entry',
+    });
+  } else if (nextStatus === 'payroll_approved') {
+    await createNotification(supabase, {
+      user_id: existing.employee_id,
+      title: 'Timesheet finalized',
+      message: `Your timesheet for week ending ${weekLabel} has been finalized for payroll`,
+      type: 'success',
+      link: '/employee',
+    });
   }
 
   // === EMAIL NOTIFICATIONS (WE unified design) ===
@@ -491,6 +570,10 @@ font-family:'Montserrat', Arial, sans-serif;
       const html = `
 <!DOCTYPE html>
 <html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Timesheet Rejected</title>
 </head>
 <body style="margin:0;padding:0;background:#f3f6f9;font-family:'Montserrat',Arial,sans-serif;">
   <table role="presentation" width="100%" style="table-layout:fixed;background:#f3f6f9;padding:24px 0;">
@@ -502,7 +585,7 @@ font-family:'Montserrat', Arial, sans-serif;
           <tr>
             <td style="
               padding:18px 24px 14px;
-              background:#33393c;                /* 🔥 bring back dark header */
+              background:#33393c;
               border-bottom:3px solid #e31c79;
               text-align:center;
             ">
@@ -526,6 +609,23 @@ font-family:'Montserrat', Arial, sans-serif;
               />
             </td>
           </tr>
+
+          <!-- BODY -->
+          <tr>
+            <td style="
+              padding:14px 28px 24px;
+              font-size:14px;
+              color:#374151;
+              line-height:1.7;
+              font-family:'Montserrat', Arial, sans-serif;
+            ">
+              <h2 style="
+                font-family:'Montserrat', Arial, sans-serif;
+                font-size:22px;
+                font-weight:700;
+                line-height:1.3;
+                color:#dc2626;
+              ">
                 Timesheet Rejected
               </h2>
               <p>Hello ${employeeName},</p>
@@ -562,6 +662,55 @@ font-family:'Montserrat', Arial, sans-serif;
       await sendEmail({
         to: employee.email,
         subject: `Your timesheet for ${weekEnding} was rejected`,
+        html,
+      });
+    }
+
+    // === EMPLOYEE EMAIL: PAYROLL APPROVED (FINALIZED) ===
+    if (nextStatus === 'payroll_approved' && employee?.email) {
+      const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Timesheet Finalized</title>
+</head>
+<body style="margin:0;padding:0;background:#f3f6f9;font-family:'Montserrat',Arial,sans-serif;">
+  <table role="presentation" width="100%" style="table-layout:fixed;background:#f3f6f9;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width:620px;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #e5e7eb;">
+          <tr>
+            <td style="padding:18px 24px 14px;background:#33393c;border-bottom:3px solid #e31c79;text-align:center;">
+              <div style="font-family:'Montserrat',Arial,sans-serif;font-size:24px;font-weight:700;color:#ffffff;letter-spacing:0.3px;">
+                West End Workforce
+              </div>
+              <img src="${logoUrl}" alt="West End Workforce Logo" width="48" style="display:block;margin:10px auto 0;" />
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:14px 28px 24px;font-size:14px;color:#374151;line-height:1.7;font-family:'Montserrat',Arial,sans-serif;">
+              <h2 style="font-family:'Montserrat',Arial,sans-serif;font-size:22px;font-weight:700;line-height:1.3;color:#059669;">
+                Timesheet Finalized for Payroll
+              </h2>
+              <p>Hello ${employeeName},</p>
+              <p>Your timesheet for the week ending <strong>${weekEnding}</strong> has been <strong>finalized for payroll processing</strong>.</p>
+              <p>No further action is required. This timesheet is now locked.</p>
+            </td>
+          </tr>
+          ${footerHtml}
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `;
+
+      await sendEmail({
+        to: employee.email,
+        subject: `Your timesheet for ${weekEnding} has been finalized for payroll`,
         html,
       });
     }

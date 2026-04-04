@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import RoleGuard from '@/components/auth/RoleGuard';
 import { 
@@ -39,7 +39,13 @@ interface CompanySettings {
   ot_week_hours: number;
   dt_day_hours: number | null;
   time_increment_minutes: number;
-  
+
+  // Pay Period Settings
+  pay_period_type: string;
+  pay_period_start_date: string;
+  pay_period_lock_delay_days: number;
+  pay_period_auto_lock: boolean;
+
   // Expense Settings
   expense_enabled: boolean;
   expense_foreign_currencies: boolean;
@@ -94,7 +100,7 @@ export default function AdminSettingsPage() {
   const [saveMessage, setSaveMessage] = useState('');
   
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   useEffect(() => {
     loadSettings();
@@ -135,6 +141,10 @@ export default function AdminSettingsPage() {
           ot_week_hours: 40,
           dt_day_hours: null,
           time_increment_minutes: 15,
+          pay_period_type: 'weekly',
+          pay_period_start_date: '2026-01-05',
+          pay_period_lock_delay_days: 3,
+          pay_period_auto_lock: false,
           expense_enabled: true,
           expense_foreign_currencies: false,
           expense_payment_memo: '',
@@ -684,6 +694,89 @@ export default function AdminSettingsPage() {
                       <option value="15">15</option>
                       <option value="30">30</option>
                     </select>
+                  </div>
+
+                  {/* Pay Period Configuration */}
+                  <div className="pt-4 border-t">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Pay Period Configuration</h4>
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Pay Period Type
+                        </label>
+                        <select
+                          value={settings.pay_period_type}
+                          onChange={(e) => updateSetting('pay_period_type', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="weekly">Weekly</option>
+                          <option value="biweekly">Bi-Weekly</option>
+                          <option value="semimonthly">Semi-Monthly</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Period Start Date (anchor)
+                        </label>
+                        <input
+                          type="date"
+                          value={settings.pay_period_start_date}
+                          onChange={(e) => updateSetting('pay_period_start_date', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          First day of the first pay period (e.g., a Monday for weekly)
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Lock Delay (days after period ends)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="14"
+                          value={settings.pay_period_lock_delay_days}
+                          onChange={(e) => updateSetting('pay_period_lock_delay_days', parseInt(e.target.value))}
+                          className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={settings.pay_period_auto_lock}
+                            onChange={(e) => updateSetting('pay_period_auto_lock', e.target.checked)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">Auto-lock periods after delay</span>
+                        </label>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <button
+                        onClick={async () => {
+                          try {
+                            const res = await fetch('/api/pay-periods', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ action: 'generate' }),
+                            })
+                            const data = await res.json()
+                            if (res.ok) {
+                              alert(`Generated ${data.generated} pay periods`)
+                            } else {
+                              alert(data.error || 'Failed to generate periods')
+                            }
+                          } catch (err) {
+                            alert('Error generating pay periods')
+                          }
+                        }}
+                        className="px-4 py-2 text-sm bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865]"
+                      >
+                        Generate Pay Periods (next 90 days)
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-3 pt-4 border-t">

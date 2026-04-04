@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 import { notificationService } from '@/lib/notificationService';
 import { NOTIFICATION_TYPES, PRIORITIES } from '@/types/notifications';
 
@@ -80,10 +81,19 @@ export async function POST(request: NextRequest) {
       try {
         const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-        // TODO: replace this with a real lookup of user emails from your DB
-        const userEmails = results.successful.map(
-          (userId) => `${userId}@westendworkforce.com`
+        // Look up real emails from the employees table
+        const supabase = await createServerClient();
+        const { data: employees } = await supabase
+          .from('employees')
+          .select('id, email')
+          .in('id', results.successful);
+
+        const emailMap = new Map(
+          (employees || []).map(e => [e.id, e.email])
         );
+        const userEmails = results.successful
+          .map(userId => emailMap.get(userId))
+          .filter((email): email is string => !!email);
 
         // Send a simple email to each recipient using your existing send-email route
         const emailPromises = userEmails.map(async (email) => {

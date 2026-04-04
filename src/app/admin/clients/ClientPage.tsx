@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { 
@@ -35,7 +35,7 @@ interface Client {
   bill_rate?: number;
   contract_start?: string;
   contract_end?: string;
-  active: boolean;
+  is_active: boolean;
   employee_count?: number;
   project_count?: number;
   created_at: string;
@@ -54,7 +54,7 @@ interface ClientFormData {
   bill_rate: number;
   contract_start: string;
   contract_end: string;
-  active: boolean;
+  is_active: boolean;
 }
 
 export default function ClientManagement() {
@@ -66,7 +66,7 @@ export default function ClientManagement() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const router = useRouter();
 
   const initialFormData: ClientFormData = {
@@ -82,7 +82,7 @@ export default function ClientManagement() {
     bill_rate: 150,
     contract_start: new Date().toISOString().split('T')[0],
     contract_end: '',
-    active: true
+    is_active: true
   };
 
   const [formData, setFormData] = useState<ClientFormData>(initialFormData);
@@ -167,9 +167,9 @@ export default function ClientManagement() {
         bill_rate: isNaN(formData.bill_rate) ? null : formData.bill_rate,
         contract_start: formData.contract_start || null,
         contract_end: formData.contract_end || null,
-        active: formData.active,
+        is_active: formData.is_active,
       };
-  
+
       const { error } = await supabase
         .from('clients')
         .insert([payload]);
@@ -211,9 +211,9 @@ export default function ClientManagement() {
         bill_rate: isNaN(formData.bill_rate) ? null : formData.bill_rate,
         contract_start: formData.contract_start || null,
         contract_end: formData.contract_end || null,
-        active: formData.active,
+        is_active: formData.is_active,
       };
-  
+
       const { error } = await supabase
         .from('clients')
         .update(payload)
@@ -246,7 +246,7 @@ export default function ClientManagement() {
     try {
       const { error } = await supabase
         .from('clients')
-        .update({ active: false })
+        .update({ is_active: false })
         .eq('id', id);
 
       if (error) throw error;
@@ -272,7 +272,7 @@ export default function ClientManagement() {
       bill_rate: client.bill_rate || 150,
       contract_start: client.contract_start || '',
       contract_end: client.contract_end || '',
-      active: client.active
+      is_active: client.is_active
     });
     setShowEditModal(true);
   };
@@ -385,7 +385,7 @@ export default function ClientManagement() {
               <div>
                 <p className="text-sm text-gray-600">Active Clients</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {clients.filter((c) => c.active).length}
+                  {clients.filter((c) => c.is_active).length}
                 </p>
               </div>
               <Users className="h-8 w-8 text-green-500" />
@@ -415,7 +415,7 @@ export default function ClientManagement() {
               className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
               style={{
                 borderWidth: '1px',
-                borderColor: client.active ? '#05202e' : '#ccc',
+                borderColor: client.is_active ? '#05202e' : '#ccc',
               }}
             >
               <div className="p-6">
@@ -431,12 +431,12 @@ export default function ClientManagement() {
                   </div>
                   <span
                     className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      client.active
+                      client.is_active
                         ? 'bg-green-100 text-green-800'
                         : 'bg-gray-100 text-gray-800'
                     }`}
                   >
-                    {client.active ? 'Active' : 'Inactive'}
+                    {client.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </div>
 
@@ -733,11 +733,11 @@ export default function ClientManagement() {
                     Status
                   </label>
                   <select
-                    value={formData.active ? 'active' : 'inactive'}
+                    value={formData.is_active ? 'active' : 'inactive'}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        active: e.target.value === 'active',
+                        is_active: e.target.value === 'active',
                       })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"

@@ -3,7 +3,7 @@
 // src/app/admin/expenses/page.tsx
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import ExpenseModal from '@/components/ExpenseModal';
 import {
@@ -109,7 +109,7 @@ export default function AdminExpenses() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const router = useRouter();
 
   useEffect(() => {

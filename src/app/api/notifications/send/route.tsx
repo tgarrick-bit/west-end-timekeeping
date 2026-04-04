@@ -3,13 +3,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { notificationService } from '@/lib/notificationService';
 import { emailService } from '@/lib/emailService';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 
 // POST /api/notifications/send - Send notification reminders for monitoring
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = await createServerClient();
     
     // Check authentication
     const { data: { user } } = await supabase.auth.getUser();

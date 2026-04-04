@@ -1,8 +1,8 @@
 // src/app/api/expense-reports/[id]/submit/route.ts
 
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createClient as createServerClient } from '@/lib/supabase/server';
+import { writeAuditLog } from '@/lib/auditLog';
 import nodemailer from 'nodemailer';
 import { buildManagerSubmissionEmailHtml } from '@/lib/email-templates/manager';
 
@@ -16,9 +16,7 @@ export async function POST(
   console.log('[EXPENSE SUBMIT] Route hit for report:', reportId);
 
   // ✅ Use route handler client so auth + RLS work on the server
-  const supabase = createRouteHandlerClient({
-    cookies: () => cookies(),
-  });
+  const supabase = await createServerClient();
 
   try {
     const {
@@ -332,6 +330,18 @@ export async function POST(
       );
       // Do not fail submission on email error
     }
+
+    await writeAuditLog(supabase, {
+      user_id: user.id,
+      action: 'expense_report.submit',
+      metadata: {
+        entity_type: 'expense_report',
+        entity_id: reportId,
+        old_status: 'draft',
+        new_status: 'submitted',
+        employee_id: user.id,
+      },
+    });
 
     console.log(
       '[EXPENSE SUBMIT] Completed successfully for report:',

@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import TimesheetModal from '@/components/TimesheetModal'
 import Image from 'next/image'
-import { 
-  Clock, 
+import {
+  Clock,
   FileText,
   CheckCircle,
   XCircle,
@@ -28,6 +28,7 @@ import {
   ArrowUpDown,
   Search,
 } from 'lucide-react'
+import NotificationBell from '@/components/NotificationBell'
 
 // Shared helper for names: "Last, First Middle" by default
 function formatName(
@@ -64,6 +65,7 @@ interface Employee {
   bill_rate: number | null
   manager_id: string | null
   role: string               // 'employee' | 'manager' | 'admin'
+  is_active?: boolean
 }
 
 interface Timesheet {
@@ -114,7 +116,7 @@ type Submission = {
 export default function AdminPage() {
   const router = useRouter()
   const { employee } = useAuth()
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
   
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
@@ -126,6 +128,9 @@ export default function AdminPage() {
   const [managerFilter, setManagerFilter] = useState<string>('all')
   const [employeeFilter, setEmployeeFilter] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState<string>('')
+
+  // Missing timesheet detection
+  const [missingEmployees, setMissingEmployees] = useState<Employee[]>([])
 
   // Modal state
   const [selectedTimesheet, setSelectedTimesheet] = useState<any>(null)
@@ -254,6 +259,25 @@ export default function AdminPage() {
         )
   
         setSubmissions(allSubmissions)
+
+        // Detect missing timesheets for current week
+        const now = new Date()
+        const dayOfWeek = now.getDay()
+        const currentSaturday = new Date(now)
+        currentSaturday.setDate(now.getDate() + (6 - dayOfWeek))
+        const weekEnding = currentSaturday.toISOString().split('T')[0]
+
+        const activeEmployees = (allEmployees as Employee[]).filter(e =>
+          e.is_active !== false && (e.role === 'employee' || e.role === 'manager')
+        )
+        const employeesWithTimesheets = new Set(
+          allSubmissions
+            .filter(s => s.type === 'timesheet' && s.date?.split('T')[0] === weekEnding)
+            .map(s => s.employee?.id)
+            .filter(Boolean)
+        )
+        const missing = activeEmployees.filter(e => !employeesWithTimesheets.has(e.id))
+        setMissingEmployees(missing)
       }
     } catch (error) {
       console.error('Error loading submissions:', error)
@@ -557,20 +581,31 @@ export default function AdminPage() {
   }  
 
   const handleApprove = async (submission: Submission) => {
-    const table = submission.type === 'timesheet' ? 'timesheets' : 'expenses'
-    
-    const { error } = await supabase
-      .from(table)
-      .update({ 
-        status: 'approved',
-        approved_at: new Date().toISOString(),
-        approved_by: adminId
-      })
-      .eq('id', submission.id)
+    try {
+      if (submission.type === 'timesheet') {
+        const res = await fetch(`/api/timesheets/${submission.id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'approve' }),
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          throw new Error(data.error || 'Failed to approve timesheet')
+        }
+      } else {
+        const res = await fetch(`/api/expense-reports/${submission.id}/finalize`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'approve' }),
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          throw new Error(data.error || 'Failed to approve expense')
+        }
+      }
 
-    if (!error) {
       loadSubmissions()
-      
+
       if (selectedTimesheet?.id === submission.id) {
         setIsModalOpen(false)
         setSelectedTimesheet(null)
@@ -579,29 +614,41 @@ export default function AdminPage() {
         setIsExpenseModalOpen(false)
         setSelectedExpense(null)
       }
+    } catch (error: any) {
+      console.error('Error approving:', error)
+      alert(error?.message || 'Error approving submission')
     }
   }
 
   const handleReject = async (submission: Submission) => {
     const reason = prompt('Please provide a reason for rejection:')
-    if (!reason) return
+    if (!reason || !reason.trim()) return
 
-    const table = submission.type === 'timesheet' ? 'timesheets' : 'expenses'
-    const reasonField = 'rejection_reason'
-    
-    const { error } = await supabase
-      .from(table)
-      .update({ 
-        status: 'rejected',
-        approved_at: new Date().toISOString(),
-        approved_by: adminId,
-        [reasonField]: reason
-      })
-      .eq('id', submission.id)
+    try {
+      if (submission.type === 'timesheet') {
+        const res = await fetch(`/api/timesheets/${submission.id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'reject', rejectionReason: reason.trim() }),
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          throw new Error(data.error || 'Failed to reject timesheet')
+        }
+      } else {
+        const res = await fetch(`/api/expense-reports/${submission.id}/finalize`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'reject', reason: reason.trim() }),
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          throw new Error(data.error || 'Failed to reject expense')
+        }
+      }
 
-    if (!error) {
       loadSubmissions()
-      
+
       if (selectedTimesheet?.id === submission.id) {
         setIsModalOpen(false)
         setSelectedTimesheet(null)
@@ -610,6 +657,9 @@ export default function AdminPage() {
         setIsExpenseModalOpen(false)
         setSelectedExpense(null)
       }
+    } catch (error: any) {
+      console.error('Error rejecting:', error)
+      alert(error?.message || 'Error rejecting submission')
     }
   }
 
@@ -639,6 +689,34 @@ export default function AdminPage() {
       }
     }
     setSelectedItems(new Set())
+  }
+
+  const handleFinalizeForPayroll = async (submission: Submission) => {
+    if (submission.type !== 'timesheet') return
+
+    const confirmed = confirm(
+      `Finalize this timesheet for payroll processing?\n\n` +
+      `Employee: ${formatName(submission.employee?.first_name, submission.employee?.middle_name, submission.employee?.last_name, 'firstLast')}\n` +
+      `Week: ${submission.week_range}\n` +
+      `Hours: ${submission.hours?.toFixed(2)}`
+    )
+    if (!confirmed) return
+
+    try {
+      const res = await fetch(`/api/timesheets/${submission.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'finalize' }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to finalize timesheet')
+      }
+      loadSubmissions()
+    } catch (error: any) {
+      console.error('Error finalizing:', error)
+      alert(error?.message || 'Error finalizing timesheet for payroll')
+    }
   }
 
   const toggleItemSelection = (id: string) => {
@@ -904,6 +982,7 @@ export default function AdminPage() {
                   {greeting}, {displayName}
                 </span>
               </div>
+              <NotificationBell />
               <button
                 onClick={async () => { await supabase.auth.signOut(); router.push('/auth/login'); }}
                 className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-gray-200 hover:text-white transition-colors"
@@ -960,11 +1039,18 @@ export default function AdminPage() {
               Projects
             </button>
 
-            <button 
+            <button
               onClick={() => router.push('/admin/billing')}
               className="py-3 text-sm font-medium text-gray-500 hover:text-[#33393c] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
             >
               Billing
+            </button>
+
+            <button
+              onClick={() => router.push('/admin/payroll')}
+              className="py-3 text-sm font-medium text-gray-500 hover:text-[#33393c] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
+            >
+              Payroll
             </button>
 
             <div className="relative group">
@@ -982,6 +1068,28 @@ export default function AdminPage() {
                   </a>
                   <a href="/admin/reports/time-by-employee" className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700">
                     Time by employee
+                  </a>
+                  <a href="/admin/reports/time-by-approver" className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700">
+                    Time by approver
+                  </a>
+                  <a href="/admin/reports/time-by-class" className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700">
+                    Time by class
+                  </a>
+                  <a href="/admin/reports/time-missing" className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700">
+                    Missing timesheets
+                  </a>
+                  <div className="border-t border-gray-100 my-1"></div>
+                  <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                    Expense reports
+                  </div>
+                  <a href="/admin/reports/expenses-by-employee" className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700">
+                    Expenses by employee
+                  </a>
+                  <a href="/admin/reports/expenses-by-project" className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700">
+                    Expenses by project
+                  </a>
+                  <a href="/admin/reports/expenses-by-approver" className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700">
+                    Expenses by approver
                   </a>
                 </div>
               </div>
@@ -1153,6 +1261,75 @@ export default function AdminPage() {
         </div>
       </div>
 
+      {/* Analytics Charts */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <h3 className="text-lg font-semibold text-[#33393c] mb-4 flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-[#e31c79]" />
+            Analytics
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Hours by Status */}
+            <div className="border border-gray-200 rounded-2xl p-4">
+              <h4 className="font-medium text-gray-900 mb-3">Timesheet Status Breakdown</h4>
+              <div className="space-y-2">
+                {[
+                  { label: 'Approved', count: approvedTimesheetCount, color: 'bg-green-500', total: allTimesheetsCount },
+                  { label: 'Pending', count: timesheetPendingCount, color: 'bg-yellow-500', total: allTimesheetsCount },
+                  { label: 'Draft', count: draftTimesheetCount, color: 'bg-gray-400', total: allTimesheetsCount },
+                  { label: 'Rejected', count: rejectedTimesheetCount, color: 'bg-red-500', total: allTimesheetsCount },
+                ].map(item => (
+                  <div key={item.label}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-600">{item.label}</span>
+                      <span className="font-medium">{item.count}</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div
+                        className={`${item.color} h-2 rounded-full transition-all duration-500`}
+                        style={{ width: `${item.total > 0 ? (item.count / item.total) * 100 : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Hours by Department */}
+            <div className="border border-gray-200 rounded-2xl p-4">
+              <h4 className="font-medium text-gray-900 mb-3">Hours by Department</h4>
+              <div className="space-y-2">
+                {(() => {
+                  const deptHours: Record<string, number> = {}
+                  submissions.filter(s => s.type === 'timesheet').forEach(s => {
+                    const dept = s.employee?.department || 'Unassigned'
+                    deptHours[dept] = (deptHours[dept] || 0) + (s.hours || 0)
+                  })
+                  const maxHours = Math.max(...Object.values(deptHours), 1)
+                  return Object.entries(deptHours)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 6)
+                    .map(([dept, hours]) => (
+                      <div key={dept}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-600 truncate">{dept}</span>
+                          <span className="font-medium">{hours.toFixed(1)} hrs</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2">
+                          <div
+                            className="bg-[#e31c79] h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${(hours / maxHours) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))
+                })()}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Monitoring Dashboard */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -1293,6 +1470,38 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+
+          {/* Missing Timesheets for Current Week */}
+          {missingEmployees.length > 0 && (
+            <div className="mt-6 border border-red-200 rounded-2xl p-4 bg-red-50">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h4 className="font-medium text-red-900 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    Missing timesheets — current week
+                  </h4>
+                  <p className="text-sm text-red-700 mt-1">
+                    {missingEmployees.length} active employee{missingEmployees.length !== 1 ? 's have' : ' has'} not created a timesheet for this week
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-1">
+                {missingEmployees.slice(0, 10).map(emp => (
+                  <div key={emp.id} className="flex justify-between items-center text-sm py-1">
+                    <span className="text-red-800">
+                      {formatName(emp.first_name, emp.middle_name, emp.last_name)}
+                      <span className="text-red-600 ml-2 text-xs">{emp.department || ''}</span>
+                    </span>
+                  </div>
+                ))}
+                {missingEmployees.length > 10 && (
+                  <p className="text-xs text-red-600 mt-2">
+                    +{missingEmployees.length - 10} more...
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Quick Actions */}
           <div className="mt-4 flex gap-4">
@@ -1450,12 +1659,14 @@ export default function AdminPage() {
                     </div>
                     <div className="w-32 text-center">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        submission.status === 'payroll_approved' ? 'bg-emerald-100 text-emerald-800' :
                         submission.status === 'approved' ? 'bg-green-100 text-green-800' :
                         submission.status === 'submitted' ? 'bg-yellow-100 text-yellow-800' :
                         submission.status === 'rejected' ? 'bg-red-100 text-red-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
                         {submission.status === 'submitted' ? 'Pending' :
+                          submission.status === 'payroll_approved' ? 'Payroll' :
                           submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
                       </span>
                     </div>
@@ -1465,14 +1676,14 @@ export default function AdminPage() {
                     <div className="w-32 flex justify-end items-center gap-2">
                       {submission.status === 'submitted' && (
                         <>
-                          <button 
+                          <button
                             onClick={() => handleApprove(submission)}
                             className="p-1 text-green-600 hover:bg-green-50 rounded"
                             title="Approve"
                           >
                             <CheckCircle className="h-4 w-4" />
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleReject(submission)}
                             className="p-1 text-red-600 hover:bg-red-50 rounded"
                             title="Reject"
@@ -1481,7 +1692,16 @@ export default function AdminPage() {
                           </button>
                         </>
                       )}
-                      <button 
+                      {submission.status === 'approved' && (
+                        <button
+                          onClick={() => handleFinalizeForPayroll(submission)}
+                          className="px-2 py-1 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                          title="Finalize for payroll"
+                        >
+                          Finalize
+                        </button>
+                      )}
+                      <button
                         onClick={() => handleViewTimesheet(submission)}
                         className="p-1 text-blue-600 hover:bg-blue-50 rounded"
                         disabled={processingId === submission.id}

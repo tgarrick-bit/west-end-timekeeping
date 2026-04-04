@@ -1,8 +1,8 @@
 // src/app/api/expenses/[id]/status/route.ts
 
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createClient as createServerClient } from '@/lib/supabase/server';
+import { writeAuditLog } from '@/lib/auditLog';
 import nodemailer from 'nodemailer';
 import { buildFinalRejectionEmailHtml } from '@/lib/email-templates/employee';
 
@@ -16,9 +16,9 @@ export async function PATCH(
 ) {
   const { id: lineId } = await params;
 
-  const supabase = createRouteHandlerClient({
-    cookies: () => cookies(),
-  });
+  const supabase = await createServerClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
 
   try {
     if (!lineId) {
@@ -161,6 +161,21 @@ export async function PATCH(
         { status: 500 }
       );
     }
+
+    // === AUDIT LOG ===
+    await writeAuditLog(supabase, {
+      user_id: user?.id || 'system',
+      action: `expense.${action}`,
+      metadata: {
+        entity_type: 'expense',
+        entity_id: lineId,
+        old_status: line.status,
+        new_status: updatePayload.status,
+        employee_id: report.employee_id,
+        report_id: reportId,
+        reason: updatePayload.rejection_reason || undefined,
+      },
+    });
 
     // 4) If this was a REJECT, notify the employee (line-level or whole report)
     if (action === 'reject') {

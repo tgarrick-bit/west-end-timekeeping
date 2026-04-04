@@ -18,6 +18,7 @@ import {
   DollarSign,
   CheckCircle,
 } from 'lucide-react';
+import NotificationBell from '@/components/NotificationBell';
 
 interface Timecard {
   id: string;
@@ -585,6 +586,7 @@ export default function EmployeeDashboard() {
                   {profile?.first_name || 'Employee'}
                 </span>
               </div>
+              <NotificationBell />
               <button
                 onClick={handleSignOut}
                 className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-200 hover:text-white transition-colors"

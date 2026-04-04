@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import RoleGuard from '@/components/auth/RoleGuard';
 import { 
@@ -11,7 +11,7 @@ import {
 
 export default function BillingPage() {
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const [activeTab, setActiveTab] = useState<'invoices' | 'payments' | 'pending'>('invoices');
   
   return (

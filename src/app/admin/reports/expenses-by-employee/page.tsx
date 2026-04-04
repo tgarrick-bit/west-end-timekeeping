@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
 import { 
   Clock, 
@@ -45,7 +45,7 @@ interface ExpenseData {
 export default function ExpensesByEmployeeReport() {
   const router = useRouter()
   const { user } = useAuth()
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
   
   const [startDate, setStartDate] = useState('2025-09-01')
   const [endDate, setEndDate] = useState('2025-09-30')
@@ -310,33 +310,33 @@ export default function ExpensesByEmployeeReport() {
           <div className="w-64 bg-white rounded-lg shadow-sm p-4">
             <h3 className="font-semibold text-gray-900 mb-4">Time Reports</h3>
             <div className="space-y-1">
-              <a href="/manager/reports/time-by-project" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/time-by-project" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                 Time by Project
               </a>
-              <a href="/manager/reports/time-by-employee" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/time-by-employee" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                 Time by Employee
               </a>
-              <a href="/manager/reports/time-by-class" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/time-by-class" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                 Time by Class
               </a>
-              <a href="/manager/reports/time-by-approver" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/time-by-approver" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                 Time by Approver
               </a>
-              <a href="/manager/reports/time-missing" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/time-missing" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                 Time Missing
               </a>
             </div>
 
             <h3 className="font-semibold text-gray-900 mt-6 mb-4">Expense Reports</h3>
             <div className="space-y-1">
-              <a href="/manager/reports/expenses-by-employee" className="flex items-center justify-between px-3 py-2 text-sm bg-gray-100 text-gray-900 rounded">
+              <a href="/admin/reports/expenses-by-employee" className="flex items-center justify-between px-3 py-2 text-sm bg-gray-100 text-gray-900 rounded">
                 Expenses by Employee
                 <ChevronRight className="h-4 w-4" />
               </a>
-              <a href="/manager/reports/expenses-by-project" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/expenses-by-project" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                 Expenses by Project
               </a>
-              <a href="/manager/reports/expenses-by-approver" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/expenses-by-approver" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                 Expenses by Approver
               </a>
             </div>

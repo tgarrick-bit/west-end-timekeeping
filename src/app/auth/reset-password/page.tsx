@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import { 
   Mail, 
   ArrowLeft, 
@@ -23,7 +23,7 @@ export default function ForgotPasswordPage() {
   const [attemptCount, setAttemptCount] = useState(0);
   
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   // Cooldown timer for resend button
   useEffect(() => {

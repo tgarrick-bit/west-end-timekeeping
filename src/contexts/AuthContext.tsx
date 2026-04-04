@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Route based on role
             const role = employeeData.role || demoUser.role;
             if (role === 'admin') {
-              router.push('/admin/dashboard');
+              router.push('/admin');
             } else if (role === 'manager' || role === 'approver') {
               router.push('/manager/pending');
             } else {
@@ -159,7 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const role = employeeData.role || 'employee';
         
         if (role === 'admin') {
-          router.push('/admin/dashboard');
+          router.push('/admin');
         } else if (role === 'manager' || role === 'approver') {
           router.push('/manager/pending');
         } else {

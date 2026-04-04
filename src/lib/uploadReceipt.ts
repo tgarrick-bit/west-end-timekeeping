@@ -1,8 +1,8 @@
 // e.g. src/lib/uploadReceipt.ts
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@/lib/supabase/client";
 
 export async function uploadReceipt(file: File) {
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not signed in");
 

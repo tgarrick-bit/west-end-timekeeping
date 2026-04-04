@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
 import { 
   Clock, 
@@ -37,7 +37,7 @@ interface MissingTimeData {
 export default function TimeMissingReport() {
   const router = useRouter()
   const { user } = useAuth()
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
   
   const [startDate, setStartDate] = useState('2025-09-07')
   const [endDate, setEndDate] = useState('')

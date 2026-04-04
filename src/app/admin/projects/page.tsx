@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Plus, Search, Filter } from 'lucide-react'
 
@@ -27,7 +27,7 @@ interface ClientRow {
 
 export default function AdminProjectsPage() {
   const router = useRouter()
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
 
   const [projects, setProjects] = useState<ProjectRow[]>([])
   const [clients, setClients] = useState<ClientRow[]>([])
