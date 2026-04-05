@@ -7,13 +7,9 @@ import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
 import TimesheetModal from '@/components/TimesheetModal';
 import {
-  Clock,
   FileText,
   Receipt,
-  AlertCircle,
   RefreshCw,
-  DollarSign,
-  CheckCircle,
 } from 'lucide-react';
 import { AppShell } from '@/components/layout';
 import { StatCard } from '@/components/ui/StatCard';
@@ -621,22 +617,22 @@ export default function EmployeeDashboard() {
         {/* TIMESHEET SUMMARY */}
         <div className="mb-8">
           <p className="we-section-label mb-4">Timesheet Summary</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <StatCard icon={Clock} label="All Time" value={stats.totalHours.toFixed(1)} subtitle="Total Hours" variant="expense" />
-            <StatCard icon={FileText} label="Pending" value={stats.pendingTimecards} subtitle="Awaiting Review" variant="warning" />
-            <StatCard icon={CheckCircle} label="Approved" value={stats.approvedTimecards} subtitle="Approved" variant="success" />
-            <StatCard icon={AlertCircle} label="Rejected" value={stats.rejectedTimecards} subtitle="Need Action" variant="danger" />
+          <div className="flex gap-0 rounded-xl overflow-hidden" style={{ border: '1px solid var(--we-border)' }}>
+            <StatCard label="Total Hours" value={stats.totalHours.toFixed(1)} subtitle="all time" accent />
+            <StatCard label="Pending" value={stats.pendingTimecards} subtitle="awaiting review" />
+            <StatCard label="Approved" value={stats.approvedTimecards} subtitle="approved" />
+            <StatCard label="Rejected" value={stats.rejectedTimecards} subtitle="need action" />
           </div>
         </div>
 
         {/* EXPENSE SUMMARY */}
         <div className="mb-8">
           <p className="we-section-label mb-4">Expense Summary</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <StatCard icon={DollarSign} label="All Time" value={formatCurrencyLocal(stats.totalExpenses)} subtitle="Total Expenses" variant="timesheet" />
-            <StatCard icon={Receipt} label="Pending" value={formatCurrencyLocal(stats.pendingExpenses)} subtitle="Awaiting Review" variant="warning" />
-            <StatCard icon={CheckCircle} label="Approved" value={formatCurrencyLocal(stats.approvedExpenses)} subtitle="Approved" variant="success" />
-            <StatCard icon={AlertCircle} label="Rejected" value={stats.rejectedExpenses} subtitle="Need Action" variant="danger" />
+          <div className="flex gap-0 rounded-xl overflow-hidden" style={{ border: '1px solid var(--we-border)' }}>
+            <StatCard label="Total Expenses" value={formatCurrencyLocal(stats.totalExpenses)} subtitle="all time" accent />
+            <StatCard label="Pending" value={formatCurrencyLocal(stats.pendingExpenses)} subtitle="awaiting review" />
+            <StatCard label="Approved" value={formatCurrencyLocal(stats.approvedExpenses)} subtitle="approved" />
+            <StatCard label="Rejected" value={stats.rejectedExpenses} subtitle="need action" />
           </div>
         </div>
 

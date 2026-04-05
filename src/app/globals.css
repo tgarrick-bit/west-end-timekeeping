@@ -35,11 +35,11 @@
   --we-border-hover: rgba(0, 0, 0, 0.14);
   --we-border-faint: rgba(0, 0, 0, 0.05);
 
-  /* Text */
-  --we-text-1: #0f172a;
-  --we-text-2: #475569;
-  --we-text-3: #94a3b8;
-  --we-text-muted: #a18b75;
+  /* Text — warm neutrals matching WEConnect */
+  --we-text-1: #1a1814;
+  --we-text-2: #6b6360;
+  --we-text-3: #a0978e;
+  --we-text-muted: #a0978e;
 
   /* Shadows */
   --we-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
