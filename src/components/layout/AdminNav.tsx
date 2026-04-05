@@ -12,6 +12,7 @@ const TABS = [
   { label: 'Payroll', href: '/admin/payroll' },
   { label: 'Reports', href: '/admin/reports' },
   { label: 'Billing', href: '/admin/billing' },
+  { label: 'Audit Log', href: '/admin/audit' },
   { label: 'Settings', href: '/admin/settings' },
 ];
 

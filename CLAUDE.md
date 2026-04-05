@@ -2,14 +2,14 @@
 
 ## Project Overview
 
-Private time and expense tracking platform for West End Workforce (WOSB/WBE staffing firm). Replaces SpringAhead. Three user roles: Employee, Manager, Admin. Currently deployed at `time.westendworkforce.ca`.
+Private time and expense tracking platform for West End Workforce (WOSB/WBE staffing firm). Replaces SpringAhead. Four user roles: Employee, Manager, Admin, Client Approver. Deployed at `time.westendworkforce.ca`.
 
 **Repo:** `git@github.com:tgarrick-bit/west-end-timekeeping.git`
 
 ## Tech Stack
 
 - **Framework:** Next.js 14 with App Router, TypeScript
-- **Styling:** Tailwind CSS
+- **Styling:** Tailwind CSS + inline styles (Montserrat font)
 - **Database:** Supabase (PostgreSQL + Auth + Storage)
 - **Deployment:** Vercel
 - **Monitoring:** Sentry + LogRocket (planned)
@@ -21,35 +21,64 @@ Private time and expense tracking platform for West End Workforce (WOSB/WBE staf
 ```
 src/app/
 ├── page.tsx                    # Redirects to login
-├── login/page.tsx              # Login page
+├── auth/login/page.tsx         # Login page
 ├── dashboard/page.tsx          # Post-login landing (requires auth)
 ├── timesheets/page.tsx         # Employee timesheet entry
 ├── expenses/page.tsx           # Employee expense entry
-├── employee/page.tsx           # Employee portal
-├── manager/                    # Manager section (WORKING - reference implementation)
+├── employee/                   # Employee portal
+│   ├── page.tsx
+│   └── layout.tsx
+├── timesheet/entry/page.tsx    # Timesheet entry
+├── expense/entry/page.tsx      # Expense entry
+├── client/                     # Client approver portal
+│   ├── page.tsx
+│   ├── timesheets/page.tsx
+│   └── expenses/page.tsx
+├── manager/                    # Manager section
 │   ├── page.tsx                # Manager dashboard
 │   ├── layout.tsx              # Manager layout with nav tabs
-│   ├── approvals/page.tsx      # Approval queue
-│   ├── contractors/             # Team management
+│   ├── pending/page.tsx        # Approval queue
+│   ├── contractors/            # Team management
 │   │   ├── page.tsx
 │   │   └── [id]/page.tsx
 │   ├── timesheets/page.tsx
 │   ├── expenses/page.tsx
-│   ├── financial/page.tsx
-│   └── reports/page.tsx
-├── admin/                      # Admin section (NEEDS WORK - this is the focus)
-│   ├── page.tsx                # Admin dashboard - has tabs + review/approve, partially wired
-│   ├── employees/              # Employee management
+│   ├── reports/                # Manager reports (all working)
 │   │   ├── page.tsx
-│   │   └── import/page.tsx     # Excel/CSV import (WORKING)
-│   ├── clients/page.tsx        # Client management (NEEDS WIRING)
-│   ├── projects/page.tsx       # Project management (NEEDS WIRING)
-│   ├── billing/page.tsx        # Billing (NEEDS BUILDING)
-│   ├── reports/                # Reports (NEEDS BUILDING)
 │   │   ├── time-by-project/
 │   │   ├── time-by-employee/
-│   │   └── ...
-│   └── settings/page.tsx       # System settings (NEEDS BUILDING)
+│   │   ��── time-by-approver/
+│   │   ├── time-by-class/
+│   │   ├── time-missing/
+���   │   ├── expenses-by-project/
+│   │   ├── expenses-by-employee/
+│   │   └── expenses-by-approver/
+│   └── financial/page.tsx
+├── admin/                      # Admin section
+│   ├── page.tsx                # Admin dashboard with review/approve
+│   ├── layout.tsx              # Admin layout (Sidebar + AdminNav)
+│   ├── employees/              # Employee management
+│   │   ├── page.tsx
+│   │   └── import/page.tsx     # Excel/CSV import
+│   ├── clients/page.tsx        # Client management (CRUD)
+│   ├── projects/               # Project management
+│   │   ├── page.tsx            # Project list
+│   │   └── [id]/page.tsx       # Project edit (overview, budget, invoicing, people, approvers, time settings)
+│   ├── timesheets/page.tsx     # Timesheet review
+│   ├── expenses/page.tsx       # Expense review
+���   ├── payroll/page.tsx        # Payroll management
+│   ├── billing/page.tsx        # Billing
+│   ├── audit/page.tsx          # Audit log viewer (filterable, paginated)
+│   ├── reports/                # Reports (all working)
+│   │   ├── time-by-project/
+│   │   ├── time-by-employee/
+│   │   ├── time-by-approver/
+│   │   ├── time-by-class/
+│   │   ├── time-missing/
+│   │   ├── expenses-by-project/
+│   │   ├── expenses-by-employee/
+│   │   └── expenses-by-approver/
+│   └── settings/page.tsx       # System settings
 └── app_backup/                 # Old versions - reference only, do not modify
 ```
 
@@ -57,11 +86,19 @@ src/app/
 
 ```
 src/components/
-├── auth/ProtectedRoute.tsx         # Role-based route protection
-├── navigation/TopNavigation.tsx    # Top nav bar
-├── Navigation.tsx                  # Role-based nav items
-├── EmployeeReviewDetail.tsx        # Manager review interface (reference)
-├── ClientManagement.tsx            # Client CRUD component
+├── layout/
+│   ├── AppShell.tsx               # Sidebar + content wrapper
+���   ├── AuthenticatedShell.tsx     # Auth-gated shell
+│   ├── Sidebar.tsx                # Role-based sidebar navigation
+│   └── AdminNav.tsx               # Admin tab navigation
+├── ui/
+│   ├── Skeleton.tsx               # Skeleton loading components
+│   └── NotificationBell.tsx       # Bell icon + dropdown in sidebar
+├── auth/
+│   ├── AuthContext.tsx
+│   └── ProtectedRoute.tsx
+├── Navigation.tsx                 # Legacy role-based nav items
+├── ClientManagement.tsx           # Client CRUD component
 └── ...
 ```
 
@@ -69,79 +106,75 @@ src/components/
 
 ```
 src/contexts/
-├── AuthContext.tsx              # Auth + role management
+├── AuthContext.tsx              # Auth + role management (useAuth hook)
+├── NotificationContext.tsx      # Notification toast context
 ```
 
 ### Database Schema
 
 **Core tables:**
-- `users` / `employees` — user accounts with roles (employee, manager, admin, client_approver, payroll)
-- `clients` — client companies
-- `projects` — client projects (status: active/completed/on-hold)
-- `project_assignments` — links users to projects with hourly rates
-- `tasks` — project-specific task codes
-- `time_entries` — daily time tracking (hours stored in minutes)
-- `timesheets` — weekly aggregation (status enum: draft/submitted/client_approved/payroll_approved/rejected)
-- `expense_categories` — expense types with spending limits
-- `expense_items` — individual expenses
-- `expense_reports` — monthly expense aggregation
+- `employees` -- user accounts with roles (employee, manager, admin, client_approver, payroll)
+- `clients` -- client companies
+- `projects` -- client projects (status: active/completed/on-hold, includes billing_rate, budget, active_po, invoice_item, time_type, max_daily_hours, time_increment)
+- `project_employees` -- links users to projects with hourly rates (pay_rate, bill_rate)
+- `time_approvers` -- who can approve time for which projects
+- `tasks` -- project-specific task codes
+- `time_entries` -- daily time tracking (hours stored in minutes)
+- `timesheets` -- weekly aggregation (status enum: draft/submitted/client_approved/payroll_approved/rejected)
+- `expense_categories` -- expense types with spending limits
+- `expense_items` -- individual expenses
+- `expense_reports` -- monthly expense aggregation
+- `notifications` -- in-app notification inbox (user_id, type, title, message, is_read, metadata)
+- `audit_logs` -- system-wide audit trail (user_id, action, timestamp, metadata)
+- `notification_logs` -- email/system notification history
 
-**Auth:** Supabase Auth with role stored in employees/users table. Role checked client-side via AuthContext.
+**Auth:** Supabase Auth with role stored in employees table. Role checked client-side via AuthContext.
 
-**SQL files:** `scripts/database/` contains schema definitions. Key file: `setup-correct-schema.sql`
+**SQL files:** `scripts/database/` contains schema definitions and migrations.
 
 ## Current State Summary
 
-### ✅ Working (use as reference patterns)
-- **Employee dashboard** — timesheets, expenses, project view, profile
-- **Manager dashboard** — approvals, contractor management, reports, financial overview
-- **Employee import** — Excel/CSV upload at `/admin/employees/import`
-- **Auth flow** — login, role-based routing, protected routes
-- **Navigation** — role-aware nav items, mobile responsive
-- **Timesheet submission** — weekly entry with daily cards, project breakdown
+### Working
+- **Employee dashboard** -- timesheets, expenses, project view, profile
+- **Manager dashboard** -- approvals, contractor management, reports, financial overview
+- **Client approver portal** -- timesheet and expense approval
+- **Admin dashboard** -- review/approve, tab navigation
+- **Admin employee management** -- CRUD, Excel/CSV import
+- **Admin client management** -- CRUD via ClientManagement component
+- **Admin project management** -- full CRUD with budget, invoicing, people, approvers, time settings (all persisted to DB)
+- **Admin reports** -- time-by-project, time-by-employee, time-by-approver, time-by-class, time-missing, expenses-by-project, expenses-by-employee, expenses-by-approver
+- **Admin audit log** -- filterable, paginated audit trail viewer
+- **Notification inbox** -- bell icon in sidebar with unread badge, dropdown panel
+- **Auth flow** -- login, role-based routing, protected routes
+- **Navigation** -- role-aware sidebar + mobile responsive
+- **Timesheet submission** -- weekly entry with daily cards, project breakdown
 
-### ⚠️ Partially Done (admin section)
-- **Admin dashboard** (`/admin/page.tsx`) — has tab navigation and review/approve UI, but uses mixed patterns. Some data is fetched from Supabase, some is mock/simulated.
-- **Admin employees page** — exists but needs full CRUD wiring
-- **Admin clients page** — component exists (`ClientManagement.tsx`) but may not be fully wired
-- **Admin projects page** — route exists, needs building
-
-### ❌ Not Built Yet
+### Partially Done
 - Admin billing page
-- Admin reports pages (time-by-project, time-by-employee, etc.)
 - Admin settings page
-- System-wide user management (create/edit/deactivate users, assign roles)
-- Audit logging
-- Tracker API sync integration
+- Admin payroll page
 
 ## Coding Conventions
 
 ### Patterns to Follow
 
-**Always reference the manager section as the gold standard.** The manager dashboard, approvals page, and contractor pages show the correct patterns for:
-- Data fetching with Supabase client
-- Loading states (spinner with brand color)
-- Error handling
-- Layout structure
-- Navigation tabs
-
 **Data fetching pattern:**
 ```typescript
-const supabase = createClientComponentClient()
+const supabase = createClient()  // from @/lib/supabase/client
 
 const loadData = async () => {
-  setIsLoading(true)
+  setLoading(true)
   const { data, error } = await supabase
     .from('table_name')
     .select('*')
     .eq('field', value)
-  
+
   if (error) {
     console.error('Error:', error)
     return
   }
   setData(data)
-  setIsLoading(false)
+  setLoading(false)
 }
 ```
 
@@ -158,31 +191,48 @@ useEffect(() => {
 
 **Loading state:**
 ```tsx
-<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e31c79] mx-auto"></div>
+<SkeletonList rows={6} />
+// or
+<div className="w-4 h-4 border-2 border-[#e8e4df] border-t-[#e31c79] rounded-full animate-spin" />
 ```
 
 ### Style Guide
 
 **Brand colors:**
-- Primary Pink: `#e31c79` (action buttons, approved status, spinners)
-- Dark Blue: `#05202E` (headers, navigation backgrounds, text)
-- Light Beige: `#E5DDD8` (section backgrounds, cards)
-- Success Green for approved items
-- Warning Orange for pending items
-- Error Red for rejected items
+- Primary Pink: `#e31c79` (action buttons, active indicators, badges)
+- Page Background: `#FAFAF8`
+- Card Background: `#FFFFFF` with `border: 0.5px solid #e8e4df`, `border-radius: 10px`
+- Gold Focus Ring: `#d3ad6b` (input focus states)
+- Text Primary: `#1a1a1a`
+- Text Secondary: `#999`
+- Labels: `#c0bab2` (uppercase, 9px, letter-spacing: 1)
+- Dividers: `#f0ece7` or `#e8e4df`
+- Success: `#2d9b6e`
+- Error: `#b91c1c`
+
+**Font:** Montserrat (loaded via next/font or Google Fonts)
+
+**Page layout:**
+```tsx
+<div style={{ padding: '36px 40px' }}>
+  {/* page content */}
+</div>
+```
 
 **UI principles:**
-- Simple list views over complex cards (follow SpringAhead's simplicity)
-- Consistent card grid layouts
-- Uniform card heights and spacing
-- Tab navigation for admin sections (Review & Approve | Employees | Clients | Projects | Billing | Reports)
+- No shadows -- use borders only
+- Skeleton loading states (not spinners) for page content
+- Consistent card/table styling with 0.5px borders
+- Tab navigation for admin sections
 - Mobile-responsive with sidebar patterns
+- Hover states with subtle background changes (#FDFCFB, #FAFAF8)
 
 **Do NOT:**
-- Use mock/simulated data in production pages (remove setTimeout fake data)
-- Create overly complex card layouts
+- Use mock/simulated data in production pages
+- Add box shadows to cards
 - Add features without wiring to Supabase
 - Break existing working pages
+- Use fonts other than Montserrat
 
 ### TypeScript
 
@@ -190,50 +240,20 @@ useEffect(() => {
 - Types defined in `src/types/index.ts`
 - Strict mode enabled
 
-## Admin Section — What Needs Doing
-
-### Priority 1: Wire up existing admin pages to real data
-The admin dashboard (`/admin/page.tsx`) currently has a backup version that uses simulated data (setTimeout with hardcoded stats). The active version fetches some real data but mixes patterns. Goal: make it consistent with manager dashboard patterns.
-
-### Priority 2: User Management (Admin core function)
-- List all users with role, status, department
-- Create new users (Supabase Auth + employees table)
-- Edit user details and role
-- Activate/deactivate users
-- Assign users to projects
-
-### Priority 3: Client & Project Management
-- CRUD for clients (ClientManagement component exists, may need updates)
-- CRUD for projects with client association
-- Project assignment management (who works on what, at what rate)
-- Task code management per project
-
-### Priority 4: Reports
-- Time by project (date range filter)
-- Time by employee (date range filter)
-- Expense summary reports
-- Export to CSV/Excel
-
-### Priority 5: System Settings
-- Pay period configuration
-- Expense category management
-- System-wide defaults
-- Notification preferences
-
 ## Approval Workflow
 
 ```
 Employee submits timesheet/expense
-  → Status: 'submitted'
-  → Client/Manager approves
-  → Status: 'client_approved'
-  → Admin/Payroll approves
-  → Status: 'payroll_approved'
-  → Ready for export
+  -> Status: 'submitted'
+  -> Client/Manager approves
+  -> Status: 'client_approved'
+  -> Admin/Payroll approves
+  -> Status: 'payroll_approved'
+  -> Ready for export
 
 Rejection at any stage:
-  → Status: 'rejected' + rejection_reason
-  → Returns to employee for revision
+  -> Status: 'rejected' + rejection_reason
+  -> Returns to employee for revision
 ```
 
 ## Environment Variables
@@ -250,21 +270,21 @@ NEXT_PUBLIC_SITE_URL=              # Production: https://time.westendworkforce.c
 
 - **Platform:** Vercel
 - **Domain:** time.westendworkforce.ca
-- **Branch:** main → auto-deploy
+- **Branch:** main -> auto-deploy
 - **Build:** `next build` (standard Next.js)
 
 ## Important Notes
 
-- There is an `app_backup/` directory with old page versions — use for reference only, do not modify
-- The `scripts/database/` directory has multiple SQL files — `setup-correct-schema.sql` is the canonical one
-- Demo test accounts exist (admin@westendworkforce.com, etc.) — do not remove
+- There is an `app_backup/` directory with old page versions -- use for reference only, do not modify
+- The `scripts/database/` directory has multiple SQL files and migration scripts
+- Demo test accounts exist (admin@westendworkforce.com, etc.) -- do not remove
 - Keep production database separate from demo data
 - When building admin pages, the admin should have FULL visibility into everything managers and employees can see, plus system management capabilities
 - The admin's Review & Approve tab should function like a super-manager view across ALL clients/projects
 
 ## Future Integration (not in scope now, but be aware)
 
-- **Tracker ATS API** — will sync employee clock times, project assignments daily
-- **SpringAhead data migration** — historical data import planned
-- **Sentry + LogRocket** — error monitoring to be added
-- **Automated daily backups** — Supabase backup strategy TBD
+- **Tracker ATS API** -- will sync employee clock times, project assignments daily
+- **SpringAhead data migration** -- historical data import planned
+- **Sentry + LogRocket** -- error monitoring to be added
+- **Automated daily backups** -- Supabase backup strategy TBD

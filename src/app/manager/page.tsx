@@ -1014,16 +1014,50 @@ export default function ManagerPage() {
         </div>
       </div>
 
-      {/* SUMMARY CARDS */}
+      {/* SUMMARY CARDS — Enhanced Widgets */}
       <div style={{ padding: '24px 40px 0 40px' }}>
-        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 14 }}>
-          Overview
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>
+            Overview
+          </div>
+          <button
+            onClick={() => router.push('/manager/delegations')}
+            className="transition-colors duration-150"
+            style={{ fontSize: 11, fontWeight: 500, padding: '6px 14px', color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 7, cursor: 'pointer' }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#555'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#777'; }}
+          >
+            Manage Delegations
+          </button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="Timesheets Approved" value={approvedTimesheetCount} desc="Completed" color="green" />
-          <StatCard label="Timesheets Pending" value={timesheetPendingCount} desc="Awaiting review" color="gold" />
-          <StatCard label="Expenses Approved" value={approvedExpenseCount} desc="Ready for payroll" color="green" />
-          <StatCard label="Expenses Pending" value={expensePendingCount} desc="Needs your approval" color="gold" />
+          <StatCard label="Pending Your Approval" value={timesheetPendingCount + expensePendingCount} desc={`${timesheetPendingCount} timesheets, ${expensePendingCount} expenses`} color="pink" />
+          <StatCard label="Team Hours This Week" value={(() => {
+            const now = new Date();
+            const dayOfWeek = now.getDay();
+            const saturday = new Date(now);
+            saturday.setDate(now.getDate() + (6 - dayOfWeek));
+            const weekEndingStr = saturday.toISOString().split('T')[0];
+            return submissions.filter(s => s.date?.split('T')[0] === weekEndingStr).reduce((sum, s) => sum + (s.hours || 0), 0).toFixed(1);
+          })()} desc="current week total" color="default" />
+          <StatCard label="Overdue Submissions" value={(() => {
+            const now = new Date();
+            const dayOfWeek = now.getDay();
+            const saturday = new Date(now);
+            saturday.setDate(now.getDate() + (6 - dayOfWeek));
+            const weekEndingStr = saturday.toISOString().split('T')[0];
+            const employeesWithTs = new Set(submissions.filter(s => s.date?.split('T')[0] === weekEndingStr && s.status !== 'draft').map(s => s.employee?.id));
+            return employees.filter(e => e.id !== managerId && e.role !== 'admin' && !employeesWithTs.has(e.id)).length;
+          })()} desc="not submitted this week" color={(() => {
+            const now = new Date();
+            const dayOfWeek = now.getDay();
+            const saturday = new Date(now);
+            saturday.setDate(now.getDate() + (6 - dayOfWeek));
+            const weekEndingStr = saturday.toISOString().split('T')[0];
+            const employeesWithTs = new Set(submissions.filter(s => s.date?.split('T')[0] === weekEndingStr && s.status !== 'draft').map(s => s.employee?.id));
+            return employees.filter(e => e.id !== managerId && e.role !== 'admin' && !employeesWithTs.has(e.id)).length > 0 ? 'gold' : 'default';
+          })()} />
+          <StatCard label="Approved This Week" value={approvedTimesheetCount + approvedExpenseCount} desc={`${approvedTimesheetCount} timesheets, ${approvedExpenseCount} expenses`} color="green" />
         </div>
       </div>
 

@@ -17,6 +17,7 @@ interface Employee {
   overtime_rate?: number;
   is_active: boolean;
   manager_id?: string;
+  client_id?: string;
 }
 
 interface AuthContextType {
@@ -106,6 +107,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           router.push('/admin');
         } else if (role === 'manager' || role === 'approver') {
           router.push('/manager/pending');
+        } else if (role === 'client_approver') {
+          router.push('/client');
         } else {
           router.push('/employee');
         }

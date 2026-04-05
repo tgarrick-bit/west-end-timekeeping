@@ -28,7 +28,7 @@ export async function updateSession(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // Protected routes
-  const protectedPaths = ['/employee', '/manager', '/admin', '/timesheet', '/expense', '/dashboard']
+  const protectedPaths = ['/employee', '/manager', '/admin', '/client', '/timesheet', '/expense', '/dashboard']
   const isProtectedPath = protectedPaths.some(path =>
     request.nextUrl.pathname.startsWith(path)
   )
@@ -74,6 +74,15 @@ export async function updateSession(request: NextRequest) {
       }
     }
 
+    // /client/* routes: require client_approver or admin role
+    if (pathname.startsWith('/client')) {
+      if (!['admin', 'client_approver'].includes(role)) {
+        const url = request.nextUrl.clone()
+        url.pathname = getDashboardForRole(role)
+        return NextResponse.redirect(url)
+      }
+    }
+
     // /employee/*, /timesheet/*, /expense/*, /dashboard/*: any authenticated user is fine
     // (already handled by the auth check above)
   }
@@ -88,6 +97,8 @@ function getDashboardForRole(role: string): string {
     case 'manager':
     case 'time_approver':
       return '/manager/pending'
+    case 'client_approver':
+      return '/client'
     default:
       return '/dashboard'
   }

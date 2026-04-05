@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
 import { getOTConfig, calculateOvertime } from '@/lib/overtime';
 import {
@@ -16,6 +16,7 @@ import {
   Trash2,
   Briefcase,
   Copy,
+  UserCog,
 } from 'lucide-react';
 import TimeTimer from '@/components/TimeTimer';
 
@@ -36,7 +37,14 @@ interface TimesheetRow {
 
 type TimesheetStatus = 'draft' | 'submitted' | 'approved' | 'payroll_approved' | 'rejected';
 
-export default function TimesheetEntry() {
+interface ActiveEmployee {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+function TimesheetEntryInner() {
   const [selectedWeek, setSelectedWeek] = useState<Date>(new Date());
   const [rows, setRows] = useState<TimesheetRow[]>([
     {
@@ -58,18 +66,69 @@ export default function TimesheetEntry() {
   const [employeeState, setEmployeeState] = useState<string | null>(null);
   const isLocked = timesheetStatus === 'approved' || timesheetStatus === 'submitted' || timesheetStatus === 'payroll_approved';
 
+  // Admin mode state
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [allEmployees, setAllEmployees] = useState<ActiveEmployee[]>([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+  const [selectedEmployeeName, setSelectedEmployeeName] = useState<string>('');
+
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createSupabaseClient();
+
+  // Check admin role on mount
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: emp } = await supabase
+        .from('employees')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (emp?.role === 'admin') {
+        setIsAdmin(true);
+
+        // Load all active employees for the dropdown
+        const { data: employees } = await supabase
+          .from('employees')
+          .select('id, first_name, last_name, email')
+          .eq('is_active', true)
+          .order('last_name');
+
+        if (employees) setAllEmployees(employees);
+
+        // Check if URL has employeeId param (from admin enter-time page)
+        const paramEmpId = searchParams.get('employeeId');
+        if (paramEmpId) {
+          setSelectedEmployeeId(paramEmpId);
+          const found = employees?.find(e => e.id === paramEmpId);
+          if (found) setSelectedEmployeeName(`${found.first_name} ${found.last_name}`);
+        }
+      }
+    };
+    checkAdmin();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Helper: resolves the effective employee ID (admin override or self)
+  const getEffectiveEmployeeId = async (): Promise<string | null> => {
+    if (isAdmin && selectedEmployeeId) return selectedEmployeeId;
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.id || null;
+  };
 
   useEffect(() => {
     loadProjects();
     checkExistingTimesheet();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedWeek]);
+  }, [selectedWeek, selectedEmployeeId]);
 
   const loadProjects = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const effectiveId = await getEffectiveEmployeeId();
 
       // Load all active projects
       const { data: allProjects, error } = await supabase
@@ -83,12 +142,12 @@ export default function TimesheetEntry() {
         return;
       }
 
-      // Load this employee's assigned projects for prioritization
-      if (user?.id) {
+      // Load the effective employee's assigned projects for prioritization
+      if (effectiveId) {
         const { data: assignments } = await supabase
           .from('project_employees')
           .select('project_id')
-          .eq('employee_id', user.id)
+          .eq('employee_id', effectiveId)
           .eq('is_active', true);
 
         const assignedIds = new Set((assignments || []).map(a => a.project_id));
@@ -116,16 +175,14 @@ export default function TimesheetEntry() {
       setExistingTimesheetId(null);
       setTimesheetStatus(null);
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+      const effectiveId = await getEffectiveEmployeeId();
+      if (!effectiveId) return;
 
-      // Look up employee by auth user id (NOT email)
+      // Look up employee by effective id
       const { data: employee } = await supabase
         .from('employees')
         .select('id, is_exempt, state')
-        .eq('id', user.id)
+        .eq('id', effectiveId)
         .single();
 
       if (employee?.is_exempt) setIsExempt(true);
@@ -317,8 +374,8 @@ export default function TimesheetEntry() {
 
   const copyPreviousWeek = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const effectiveId = await getEffectiveEmployeeId();
+      if (!effectiveId) return;
 
       // Calculate previous week ending
       const prevWeek = new Date(selectedWeek);
@@ -332,7 +389,7 @@ export default function TimesheetEntry() {
       const { data: prevTs } = await supabase
         .from('timesheets')
         .select('id')
-        .eq('employee_id', user.id)
+        .eq('employee_id', effectiveId)
         .eq('week_ending', prevWeekEnding)
         .single();
 
@@ -480,19 +537,15 @@ export default function TimesheetEntry() {
         }
       }
 
-      // Get current auth user
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error('No authenticated user');
-  
-      const authUserId = user.id;
-  
+      // Determine effective employee (admin override or self)
+      const effectiveId = await getEffectiveEmployeeId();
+      if (!effectiveId) throw new Error('No authenticated user');
+
       // Look up employee record — never auto-create
       let { data: employee, error: empError } = await supabase
         .from('employees')
         .select('id')
-        .eq('id', authUserId)
+        .eq('id', effectiveId)
         .single();
 
       if (empError && (empError as any).code !== 'PGRST116') {
@@ -622,7 +675,7 @@ export default function TimesheetEntry() {
       );
   
       setTimeout(() => {
-        router.push('/employee');
+        router.push(isAdmin ? '/admin' : '/employee');
       }, 1500);
     } catch (error: any) {
       console.error('Error in handleSubmit:', error);
@@ -645,7 +698,7 @@ export default function TimesheetEntry() {
       {/* Page Header */}
       <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
         <button
-          onClick={() => router.push('/employee')}
+          onClick={() => router.push(isAdmin ? '/admin' : '/employee')}
           className="transition-colors duration-150"
           style={{ padding: 8, color: '#999', border: '0.5px solid #e0dcd7', borderRadius: 7, background: '#fff' }}
           onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#555'; }}
@@ -660,6 +713,39 @@ export default function TimesheetEntry() {
       </div>
 
       <div>
+        {/* Admin Employee Selector */}
+        {isAdmin && (
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '16px 22px', marginBottom: 16 }}>
+            <div className="flex items-center gap-3 flex-wrap">
+              <UserCog size={15} strokeWidth={1.5} style={{ color: '#e31c79' }} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>Enter time for:</span>
+              <select
+                value={selectedEmployeeId}
+                onChange={(e) => {
+                  const empId = e.target.value;
+                  setSelectedEmployeeId(empId);
+                  const emp = allEmployees.find(x => x.id === empId);
+                  setSelectedEmployeeName(emp ? `${emp.first_name} ${emp.last_name}` : '');
+                }}
+                className="flex-1 max-w-sm px-3 py-2 border border-[#e8e4df] rounded-md text-sm focus:ring-2 focus:ring-[#d3ad6b] focus:border-[#d3ad6b] focus:outline-none"
+                style={{ fontSize: 12.5, color: '#1a1a1a' }}
+              >
+                <option value="">-- My Own Time --</option>
+                {allEmployees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.last_name}, {emp.first_name} ({emp.email})
+                  </option>
+                ))}
+              </select>
+              {selectedEmployeeName && (
+                <span style={{ fontSize: 11, fontWeight: 500, color: '#e31c79', background: 'rgba(227,28,121,0.06)', padding: '3px 10px', borderRadius: 4 }}>
+                  Entering time for {selectedEmployeeName}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Week Selector + Timer */}
         <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px', marginBottom: 16 }}>
           <div className="flex items-center justify-between mb-4">
@@ -784,6 +870,28 @@ export default function TimesheetEntry() {
               </div>
             );
           })}
+
+          {/* Mobile: Add Row + Copy Previous Week */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={addRow}
+              disabled={isLocked}
+              className="flex-1 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 7 }}
+            >
+              <Plus className="h-4 w-4" />
+              Add Row
+            </button>
+            <button
+              onClick={copyPreviousWeek}
+              disabled={isLocked}
+              className="flex-1 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ padding: '10px 16px', fontSize: 12, fontWeight: 500, color: '#e31c79', background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 7 }}
+            >
+              <Copy className="h-4 w-4" />
+              Copy Prev Week
+            </button>
+          </div>
 
           {/* Mobile total */}
           <div className="text-center" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 16 }}>
@@ -1019,5 +1127,17 @@ export default function TimesheetEntry() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TimesheetEntry() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[300px] flex items-center justify-center">
+        <div className="w-4 h-4 border-2 border-[#e8e4df] border-t-[#e31c79] rounded-full animate-spin" />
+      </div>
+    }>
+      <TimesheetEntryInner />
+    </Suspense>
   );
 }

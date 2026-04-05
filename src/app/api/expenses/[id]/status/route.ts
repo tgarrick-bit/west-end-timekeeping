@@ -32,7 +32,7 @@ export async function PATCH(
     .single();
   const userRole = actingEmployee?.role || 'employee';
 
-  if (!['admin', 'manager', 'time_approver'].includes(userRole)) {
+  if (!['admin', 'manager', 'time_approver', 'client_approver'].includes(userRole)) {
     return NextResponse.json({ error: 'Forbidden: manager or admin role required' }, { status: 403 });
   }
 

@@ -19,11 +19,14 @@ interface Project {
   track_time: boolean
   track_expenses: boolean
   is_billable: boolean
-  // invoicing / extras (UI only for now -- NOT saved to DB):
+  // budget & invoicing (saved to DB)
   billing_rate?: number
   budget?: number
   active_po?: string
   invoice_item?: string
+  time_type?: string
+  max_daily_hours?: number
+  time_increment?: number
   ar_account?: string
   ap_contact?: string
   company_name?: string
@@ -96,6 +99,17 @@ const buildProjectPayload = (data: Partial<Project>) => {
     track_time: data.track_time ?? true,
     track_expenses: data.track_expenses ?? false,
     is_billable: data.is_billable ?? true,
+
+    // budget & invoicing
+    billing_rate: data.billing_rate ?? null,
+    budget: data.budget ?? null,
+    active_po: data.active_po ?? null,
+    invoice_item: data.invoice_item ?? null,
+
+    // time settings
+    time_type: data.time_type ?? 'hourly',
+    max_daily_hours: data.max_daily_hours ?? null,
+    time_increment: data.time_increment ?? null,
   }
 }
 
@@ -812,23 +826,58 @@ export default function ProjectEditPage() {
       {activeTab === 'budget' && (
         <div className="anim-slide-up stagger-2" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 24 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', marginBottom: 20 }}>Budget</div>
-          <p style={{ fontSize: 12, color: '#999', marginBottom: 16 }}>
-            Budget features are scaffolded for future use.
-          </p>
-          <button
-            style={{
-              background: '#fff',
-              border: '0.5px solid #e0dcd7',
-              borderRadius: 7,
-              padding: '8px 18px',
-              fontSize: 12,
-              fontWeight: 600,
-              color: '#777',
-              cursor: 'pointer',
-            }}
-          >
-            Add budget
-          </button>
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label style={labelStyle}>Billing rate ($/hr)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.billing_rate ?? ''}
+                onChange={(e) => setFormData({ ...formData, billing_rate: e.target.value ? Number(e.target.value) : undefined })}
+                placeholder="0.00"
+                style={inputStyle}
+                onFocus={focusHandler}
+                onBlur={blurHandler}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Project budget ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.budget ?? ''}
+                onChange={(e) => setFormData({ ...formData, budget: e.target.value ? Number(e.target.value) : undefined })}
+                placeholder="0.00"
+                style={inputStyle}
+                onFocus={focusHandler}
+                onBlur={blurHandler}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Active PO number</label>
+              <input
+                type="text"
+                value={formData.active_po || ''}
+                onChange={(e) => setFormData({ ...formData, active_po: e.target.value })}
+                placeholder="e.g. PO-2026-001"
+                style={inputStyle}
+                onFocus={focusHandler}
+                onBlur={blurHandler}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Invoice item / line item</label>
+              <input
+                type="text"
+                value={formData.invoice_item || ''}
+                onChange={(e) => setFormData({ ...formData, invoice_item: e.target.value })}
+                placeholder="e.g. Consulting Services"
+                style={inputStyle}
+                onFocus={focusHandler}
+                onBlur={blurHandler}
+              />
+            </div>
+          </div>
         </div>
       )}
 
@@ -1322,14 +1371,14 @@ export default function ProjectEditPage() {
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
-                    value={maxHoursPerDay}
-                    onChange={(e) => setMaxHoursPerDay(e.target.value)}
-                    placeholder="8"
+                    value={formData.max_daily_hours ?? ''}
+                    onChange={(e) => setFormData({ ...formData, max_daily_hours: e.target.value ? Number(e.target.value) : undefined })}
+                    placeholder="24"
                     style={{ width: 80, padding: '6px 8px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, outline: 'none' }}
                     onFocus={focusHandler}
                     onBlur={blurHandler}
                   />
-                  <span style={{ fontSize: 11, color: '#555' }}>hours per person, per day</span>
+                  <span style={{ fontSize: 11, color: '#555' }}>max hours per person, per day</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -1365,8 +1414,8 @@ export default function ProjectEditPage() {
                 </label>
                 <input
                   type="number"
-                  value={timeIncrements}
-                  onChange={(e) => setTimeIncrements(e.target.value)}
+                  value={formData.time_increment != null ? formData.time_increment * 60 : ''}
+                  onChange={(e) => setFormData({ ...formData, time_increment: e.target.value ? Number(e.target.value) / 60 : undefined })}
                   placeholder="15"
                   style={{ marginLeft: 8, width: 80, padding: '6px 8px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, outline: 'none' }}
                   onFocus={focusHandler}

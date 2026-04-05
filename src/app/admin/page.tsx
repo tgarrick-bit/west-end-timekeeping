@@ -1065,6 +1065,39 @@ export default function AdminPage() {
       Refresh
     </button>
   </div>
+  {/* Enhanced Widget Row */}
+  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4" style={{ marginBottom: 16 }}>
+    {(() => {
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const satDate = new Date(now);
+      satDate.setDate(now.getDate() + (6 - dayOfWeek));
+      const weekEndingStr = satDate.toISOString().split('T')[0];
+      const companyHoursThisWeek = submissions
+        .filter(s => s.type === 'timesheet' && s.date?.split('T')[0] === weekEndingStr)
+        .reduce((sum, s) => sum + (s.hours || 0), 0);
+      const pendingAll = submissions.filter(s => s.status === 'submitted').length;
+      const payrollReady = submissions.filter(s => s.status === 'approved' && s.type === 'timesheet').length;
+      return [
+        { label: 'Company Hours This Week', value: companyHoursThisWeek.toFixed(1), accent: true },
+        { label: 'Pending Approvals', value: pendingAll },
+        { label: 'Missing Timesheets', value: missingEmployees.length },
+        { label: 'Payroll Ready', value: payrollReady },
+      ] as { label: string; value: string | number; accent?: boolean }[];
+    })().map((card, i) => (
+      <div
+        key={card.label}
+        className={`anim-slide-up stagger-${i + 1}`}
+        style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px', cursor: 'default', transition: 'border-color 0.15s ease' }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = i === 0 ? '#e31c79' : '#d3ad6b' }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e4df' }}
+      >
+        <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: 1.2, color: '#c0bab2', marginBottom: 8 }}>{card.label}</div>
+        <div style={{ fontSize: 28, fontWeight: 700, color: card.accent ? '#e31c79' : '#1a1a1a' }}>{card.value}</div>
+      </div>
+    ))}
+  </div>
+  {/* Original Summary Row */}
   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
     {[
       { label: 'Employees', value: employees.length, accent: true },
@@ -1074,7 +1107,7 @@ export default function AdminPage() {
     ].map((card, i) => (
       <div
         key={card.label}
-        className={`anim-slide-up stagger-${i + 1}`}
+        className={`anim-slide-up stagger-${i + 5}`}
         style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px', cursor: 'default', transition: 'border-color 0.15s ease' }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = i === 0 ? '#e31c79' : '#d3ad6b' }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e4df' }}

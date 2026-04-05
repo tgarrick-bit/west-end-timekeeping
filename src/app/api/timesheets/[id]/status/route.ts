@@ -66,7 +66,7 @@ export async function PATCH(
     .eq('id', user.id)
     .single();
   const userRole = actingEmployee?.role || 'employee';
-  const isAdminOrManager = ['admin', 'manager', 'time_approver'].includes(userRole);
+  const isAdminOrManager = ['admin', 'manager', 'time_approver', 'client_approver'].includes(userRole);
 
   // === BASIC STATE MACHINE ===
   switch (body.action) {

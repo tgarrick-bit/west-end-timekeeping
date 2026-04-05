@@ -15,6 +15,7 @@ import {
   DollarSign,
   RefreshCw,
   ChevronDown,
+  Calendar,
 } from 'lucide-react'
 import { getPeriodLabel, type PayPeriod } from '@/lib/payPeriods'
 
@@ -52,6 +53,7 @@ export default function PayrollPage() {
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [approverMap, setApproverMap] = useState<Record<string, string>>({})
+  const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
     loadPeriods()
@@ -73,6 +75,38 @@ export default function PayrollPage() {
       else if (data.periods.length > 0) setSelectedPeriodId(data.periods[0].id!)
     }
     setLoading(false)
+  }
+
+  const handleGeneratePayPeriods = async () => {
+    setGenerating(true)
+    try {
+      const today = new Date()
+      const threeMonthsOut = new Date(today)
+      threeMonthsOut.setMonth(threeMonthsOut.getMonth() + 3)
+
+      const res = await fetch('/api/pay-periods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'generate',
+          from: today.toISOString().split('T')[0],
+          to: threeMonthsOut.toISOString().split('T')[0],
+        }),
+      })
+
+      const data = await res.json()
+      if (res.ok) {
+        alert(`Generated ${data.generated || 0} pay period(s) for the next 3 months.`)
+        await loadPeriods()
+      } else {
+        alert(data.error || 'Failed to generate pay periods')
+      }
+    } catch (err) {
+      console.error('Error generating pay periods:', err)
+      alert('Error generating pay periods')
+    } finally {
+      setGenerating(false)
+    }
   }
 
   const selectedPeriod = periods.find(p => p.id === selectedPeriodId)
@@ -253,6 +287,133 @@ export default function PayrollPage() {
 
     const periodLabel = selectedPeriod ? getPeriodLabel(selectedPeriod).replace(/[^a-zA-Z0-9]/g, '_') : 'export'
     XLSX.writeFile(wb, `Payroll_${periodLabel}.xlsx`)
+  }
+
+  // QuickBooks-compatible CSV export
+  const handleQuickBooksExport = () => {
+    const exportable = timesheets.filter(t =>
+      t.status === 'payroll_approved' || t.status === 'approved' || t.status === 'client_approved'
+    )
+    if (exportable.length === 0) {
+      alert('No approved/finalized timesheets to export')
+      return
+    }
+
+    const rows = exportable.map(t => {
+      const emp = t.employee
+      const hourlyRate = emp?.hourly_rate || 0
+      const isExempt = emp?.is_exempt || false
+      const regularHours = isExempt ? (t.total_hours || 0) : Math.min(t.total_hours || 0, 40)
+      const otHours = isExempt ? 0 : (t.overtime_hours || Math.max(0, (t.total_hours || 0) - 40))
+      const regularPay = regularHours * hourlyRate
+      const otPay = otHours * hourlyRate * 1.5
+      const totalPay = regularPay + otPay
+
+      return {
+        'Employee Name': emp ? `${emp.last_name}, ${emp.first_name}` : '',
+        'Employee ID': emp?.employee_id || '',
+        'Pay Period Start': selectedPeriod?.start_date || '',
+        'Pay Period End': selectedPeriod?.end_date || '',
+        'Regular Hours': regularHours.toFixed(2),
+        'Overtime Hours': otHours.toFixed(2),
+        'Total Hours': (t.total_hours || 0).toFixed(2),
+        'Pay Rate': hourlyRate.toFixed(2),
+        'Regular Pay': regularPay.toFixed(2),
+        'OT Pay': otPay.toFixed(2),
+        'Total Pay': totalPay.toFixed(2),
+        'Department': emp?.department || '',
+        'Project/Job': '',
+        'Class': emp?.employee_type || '',
+      }
+    })
+
+    const headers = Object.keys(rows[0])
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row =>
+        headers.map(h => {
+          const val = (row as any)[h]
+          if (typeof val === 'string' && (val.includes(',') || val.includes('"'))) {
+            return `"${val.replace(/"/g, '""')}"`
+          }
+          return val
+        }).join(',')
+      ),
+    ].join('\n')
+
+    const periodLabel = selectedPeriod ? getPeriodLabel(selectedPeriod).replace(/[^a-zA-Z0-9]/g, '_') : 'export'
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `QuickBooks_${periodLabel}.csv`
+    a.click()
+    window.URL.revokeObjectURL(url)
+  }
+
+  // ADP/Paychex simple format export
+  const handleADPExport = () => {
+    const exportable = timesheets.filter(t =>
+      t.status === 'payroll_approved' || t.status === 'approved' || t.status === 'client_approved'
+    )
+    if (exportable.length === 0) {
+      alert('No approved/finalized timesheets to export')
+      return
+    }
+
+    const rows: any[] = []
+
+    exportable.forEach(t => {
+      const emp = t.employee
+      const hourlyRate = emp?.hourly_rate || 0
+      const isExempt = emp?.is_exempt || false
+      const regularHours = isExempt ? (t.total_hours || 0) : Math.min(t.total_hours || 0, 40)
+      const otHours = isExempt ? 0 : (t.overtime_hours || Math.max(0, (t.total_hours || 0) - 40))
+
+      // Regular hours row
+      if (regularHours > 0) {
+        rows.push({
+          'Employee ID': emp?.employee_id || '',
+          'Hours': regularHours.toFixed(2),
+          'Earnings Code': 'REG',
+          'Rate': hourlyRate.toFixed(2),
+          'Amount': (regularHours * hourlyRate).toFixed(2),
+        })
+      }
+
+      // OT hours row
+      if (otHours > 0) {
+        rows.push({
+          'Employee ID': emp?.employee_id || '',
+          'Hours': otHours.toFixed(2),
+          'Earnings Code': 'OT',
+          'Rate': (hourlyRate * 1.5).toFixed(2),
+          'Amount': (otHours * hourlyRate * 1.5).toFixed(2),
+        })
+      }
+    })
+
+    if (rows.length === 0) {
+      alert('No hours to export')
+      return
+    }
+
+    const headers = Object.keys(rows[0])
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row =>
+        headers.map(h => (row as any)[h]).join(',')
+      ),
+    ].join('\n')
+
+    const periodLabel = selectedPeriod ? getPeriodLabel(selectedPeriod).replace(/[^a-zA-Z0-9]/g, '_') : 'export'
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `ADP_Paychex_${periodLabel}.csv`
+    a.click()
+    window.URL.revokeObjectURL(url)
   }
 
   // Detailed export — one row per timesheet entry per project, with project-specific rates
@@ -477,6 +638,17 @@ export default function PayrollPage() {
               </button>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={handleGeneratePayPeriods}
+                disabled={generating}
+                className="flex items-center gap-2 disabled:opacity-50 transition-colors"
+                style={{ border: '0.5px solid #e0dcd7', borderRadius: 7, fontSize: 12, fontWeight: 600, color: '#777', padding: '8px 18px', background: '#fff', cursor: 'pointer' }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#d3ad6b'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; }}
+              >
+                <Calendar className="h-4 w-4" />
+                {generating ? 'Generating...' : 'Generate Pay Periods'}
+              </button>
               {selectedPeriod && (
                 <button
                   onClick={handleToggleLock}
@@ -555,6 +727,31 @@ export default function PayrollPage() {
           >
             <Download className="h-4 w-4" />
             Export Detailed (by entry)
+          </button>
+
+          {/* Payroll system exports */}
+          <div style={{ width: 1, height: 24, background: '#e8e4df', margin: '0 4px' }} />
+          <button
+            onClick={handleQuickBooksExport}
+            disabled={finalized.length === 0 && approved.length === 0}
+            className="flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            style={{ padding: '8px 18px', background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 7, fontSize: 12, fontWeight: 600 }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#d3ad6b'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; }}
+          >
+            <Download className="h-4 w-4" />
+            Export for QuickBooks
+          </button>
+          <button
+            onClick={handleADPExport}
+            disabled={finalized.length === 0 && approved.length === 0}
+            className="flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            style={{ padding: '8px 18px', background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 7, fontSize: 12, fontWeight: 600 }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#d3ad6b'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; }}
+          >
+            <Download className="h-4 w-4" />
+            Export for ADP/Paychex
           </button>
         </div>
 

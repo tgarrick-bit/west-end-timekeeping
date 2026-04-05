@@ -77,6 +77,10 @@ export default function EmployeeDashboard() {
     approvedExpenses: 0,
     rejectedExpenses: 0,
   });
+  const [weeklyHours, setWeeklyHours] = useState(0);
+  const [daysUntilDue, setDaysUntilDue] = useState(0);
+  const [pendingApprovals, setPendingApprovals] = useState(0);
+  const [hasDraftThisWeek, setHasDraftThisWeek] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const hasLoadedRef = useRef(false);
@@ -239,6 +243,37 @@ export default function EmployeeDashboard() {
         setExpenses([]);
       }
 
+      // === Dashboard Widget Calculations ===
+      // Current week ending (Saturday)
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const saturday = new Date(now);
+      saturday.setDate(now.getDate() + (6 - dayOfWeek));
+      const weekEndingStr = saturday.toISOString().split('T')[0];
+
+      // Days until Friday (due date)
+      const friday = new Date(now);
+      friday.setDate(now.getDate() + ((5 - dayOfWeek + 7) % 7));
+      if (dayOfWeek > 5) friday.setDate(friday.getDate() + 7);
+      const diffTime = friday.getTime() - now.getTime();
+      const diffDays = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+      setDaysUntilDue(diffDays);
+
+      // This week's timesheet
+      const currentWeekTimesheets = (timesheetsData || []).filter(
+        (t: any) => t.week_ending === weekEndingStr
+      );
+      const thisWeekHours = currentWeekTimesheets.reduce(
+        (sum: number, t: any) => sum + (t.total_hours || 0), 0
+      );
+      setWeeklyHours(thisWeekHours);
+
+      const hasDraft = currentWeekTimesheets.some((t: any) => t.status === 'draft');
+      setHasDraftThisWeek(hasDraft);
+
+      // Total pending approvals (submitted timesheets + submitted expense reports)
+      const pendingTs = (timesheetsData || []).filter((t: any) => t.status === 'submitted').length;
+
       // Expense reports (for recent list + editing)
       const { data: reportsData, error: reportsError } = await supabase
         .from('expense_reports')
@@ -261,6 +296,7 @@ export default function EmployeeDashboard() {
       if (reportsError) {
         console.error('Error fetching expense reports:', reportsError);
         setExpenseReports([]);
+        setPendingApprovals(pendingTs);
       } else {
         const mappedReports: ExpenseReport[] = (reportsData || []).map(
           (r: any) => {
@@ -301,6 +337,10 @@ export default function EmployeeDashboard() {
         );
 
         setExpenseReports(mappedReports);
+
+        // Pending expense reports count
+        const pendingExp = mappedReports.filter((r: ExpenseReport) => r.status === 'submitted').length;
+        setPendingApprovals(pendingTs + pendingExp);
       }
     } catch (error) {
       console.error('Dashboard error:', error);
@@ -564,8 +604,44 @@ export default function EmployeeDashboard() {
           </div>
         </div>
 
+        {/* THIS WEEK WIDGETS */}
+        <div style={{ marginBottom: 28 }} className="anim-slide-up stagger-1">
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 14 }}>
+            This Week
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+            <StatCard label="Hours This Week" value={weeklyHours.toFixed(1)} desc="current period" color="pink" />
+            <StatCard label="Timesheet Due" value={daysUntilDue === 0 ? 'Today' : `${daysUntilDue}d`} desc={daysUntilDue === 0 ? 'submit now' : `day${daysUntilDue !== 1 ? 's' : ''} until Friday`} color={daysUntilDue <= 1 ? 'pink' : 'default'} />
+            <StatCard label="Pending Approvals" value={pendingApprovals} desc="awaiting review" color={pendingApprovals > 0 ? 'gold' : 'default'} />
+            <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              {hasDraftThisWeek ? (
+                <button
+                  onClick={() => router.push('/timesheet/entry')}
+                  style={{ fontSize: 12, fontWeight: 600, padding: '10px 18px', color: '#fff', background: '#e31c79', border: 'none', borderRadius: 7, cursor: 'pointer', width: '100%' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#cc1069')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = '#e31c79')}
+                >
+                  Submit This Week
+                </button>
+              ) : (
+                <>
+                  <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: 1.2, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 8 }}>Quick Action</div>
+                  <button
+                    onClick={() => router.push('/timesheet/entry')}
+                    style={{ fontSize: 11, fontWeight: 500, padding: '8px 14px', color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 7, cursor: 'pointer' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#555'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#777'; }}
+                  >
+                    Enter Hours
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* TIMESHEET SUMMARY */}
-        <div style={{ marginBottom: 28 }}>
+        <div style={{ marginBottom: 28 }} className="anim-slide-up stagger-2">
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 14 }}>
             Timesheet Summary
           </div>

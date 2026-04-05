@@ -7,18 +7,26 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Clock, Receipt, Users, Building2, FolderKanban,
   Wallet, FileText, BarChart3, Settings, CheckSquare, UserCheck,
-  LogOut, Menu, X, type LucideIcon,
+  LogOut, Menu, X, Shield, User, type LucideIcon,
 } from 'lucide-react';
+import NotificationBell from '@/components/ui/NotificationBell';
 
-export type UserRole = 'admin' | 'manager' | 'employee';
+export type UserRole = 'admin' | 'manager' | 'employee' | 'client_approver';
 
 interface NavItem { label: string; href: string; icon: LucideIcon; }
 
 const NAV: Record<UserRole, NavItem[]> = {
+  client_approver: [
+    { label: 'Dashboard', href: '/client', icon: LayoutDashboard },
+    { label: 'Timesheets', href: '/client/timesheets', icon: Clock },
+    { label: 'Expenses', href: '/client/expenses', icon: Receipt },
+  ],
   employee: [
     { label: 'Dashboard', href: '/employee', icon: LayoutDashboard },
     { label: 'Timesheet', href: '/timesheet/entry', icon: Clock },
     { label: 'Expenses', href: '/expense/entry', icon: Receipt },
+    { label: 'Pay History', href: '/employee/pay-history', icon: Wallet },
+    { label: 'Profile', href: '/employee/profile', icon: User },
   ],
   manager: [
     { label: 'Dashboard', href: '/manager', icon: LayoutDashboard },
@@ -30,6 +38,7 @@ const NAV: Record<UserRole, NavItem[]> = {
   ],
   admin: [
     { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+    { label: 'Enter Time', href: '/admin/enter-time', icon: Clock },
     { label: 'Employees', href: '/admin/employees', icon: Users },
     { label: 'Clients', href: '/admin/clients', icon: Building2 },
     { label: 'Projects', href: '/admin/projects', icon: FolderKanban },
@@ -38,6 +47,7 @@ const NAV: Record<UserRole, NavItem[]> = {
     { label: 'Payroll', href: '/admin/payroll', icon: Wallet },
     { label: 'Reports', href: '/admin/reports', icon: BarChart3 },
     { label: 'Billing', href: '/admin/billing', icon: FileText },
+    { label: 'Audit Log', href: '/admin/audit', icon: Shield },
     { label: 'Settings', href: '/admin/settings', icon: Settings },
   ],
 };
@@ -55,10 +65,10 @@ export function Sidebar({ role, userName, userEmail, onSignOut }: SidebarProps) 
   const items = NAV[role];
   const firstName = userName?.split(' ')[0] || 'User';
 
-  const portalLabel = role === 'admin' ? 'ADMIN PORTAL' : role === 'manager' ? 'MANAGER PORTAL' : 'EMPLOYEE PORTAL';
+  const portalLabel = role === 'admin' ? 'ADMIN PORTAL' : role === 'manager' ? 'MANAGER PORTAL' : role === 'client_approver' ? 'CLIENT PORTAL' : 'EMPLOYEE PORTAL';
 
   const isActive = (href: string) => {
-    if (href === '/employee' || href === '/manager' || href === '/admin') return pathname === href;
+    if (href === '/employee' || href === '/manager' || href === '/admin' || href === '/client') return pathname === href;
     return pathname.startsWith(href);
   };
 
@@ -139,8 +149,13 @@ export function Sidebar({ role, userName, userEmail, onSignOut }: SidebarProps) 
         })}
       </nav>
 
+      {/* Notification bell */}
+      <div className="mx-3 px-3 mb-1">
+        <NotificationBell />
+      </div>
+
       {/* User */}
-      <div className="mx-3 mb-4 mt-3 pt-3" style={{ borderTop: '0.5px solid var(--border)' }}>
+      <div className="mx-3 mb-4 mt-1 pt-3" style={{ borderTop: '0.5px solid var(--border)' }}>
         <div className="flex items-center gap-2.5 px-3 py-2">
           <div
             className="shrink-0 flex items-center justify-center rounded-full"

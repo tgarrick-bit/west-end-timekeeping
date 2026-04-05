@@ -13,6 +13,7 @@ import {
   X,
   Users,
   Download,
+  Upload,
   Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -509,6 +510,17 @@ export default function AdminTimesheets() {
             >
               <Download className="h-4 w-4" />
               Export
+            </button>
+
+            <button
+              onClick={() => router.push('/admin/timesheets/import')}
+              className="flex items-center gap-2 transition-colors"
+              style={{ padding: '8px 18px', background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 7, fontSize: 12, fontWeight: 600 }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#d3ad6b'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; }}
+            >
+              <Upload className="h-4 w-4" />
+              Import
             </button>
 
             <span style={{ fontSize: 11, color: '#c0bab2', marginLeft: 'auto' }}>
