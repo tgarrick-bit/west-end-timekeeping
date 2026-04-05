@@ -118,22 +118,22 @@ export default function AdminProjectsPage() {
   return (
     <>
       {/* Page Header */}
-      <section className="bg-white border-b border-gray-200">
+      <section className="bg-white border-b border-[#e8e4df]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex flex-col">
-            <div className="mb-1 flex items-center gap-1 text-xs text-gray-500">
+            <div className="mb-1 flex items-center gap-1 text-xs text-[#999]">
               <span>Admin</span>
-              <span className="text-gray-400">/</span>
+              <span className="text-[#bbb]">/</span>
               <span>Projects</span>
             </div>
-            <h1 className="text-xl font-semibold text-[#1a1814]">Projects</h1>
-            <p className="mt-1 text-xs text-gray-500">
+            <h1 className="text-[14px] font-semibold text-[#1a1814]">Projects</h1>
+            <p className="mt-1 text-xs text-[#999]">
               Manage client-scoped projects that employees can bill time and expenses to.
             </p>
           </div>
           <button
             onClick={handleNew}
-            className="inline-flex items-center gap-2 rounded-full bg-[#e31c79] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#c91865]"
+            className="inline-flex items-center gap-2 rounded bg-[#e31c79] px-4 py-2 text-sm font-medium text-white hover:bg-[#c91865]"
           >
             <Plus className="h-4 w-4" />
             New project
@@ -147,22 +147,22 @@ export default function AdminProjectsPage() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#bbb]" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by project or client…"
-                className="w-64 rounded-full border border-gray-200 bg-white px-9 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                className="w-64 rounded-full border border-[#e8e4df] bg-white px-9 py-2 text-sm text-[#1a1a1a] placeholder:text-[#bbb] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
               />
             </div>
 
             <button
               onClick={() => setShowActiveOnly((prev) => !prev)}
-              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`inline-flex items-center gap-2 rounded border px-3 py-1.5 text-xs font-medium transition-colors ${
                 showActiveOnly
-                  ? 'border-[#33393c] bg-[#1a1a1a] text-white'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-[#e31c79] hover:text-[#e31c79]'
+                  ? 'border-[#1a1a1a] bg-white text-[#1a1a1a]'
+                  : 'border-[#e8e4df] bg-white text-[#777] hover:border-[#e31c79] hover:text-[#e31c79]'
               }`}
             >
               <Filter className="h-3 w-3" />
@@ -170,7 +170,7 @@ export default function AdminProjectsPage() {
             </button>
           </div>
 
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-[#999]">
           Showing{' '}
           <span className="font-semibold">{filteredProjects.length}</span>{' '}
           of <span className="font-semibold">{projects.length}</span> projects
@@ -189,39 +189,39 @@ export default function AdminProjectsPage() {
             </div>
           </div>
         ) : filteredProjects.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-10 text-center">
-            <p className="text-sm font-medium text-gray-700">
+          <div className="rounded-2xl border border-dashed border-[#e8e4df] bg-white px-6 py-10 text-center">
+            <p className="text-sm font-medium text-[#555]">
               No projects found
             </p>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-[#999]">
               Try adjusting your search or create a new project.
             </p>
             <button
               onClick={handleNew}
-              className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#e31c79] px-4 py-2 text-sm font-medium text-white hover:bg-[#c91865]"
+              className="mt-4 inline-flex items-center gap-2 rounded bg-[#e31c79] px-4 py-2 text-sm font-medium text-white hover:bg-[#c91865]"
             >
               <Plus className="h-4 w-4" />
               New project
             </button>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-[#e8e4df] bg-white">
             <table className="min-w-full divide-y divide-gray-100 text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-[#FAFAF8]">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
                     Project
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
                     Client
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
                     Tracking
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
                     Billing
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[#999]">
                     Status
                   </th>
                 </tr>
@@ -232,15 +232,15 @@ export default function AdminProjectsPage() {
                   return (
                     <tr
                       key={p.id}
-                      className="cursor-pointer hover:bg-gray-50"
+                      className="cursor-pointer hover:bg-[#FAFAF8]"
                       onClick={() => handleOpen(p.id)}
                     >
                       <td className="px-4 py-3 align-middle">
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="text-sm font-medium text-[#1a1a1a]">
                             {p.name || '(Untitled project)'}
                           </span>
-                          <span className="mt-0.5 text-xs text-gray-500">
+                          <span className="mt-0.5 text-xs text-[#999]">
                             {p.short_name || p.project_number
                               ? [p.short_name, p.project_number]
                                   .filter(Boolean)
@@ -251,11 +251,11 @@ export default function AdminProjectsPage() {
                       </td>
                       <td className="px-4 py-3 align-middle">
                         <div className="flex flex-col">
-                          <span className="text-sm text-gray-800">
+                          <span className="text-sm text-[#1a1a1a]">
                             {client?.name || 'Unassigned'}
                           </span>
                           {client?.code && (
-                            <span className="mt-0.5 text-xs text-gray-500">
+                            <span className="mt-0.5 text-xs text-[#999]">
                               {client.code}
                             </span>
                           )}
@@ -264,17 +264,17 @@ export default function AdminProjectsPage() {
                       <td className="px-4 py-3 align-middle">
                         <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                           {p.track_time && (
-                            <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">
+                            <span className="inline-flex rounded bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">
                               Time
                             </span>
                           )}
                           {p.track_expenses && (
-                            <span className="inline-flex rounded-full bg-sky-50 px-2 py-0.5 font-medium text-sky-700">
+                            <span className="inline-flex rounded bg-sky-50 px-2 py-0.5 font-medium text-sky-700">
                               Expenses
                             </span>
                           )}
                           {!p.track_time && !p.track_expenses && (
-                            <span className="text-xs text-gray-400">
+                            <span className="text-xs text-[#bbb]">
                               None
                             </span>
                           )}
@@ -282,10 +282,10 @@ export default function AdminProjectsPage() {
                       </td>
                       <td className="px-4 py-3 align-middle">
                         <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          className={`inline-flex rounded px-2 py-0.5 text-[11px] font-medium ${
                             p.is_billable
                               ? 'bg-amber-50 text-amber-700'
-                              : 'bg-gray-100 text-gray-500'
+                              : 'bg-[#FAFAF8] text-[#999]'
                           }`}
                         >
                           {p.is_billable ? 'Billable' : 'Non-billable'}
@@ -293,10 +293,10 @@ export default function AdminProjectsPage() {
                       </td>
                       <td className="px-4 py-3 text-right align-middle">
                         <span
-                          className={`inline-flex items-center justify-end rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          className={`inline-flex items-center justify-end rounded px-2 py-0.5 text-[11px] font-medium ${
                             p.is_active
                               ? 'bg-emerald-50 text-emerald-700'
-                              : 'bg-gray-100 text-gray-500'
+                              : 'bg-[#FAFAF8] text-[#999]'
                           }`}
                         >
                           {p.is_active ? 'Active' : 'Inactive'}

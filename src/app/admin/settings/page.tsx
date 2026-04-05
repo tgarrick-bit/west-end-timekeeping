@@ -449,13 +449,13 @@ export default function AdminSettingsPage() {
                   
                   <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[#555] mb-1">
                         Time Zone
                       </label>
                       <select
                         value={settings.timezone}
                         onChange={(e) => updateSetting('timezone', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                       >
                         {TIMEZONES.map(tz => (
                           <option key={tz.value} value={tz.value}>{tz.label}</option>
@@ -464,13 +464,13 @@ export default function AdminSettingsPage() {
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[#555] mb-1">
                         Currency
                       </label>
                       <select
                         value={settings.currency}
                         onChange={(e) => updateSetting('currency', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                       >
                         {CURRENCIES.map(curr => (
                           <option key={curr.value} value={curr.value}>{curr.label}</option>
@@ -480,15 +480,15 @@ export default function AdminSettingsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[#555] mb-1">
                       Allowed Entry Date
-                      <span className="text-xs text-gray-500 ml-2">(locks all previous dates)</span>
+                      <span className="text-xs text-[#999] ml-2">(locks all previous dates)</span>
                     </label>
                     <input
                       type="date"
                       value={settings.allowed_entry_date || ''}
                       onChange={(e) => updateSetting('allowed_entry_date', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
 
@@ -498,9 +498,9 @@ export default function AdminSettingsPage() {
                       id="hide_company"
                       checked={settings.hide_company_name}
                       onChange={(e) => updateSetting('hide_company_name', e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="rounded border-[#e8e4df] text-blue-600 focus:ring-blue-500"
                     />
-                    <label htmlFor="hide_company" className="text-sm text-gray-700">
+                    <label htmlFor="hide_company" className="text-sm text-[#555]">
                       Hide Company Name
                     </label>
                   </div>
@@ -514,7 +514,7 @@ export default function AdminSettingsPage() {
                   
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <label htmlFor="email_notif" className="text-sm font-medium text-gray-700">
+                      <label htmlFor="email_notif" className="text-sm font-medium text-[#555]">
                         Email Notifications Active
                       </label>
                       <input
@@ -522,24 +522,24 @@ export default function AdminSettingsPage() {
                         id="email_notif"
                         checked={settings.email_notifications}
                         onChange={(e) => updateSetting('email_notifications', e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-[#e8e4df] text-blue-600 focus:ring-blue-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[#555] mb-1">
                         Logout Timeout (minutes)
                       </label>
                       <input
                         type="number"
                         value={settings.logout_timeout_minutes}
                         onChange={(e) => updateSetting('logout_timeout_minutes', parseInt(e.target.value))}
-                        className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        className="w-32 px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
 
                     <div className="space-y-3 pt-4 border-t">
-                      <h3 className="text-sm font-semibold text-gray-700">Feature Settings</h3>
+                      <h3 className="text-sm font-semibold text-[#555]">Feature Settings</h3>
                       
                       <div className="grid grid-cols-2 gap-4">
                         <label className="flex items-center gap-2">
@@ -547,9 +547,9 @@ export default function AdminSettingsPage() {
                             type="checkbox"
                             checked={settings.use_user_rates}
                             onChange={(e) => updateSetting('use_user_rates', e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-[#e8e4df] text-blue-600 focus:ring-blue-500"
                           />
-                          <span className="text-sm text-gray-700">Use User Rates</span>
+                          <span className="text-sm text-[#555]">Use User Rates</span>
                         </label>
 
                         <label className="flex items-center gap-2">
@@ -557,9 +557,9 @@ export default function AdminSettingsPage() {
                             type="checkbox"
                             checked={settings.use_user_reps}
                             onChange={(e) => updateSetting('use_user_reps', e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-[#e8e4df] text-blue-600 focus:ring-blue-500"
                           />
-                          <span className="text-sm text-gray-700">Use User Reps</span>
+                          <span className="text-sm text-[#555]">Use User Reps</span>
                         </label>
 
                         <label className="flex items-center gap-2">
@@ -567,9 +567,9 @@ export default function AdminSettingsPage() {
                             type="checkbox"
                             checked={settings.use_tasks}
                             onChange={(e) => updateSetting('use_tasks', e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-[#e8e4df] text-blue-600 focus:ring-blue-500"
                           />
-                          <span className="text-sm text-gray-700">Use Tasks</span>
+                          <span className="text-sm text-[#555]">Use Tasks</span>
                         </label>
 
                         <label className="flex items-center gap-2">
@@ -577,9 +577,9 @@ export default function AdminSettingsPage() {
                             type="checkbox"
                             checked={settings.use_attachments}
                             onChange={(e) => updateSetting('use_attachments', e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-[#e8e4df] text-blue-600 focus:ring-blue-500"
                           />
-                          <span className="text-sm text-gray-700">Use Attachments</span>
+                          <span className="text-sm text-[#555]">Use Attachments</span>
                         </label>
                       </div>
                     </div>
@@ -597,21 +597,21 @@ export default function AdminSettingsPage() {
                         type="checkbox"
                         checked={settings.time_enabled}
                         onChange={(e) => updateSetting('time_enabled', e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-[#e8e4df] text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-sm font-medium text-gray-700">Enable Time Module</span>
+                      <span className="text-sm font-medium text-[#555]">Enable Time Module</span>
                     </label>
                   </div>
 
                   <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[#555] mb-1">
                         List Entry Time Cycle
                       </label>
                       <select
                         value={settings.time_cycle}
                         onChange={(e) => updateSetting('time_cycle', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="Weekly">Weekly</option>
                         <option value="Bi-Weekly">Bi-Weekly</option>
@@ -621,13 +621,13 @@ export default function AdminSettingsPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[#555] mb-1">
                         Accrual Display
                       </label>
                       <select
                         value={settings.time_accrual_display}
                         onChange={(e) => updateSetting('time_accrual_display', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="Hours">Hours</option>
                         <option value="Days">Days</option>
@@ -637,7 +637,7 @@ export default function AdminSettingsPage() {
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[#555] mb-1">
                         OT Day Hours
                       </label>
                       <input
@@ -645,24 +645,24 @@ export default function AdminSettingsPage() {
                         value={settings.ot_day_hours || ''}
                         onChange={(e) => updateSetting('ot_day_hours', e.target.value ? parseFloat(e.target.value) : null)}
                         placeholder="Optional"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[#555] mb-1">
                         OT Week Hours
                       </label>
                       <input
                         type="number"
                         value={settings.ot_week_hours}
                         onChange={(e) => updateSetting('ot_week_hours', parseFloat(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[#555] mb-1">
                         DT Day Hours
                       </label>
                       <input
@@ -670,19 +670,19 @@ export default function AdminSettingsPage() {
                         value={settings.dt_day_hours || ''}
                         onChange={(e) => updateSetting('dt_day_hours', e.target.value ? parseFloat(e.target.value) : null)}
                         placeholder="Optional"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[#555] mb-1">
                       Time Increment (Minutes)
                     </label>
                     <select
                       value={settings.time_increment_minutes}
                       onChange={(e) => updateSetting('time_increment_minutes', parseInt(e.target.value))}
-                      className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      className="w-32 px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="1">1</option>
                       <option value="5">5</option>
@@ -695,16 +695,16 @@ export default function AdminSettingsPage() {
 
                   {/* Pay Period Configuration */}
                   <div className="pt-4 border-t">
-                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Pay Period Configuration</h4>
+                    <h4 className="text-sm font-semibold text-[#1a1a1a] mb-3">Pay Period Configuration</h4>
                     <div className="grid grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-[#555] mb-1">
                           Pay Period Type
                         </label>
                         <select
                           value={settings.pay_period_type}
                           onChange={(e) => updateSetting('pay_period_type', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                         >
                           <option value="weekly">Weekly</option>
                           <option value="biweekly">Bi-Weekly</option>
@@ -712,21 +712,21 @@ export default function AdminSettingsPage() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-[#555] mb-1">
                           Period Start Date (anchor)
                         </label>
                         <input
                           type="date"
                           value={settings.pay_period_start_date}
                           onChange={(e) => updateSetting('pay_period_start_date', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                         />
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-[#999] mt-1">
                           First day of the first pay period (e.g., a Monday for weekly)
                         </p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-[#555] mb-1">
                           Lock Delay (days after period ends)
                         </label>
                         <input
@@ -735,7 +735,7 @@ export default function AdminSettingsPage() {
                           max="14"
                           value={settings.pay_period_lock_delay_days}
                           onChange={(e) => updateSetting('pay_period_lock_delay_days', parseInt(e.target.value))}
-                          className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                          className="w-32 px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
                       <div className="flex items-end">
@@ -744,9 +744,9 @@ export default function AdminSettingsPage() {
                             type="checkbox"
                             checked={settings.pay_period_auto_lock}
                             onChange={(e) => updateSetting('pay_period_auto_lock', e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-[#e8e4df] text-blue-600 focus:ring-blue-500"
                           />
-                          <span className="text-sm text-gray-700">Auto-lock periods after delay</span>
+                          <span className="text-sm text-[#555]">Auto-lock periods after delay</span>
                         </label>
                       </div>
                     </div>
@@ -782,9 +782,9 @@ export default function AdminSettingsPage() {
                         type="checkbox"
                         checked={settings.allow_new_time_after_approval}
                         onChange={(e) => updateSetting('allow_new_time_after_approval', e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-[#e8e4df] text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-700">Allow new time after approval</span>
+                      <span className="text-sm text-[#555]">Allow new time after approval</span>
                     </label>
 
                     <label className="flex items-center gap-2">
@@ -792,9 +792,9 @@ export default function AdminSettingsPage() {
                         type="checkbox"
                         checked={settings.changes_require_reason}
                         onChange={(e) => updateSetting('changes_require_reason', e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-[#e8e4df] text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-700">Changes Require a Reason (DCAA)</span>
+                      <span className="text-sm text-[#555]">Changes Require a Reason (DCAA)</span>
                     </label>
 
                     <label className="flex items-center gap-2">
@@ -802,9 +802,9 @@ export default function AdminSettingsPage() {
                         type="checkbox"
                         checked={settings.use_time_in_out}
                         onChange={(e) => updateSetting('use_time_in_out', e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-[#e8e4df] text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-700">Use Time In/Out</span>
+                      <span className="text-sm text-[#555]">Use Time In/Out</span>
                     </label>
 
                     <label className="flex items-center gap-2">
@@ -812,9 +812,9 @@ export default function AdminSettingsPage() {
                         type="checkbox"
                         checked={settings.use_clock_in_out}
                         onChange={(e) => updateSetting('use_clock_in_out', e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-[#e8e4df] text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-700">Use Clock In/Out</span>
+                      <span className="text-sm text-[#555]">Use Clock In/Out</span>
                     </label>
                   </div>
                 </div>
@@ -830,9 +830,9 @@ export default function AdminSettingsPage() {
                         type="checkbox"
                         checked={settings.expense_enabled}
                         onChange={(e) => updateSetting('expense_enabled', e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-[#e8e4df] text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-sm font-medium text-gray-700">Enable Expense Module</span>
+                      <span className="text-sm font-medium text-[#555]">Enable Expense Module</span>
                     </label>
                   </div>
 
@@ -842,21 +842,21 @@ export default function AdminSettingsPage() {
                         type="checkbox"
                         checked={settings.expense_foreign_currencies}
                         onChange={(e) => updateSetting('expense_foreign_currencies', e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-[#e8e4df] text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-700">Use Foreign Currencies</span>
+                      <span className="text-sm text-[#555]">Use Foreign Currencies</span>
                     </label>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[#555] mb-1">
                       Payment Memo
                     </label>
                     <textarea
                       value={settings.expense_payment_memo}
                       onChange={(e) => updateSetting('expense_payment_memo', e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Default payment memo for expense reports..."
                     />
                   </div>
@@ -870,17 +870,17 @@ export default function AdminSettingsPage() {
                     <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', marginBottom: 16 }}>Enterprise Time Approvers</h2>
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-[#555] mb-2">
                           Additional Time Approvers
                         </label>
                         <div className="space-y-2">
                           {timeApprovers.map(approver => (
-                            <div key={approver.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div key={approver.id} className="flex items-center justify-between p-3 bg-[#FAFAF8] rounded-lg">
                               <div>
-                                <p className="text-sm font-medium text-gray-900">
+                                <p className="text-sm font-medium text-[#1a1a1a]">
                                   {approver.first_name} {approver.last_name}
                                 </p>
-                                <p className="text-xs text-gray-500">{approver.email}</p>
+                                <p className="text-xs text-[#999]">{approver.email}</p>
                               </div>
                               <button
                                 onClick={() => removeApprover('time', approver.id)}
@@ -894,7 +894,7 @@ export default function AdminSettingsPage() {
                         
                         <div className="mt-3 flex gap-2">
                           <select
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            className="flex-1 px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                             onChange={(e) => {
                               if (e.target.value) {
                                 addApprover('time', e.target.value);
@@ -921,17 +921,17 @@ export default function AdminSettingsPage() {
                     <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', marginBottom: 16 }}>Enterprise Expense Approvers</h2>
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-[#555] mb-2">
                           Additional Expense Approvers
                         </label>
                         <div className="space-y-2">
                           {expenseApprovers.map(approver => (
-                            <div key={approver.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div key={approver.id} className="flex items-center justify-between p-3 bg-[#FAFAF8] rounded-lg">
                               <div>
-                                <p className="text-sm font-medium text-gray-900">
+                                <p className="text-sm font-medium text-[#1a1a1a]">
                                   {approver.first_name} {approver.last_name}
                                 </p>
-                                <p className="text-xs text-gray-500">{approver.email}</p>
+                                <p className="text-xs text-[#999]">{approver.email}</p>
                               </div>
                               <button
                                 onClick={() => removeApprover('expense', approver.id)}
@@ -945,7 +945,7 @@ export default function AdminSettingsPage() {
                         
                         <div className="mt-3 flex gap-2">
                           <select
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            className="flex-1 px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                             onChange={(e) => {
                               if (e.target.value) {
                                 addApprover('expense', e.target.value);
@@ -984,8 +984,8 @@ export default function AdminSettingsPage() {
                             <DollarSign className="h-5 w-5 text-green-600" />
                           </div>
                           <div>
-                            <h3 className="font-semibold text-gray-900">QuickBooks Online</h3>
-                            <p className="text-sm text-gray-500">Sync timesheets and expenses</p>
+                            <h3 className="font-semibold text-[#1a1a1a]">QuickBooks Online</h3>
+                            <p className="text-sm text-[#999]">Sync timesheets and expenses</p>
                           </div>
                         </div>
                         <label className="flex items-center gap-2">
@@ -993,9 +993,9 @@ export default function AdminSettingsPage() {
                             type="checkbox"
                             checked={settings.quickbooks_enabled}
                             onChange={(e) => updateSetting('quickbooks_enabled', e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-[#e8e4df] text-blue-600 focus:ring-blue-500"
                           />
-                          <span className="text-sm font-medium text-gray-700">Enable</span>
+                          <span className="text-sm font-medium text-[#555]">Enable</span>
                         </label>
                       </div>
                       
@@ -1021,8 +1021,8 @@ export default function AdminSettingsPage() {
                             <Building2 className="h-5 w-5 text-blue-600" />
                           </div>
                           <div>
-                            <h3 className="font-semibold text-gray-900">Tracker RMS</h3>
-                            <p className="text-sm text-gray-500">Applicant Tracking System integration</p>
+                            <h3 className="font-semibold text-[#1a1a1a]">Tracker RMS</h3>
+                            <p className="text-sm text-[#999]">Applicant Tracking System integration</p>
                           </div>
                         </div>
                         <label className="flex items-center gap-2">
@@ -1030,16 +1030,16 @@ export default function AdminSettingsPage() {
                             type="checkbox"
                             checked={settings.tracker_rms_enabled}
                             onChange={(e) => updateSetting('tracker_rms_enabled', e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-[#e8e4df] text-blue-600 focus:ring-blue-500"
                           />
-                          <span className="text-sm font-medium text-gray-700">Enable</span>
+                          <span className="text-sm font-medium text-[#555]">Enable</span>
                         </label>
                       </div>
                       
                       {settings.tracker_rms_enabled && (
                         <div className="pt-4 border-t space-y-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-[#555] mb-1">
                               API Key
                             </label>
                             <input
@@ -1047,7 +1047,7 @@ export default function AdminSettingsPage() {
                               value={settings.tracker_rms_api_key}
                               onChange={(e) => updateSetting('tracker_rms_api_key', e.target.value)}
                               placeholder="Enter your Tracker RMS API key"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                              className="w-full px-3 py-2 border border-[#e8e4df] rounded-lg focus:ring-blue-500 focus:border-blue-500"
                             />
                           </div>
                           

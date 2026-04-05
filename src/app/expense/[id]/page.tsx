@@ -118,7 +118,7 @@ const formatCurrency = (amount: number | null | undefined) => {
 
 const statusBadge = (status: ExpenseReport['status']) => {
   const base =
-    'inline-flex px-2 py-1 rounded-full text-xs font-medium border';
+    'inline-flex px-2 py-1 rounded text-xs font-medium border';
   switch (status) {
     case 'submitted':
       return `${base} bg-amber-50 text-amber-700 border-amber-200`;
@@ -127,7 +127,7 @@ const statusBadge = (status: ExpenseReport['status']) => {
     case 'rejected':
       return `${base} bg-red-50 text-red-700 border-red-200`;
     default:
-      return `${base} bg-gray-100 text-gray-700 border-gray-200`;
+      return `${base} bg-[#FAFAF8] text-[#555] border-[#e8e4df]`;
   }
 };
 
@@ -739,8 +739,8 @@ if (mode === 'submitted') {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600 text-sm">Loading expense report...</p>
+      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
+        <p className="text-[#777] text-sm">Loading expense report...</p>
       </div>
     );
   }
@@ -761,15 +761,15 @@ if (mode === 'submitted') {
   if (!report) return null;
 
   const editableEntryBg = isEditable
-    ? 'bg-white border-gray-200'
-    : 'bg-gray-50 border-gray-200';
+    ? 'bg-white border-[#e8e4df]'
+    : 'bg-[#FAFAF8] border-[#e8e4df]';
 
   return (
     <>
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white/80 backdrop-blur rounded-2xl border border-[#e8e4df] overflow-hidden">
           {/* header */}
-          <div className="bg-[#1a1a1a] text-white px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="bg-white text-[#1a1a1a] px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 text-xs mb-1">
                 <span className={statusBadge(report.status)}>
@@ -777,23 +777,23 @@ if (mode === 'submitted') {
                     report.status.slice(1)}
                 </span>
                 {isEditable && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-50/10 border border-rose-200/50 text-rose-100">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-50/10 border border-rose-200/50 text-rose-100">
                     Editable
                   </span>
                 )}
               </div>
-              <h1 className="text-base sm:text-lg font-semibold">
+              <h1 className="text-base sm:text-[12px] font-semibold">
                 Expense Report Details
               </h1>
-              <p className="mt-1 text-xs text-gray-200 flex items-center gap-2">
+              <p className="mt-1 text-xs text-[#ccc] flex items-center gap-2">
                 {employeeName && (
                   <>
-                    <User className="h-3 w-3 text-gray-300" />
+                    <User className="h-3 w-3 text-[#ccc]" />
                     <span>{employeeName}</span>
                     <span className="opacity-40">•</span>
                   </>
                 )}
-                <Calendar className="h-3 w-3 text-gray-300" />
+                <Calendar className="h-3 w-3 text-[#ccc]" />
                 <span>
                   Period:{' '}
                   {report.period_month
@@ -803,7 +803,7 @@ if (mode === 'submitted') {
               </p>
             </div>
             <div className="text-right">
-              <p className="text-[11px] uppercase tracking-wide text-gray-300">
+              <p className="text-[11px] uppercase tracking-wide text-[#ccc]">
                 Total Expenses
               </p>
               <p className="text-xl font-bold text-white">
@@ -813,7 +813,7 @@ if (mode === 'submitted') {
           </div>
 
           {/* body */}
-          <div className="px-6 py-6 space-y-6 bg-gray-50">
+          <div className="px-6 py-6 space-y-6 bg-[#FAFAF8]">
             {(report.status === 'rejected' || hasRejectedLine) && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-2">
                 <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
@@ -844,25 +844,25 @@ if (mode === 'submitted') {
             )}
 
             {/* title / period card */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
+            <div className="bg-white rounded-xl border border-[#e8e4df] p-4 sm:p-5">
               <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">
+                  <label className="block text-xs font-semibold text-[#777] mb-1">
                     Report Title
                   </label>
                   <input
                     type="text"
                     value={report.title}
                     disabled
-                    className="w-full rounded-md border border-gray-200 bg-gray-50 text-sm px-3 py-2 text-gray-700"
+                    className="w-full rounded-md border border-[#e8e4df] bg-[#FAFAF8] text-sm px-3 py-2 text-[#555]"
                   />
-                  <p className="mt-1 text-[11px] text-gray-500">
+                  <p className="mt-1 text-[11px] text-[#999]">
                     This title appears in your Recent Expenses list as a single
                     row.
                   </p>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">
+                  <label className="block text-xs font-semibold text-[#777] mb-1">
                     Expense Period
                   </label>
                   <input
@@ -873,9 +873,9 @@ if (mode === 'submitted') {
                         : ''
                     }
                     disabled
-                    className="w-full rounded-md border border-gray-200 bg-gray-50 text-sm px-3 py-2 text-gray-700"
+                    className="w-full rounded-md border border-[#e8e4df] bg-[#FAFAF8] text-sm px-3 py-2 text-[#555]"
                   />
-                  <p className="mt-1 text-[11px] text-gray-500">
+                  <p className="mt-1 text-[11px] text-[#999]">
                     Period used when grouping expenses on your dashboard.
                   </p>
                 </div>
@@ -884,20 +884,20 @@ if (mode === 'submitted') {
 
             {/* category summary */}
             {Object.keys(categoryTotals).length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
-                <h2 className="text-xs font-semibold text-gray-700 mb-3">
+              <div className="bg-white rounded-xl border border-[#e8e4df] p-4 sm:p-5">
+                <h2 className="text-xs font-semibold text-[#555] mb-3">
                   Category Summary
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {Object.entries(categoryTotals).map(([category, total]) => (
                     <div
                       key={category}
-                      className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 border border-gray-100"
+                      className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#FAFAF8] border border-[#f0ece7]"
                     >
-                      <span className="text-xs text-gray-700">
+                      <span className="text-xs text-[#555]">
                         {getCategoryLabel(category)}
                       </span>
-                      <span className="text-xs font-semibold text-gray-900">
+                      <span className="text-xs font-semibold text-[#1a1a1a]">
                         {formatCurrency(total)}
                       </span>
                     </div>
@@ -907,10 +907,10 @@ if (mode === 'submitted') {
             )}
 
             {/* expense entry section */}
-            <div className="rounded-xl overflow-hidden border border-gray-200 bg-white">
-              <div className="bg-[#1a1a1a] text-white px-4 py-2 flex items-center justify-between">
+            <div className="rounded-xl overflow-hidden border border-[#e8e4df] bg-white">
+              <div className="bg-white text-[#1a1a1a] px-4 py-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-gray-100" />
+                  <FileText className="h-4 w-4 text-[#ddd]" />
                   <span className="text-xs font-semibold tracking-wide">
                     Expense Entry
                   </span>
@@ -929,7 +929,7 @@ if (mode === 'submitted') {
 
               <div className="p-4 sm:p-5 space-y-4">
                 {lines.length === 0 ? (
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-[#999]">
                     No expense entries are attached to this report.
                   </p>
                 ) : (
@@ -965,15 +965,15 @@ if (mode === 'submitted') {
                                 {idx + 1}
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-800">
+                                <span className="text-xs font-semibold text-[#1a1a1a]">
                                   Entry #{idx + 1}
                                 </span>
-                                <span className="text-[11px] text-gray-500">
+                                <span className="text-[11px] text-[#999]">
                                   Edit details for this expense line, then save
                                   or resubmit your report.
                                 </span>
                                 {isRejectedLine && (
-                                  <span className="mt-1 inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-800 border border-red-200">
+                                  <span className="mt-1 inline-flex px-2 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-800 border border-red-200">
                                     Fix now – this entry was rejected
                                   </span>
                                 )}
@@ -1045,13 +1045,13 @@ if (mode === 'submitted') {
                             {/* row 1: date, project, category */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                               <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                                <label className="block text-xs font-semibold text-[#777] mb-1">
                                   Date
                                 </label>
                                 {isLineEditable ? (
                                   <input
                                     type="date"
-                                    className="w-full rounded-md border border-gray-200 bg-white text-sm px-3 py-2"
+                                    className="w-full rounded-md border border-[#e8e4df] bg-white text-sm px-3 py-2"
                                     value={getDateInputValue(
                                       line.expense_date
                                     )}
@@ -1068,18 +1068,18 @@ if (mode === 'submitted') {
                                     type="text"
                                     disabled
                                     value={formatDate(line.expense_date)}
-                                    className="w-full rounded-md border border-gray-200 bg-gray-50 text-sm px-3 py-2 text-gray-700"
+                                    className="w-full rounded-md border border-[#e8e4df] bg-[#FAFAF8] text-sm px-3 py-2 text-[#555]"
                                   />
                                 )}
                               </div>
 
                               <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                                <label className="block text-xs font-semibold text-[#777] mb-1">
                                   Project
                                 </label>
                                 {isLineEditable ? (
                                   <select
-                                    className="w-full rounded-md border border-gray-200 bg-white text-sm px-3 py-2"
+                                    className="w-full rounded-md border border-[#e8e4df] bg-white text-sm px-3 py-2"
                                     value={line.project_id || ''}
                                     onChange={(e) =>
                                       handleProjectChange(idx, e.target.value)
@@ -1106,23 +1106,23 @@ if (mode === 'submitted') {
                                           }`
                                         : '—'
                                     }
-                                    className="w-full rounded-md border border-gray-200 bg-gray-50 text-sm px-3 py-2 text-gray-700"
+                                    className="w-full rounded-md border border-[#e8e4df] bg-[#FAFAF8] text-sm px-3 py-2 text-[#555]"
                                   />
                                 )}
                                 {line.client_name && (
-                                  <p className="mt-1 text-[11px] text-gray-500">
+                                  <p className="mt-1 text-[11px] text-[#999]">
                                     {line.client_name}
                                   </p>
                                 )}
                               </div>
 
                               <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                                <label className="block text-xs font-semibold text-[#777] mb-1">
                                   Category
                                 </label>
                                 {isLineEditable ? (
                                   <select
-                                    className="w-full rounded-md border border-gray-200 bg-white text-sm px-3 py-2"
+                                    className="w-full rounded-md border border-[#e8e4df] bg-white text-sm px-3 py-2"
                                     value={line.category || ''}
                                     onChange={(e) =>
                                       handleLineChange(
@@ -1144,7 +1144,7 @@ if (mode === 'submitted') {
                                     type="text"
                                     disabled
                                     value={getCategoryLabel(line.category)}
-                                    className="w-full rounded-md border border-gray-200 bg-gray-50 text-sm px-3 py-2 text-gray-700"
+                                    className="w-full rounded-md border border-[#e8e4df] bg-[#FAFAF8] text-sm px-3 py-2 text-[#555]"
                                   />
                                 )}
                               </div>
@@ -1154,7 +1154,7 @@ if (mode === 'submitted') {
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                               {/* Amount / Mileage */}
                               <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                                <label className="block text-xs font-semibold text-[#777] mb-1">
                                   {isMileage ? 'Mileage' : 'Amount'}
                                 </label>
 
@@ -1164,7 +1164,7 @@ if (mode === 'submitted') {
                                       <input
                                         type="text"
                                         inputMode="decimal"
-                                        className="w-full rounded-md border border-gray-200 bg-white text-sm px-3 py-2 text-right"
+                                        className="w-full rounded-md border border-[#e8e4df] bg-white text-sm px-3 py-2 text-right"
                                         value={milesInput}
                                         onChange={(e) => {
                                           const raw = e.target.value;
@@ -1189,11 +1189,11 @@ if (mode === 'submitted') {
                                         }}
                                         placeholder="0.0"
                                       />
-                                      <span className="text-xs text-gray-600">
+                                      <span className="text-xs text-[#777]">
                                         miles
                                       </span>
                                     </div>
-                                    <p className="text-[11px] text-gray-500">
+                                    <p className="text-[11px] text-[#999]">
                                       Calculated at{' '}
                                       <span className="font-semibold">
                                         ${GSA_MILEAGE_RATE.toFixed(3)}
@@ -1202,13 +1202,13 @@ if (mode === 'submitted') {
                                       informational only).
                                     </p>
                                     <div className="flex items-center">
-                                      <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-200 bg-gray-50 text-sm text-gray-600">
+                                      <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-[#e8e4df] bg-[#FAFAF8] text-sm text-[#777]">
                                         $
                                       </span>
                                       <input
                                         type="text"
                                         disabled
-                                        className="w-full rounded-r-md border border-gray-200 bg-gray-50 text-sm px-3 py-2 text-right"
+                                        className="w-full rounded-r-md border border-[#e8e4df] bg-[#FAFAF8] text-sm px-3 py-2 text-right"
                                         value={
                                           line.amount
                                             ? line.amount.toFixed(2)
@@ -1219,13 +1219,13 @@ if (mode === 'submitted') {
                                   </div>
                                 ) : isLineEditable ? (
                                   <div className="flex items-center">
-                                    <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-200 bg-gray-50 text-sm text-gray-600">
+                                    <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-[#e8e4df] bg-[#FAFAF8] text-sm text-[#777]">
                                       $
                                     </span>
                                     <input
                                       type="text"
                                       inputMode="decimal"
-                                      className="w-full rounded-r-md border border-gray-200 bg-white text-sm px-3 py-2 text-right"
+                                      className="w-full rounded-r-md border border-[#e8e4df] bg-white text-sm px-3 py-2 text-right"
                                       value={
                                         line.amount !== null &&
                                         line.amount !== undefined
@@ -1255,7 +1255,7 @@ if (mode === 'submitted') {
                                       type="text"
                                       disabled
                                       value={formatCurrency(line.amount)}
-                                      className="w-full rounded-md border border-gray-200 bg-gray-50 text-sm px-3 py-2 text-right text-gray-700"
+                                      className="w-full rounded-md border border-[#e8e4df] bg-[#FAFAF8] text-sm px-3 py-2 text-right text-[#555]"
                                     />
                                   </div>
                                 )}
@@ -1263,7 +1263,7 @@ if (mode === 'submitted') {
 
                               {/* Vendor / Locations */}
                               <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                                <label className="block text-xs font-semibold text-[#777] mb-1">
                                   {isMileage ? 'Trip Details' : 'Vendor'}
                                 </label>
                                 {isMileage ? (
@@ -1271,7 +1271,7 @@ if (mode === 'submitted') {
                                     <div className="space-y-2">
                                       <input
                                         type="text"
-                                        className="w-full rounded-md border border-gray-200 bg-white text-sm px-3 py-2"
+                                        className="w-full rounded-md border border-[#e8e4df] bg-white text-sm px-3 py-2"
                                         value={line.vendor || ''}
                                         onChange={(e) =>
                                           handleLineChange(
@@ -1284,7 +1284,7 @@ if (mode === 'submitted') {
                                       />
                                       <input
                                         type="text"
-                                        className="w-full rounded-md border border-gray-200 bg-white text-sm px-3 py-2"
+                                        className="w-full rounded-md border border-[#e8e4df] bg-white text-sm px-3 py-2"
                                         value={line.description || ''}
                                         onChange={(e) =>
                                           handleLineChange(
@@ -1296,7 +1296,7 @@ if (mode === 'submitted') {
                                         placeholder="End location (e.g., Client Site)"
                                       />
                                       {(line.vendor || line.description) && (
-                                        <p className="text-[11px] text-gray-500">
+                                        <p className="text-[11px] text-[#999]">
                                           Stored as “From:{' '}
                                           {line.vendor || '—'} · To:{' '}
                                           {line.description || '—'}” for manager
@@ -1305,7 +1305,7 @@ if (mode === 'submitted') {
                                       )}
                                     </div>
                                   ) : (
-                                    <div className="text-xs text-gray-800 space-y-1">
+                                    <div className="text-xs text-[#1a1a1a] space-y-1">
                                       <p>
                                         <span className="font-semibold">
                                           From:{' '}
@@ -1323,7 +1323,7 @@ if (mode === 'submitted') {
                                 ) : isLineEditable ? (
                                   <input
                                     type="text"
-                                    className="w-full rounded-md border border-gray-200 bg-white text-sm px-3 py-2"
+                                    className="w-full rounded-md border border-[#e8e4df] bg-white text-sm px-3 py-2"
                                     value={line.vendor || ''}
                                     onChange={(e) =>
                                       handleLineChange(
@@ -1339,14 +1339,14 @@ if (mode === 'submitted') {
                                     type="text"
                                     disabled
                                     value={line.vendor || '—'}
-                                    className="w-full rounded-md border border-gray-200 bg-gray-50 text-sm px-3 py-2 text-gray-700"
+                                    className="w-full rounded-md border border-[#e8e4df] bg-[#FAFAF8] text-sm px-3 py-2 text-[#555]"
                                   />
                                 )}
                               </div>
 
                               {/* Receipt */}
                               <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                                <label className="block text-xs font-semibold text-[#777] mb-1">
                                   Receipt
                                 </label>
                                 <div className="space-y-1">
@@ -1361,13 +1361,13 @@ if (mode === 'submitted') {
                                       <span>Open current receipt</span>
                                     </a>
                                   ) : (
-                                    <p className="text-[11px] text-gray-500">
+                                    <p className="text-[11px] text-[#999]">
                                       No receipt currently attached.
                                     </p>
                                   )}
 
                                   {isLineEditable && (
-                                    <label className="mt-1 flex items-center justify-center gap-1 border border-dashed border-gray-300 rounded-md px-3 py-2 text-[11px] text-gray-600 bg-white cursor-pointer hover:border-[#e31c79]/70 hover:text-[#e31c79]">
+                                    <label className="mt-1 flex items-center justify-center gap-1 border border-dashed border-[#e8e4df] rounded-md px-3 py-2 text-[11px] text-[#777] bg-white cursor-pointer hover:border-[#e31c79]/70 hover:text-[#e31c79]">
                                       <Receipt className="h-3 w-3" />
                                       <span>
                                         {receiptFiles[line.id]
@@ -1390,11 +1390,11 @@ if (mode === 'submitted') {
                                     </label>
                                   )}
                                   {receiptFiles[line.id] && (
-                                    <p className="text-[10px] text-gray-500">
+                                    <p className="text-[10px] text-[#999]">
                                       {receiptFiles[line.id]?.name}
                                     </p>
                                   )}
-                                  <p className="text-[10px] text-gray-400">
+                                  <p className="text-[10px] text-[#bbb]">
                                     Max 5MB · JPG, PNG, GIF, or PDF
                                   </p>
                                 </div>
@@ -1404,12 +1404,12 @@ if (mode === 'submitted') {
                             {/* row 3: description – only for non-mileage */}
                             {line.category !== 'mileage' && (
                               <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                                <label className="block text-xs font-semibold text-[#777] mb-1">
                                   Description
                                 </label>
                                 {isLineEditable ? (
                                   <textarea
-                                    className="w-full rounded-md border border-gray-200 bg-white text-sm px-3 py-2 min-h-[60px]"
+                                    className="w-full rounded-md border border-[#e8e4df] bg-white text-sm px-3 py-2 min-h-[60px]"
                                     value={line.description || ''}
                                     onChange={(e) =>
                                       handleLineChange(
@@ -1423,7 +1423,7 @@ if (mode === 'submitted') {
                                 ) : (
                                   <textarea
                                     disabled
-                                    className="w-full rounded-md border border-gray-200 bg-gray-50 text-sm px-3 py-2 min-h-[60px] text-gray-700"
+                                    className="w-full rounded-md border border-[#e8e4df] bg-[#FAFAF8] text-sm px-3 py-2 min-h-[60px] text-[#555]"
                                     value={line.description || '—'}
                                   />
                                 )}
@@ -1437,10 +1437,10 @@ if (mode === 'submitted') {
                 )}
 
                 {/* footer / buttons */}
-                <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-dashed border-gray-200">
+                <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-dashed border-[#e8e4df]">
                   <div className="flex items-center gap-6">
                     <div>
-                      <p className="text-xs font-semibold text-gray-600">
+                      <p className="text-xs font-semibold text-[#777]">
                         Total Expenses
                       </p>
                       <p className="text-base font-bold text-[#e31c79]">
@@ -1448,10 +1448,10 @@ if (mode === 'submitted') {
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-gray-600">
+                      <p className="text-xs font-semibold text-[#777]">
                         Entries
                       </p>
-                      <p className="text-sm text-gray-800">
+                      <p className="text-sm text-[#1a1a1a]">
                         {lines.length} of {lines.length}
                       </p>
                     </div>
@@ -1462,7 +1462,7 @@ if (mode === 'submitted') {
                       <button
                         type="button"
                         onClick={() => router.push('/employee')}
-                        className="w-full sm:w-auto px-4 py-2 text-xs font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                        className="w-full sm:w-auto px-4 py-2 text-xs font-medium rounded-md border border-[#e8e4df] text-[#555] bg-white hover:bg-[#FAFAF8]"
                       >
                         Cancel
                       </button>
@@ -1470,7 +1470,7 @@ if (mode === 'submitted') {
                         type="button"
                         onClick={handleSaveDraft}
                         disabled={isSaving}
-                        className="w-full sm:w-auto px-4 py-2 text-xs font-medium rounded-md border border-gray-300 text-gray-700 bg-gray-100 hover:bg-gray-200 disabled:opacity-60"
+                        className="w-full sm:w-auto px-4 py-2 text-xs font-medium rounded-md border border-[#e8e4df] text-[#555] bg-[#FAFAF8] hover:bg-[#f5f2ee] disabled:opacity-60"
                       >
                         {isSaving ? 'Saving…' : 'Save as Draft'}
                       </button>
@@ -1488,7 +1488,7 @@ if (mode === 'submitted') {
                       <button
                         type="button"
                         onClick={() => router.push('/employee')}
-                        className="px-4 py-2 text-xs font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                        className="px-4 py-2 text-xs font-medium rounded-md border border-[#e8e4df] text-[#555] bg-white hover:bg-[#FAFAF8]"
                       >
                         Close
                       </button>

@@ -996,8 +996,8 @@ export default function AdminPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 gap-3">
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-700">Department:</span>
-                <select className="text-sm px-3 py-1.5 border border-gray-200 rounded-lg bg-white">
+                <span className="text-sm text-[#555]">Department:</span>
+                <select className="text-sm px-3 py-1.5 border border-[#e8e4df] rounded-lg bg-white">
                   <option value="all">All</option>
                   <option value="engineering">Commerce</option>
                   <option value="sales">Healthcare</option>
@@ -1005,9 +1005,9 @@ export default function AdminPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-700">Manager:</span>
+                <span className="text-sm text-[#555]">Manager:</span>
                 <select 
-                  className="text-sm px-3 py-1.5 border border-gray-200 rounded-lg bg-white"
+                  className="text-sm px-3 py-1.5 border border-[#e8e4df] rounded-lg bg-white"
                   value={managerFilter}
                   onChange={(e) => setManagerFilter(e.target.value)}
                 >
@@ -1030,18 +1030,18 @@ export default function AdminPage() {
               </div>
 
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-700">Project:</span>
+                <span className="text-sm text-[#555]">Project:</span>
                 <select
-                  className="text-sm px-3 py-1.5 border border-gray-200 rounded-lg bg-white"
+                  className="text-sm px-3 py-1.5 border border-[#e8e4df] rounded-lg bg-white"
                 >
                   <option value="all">All</option>
                 </select>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-700">Employee:</span>
+                <span className="text-sm text-[#555]">Employee:</span>
                 <select
-                  className="text-sm px-3 py-1.5 border border-gray-200 rounded-lg bg-white"
+                  className="text-sm px-3 py-1.5 border border-[#e8e4df] rounded-lg bg-white"
                   value={employeeFilter}
                   onChange={(e) => setEmployeeFilter(e.target.value)}
                 >
@@ -1063,8 +1063,8 @@ export default function AdminPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-700">Items per page:</span>
-              <select className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white">
+              <span className="text-sm text-[#555]">Items per page:</span>
+              <select className="text-sm border border-[#e8e4df] rounded-lg px-2 py-1.5 bg-white">
                 <option>100</option>
                 <option>50</option>
                 <option>25</option>
@@ -1111,15 +1111,15 @@ export default function AdminPage() {
                 {[
                   { label: 'Approved', count: approvedTimesheetCount, color: 'bg-green-500', total: allTimesheetsCount },
                   { label: 'Pending', count: timesheetPendingCount, color: 'bg-yellow-500', total: allTimesheetsCount },
-                  { label: 'Draft', count: draftTimesheetCount, color: 'bg-gray-400', total: allTimesheetsCount },
+                  { label: 'Draft', count: draftTimesheetCount, color: 'bg-[#FAFAF8]', total: allTimesheetsCount },
                   { label: 'Rejected', count: rejectedTimesheetCount, color: 'bg-red-500', total: allTimesheetsCount },
                 ].map(item => (
                   <div key={item.label}>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-gray-600">{item.label}</span>
+                      <span className="text-[#777]">{item.label}</span>
                       <span className="font-medium">{item.count}</span>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div className="w-full bg-[#FAFAF8] rounded-full h-2">
                       <div
                         className={`${item.color} h-2 rounded-full transition-all duration-500`}
                         style={{ width: `${item.total > 0 ? (item.count / item.total) * 100 : 0}%` }}
@@ -1149,10 +1149,10 @@ export default function AdminPage() {
                     .map(([dept, hours]) => (
                       <div key={dept}>
                         <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-600 truncate">{dept}</span>
+                          <span className="text-[#777] truncate">{dept}</span>
                           <span className="font-medium">{hours.toFixed(1)} hrs</span>
                         </div>
-                        <div className="w-full bg-gray-100 rounded-full h-2">
+                        <div className="w-full bg-[#FAFAF8] rounded-full h-2">
                           <div
                             className="bg-[#e31c79] h-2 rounded-full transition-all duration-500"
                             style={{ width: `${(hours / maxHours) * 100}%` }}
@@ -1178,8 +1178,8 @@ export default function AdminPage() {
             <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h4 className="font-medium text-gray-900">Timecard submittals</h4>
-                  <p className="text-sm text-gray-600 mt-1">Employees with unsubmitted timecards</p>
+                  <h4 className="font-medium text-[#1a1a1a]">Timecard submittals</h4>
+                  <p className="text-sm text-[#777] mt-1">Employees with unsubmitted timecards</p>
                 </div>
                 <button
                   onClick={handleBulkSubmittalReminders}
@@ -1208,7 +1208,7 @@ export default function AdminPage() {
   .slice(0, 5)
   .map(submission => (
     <div key={submission.id} className="flex justify-between items-center text-sm py-1">
-      <span className="text-gray-700">
+      <span className="text-[#555]">
         {formatName(
           submission.employee?.first_name,
           submission.employee?.middle_name,
@@ -1226,7 +1226,7 @@ export default function AdminPage() {
   ))}
 
                     {draftTimesheetCount > 5 && (
-                      <p className="text-xs text-gray-500 mt-2">
+                      <p className="text-xs text-[#999] mt-2">
                         +{draftTimesheetCount - 5} more...
                       </p>
                     )}
@@ -1239,8 +1239,8 @@ export default function AdminPage() {
             <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h4 className="font-medium text-gray-900">Pending approvals by manager</h4>
-                  <p className="text-sm text-gray-600 mt-1">Managers with pending timecards to approve</p>
+                  <h4 className="font-medium text-[#1a1a1a]">Pending approvals by manager</h4>
+                  <p className="text-sm text-[#777] mt-1">Managers with pending timecards to approve</p>
                 </div>
               </div>
               
@@ -1260,15 +1260,15 @@ export default function AdminPage() {
                         <div
                           key={managerId}
                           className={`border rounded-xl p-2 ${
-                            isOverdue ? 'bg-red-50 border-red-300' : 'bg-gray-50 border-gray-200'
+                            isOverdue ? 'bg-red-50 border-red-300' : 'bg-[#FAFAF8] border-[#e8e4df]'
                           }`}
                         >
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
-                              <div className="font-medium text-sm text-gray-900">
+                              <div className="font-medium text-sm text-[#1a1a1a]">
                                 {data.managerName}
                               </div>
-                              <div className="text-xs text-gray-600 mt-1">
+                              <div className="text-xs text-[#777] mt-1">
                                 <span className={`font-medium ${isOverdue ? 'text-red-600' : 'text-orange-600'}`}>
                                   {data.count} pending
                                 </span>
@@ -1361,7 +1361,7 @@ export default function AdminPage() {
   {/* Search above cards */}
   <div className="mb-4 flex justify-between items-center">
     <div className="relative w-full sm:w-80">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#bbb]" />
       <input
         type="text"
         placeholder="Search by employee, email, category..."
@@ -1388,7 +1388,7 @@ export default function AdminPage() {
             {/* Currently filtered pill */}
             {hasTimesheetFilters && (
               <div className="px-4 pt-2 pb-3 bg-white">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-50 border border-gray-200 text-xs text-gray-700">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[#FAFAF8] border border-[#e8e4df] text-xs text-[#555]">
                   <span className="font-semibold">Currently filtered by:</span>
                   {employeeFilterLabel && <span>Employee: {employeeFilterLabel}</span>}
                   {timesheetWeekFilter !== 'all' && <span>Week: {timesheetWeekFilter}</span>}
@@ -1411,7 +1411,7 @@ export default function AdminPage() {
             )}
             
             {allTimesheetsCount === 0 ? (
-              <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
+              <div className="px-4 py-8 text-center text-[#999] bg-[#FAFAF8]">
                 No timesheets to display.
               </div>
             ) : (
@@ -1423,7 +1423,7 @@ export default function AdminPage() {
                     <select
                       value={timesheetEmployeeFilter}
                       onChange={(e) => setTimesheetEmployeeFilter(e.target.value)}
-                      className="w-full text-xs px-2 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                      className="w-full text-xs px-2 py-1 border border-[#e8e4df] rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                     >
                       <option value="all">Employee</option>
                       {timesheetEmployeeOptions.map(emp => (
@@ -1437,7 +1437,7 @@ export default function AdminPage() {
                     <select
                       value={timesheetWeekFilter}
                       onChange={(e) => setTimesheetWeekFilter(e.target.value)}
-                      className="w-full text-xs px-2 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                      className="w-full text-xs px-2 py-1 border border-[#e8e4df] rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                     >
                       <option value="all">Week</option>
                       {weekOptions.map(week => (
@@ -1451,7 +1451,7 @@ export default function AdminPage() {
                     <select
                       value={timesheetStatusCardFilter}
                       onChange={(e) => setTimesheetStatusCardFilter(e.target.value)}
-                      className="w-full text-xs px-2 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                      className="w-full text-xs px-2 py-1 border border-[#e8e4df] rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                     >
                       <option value="all">Status</option>
                       {statusOptions.map(status => (
@@ -1479,18 +1479,18 @@ export default function AdminPage() {
                   >
                     <div className="w-8" />
                     <div className="flex-1">
-                      <div className="text-gray-900 font-medium">
+                      <div className="text-[#1a1a1a] font-medium">
                         {formatName(
                           submission.employee?.first_name,
                           submission.employee?.middle_name,
                           submission.employee?.last_name
                         )}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-[#999]">
                         {submission.employee?.department || 'No department'}
                       </div>
                     </div>
-                    <div className="w-40 text-sm text-gray-800">
+                    <div className="w-40 text-sm text-[#1a1a1a]">
                       {submission.week_range}
                     </div>
                     <div className="w-32 text-center">
@@ -1570,7 +1570,7 @@ export default function AdminPage() {
             </div>
             
             {visibleExpensesAllTab.length === 0 ? (
-              <div className="bg-gray-50 px-4 py-8 text-center text-gray-500">
+              <div className="bg-[#FAFAF8] px-4 py-8 text-center text-[#999]">
                 {timesheetEmployeeFilter !== 'all'
                   ? 'No expenses for the selected employee.'
                   : 'No expenses to display.'}
@@ -1598,14 +1598,14 @@ export default function AdminPage() {
                   >
                     <div className="w-8" />
                     <div className="flex-1">
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-[#1a1a1a]">
                         {formatName(
                           expense.employee?.first_name,
                           expense.employee?.middle_name,
                           expense.employee?.last_name
                         )}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-[#999]">
                         {expense.employee?.email}
                       </div>
                     </div>
@@ -1689,9 +1689,9 @@ export default function AdminPage() {
       {/* Expense Modal */}
       {isExpenseModalOpen && selectedExpense && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+          <div className="bg-white rounded-lg max-w-lg w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-[12px] font-semibold text-[#1a1a1a]">
                 Expense details
               </h3>
               <button
@@ -1699,13 +1699,13 @@ export default function AdminPage() {
                   setIsExpenseModalOpen(false)
                   setSelectedExpense(null)
                 }}
-                className="p-1 rounded hover:bg-gray-100"
+                className="p-1 rounded hover:bg-[#FAFAF8]"
               >
-                <XCircle className="h-5 w-5 text-gray-500" />
+                <XCircle className="h-5 w-5 text-[#999]" />
               </button>
             </div>
 
-            <div className="space-y-2 text-sm text-gray-700">
+            <div className="space-y-2 text-sm text-[#555]">
               <div>
                 <span className="font-medium">Employee: </span>
                 {selectedExpense.employee

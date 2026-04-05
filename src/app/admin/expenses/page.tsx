@@ -554,7 +554,7 @@ export default function AdminExpenses() {
       case 'rejected':
         return 'bg-red-100 text-red-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-[#FAFAF8] text-[#1a1a1a]';
     }
   };
 
@@ -734,15 +734,15 @@ export default function AdminExpenses() {
               >
                 {/* Client Header */}
                 <div
-                  className="p-4 cursor-pointer hover:bg-gray-50"
+                  className="p-4 cursor-pointer hover:bg-[#FAFAF8]"
                   onClick={() => toggleClientExpanded(group.client_id)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {group.expanded ? (
-                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                        <ChevronDown className="h-5 w-5 text-[#bbb]" />
                       ) : (
-                        <ChevronRight className="h-5 w-5 text-gray-400" />
+                        <ChevronRight className="h-5 w-5 text-[#bbb]" />
                       )}
                       <Building2 className="h-5 w-5 text-[#e31c79]" />
                       <div>
@@ -816,7 +816,7 @@ export default function AdminExpenses() {
                                     className="flex items-center gap-2"
                                   >
                                     {getCategoryIcon(exp.category)}
-                                    <span className="text-xs text-gray-600">
+                                    <span className="text-xs text-[#777]">
                                       {formatDate(exp.expense_date)} -{' '}
                                       {formatCurrency(exp.amount)}
                                     </span>
@@ -840,13 +840,13 @@ export default function AdminExpenses() {
                                   </div>
                                 ))}
                                 {employee.expenses.length > 3 && (
-                                  <p className="text-xs text-gray-500">
+                                  <p className="text-xs text-[#999]">
                                     +{employee.expenses.length - 3} more
                                   </p>
                                 )}
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            <td className="px-6 py-4 text-sm font-medium text-[#1a1a1a]">
                               {formatCurrency(employee.totalAmount)}
                               {employee.pendingCount > 0 && (
                                 <span className="block text-xs text-yellow-600">

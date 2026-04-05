@@ -621,17 +621,17 @@ export default function ExpenseEntryPage() {
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             {/* Report Title */}
             <div className="w-full md:w-[60%]">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[#555] mb-1">
                 Report Title <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={reportTitle}
                 onChange={(e) => setReportTitle(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
                 placeholder='e.g., "Trip to HQ" or "November Client Visits"'
               />
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-[#999]">
                 This title will appear in your Recent Expenses list as a single row, with
                 each line item listed when you open the report.
               </p>
@@ -639,14 +639,14 @@ export default function ExpenseEntryPage() {
 
             {/* Expense Report Date */}
             <div className="w-full md:w-[32%]">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-[#555] mb-1">
                 Expense Report Date
               </label>
               <input
                 type="date"
                 value={expensePeriod}
                 onChange={(e) => setExpensePeriod(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
               />
             </div>
           </div>
@@ -654,7 +654,7 @@ export default function ExpenseEntryPage() {
 
         {/* Expense Entries */}
         <div className="bg-white rounded-lg  overflow-hidden mb-6">
-          <div className="bg-[#1a1a1a] text-white px-4 py-3">
+          <div className="bg-white text-[#1a1a1a] px-4 py-3">
             <h2 className="text-sm font-medium">EXPENSE ENTRY</h2>
           </div>
           <div className="p-6">
@@ -671,7 +671,7 @@ export default function ExpenseEntryPage() {
               return (
                 <div
                   key={entry.id}
-                  className={index > 0 ? 'border-t border-gray-200 pt-6 mt-6' : ''}
+                  className={index > 0 ? 'border-t border-[#e8e4df] pt-6 mt-6' : ''}
                 >
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-3">
@@ -681,10 +681,10 @@ export default function ExpenseEntryPage() {
                         </span>
                       </div>
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900">
+                        <h3 className="text-lg font-medium text-[#1a1a1a]">
                           Entry #{index + 1}
                         </h3>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-[#999]">
                           Edit details for this expense line, then save or submit
                           your report.
                         </p>
@@ -747,7 +747,7 @@ export default function ExpenseEntryPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Date */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[#555] mb-1">
                         Date <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -756,13 +756,13 @@ export default function ExpenseEntryPage() {
                         onChange={(e) =>
                           updateEntry(entry.id, 'date', e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
                       />
                     </div>
 
                     {/* Project */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[#555] mb-1">
                         Project <span className="text-red-500">*</span>
                       </label>
                       <select
@@ -770,7 +770,7 @@ export default function ExpenseEntryPage() {
                         onChange={(e) =>
                           updateEntry(entry.id, 'project_id', e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
                       >
                         <option value="">Select a project...</option>
                         {projects.map((project) => (
@@ -783,7 +783,7 @@ export default function ExpenseEntryPage() {
 
                     {/* Category */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[#555] mb-1">
                         Category <span className="text-red-500">*</span>
                       </label>
                       <select
@@ -791,7 +791,7 @@ export default function ExpenseEntryPage() {
                         onChange={(e) =>
                           updateEntry(entry.id, 'category', e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
                       >
                         <option value="">Select category...</option>
                         {expenseCategories.map((cat) => (
@@ -804,7 +804,7 @@ export default function ExpenseEntryPage() {
 
                     {/* Amount / Mileage */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[#555] mb-1">
                         {isMileage ? 'Mileage' : 'Amount'}{' '}
                         <span className="text-red-500">*</span>
                       </label>
@@ -831,12 +831,12 @@ export default function ExpenseEntryPage() {
                                   : numeric * GSA_MILEAGE_RATE;
                                 updateEntry(entry.id, 'amount', amount);
                               }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-right focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                              className="w-full px-3 py-2 border border-[#e8e4df] rounded-md text-right focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
                               placeholder="0.0"
                             />
-                            <span className="text-xs text-gray-600">miles</span>
+                            <span className="text-xs text-[#777]">miles</span>
                           </div>
-                          <p className="text-[11px] text-gray-500">
+                          <p className="text-[11px] text-[#999]">
                             Calculated at{' '}
                             <span className="font-semibold">
                               ${GSA_MILEAGE_RATE.toFixed(3)}
@@ -845,7 +845,7 @@ export default function ExpenseEntryPage() {
                             only).
                           </p>
                           <div className="flex items-center">
-                            <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-200 bg-gray-50 text-sm text-gray-600">
+                            <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-[#e8e4df] bg-[#FAFAF8] text-sm text-[#777]">
                               $
                             </span>
                             <input
@@ -856,14 +856,14 @@ export default function ExpenseEntryPage() {
                                   ? entry.amount.toFixed(2)
                                   : '0.00'
                               }
-                              className="w-full rounded-r-md border border-gray-200 bg-gray-50 text-sm px-3 py-2 text-right"
+                              className="w-full rounded-r-md border border-[#e8e4df] bg-[#FAFAF8] text-sm px-3 py-2 text-right"
                             />
                           </div>
                         </div>
                       ) : (
                         <>
                           <div className="relative">
-                            <div className="absolute left-3 top-2.5 text-gray-500">
+                            <div className="absolute left-3 top-2.5 text-[#999]">
                               <DollarSign className="h-5 w-5" />
                             </div>
                             <input
@@ -880,12 +880,12 @@ export default function ExpenseEntryPage() {
                               onChange={(e) =>
                                 updateEntry(entry.id, 'amount', e.target.value)
                               }
-                              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79] text-right"
+                              className="w-full pl-10 pr-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79] text-right"
                               placeholder="0.00"
                             />
                           </div>
                           {gsaMealLimit !== null && (
-                            <p className="mt-1 text-[11px] text-gray-500">
+                            <p className="mt-1 text-[11px] text-[#999]">
                               Guideline up to{' '}
                               <span className="font-semibold">
                                 {formatCurrency(gsaMealLimit)}
@@ -899,7 +899,7 @@ export default function ExpenseEntryPage() {
 
                     {/* Vendor / Trip Details */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[#555] mb-1">
                         {isMileage ? 'Trip Details' : 'Vendor'}
                       </label>
                       {isMileage ? (
@@ -910,7 +910,7 @@ export default function ExpenseEntryPage() {
                             onChange={(e) =>
                               updateEntry(entry.id, 'vendor', e.target.value)
                             }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                            className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
                             placeholder="Start location (e.g., Calgary HQ)"
                           />
                           <input
@@ -919,11 +919,11 @@ export default function ExpenseEntryPage() {
                             onChange={(e) =>
                               updateEntry(entry.id, 'description', e.target.value)
                             }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                            className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
                             placeholder="End location (e.g., Client Site)"
                           />
                           {(entry.vendor || entry.description) && (
-                            <p className="text-[11px] text-gray-500">
+                            <p className="text-[11px] text-[#999]">
                               Stored as “From: {entry.vendor || '—'} · To:{' '}
                               {entry.description || '—'}” for manager review.
                             </p>
@@ -936,7 +936,7 @@ export default function ExpenseEntryPage() {
                           onChange={(e) =>
                             updateEntry(entry.id, 'vendor', e.target.value)
                           }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                          className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
                           placeholder="e.g., Office Depot"
                         />
                       )}
@@ -944,13 +944,13 @@ export default function ExpenseEntryPage() {
 
                     {/* Receipt Upload */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[#555] mb-1">
                         Receipt
                       </label>
                       <div className="flex items-center gap-3">
-                        <label className="flex-1 flex items-center justify-center px-4 py-2 bg-gray-50 border-2 border-dashed border-gray-300 rounded-md hover:bg-gray-100 hover:border-gray-400 cursor-pointer transition-colors">
-                          <Upload className="h-5 w-5 mr-2 text-gray-500" />
-                          <span className="text-gray-600 text-sm">
+                        <label className="flex-1 flex items-center justify-center px-4 py-2 bg-[#FAFAF8] border-2 border-dashed border-[#e8e4df] rounded-md hover:bg-[#FAFAF8] hover:border-[#e8e4df] cursor-pointer transition-colors">
+                          <Upload className="h-5 w-5 mr-2 text-[#999]" />
+                          <span className="text-[#777] text-sm">
                             {entry.receipt_file
                               ? entry.receipt_file.name
                               : 'Choose file'}
@@ -973,7 +973,7 @@ export default function ExpenseEntryPage() {
                           </button>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-[#999] mt-1">
                         Max 5MB • JPG, PNG, GIF, or PDF
                       </p>
                     </div>
@@ -981,7 +981,7 @@ export default function ExpenseEntryPage() {
                     {/* Description (non-mileage) */}
                     {!isMileage && (
                       <div className="lg:col-span-3">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-[#555] mb-1">
                           Description
                         </label>
                         <textarea
@@ -990,7 +990,7 @@ export default function ExpenseEntryPage() {
                             updateEntry(entry.id, 'description', e.target.value)
                           }
                           placeholder="Provide details about this expense..."
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79] resize-none"
+                          className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79] resize-none"
                           rows={2}
                         />
                       </div>
@@ -1005,11 +1005,11 @@ export default function ExpenseEntryPage() {
         {/* Add Button */}
         <button
           onClick={addRow}
-          className="w-full mb-6 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#e31c79] hover:bg-gray-50 transition-colors group"
+          className="w-full mb-6 py-3 border-2 border-dashed border-[#e8e4df] rounded-lg hover:border-[#e31c79] hover:bg-[#FAFAF8] transition-colors group"
         >
           <div className="flex items-center justify-center gap-2">
-            <Plus className="h-5 w-5 text-gray-400 group-hover:text-[#e31c79]" />
-            <span className="text-gray-600 group-hover:text-[#e31c79] font-medium">
+            <Plus className="h-5 w-5 text-[#bbb] group-hover:text-[#e31c79]" />
+            <span className="text-[#777] group-hover:text-[#e31c79] font-medium">
               Add Another Expense
             </span>
           </div>
@@ -1019,14 +1019,14 @@ export default function ExpenseEntryPage() {
         <div className="bg-white rounded-lg  p-6 mb-6">
           <div className="flex justify-between items-center">
             <div>
-              <div className="text-sm text-gray-600 mb-1">Total Expenses</div>
-              <div className="text-3xl font-bold text-[#e31c79]">
+              <div className="text-sm text-[#777] mb-1">Total Expenses</div>
+              <div className="text-[24px] font-bold text-[#e31c79]">
                 ${total.toFixed(2)}
               </div>
             </div>
             <div className="text-right">
-              <div className="text-sm text-gray-600 mb-1">Entries</div>
-              <div className="text-2xl font-semibold text-gray-900">
+              <div className="text-sm text-[#777] mb-1">Entries</div>
+              <div className="text-[20px] font-bold text-[#1a1a1a]">
                 {validEntries.length} of {entries.length}
               </div>
             </div>
@@ -1054,7 +1054,7 @@ export default function ExpenseEntryPage() {
         <div className="flex justify-between items-center">
           <button
             onClick={() => router.push('/employee')}
-            className="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-5 py-2.5 text-[#555] bg-white border border-[#e8e4df] rounded-lg hover:bg-[#FAFAF8] transition-colors"
           >
             Cancel
           </button>
@@ -1065,7 +1065,7 @@ export default function ExpenseEntryPage() {
               disabled={
                 isLoading || validEntries.length === 0 || !reportTitle.trim()
               }
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#FAFAF8] rounded-lg hover:bg-[#f5f2ee] transition-colors disabled:opacity-50"
             >
               <Save className="h-4 w-4" />
               Save as Draft

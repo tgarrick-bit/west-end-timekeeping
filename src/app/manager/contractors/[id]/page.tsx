@@ -34,10 +34,10 @@ interface ContractorDetail {
 const StatusBadge = ({ status }: { status: string }) => {
   const colors: Record<string, string> = {
     active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    inactive: 'bg-gray-50 text-gray-600 border-gray-200',
+    inactive: 'bg-[#FAFAF8] text-[#777] border-[#e8e4df]',
     pending: 'bg-amber-50 text-amber-700 border-amber-200',
   }
-  const cls = colors[status] || 'bg-gray-50 text-gray-600 border-gray-200'
+  const cls = colors[status] || 'bg-[#FAFAF8] text-[#777] border-[#e8e4df]'
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 border font-medium ${cls}`}

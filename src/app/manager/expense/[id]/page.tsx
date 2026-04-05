@@ -100,9 +100,9 @@ const StatusBadge = ({ status }: { status: string }) => {
     submitted: 'bg-amber-50 text-amber-700 border-amber-200',
     approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     rejected: 'bg-red-50 text-red-700 border-red-200',
-    draft: 'bg-gray-50 text-gray-600 border-gray-200',
+    draft: 'bg-[#FAFAF8] text-[#777] border-[#e8e4df]',
   };
-  const cls = colors[status] || 'bg-gray-50 text-gray-600 border-gray-200';
+  const cls = colors[status] || 'bg-[#FAFAF8] text-[#777] border-[#e8e4df]';
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 border font-medium ${cls}`}

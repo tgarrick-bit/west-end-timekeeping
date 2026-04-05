@@ -528,7 +528,7 @@ export default function EmployeeManagement() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
               <div className="relative" style={{ flex: 1, maxWidth: 320 }}>
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#bbb]" />
                 <input
                   type="text"
                   placeholder="Search employees..."
@@ -739,7 +739,7 @@ export default function EmployeeManagement() {
                 <div className="col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* First Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[#555] mb-1">
                       First Name *
                     </label>
                     <input
@@ -751,13 +751,13 @@ export default function EmployeeManagement() {
                           first_name: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                     />
                   </div>
 
                   {/* Middle Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[#555] mb-1">
                       Middle Name
                     </label>
                     <input
@@ -769,13 +769,13 @@ export default function EmployeeManagement() {
                           middle_name: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                     />
                   </div>
 
                   {/* Last Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[#555] mb-1">
                       Last Name *
                     </label>
                     <input
@@ -787,14 +787,14 @@ export default function EmployeeManagement() {
                           last_name: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                     />
                   </div>
                 </div>
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#555] mb-1">
                     Email *
                   </label>
                   <input
@@ -806,13 +806,13 @@ export default function EmployeeManagement() {
                         email: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   />
                 </div>
 
                 {/* Phone */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#555] mb-1">
                     Phone
                   </label>
                   <input
@@ -824,13 +824,13 @@ export default function EmployeeManagement() {
                         phone: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   />
                 </div>
 
                 {/* Role */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#555] mb-1">
                     Role *
                   </label>
                   <select
@@ -841,20 +841,20 @@ export default function EmployeeManagement() {
                         role: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   >
                     <option value="employee">Employee</option>
                     <option value="manager">Manager / Time Approver</option>
                     <option value="admin">Admin</option>
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-[#999] mt-1">
                     Managers and admins do not require pay rates or IDs.
                   </p>
                 </div>
 
                 {/* Employee ID */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#555] mb-1">
                     Employee ID
                   </label>
                   <input
@@ -866,15 +866,15 @@ export default function EmployeeManagement() {
                         employee_id: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   />
                 </div>
 
                 {/* MyBase Payroll ID */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#555] mb-1">
                     MyBase Payroll ID{' '}
-                    <span className="text-gray-400">(Optional)</span>
+                    <span className="text-[#bbb]">(Optional)</span>
                   </label>
                   <input
                     type="text"
@@ -885,10 +885,10 @@ export default function EmployeeManagement() {
                         mybase_payroll_id: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                     placeholder="Leave blank if not needed"
                   />
-                  <p className="text-xs text-gray-600 mt-1">
+                  <p className="text-xs text-[#777] mt-1">
                     For payroll exports (can be added later)
                   </p>
                 </div>
@@ -896,7 +896,7 @@ export default function EmployeeManagement() {
                 {/* Time Approver – ONLY for employees */}
                 {formData.role === 'employee' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[#555] mb-1">
                       Time Approver <span className="text-red-500">*</span>
                     </label>
                     <select
@@ -907,7 +907,7 @@ export default function EmployeeManagement() {
                           manager_id: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                       required={formData.role === 'employee'}
                     >
                       <option value="">Select Time Approver</option>
@@ -922,7 +922,7 @@ export default function EmployeeManagement() {
                         </option>
                       ))}
                     </select>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-[#999] mt-1">
                       Timesheets will appear on this approver&apos;s dashboard
                     </p>
                   </div>
@@ -933,7 +933,7 @@ export default function EmployeeManagement() {
                   <>
                     {/* Hourly Rate */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[#555] mb-1">
                         Hourly Rate
                       </label>
                       <input
@@ -948,13 +948,13 @@ export default function EmployeeManagement() {
                               value === '' ? 0 : parseFloat(value),
                           });
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                       />
                     </div>
 
                     {/* Bill Rate */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-[#555] mb-1">
                         Bill Rate
                       </label>
                       <input
@@ -969,9 +969,9 @@ export default function EmployeeManagement() {
                               value === '' ? 0 : parseFloat(value),
                           });
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                       />
-                      <p className="text-xs text-gray-600 mt-1">
+                      <p className="text-xs text-[#777] mt-1">
                         Optional. Used for billing and margin calculations.
                       </p>
                     </div>
@@ -980,7 +980,7 @@ export default function EmployeeManagement() {
 
                 {/* Employee Type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#555] mb-1">
                     Employee Type
                   </label>
                   <select
@@ -988,7 +988,7 @@ export default function EmployeeManagement() {
                     onChange={(e) =>
                       setFormData({ ...formData, employee_type: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   >
                     <option value="">Select type...</option>
                     <option value="WE">WE (West End)</option>
@@ -996,14 +996,14 @@ export default function EmployeeManagement() {
                     <option value="CNDH">CNDH</option>
                     <option value="CNDC">CNDC</option>
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-[#999] mt-1">
                     Used for reporting and consultant stratification
                   </p>
                 </div>
 
                 {/* Hire Date */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#555] mb-1">
                     Hire Date
                   </label>
                   <input
@@ -1015,13 +1015,13 @@ export default function EmployeeManagement() {
                         hire_date: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   />
                 </div>
 
                 {/* State */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#555] mb-1">
                     State
                   </label>
                   <select
@@ -1032,7 +1032,7 @@ export default function EmployeeManagement() {
                         state: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                   >
                     <option value="">Select State</option>
                     {US_STATES.map((state) => (
@@ -1049,7 +1049,7 @@ export default function EmployeeManagement() {
                 {/* Temp Password (add mode only) */}
                 {showAddModal && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[#555] mb-1">
                       Temporary Password *
                     </label>
                     <input
@@ -1061,7 +1061,7 @@ export default function EmployeeManagement() {
                           password: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
                       placeholder="Min 6 characters"
                     />
                   </div>
@@ -1081,7 +1081,7 @@ export default function EmployeeManagement() {
                       }
                       className="mr-2 text-[#e31c79]"
                     />
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-[#555]">
                       Active
                     </span>
                   </label>
@@ -1097,7 +1097,7 @@ export default function EmployeeManagement() {
                       }
                       className="mr-2 text-[#e31c79]"
                     />
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-[#555]">
                       Exempt (Salary)
                     </span>
                   </label>

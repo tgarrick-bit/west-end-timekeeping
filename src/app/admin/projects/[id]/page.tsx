@@ -429,30 +429,30 @@ export default function ProjectEditPage() {
   return (
     <>
       {/* Page Header + Tabs */}
-      <section className="bg-white border-b border-gray-200">
+      <section className="bg-white border-b border-[#e8e4df]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex flex-col">
-            <div className="mb-1 flex items-center gap-1 text-xs text-gray-500">
+            <div className="mb-1 flex items-center gap-1 text-xs text-[#999]">
               <span>Admin</span>
-              <span className="text-gray-400">/</span>
+              <span className="text-[#bbb]">/</span>
               <span>Projects</span>
-              <span className="text-gray-400">/</span>
+              <span className="text-[#bbb]">/</span>
               <span>{pageName}</span>
             </div>
-            <h1 className="text-xl font-semibold text-[#1a1814]">
+            <h1 className="text-[14px] font-semibold text-[#1a1814]">
               {pageName}
             </h1>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-[#999]">
               Configure project details, people, and approvals.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <span
-              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
+              className={`inline-flex items-center rounded px-3 py-1 text-xs font-medium ${
                 isActive
                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                  : 'bg-gray-100 text-gray-600 border border-gray-200'
+                  : 'bg-[#FAFAF8] text-[#777] border border-[#e8e4df]'
               }`}
             >
               {isActive ? 'Active' : 'Inactive'}
@@ -461,7 +461,7 @@ export default function ProjectEditPage() {
         </div>
 
         {/* Tabs */}
-        <div className="border-t border-gray-100">
+        <div className="border-t border-[#f0ece7]">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-6">
             {tabs.map((tab) => (
               <button
@@ -470,7 +470,7 @@ export default function ProjectEditPage() {
                 className={`px-3 py-3 text-sm font-medium border-b-2 -mb-px transition-all ${
                   activeTab === tab.id
                     ? 'border-[#e31c79] text-[#e31c79]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-200'
+                    : 'border-transparent text-[#999] hover:text-[#555] hover:border-[#e8e4df]'
                 }`}
               >
                 {tab.label}
@@ -484,59 +484,59 @@ export default function ProjectEditPage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Summary card once project exists */}
         {hasSummary && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">
+          <section className="rounded-2xl border border-[#e8e4df] bg-white p-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-[#999] mb-3">
               Project summary
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
               <div>
-                <p className="text-[11px] font-semibold text-gray-500">
+                <p className="text-[11px] font-semibold text-[#999]">
                   Client
                 </p>
-                <p className="mt-1 text-sm text-gray-900">
+                <p className="mt-1 text-sm text-[#1a1a1a]">
                   {formData.client_name || 'Not set'}
                 </p>
               </div>
               <div>
-                <p className="text-[11px] font-semibold text-gray-500">
+                <p className="text-[11px] font-semibold text-[#999]">
                   Status
                 </p>
-                <p className="mt-1 text-sm text-gray-900">
+                <p className="mt-1 text-sm text-[#1a1a1a]">
                   {isActive ? 'Active' : 'Inactive'}
                 </p>
               </div>
               <div>
-                <p className="text-[11px] font-semibold text-gray-500">
+                <p className="text-[11px] font-semibold text-[#999]">
                   Dates
                 </p>
-                <p className="mt-1 text-sm text-gray-900">
+                <p className="mt-1 text-sm text-[#1a1a1a]">
                   {formData.start_date || 'Not set'} →{' '}
                   {formData.end_date || 'Forever'}
                 </p>
               </div>
               <div>
-                <p className="text-[11px] font-semibold text-gray-500">
+                <p className="text-[11px] font-semibold text-[#999]">
                   Department / class
                 </p>
-                <p className="mt-1 text-sm text-gray-900">
+                <p className="mt-1 text-sm text-[#1a1a1a]">
                   {formData.department || 'None'}
                 </p>
               </div>
               <div>
-                <p className="text-[11px] font-semibold text-gray-500">
+                <p className="text-[11px] font-semibold text-[#999]">
                   Track time / expenses
                 </p>
-                <p className="mt-1 text-sm text-gray-900">
+                <p className="mt-1 text-sm text-[#1a1a1a]">
                   {trackTime ? 'Time' : ''}
                   {trackTime && trackExpenses ? ' + ' : ''}
                   {trackExpenses ? 'Expenses' : !trackTime ? 'None' : ''}
                 </p>
               </div>
               <div>
-                <p className="text-[11px] font-semibold text-gray-500">
+                <p className="text-[11px] font-semibold text-[#999]">
                   People / approvers
                 </p>
-                <p className="mt-1 text-sm text-gray-900">
+                <p className="mt-1 text-sm text-[#1a1a1a]">
                   {projectEmployees.length} people · {approvers.length} approver(s)
                 </p>
               </div>
@@ -546,15 +546,15 @@ export default function ProjectEditPage() {
 
         {/* OVERVIEW = MAIN DATA ENTRY */}
         {activeTab === 'overview' && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-semibold text-gray-900 mb-6">
+          <section className="rounded-2xl border border-[#e8e4df] bg-white p-6">
+            <h2 className="text-sm font-semibold text-[#1a1a1a] mb-6">
               Project details
             </h2>
             <div className="space-y-6 text-sm">
               {/* main project fields */}
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                     Client
                   </label>
                   <select
@@ -569,7 +569,7 @@ export default function ProjectEditPage() {
                         client_name: client?.name,
                       })
                     }}
-                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                   >
                     <option value="">Select client</option>
                     {clients.map((client: any) => (
@@ -580,7 +580,7 @@ export default function ProjectEditPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                     Project name
                   </label>
                   <input
@@ -589,11 +589,11 @@ export default function ProjectEditPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                     Short name
                   </label>
                   <input
@@ -605,11 +605,11 @@ export default function ProjectEditPage() {
                         short_name: e.target.value,
                       })
                     }
-                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                     Number
                   </label>
                   <input
@@ -621,15 +621,15 @@ export default function ProjectEditPage() {
                         project_number: e.target.value,
                       })
                     }
-                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                   />
                 </div>
               </div>
 
               {/* dates */}
-              <div className="border-t border-gray-100 pt-6 grid grid-cols-2 gap-6">
+              <div className="border-t border-[#f0ece7] pt-6 grid grid-cols-2 gap-6">
                 <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                     Start date
                   </label>
                   <input
@@ -641,11 +641,11 @@ export default function ProjectEditPage() {
                         start_date: e.target.value,
                       })
                     }
-                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                     End date
                   </label>
                   <input
@@ -657,16 +657,16 @@ export default function ProjectEditPage() {
                         end_date: e.target.value,
                       })
                     }
-                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                   />
                 </div>
               </div>
 
               {/* department + status + toggles */}
-              <div className="border-t border-gray-100 pt-6 space-y-4">
+              <div className="border-t border-[#f0ece7] pt-6 space-y-4">
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                       Department / class
                     </label>
                     <select
@@ -677,7 +677,7 @@ export default function ProjectEditPage() {
                           department: e.target.value,
                         })
                       }
-                      className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                      className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                     >
                       <option value="">None</option>
                       <option value="IT/Commerce">IT/Commerce</option>
@@ -689,7 +689,7 @@ export default function ProjectEditPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                       Project status
                     </label>
                     <div className="mt-1 flex gap-3 text-sm">
@@ -701,7 +701,7 @@ export default function ProjectEditPage() {
                         className={`rounded-full px-4 py-1.5 border text-xs font-semibold ${
                           isActive
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-white text-gray-600 border-gray-200'
+                            : 'bg-white text-[#777] border-[#e8e4df]'
                         }`}
                       >
                         Active
@@ -714,7 +714,7 @@ export default function ProjectEditPage() {
                         className={`rounded-full px-4 py-1.5 border text-xs font-semibold ${
                           !isActive
                             ? 'bg-rose-50 text-rose-700 border-rose-200'
-                            : 'bg-white text-gray-600 border-gray-200'
+                            : 'bg-white text-[#777] border-[#e8e4df]'
                         }`}
                       >
                         Inactive
@@ -724,12 +724,12 @@ export default function ProjectEditPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
-                  <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                  <div className="flex items-center justify-between rounded-xl border border-[#e8e4df] bg-[#FAFAF8] px-4 py-3">
                     <div>
-                      <p className="text-xs font-medium text-gray-600">
+                      <p className="text-xs font-medium text-[#777]">
                         Track time on this project
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-[#999]">
                         Controls whether hours can be coded here.
                       </p>
                     </div>
@@ -740,21 +740,21 @@ export default function ProjectEditPage() {
                           track_time: !trackTime,
                         })
                       }
-                      className={`inline-flex items-center rounded-full px-4 py-1.5 text-xs font-semibold ${
+                      className={`inline-flex items-center rounded px-4 py-1.5 text-xs font-semibold ${
                         trackTime
                           ? 'bg-emerald-600 text-white'
-                          : 'bg-gray-200 text-gray-700'
+                          : 'bg-[#f5f2ee] text-[#555]'
                       }`}
                     >
                       {trackTime ? 'YES' : 'NO'}
                     </button>
                   </div>
-                  <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                  <div className="flex items-center justify-between rounded-xl border border-[#e8e4df] bg-[#FAFAF8] px-4 py-3">
                     <div>
-                      <p className="text-xs font-medium text-gray-600">
+                      <p className="text-xs font-medium text-[#777]">
                         Track expenses on this project
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-[#999]">
                         Controls whether expenses can be submitted.
                       </p>
                     </div>
@@ -765,10 +765,10 @@ export default function ProjectEditPage() {
                           track_expenses: !trackExpenses,
                         })
                       }
-                      className={`inline-flex items-center rounded-full px-4 py-1.5 text-xs font-semibold ${
+                      className={`inline-flex items-center rounded px-4 py-1.5 text-xs font-semibold ${
                         trackExpenses
                           ? 'bg-emerald-600 text-white'
-                          : 'bg-gray-200 text-gray-700'
+                          : 'bg-[#f5f2ee] text-[#555]'
                       }`}
                     >
                       {trackExpenses ? 'YES' : 'NO'}
@@ -782,14 +782,14 @@ export default function ProjectEditPage() {
 
         {/* Budget */}
         {activeTab === 'budget' && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-semibold text-gray-900 mb-6">
+          <section className="rounded-2xl border border-[#e8e4df] bg-white p-6">
+            <h2 className="text-sm font-semibold text-[#1a1a1a] mb-6">
               Budget
             </h2>
-            <p className="text-xs text-gray-500 mb-4">
+            <p className="text-xs text-[#999] mb-4">
               Budget features are scaffolded for future use.
             </p>
-            <button className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100">
+            <button className="inline-flex items-center rounded border border-[#e8e4df] bg-[#FAFAF8] px-4 py-2 text-xs font-semibold text-[#555] hover:bg-[#FAFAF8]">
               Add budget
             </button>
           </section>
@@ -797,14 +797,14 @@ export default function ProjectEditPage() {
 
         {/* Invoicing */}
         {activeTab === 'invoicing' && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-semibold text-gray-900 mb-6">
+          <section className="rounded-2xl border border-[#e8e4df] bg-white p-6">
+            <h2 className="text-sm font-semibold text-[#1a1a1a] mb-6">
               Project invoicing
             </h2>
 
             <div className="space-y-6 text-sm">
               <div className="space-y-3">
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+                <label className="flex items-center gap-2 text-sm text-[#555]">
                   <input
                     type="radio"
                     checked={!isBillable}
@@ -814,7 +814,7 @@ export default function ProjectEditPage() {
                   />
                   This project is not billable
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+                <label className="flex items-center gap-2 text-sm text-[#555]">
                   <input
                     type="radio"
                     checked={isBillable}
@@ -828,13 +828,13 @@ export default function ProjectEditPage() {
 
               {isBillable && (
                 <>
-                  <div className="border-t border-gray-100 pt-6">
-                    <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  <div className="border-t border-[#f0ece7] pt-6">
+                    <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                       Invoice contact
                     </label>
                     <div className="mt-2 grid grid-cols-2 gap-6">
                       <div>
-                        <p className="text-xs text-gray-500 mb-1">
+                        <p className="text-xs text-[#999] mb-1">
                           Accounts payable contact
                         </p>
                         <input
@@ -846,15 +846,15 @@ export default function ProjectEditPage() {
                               ap_contact: e.target.value,
                             })
                           }
-                          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                          className="w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="border-t border-gray-100 pt-6 grid grid-cols-2 gap-6">
+                  <div className="border-t border-[#f0ece7] pt-6 grid grid-cols-2 gap-6">
                     <div>
-                      <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                      <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                         Company name
                       </label>
                       <input
@@ -866,11 +866,11 @@ export default function ProjectEditPage() {
                             company_name: e.target.value,
                           })
                         }
-                        className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                        className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                      <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                         Shipping company name
                       </label>
                       <input
@@ -882,11 +882,11 @@ export default function ProjectEditPage() {
                             shipping_company: e.target.value,
                           })
                         }
-                        className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                        className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                      <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                         Invoice address
                       </label>
                       <textarea
@@ -898,11 +898,11 @@ export default function ProjectEditPage() {
                           })
                         }
                         rows={4}
-                        className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                        className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                      <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                         Shipping address
                       </label>
                       <textarea
@@ -914,7 +914,7 @@ export default function ProjectEditPage() {
                           })
                         }
                         rows={4}
-                        className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                        className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                       />
                     </div>
                   </div>
@@ -926,24 +926,24 @@ export default function ProjectEditPage() {
 
         {/* People */}
         {activeTab === 'people' && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-semibold text-gray-900 mb-6">
+          <section className="rounded-2xl border border-[#e8e4df] bg-white p-6">
+            <h2 className="text-sm font-semibold text-[#1a1a1a] mb-6">
               People
             </h2>
 
-            <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-600 mb-3">
+            <div className="mb-6 rounded-xl border border-[#e8e4df] bg-[#FAFAF8] p-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-[#777] mb-3">
                 Add person to project
               </h3>
               <div className="grid grid-cols-4 gap-4 items-end text-sm">
                 <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                     Employee
                   </label>
                   <select
                     value={selectedEmployeeId}
                     onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                   >
                     <option value="">Select employee</option>
                     {employees.map((emp) => (
@@ -954,7 +954,7 @@ export default function ProjectEditPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                     Bill rate
                   </label>
                   <input
@@ -962,11 +962,11 @@ export default function ProjectEditPage() {
                     value={newBillRate}
                     onChange={(e) => setNewBillRate(e.target.value)}
                     placeholder="0.00"
-                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                     Pay rate
                   </label>
                   <input
@@ -974,14 +974,14 @@ export default function ProjectEditPage() {
                     value={newPayRate}
                     onChange={(e) => setNewPayRate(e.target.value)}
                     placeholder="0.00"
-                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                   />
                 </div>
                 <div className="flex justify-end">
                   <button
                     onClick={handleAddEmployee}
                     disabled={saving}
-                    className="inline-flex w-full items-center justify-center rounded-full bg-[#1a1a1a] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
+                    className="inline-flex w-full items-center justify-center rounded bg-[#1a1a1a] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
                   >
                     Add person
                   </button>
@@ -989,23 +989,23 @@ export default function ProjectEditPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+            <div className="rounded-xl border border-[#e8e4df] bg-white overflow-hidden">
               <table className="min-w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-[#FAFAF8]">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
                       Name
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
                       Active dates
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
                       Bill rate
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
                       Pay rate
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
                       Invoice item
                     </th>
                     <th className="px-4 py-3" />
@@ -1019,7 +1019,7 @@ export default function ProjectEditPage() {
                           ? `${pe.employee.last_name}, ${pe.employee.first_name}`
                           : 'Unknown'}
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-500">
+                      <td className="px-4 py-3 text-xs text-[#999]">
                         Current
                       </td>
                       <td className="px-4 py-3">
@@ -1028,13 +1028,13 @@ export default function ProjectEditPage() {
                       <td className="px-4 py-3">
                         ${pe.pay_rate || 0}
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-500">
+                      <td className="px-4 py-3 text-xs text-[#999]">
                         Default
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => handleRemoveEmployee(pe.id)}
-                          className="inline-flex items-center justify-center rounded-full bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100"
+                          className="inline-flex items-center justify-center rounded bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -1045,7 +1045,7 @@ export default function ProjectEditPage() {
                     <tr>
                       <td
                         colSpan={6}
-                        className="px-4 py-6 text-center text-xs text-gray-500"
+                        className="px-4 py-6 text-center text-xs text-[#999]"
                       >
                         No people assigned yet.
                       </td>
@@ -1059,24 +1059,24 @@ export default function ProjectEditPage() {
 
         {/* Approvers */}
         {activeTab === 'approvers' && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-semibold text-gray-900 mb-6">
+          <section className="rounded-2xl border border-[#e8e4df] bg-white p-6">
+            <h2 className="text-sm font-semibold text-[#1a1a1a] mb-6">
               Approvers
             </h2>
 
-            <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-600 mb-3">
+            <div className="mb-6 rounded-xl border border-[#e8e4df] bg-[#FAFAF8] p-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-[#777] mb-3">
                 Add time approver
               </h3>
               <div className="grid grid-cols-3 gap-4 items-end text-sm">
                 <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
                     Manager
                   </label>
                   <select
                     value={selectedApproverId}
                     onChange={(e) => setSelectedApproverId(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                   >
                     <option value="">Select manager</option>
                     {employees
@@ -1093,7 +1093,7 @@ export default function ProjectEditPage() {
                   <button
                     onClick={handleAddApprover}
                     disabled={saving}
-                    className="inline-flex w-full items-center justify-center rounded-full bg-[#1a1a1a] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
+                    className="inline-flex w-full items-center justify-center rounded bg-[#1a1a1a] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
                   >
                     Add approver
                   </button>
@@ -1101,14 +1101,14 @@ export default function ProjectEditPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+            <div className="rounded-xl border border-[#e8e4df] bg-white overflow-hidden">
               <table className="min-w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-[#FAFAF8]">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
                       Name
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
                       Email
                     </th>
                   </tr>
@@ -1130,7 +1130,7 @@ export default function ProjectEditPage() {
                     <tr>
                       <td
                         colSpan={2}
-                        className="px-4 py-6 text-center text-xs text-gray-500"
+                        className="px-4 py-6 text-center text-xs text-[#999]"
                       >
                         No time approvers assigned yet.
                       </td>
@@ -1144,24 +1144,24 @@ export default function ProjectEditPage() {
 
         {/* Time Settings */}
         {activeTab === 'time-settings' && (
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-semibold text-gray-900 mb-6">
+          <section className="rounded-2xl border border-[#e8e4df] bg-white p-6">
+            <h2 className="text-sm font-semibold text-[#1a1a1a] mb-6">
               Time settings
             </h2>
 
             <div className="space-y-6 text-sm">
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-600 mb-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-[#777] mb-3">
                   Time types
                 </h3>
-                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                <div className="overflow-hidden rounded-xl border border-[#e8e4df] bg-white">
                   <table className="min-w-full text-sm">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-[#FAFAF8]">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
                           Name
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
                           Multipliers
                         </th>
                         <th className="px-4 py-3" />
@@ -1175,17 +1175,17 @@ export default function ProjectEditPage() {
                               type="text"
                               value={type.name}
                               readOnly={index === 0}
-                              className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm text-gray-900"
+                              className="w-full rounded-lg border border-[#e8e4df] bg-white px-2 py-1 text-sm text-[#1a1a1a]"
                             />
                           </td>
                           <td className="px-4 py-3">
-                            <div className="flex items-center gap-2 text-xs text-gray-700">
+                            <div className="flex items-center gap-2 text-xs text-[#555]">
                               <span>Bill at</span>
                               <input
                                 type="number"
                                 value={type.bill_multiplier}
                                 readOnly={index === 0}
-                                className="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm"
+                                className="w-16 rounded-lg border border-[#e8e4df] bg-white px-2 py-1 text-sm"
                               />
                               <span>X</span>
                               <span className="ml-4">Pay at</span>
@@ -1193,14 +1193,14 @@ export default function ProjectEditPage() {
                                 type="number"
                                 value={type.pay_multiplier}
                                 readOnly={index === 0}
-                                className="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm"
+                                className="w-16 rounded-lg border border-[#e8e4df] bg-white px-2 py-1 text-sm"
                               />
                               <span>X</span>
                             </div>
                           </td>
                           <td className="px-4 py-3 text-right">
                             {index > 0 && (
-                              <button className="inline-flex items-center justify-center rounded-full bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100">
+                              <button className="inline-flex items-center justify-center rounded bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100">
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             )}
@@ -1218,19 +1218,19 @@ export default function ProjectEditPage() {
                       { name: '', bill_multiplier: 1, pay_multiplier: 1 },
                     ])
                   }
-                  className="mt-3 inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100"
+                  className="mt-3 inline-flex items-center rounded border border-[#e8e4df] bg-[#FAFAF8] px-4 py-2 text-xs font-semibold text-[#555] hover:bg-[#FAFAF8]"
                 >
                   Add standard time type
                 </button>
 
                 <div className="mt-4">
-                  <label className="text-xs font-medium text-gray-600">
+                  <label className="text-xs font-medium text-[#777]">
                     Split time using this rule:
                   </label>
                   <select
                     value={splitTimeRule}
                     onChange={(e) => setSplitTimeRule(e.target.value)}
-                    className="ml-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-800 focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                    className="ml-2 rounded-full border border-[#e8e4df] bg-white px-3 py-1.5 text-xs text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
                   >
                     <option value="company">Use company settings</option>
                     <option value="custom">Custom rule</option>
@@ -1238,9 +1238,9 @@ export default function ProjectEditPage() {
                 </div>
               </div>
 
-              <div className="border-t border-gray-100 pt-6 space-y-4">
+              <div className="border-t border-[#f0ece7] pt-6 space-y-4">
                 <div>
-                  <label className="inline-flex items-center gap-2 text-xs text-gray-700">
+                  <label className="inline-flex items-center gap-2 text-xs text-[#555]">
                     <input
                       type="checkbox"
                       checked={customTimeTypes}
@@ -1257,9 +1257,9 @@ export default function ProjectEditPage() {
                       value={maxHoursPerDay}
                       onChange={(e) => setMaxHoursPerDay(e.target.value)}
                       placeholder="8"
-                      className="w-20 rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm"
+                      className="w-20 rounded-lg border border-[#e8e4df] bg-white px-2 py-1 text-sm"
                     />
-                    <span className="text-xs text-gray-700">
+                    <span className="text-xs text-[#555]">
                       hours per person, per day
                     </span>
                   </div>
@@ -1269,16 +1269,16 @@ export default function ProjectEditPage() {
                       value={maxHoursPerWeek}
                       onChange={(e) => setMaxHoursPerWeek(e.target.value)}
                       placeholder="40"
-                      className="w-20 rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm"
+                      className="w-20 rounded-lg border border-[#e8e4df] bg-white px-2 py-1 text-sm"
                     />
-                    <span className="text-xs text-gray-700">
+                    <span className="text-xs text-[#555]">
                       hours per person, per week
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-gray-600">
+                  <label className="text-xs font-medium text-[#777]">
                     Alert when the total number of hours for this project
                     reaches
                   </label>
@@ -1286,12 +1286,12 @@ export default function ProjectEditPage() {
                     type="number"
                     value={projectHoursAlert}
                     onChange={(e) => setProjectHoursAlert(e.target.value)}
-                    className="ml-2 w-24 rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm"
+                    className="ml-2 w-24 rounded-lg border border-[#e8e4df] bg-white px-2 py-1 text-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-gray-600">
+                  <label className="text-xs font-medium text-[#777]">
                     Track time for this project in
                   </label>
                   <input
@@ -1299,9 +1299,9 @@ export default function ProjectEditPage() {
                     value={timeIncrements}
                     onChange={(e) => setTimeIncrements(e.target.value)}
                     placeholder="15"
-                    className="ml-2 w-20 rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm"
+                    className="ml-2 w-20 rounded-lg border border-[#e8e4df] bg-white px-2 py-1 text-sm"
                   />
-                  <span className="ml-2 text-xs text-gray-700">
+                  <span className="ml-2 text-xs text-[#555]">
                     minute increments
                   </span>
                 </div>
@@ -1311,17 +1311,17 @@ export default function ProjectEditPage() {
         )}
 
         {/* Footer actions */}
-        <section className="flex items-center justify-between border-t border-gray-200 pt-4">
+        <section className="flex items-center justify-between border-t border-[#e8e4df] pt-4">
           <button
             onClick={() => router.push('/admin/projects')}
-            className="text-xs text-gray-600 hover:text-gray-800"
+            className="text-xs text-[#777] hover:text-[#1a1a1a]"
           >
             ← Back to list
           </button>
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/admin/projects')}
-              className="rounded-full bg-gray-200 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-300"
+              className="rounded-full bg-[#f5f2ee] px-4 py-2 text-xs font-semibold text-[#555] hover:bg-[#FAFAF8]"
             >
               Cancel
             </button>

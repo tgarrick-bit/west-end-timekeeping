@@ -372,7 +372,7 @@ export default function PayrollPage() {
       case 'approved': return `${base} ${radius} ${font} bg-green-100 text-green-800`
       case 'submitted': return `${base} ${radius} ${font} bg-yellow-100 text-yellow-800`
       case 'rejected': return `${base} ${radius} ${font} bg-red-100 text-red-800`
-      default: return `${base} ${radius} ${font} bg-gray-100 text-gray-800`
+      default: return `${base} ${radius} ${font} bg-[#FAFAF8] text-[#1a1a1a]`
     }
   }
 
@@ -512,8 +512,8 @@ export default function PayrollPage() {
               </div>
             </div>
           ) : timesheets.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <Clock className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+            <div className="p-8 text-center text-[#999]">
+              <Clock className="h-8 w-8 mx-auto mb-2 text-[#bbb]" />
               <p>No timesheets found for this pay period.</p>
               <p className="text-sm mt-1">Timesheets will appear here once employees submit them.</p>
             </div>
@@ -557,7 +557,7 @@ export default function PayrollPage() {
                       <td className="px-4 py-2 text-center">
                         <span className={statusBadge(ts.status)}>{statusLabel(ts.status)}</span>
                       </td>
-                      <td className="px-4 py-2 text-center text-xs text-gray-500">
+                      <td className="px-4 py-2 text-center text-xs text-[#999]">
                         {ts.approved_by ? approverMap[ts.approved_by] || '—' : '—'}
                       </td>
                     </tr>
@@ -566,7 +566,7 @@ export default function PayrollPage() {
               </tbody>
               <tfoot style={{ borderTop: '0.5px solid #e8e4df' }}>
                 <tr style={{ fontWeight: 600, fontSize: 12.5 }}>
-                  <td className="px-4 py-2 text-gray-900">Totals ({timesheets.length} timesheets)</td>
+                  <td className="px-4 py-2 text-[#1a1a1a]">Totals ({timesheets.length} timesheets)</td>
                   <td></td>
                   <td className="px-4 py-2 text-right">
                     {timesheets.reduce((s, t) => {

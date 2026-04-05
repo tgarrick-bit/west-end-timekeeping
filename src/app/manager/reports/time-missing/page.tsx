@@ -219,16 +219,16 @@ export default function TimeMissingReport() {
     <>
       {/* Header */}
       {/* Navigation */}
-      <div className="bg-gray-100 border-b">
+      <div className="bg-[#FAFAF8] border-b">
         <div className="max-w-full px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8">
             <button 
               onClick={() => router.push('/manager')}
-              className="py-3 text-sm font-medium text-gray-600 hover:text-gray-900"
+              className="py-3 text-sm font-medium text-[#777] hover:text-[#1a1a1a]"
             >
               Review
             </button>
-            <button className="py-3 text-sm font-medium text-gray-900 border-b-2 border-[#e31c79]">
+            <button className="py-3 text-sm font-medium text-[#1a1a1a] border-b-2 border-[#e31c79]">
               Reports
             </button>
           </div>
@@ -239,67 +239,67 @@ export default function TimeMissingReport() {
       <div className="max-w-full px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex gap-6">
           {/* Left Sidebar */}
-          <div className="w-64 bg-white rounded-lg shadow-sm p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">Time Reports</h3>
+          <div className="w-64 bg-white rounded-lg p-4">
+            <h3 className="font-semibold text-[#1a1a1a] mb-4">Time Reports</h3>
             <div className="space-y-1">
-              <a href="/manager/reports/time-by-project" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/manager/reports/time-by-project" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Time by Project
               </a>
-              <a href="/manager/reports/time-by-employee" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/manager/reports/time-by-employee" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Time by Employee
               </a>
-              <a href="/manager/reports/time-by-class" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/manager/reports/time-by-class" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Time by Class
               </a>
-              <a href="/manager/reports/time-by-approver" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/manager/reports/time-by-approver" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Time by Approver
               </a>
-              <a href="/manager/reports/time-missing" className="flex items-center justify-between px-3 py-2 text-sm bg-gray-100 text-gray-900 rounded">
+              <a href="/manager/reports/time-missing" className="flex items-center justify-between px-3 py-2 text-sm bg-[#FAFAF8] text-[#1a1a1a] rounded">
                 Time Missing
                 <ChevronRight className="h-4 w-4" />
               </a>
             </div>
 
-            <h3 className="font-semibold text-gray-900 mt-6 mb-4">Expense Reports</h3>
+            <h3 className="font-semibold text-[#1a1a1a] mt-6 mb-4">Expense Reports</h3>
             <div className="space-y-1">
-              <a href="/manager/reports/expenses-by-employee" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/manager/reports/expenses-by-employee" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Expenses by Employee
               </a>
-              <a href="/manager/reports/expenses-by-project" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/manager/reports/expenses-by-project" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Expenses by Project
               </a>
-              <a href="/manager/reports/expenses-by-approver" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/manager/reports/expenses-by-approver" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Expenses by Approver
               </a>
             </div>
           </div>
 
           {/* Report Configuration */}
-          <div className="flex-1 bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Report Details: Time Missing</h2>
+          <div className="flex-1 bg-white rounded-lg p-6">
+            <h2 className="text-[12px] font-semibold text-[#1a1a1a] mb-6">Report Details: Time Missing</h2>
 
             <div className="space-y-6">
               {/* Date Range */}
               <div className="flex items-center gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date Start</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">Date Start</label>
                   <div className="flex items-center">
                     <input 
                       type="date" 
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md"
+                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date Stop</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">Date Stop</label>
                   <div className="flex items-center">
                     <input 
                       type="date" 
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md"
+                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
                       placeholder=" "
                     />
                   </div>
@@ -309,22 +309,22 @@ export default function TimeMissingReport() {
               {/* Filters */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">User</label>
                   <select 
                     value={selectedUser}
                     onChange={(e) => setSelectedUser(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
                   >
                     <option>-All-</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Employee Type</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">Employee Type</label>
                   <select 
                     value={selectedEmployeeType}
                     onChange={(e) => setSelectedEmployeeType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
                   >
                     {employeeTypes.map(type => (
                       <option key={type} value={type}>{type}</option>
@@ -333,11 +333,11 @@ export default function TimeMissingReport() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">Project</label>
                   <select 
                     value={selectedProject}
                     onChange={(e) => setSelectedProject(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
                   >
                     <option>-All-</option>
                   </select>
@@ -351,18 +351,18 @@ export default function TimeMissingReport() {
                     type="checkbox"
                     checked={byProject}
                     onChange={(e) => setByProject(e.target.checked)}
-                    className="rounded border-gray-300 text-[#e31c79]"
+                    className="rounded border-[#e8e4df] text-[#e31c79]"
                   />
-                  <span className="ml-2 text-sm text-gray-700">By Project</span>
+                  <span className="ml-2 text-sm text-[#555]">By Project</span>
                 </label>
                 <label className="flex items-center">
                   <input 
                     type="checkbox"
                     checked={byDay}
                     onChange={(e) => setByDay(e.target.checked)}
-                    className="rounded border-gray-300 text-[#e31c79]"
+                    className="rounded border-[#e8e4df] text-[#e31c79]"
                   />
-                  <span className="ml-2 text-sm text-gray-700">By Day</span>
+                  <span className="ml-2 text-sm text-[#555]">By Day</span>
                 </label>
               </div>
 
@@ -371,7 +371,7 @@ export default function TimeMissingReport() {
                 {reportData.length > 0 && (
                   <button 
                     onClick={handleExportToExcel}
-                    className="px-6 py-2 bg-[#1a1a1a] text-white rounded-md hover:bg-gray-800 font-medium flex items-center"
+                    className="px-6 py-2 bg-white text-[#1a1a1a] rounded-md hover:bg-[#FAFAF8] font-medium flex items-center"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Export to Excel
@@ -382,7 +382,7 @@ export default function TimeMissingReport() {
                   disabled={isLoading}
                   className={`px-6 py-2 rounded-md font-medium ${
                     isLoading 
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                      ? 'bg-[#FAFAF8] text-[#999] cursor-not-allowed' 
                       : 'bg-green-600 text-white hover:bg-green-700'
                   }`}
                 >
@@ -408,26 +408,26 @@ export default function TimeMissingReport() {
                   {/* Results Table */}
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                      <thead className="bg-[#FAFAF8]">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
                             Employee
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
                             Department
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
                             Employee Type
                           </th>
                           {!byDay && (
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-center text-xs font-medium text-[#999] uppercase tracking-wider">
                               Weeks Missing
                             </th>
                           )}
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
                             {byDay ? 'Missing Date' : 'Missing Dates'}
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
                             Last Submission
                           </th>
                         </tr>
@@ -437,20 +437,20 @@ export default function TimeMissingReport() {
                           // Show one row per missing date
                           reportData.flatMap(row => 
                             row.missing_dates.map((date, index) => (
-                              <tr key={`${row.employee.id}-${date}`} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <tr key={`${row.employee.id}-${date}`} className="hover:bg-[#FAFAF8]">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
                                   {row.employee.first_name} {row.employee.last_name}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
                                   {row.employee.department || 'N/A'}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
                                   {row.employee.employee_type || 'N/A'}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
                                   {new Date(date).toLocaleDateString()}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
                                   {row.last_submission 
                                     ? new Date(row.last_submission).toLocaleDateString()
                                     : 'Never'}
@@ -461,14 +461,14 @@ export default function TimeMissingReport() {
                         ) : (
                           // Show one row per employee
                           reportData.map((row) => (
-                            <tr key={row.employee.id} className="hover:bg-gray-50">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <tr key={row.employee.id} className="hover:bg-[#FAFAF8]">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
                                 {row.employee.first_name} {row.employee.last_name}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
                                 {row.employee.department || 'N/A'}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
                                 {row.employee.employee_type || 'N/A'}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
@@ -476,15 +476,15 @@ export default function TimeMissingReport() {
                                   {row.weeks_missing}
                                 </span>
                               </td>
-                              <td className="px-6 py-4 text-sm text-gray-900">
+                              <td className="px-6 py-4 text-sm text-[#1a1a1a]">
                                 <div className="max-w-xs overflow-hidden text-ellipsis">
                                   {row.missing_dates.map(d => new Date(d).toLocaleDateString()).join(', ')}
                                 </div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
                                 {row.last_submission 
                                   ? new Date(row.last_submission).toLocaleDateString()
-                                  : <span className="text-gray-400">Never</span>}
+                                  : <span className="text-[#bbb]">Never</span>}
                               </td>
                             </tr>
                           ))

@@ -215,16 +215,16 @@ export default function TimeByProjectReport() {
     <>
       {/* Header */}
       {/* Navigation */}
-      <div className="bg-gray-100 border-b">
+      <div className="bg-[#FAFAF8] border-b">
         <div className="max-w-full px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8">
             <button 
               onClick={() => router.push('/manager')}
-              className="py-3 text-sm font-medium text-gray-600 hover:text-gray-900"
+              className="py-3 text-sm font-medium text-[#777] hover:text-[#1a1a1a]"
             >
               Review
             </button>
-            <button className="py-3 text-sm font-medium text-gray-900 border-b-2 border-[#e31c79]">
+            <button className="py-3 text-sm font-medium text-[#1a1a1a] border-b-2 border-[#e31c79]">
               Reports
             </button>
           </div>
@@ -235,67 +235,67 @@ export default function TimeByProjectReport() {
       <div className="max-w-full px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex gap-6">
           {/* Left Sidebar */}
-          <div className="w-64 bg-white rounded-lg shadow-sm p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">Time Reports</h3>
+          <div className="w-64 bg-white rounded-lg p-4">
+            <h3 className="font-semibold text-[#1a1a1a] mb-4">Time Reports</h3>
             <div className="space-y-1">
-              <a href="/admin/reports/time-by-project" className="flex items-center justify-between px-3 py-2 text-sm bg-gray-100 text-gray-900 rounded">
+              <a href="/admin/reports/time-by-project" className="flex items-center justify-between px-3 py-2 text-sm bg-[#FAFAF8] text-[#1a1a1a] rounded">
                 Time by Project
                 <ChevronRight className="h-4 w-4" />
               </a>
-              <a href="/admin/reports/time-by-employee" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/time-by-employee" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Time by Employee
               </a>
-              <a href="/admin/reports/time-by-class" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/time-by-class" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Time by Class
               </a>
-              <a href="/admin/reports/time-by-approver" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/time-by-approver" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Time by Approver
               </a>
-              <a href="/admin/reports/time-missing" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/time-missing" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Time Missing
               </a>
             </div>
 
-            <h3 className="font-semibold text-gray-900 mt-6 mb-4">Expense Reports</h3>
+            <h3 className="font-semibold text-[#1a1a1a] mt-6 mb-4">Expense Reports</h3>
             <div className="space-y-1">
-              <a href="/admin/reports/expenses-by-employee" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/expenses-by-employee" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Expenses by Employee
               </a>
-              <a href="/admin/reports/expenses-by-project" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/expenses-by-project" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Expenses by Project
               </a>
-              <a href="/admin/reports/expenses-by-approver" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/admin/reports/expenses-by-approver" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Expenses by Approver
               </a>
             </div>
           </div>
 
           {/* Report Configuration */}
-          <div className="flex-1 bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Report Details: Time by Project</h2>
+          <div className="flex-1 bg-white rounded-lg p-6">
+            <h2 className="text-[12px] font-semibold text-[#1a1a1a] mb-6">Report Details: Time by Project</h2>
 
             <div className="space-y-6">
               {/* Date Range */}
               <div className="flex items-center gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date Start</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">Date Start</label>
                   <div className="flex items-center">
                     <input 
                       type="date" 
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md"
+                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date Stop</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">Date Stop</label>
                   <div className="flex items-center">
                     <input 
                       type="date" 
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md"
+                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
                     />
                   </div>
                 </div>
@@ -304,40 +304,40 @@ export default function TimeByProjectReport() {
                     type="checkbox"
                     checked={forceCompleteWeeks}
                     onChange={(e) => setForceCompleteWeeks(e.target.checked)}
-                    className="rounded border-gray-300 text-[#e31c79]"
+                    className="rounded border-[#e8e4df] text-[#e31c79]"
                   />
-                  <label className="ml-2 text-sm text-gray-700">Force Complete Weeks</label>
+                  <label className="ml-2 text-sm text-[#555]">Force Complete Weeks</label>
                 </div>
               </div>
 
               {/* Filters */}
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">Project</label>
                   <select 
                     value={selectedProject}
                     onChange={(e) => setSelectedProject(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
                   >
                     <option>-All-</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">User</label>
                   <select 
                     value={selectedUser}
                     onChange={(e) => setSelectedUser(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
                   >
                     <option>-All-</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time Type</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">Time Type</label>
                   <select 
                     value={selectedTimeType}
                     onChange={(e) => setSelectedTimeType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
                   >
                     {timeTypes.map(type => (
                       <option key={type} value={type}>{type}</option>
@@ -345,11 +345,11 @@ export default function TimeByProjectReport() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">Class</label>
                   <select 
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
                   >
                     <option>-All-</option>
                   </select>
@@ -363,54 +363,54 @@ export default function TimeByProjectReport() {
                     type="checkbox"
                     checked={includeUnapproved}
                     onChange={(e) => setIncludeUnapproved(e.target.checked)}
-                    className="rounded border-gray-300 text-[#e31c79]"
+                    className="rounded border-[#e8e4df] text-[#e31c79]"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Include Unapproved</span>
+                  <span className="ml-2 text-sm text-[#555]">Include Unapproved</span>
                 </label>
                 <label className="flex items-center">
                   <input 
                     type="checkbox"
                     checked={includeBillRates}
                     onChange={(e) => setIncludeBillRates(e.target.checked)}
-                    className="rounded border-gray-300 text-[#e31c79]"
+                    className="rounded border-[#e8e4df] text-[#e31c79]"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Include Bill Rates</span>
+                  <span className="ml-2 text-sm text-[#555]">Include Bill Rates</span>
                 </label>
                 <label className="flex items-center">
                   <input 
                     type="checkbox"
                     checked={includePayRates}
                     onChange={(e) => setIncludePayRates(e.target.checked)}
-                    className="rounded border-gray-300 text-[#e31c79]"
+                    className="rounded border-[#e8e4df] text-[#e31c79]"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Include Pay Rates</span>
+                  <span className="ml-2 text-sm text-[#555]">Include Pay Rates</span>
                 </label>
                 <label className="flex items-center">
                   <input 
                     type="checkbox"
                     checked={includeDetails}
                     onChange={(e) => setIncludeDetails(e.target.checked)}
-                    className="rounded border-gray-300 text-[#e31c79]"
+                    className="rounded border-[#e8e4df] text-[#e31c79]"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Include Details</span>
+                  <span className="ml-2 text-sm text-[#555]">Include Details</span>
                 </label>
                 <label className="flex items-center">
                   <input 
                     type="checkbox"
                     checked={includeZeroHours}
                     onChange={(e) => setIncludeZeroHours(e.target.checked)}
-                    className="rounded border-gray-300 text-[#e31c79]"
+                    className="rounded border-[#e8e4df] text-[#e31c79]"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Include Zero Hours</span>
+                  <span className="ml-2 text-sm text-[#555]">Include Zero Hours</span>
                 </label>
                 <label className="flex items-center">
                   <input 
                     type="checkbox"
                     checked={summaryOnly}
                     onChange={(e) => setSummaryOnly(e.target.checked)}
-                    className="rounded border-gray-300 text-[#e31c79]"
+                    className="rounded border-[#e8e4df] text-[#e31c79]"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Summary Only</span>
+                  <span className="ml-2 text-sm text-[#555]">Summary Only</span>
                 </label>
               </div>
 
@@ -419,7 +419,7 @@ export default function TimeByProjectReport() {
                 {reportData.length > 0 && (
                   <button 
                     onClick={handleExportToExcel}
-                    className="px-6 py-2 bg-[#1a1a1a] text-white rounded-md hover:bg-gray-800 font-medium flex items-center"
+                    className="px-6 py-2 bg-white text-[#1a1a1a] rounded-md hover:bg-[#FAFAF8] font-medium flex items-center"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Export to Excel
@@ -430,7 +430,7 @@ export default function TimeByProjectReport() {
                   disabled={isLoading}
                   className={`px-6 py-2 rounded-md font-medium ${
                     isLoading 
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                      ? 'bg-[#FAFAF8] text-[#999] cursor-not-allowed' 
                       : 'bg-green-600 text-white hover:bg-green-700'
                   }`}
                 >
@@ -440,8 +440,8 @@ export default function TimeByProjectReport() {
 
               {/* Results Summary */}
               {reportData.length > 0 && (
-                <div className="mt-6 p-4 bg-gray-50 rounded">
-                  <p className="text-sm text-gray-600">
+                <div className="mt-6 p-4 bg-[#FAFAF8] rounded">
+                  <p className="text-sm text-[#777]">
                     Found {reportData.length} timesheet records for the selected period.
                   </p>
                 </div>

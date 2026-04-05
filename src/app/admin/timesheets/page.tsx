@@ -360,10 +360,10 @@ export default function AdminTimesheets() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#e8e4df] border-t-[#e31c79] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading all timesheets...</p>
+          <p className="mt-4 text-[#777]">Loading all timesheets...</p>
         </div>
       </div>
     );
@@ -539,7 +539,7 @@ export default function AdminTimesheets() {
                                   timesheet.status === 'submitted' ? 'bg-yellow-100 text-yellow-800' :
                                   timesheet.status === 'approved' ? 'bg-green-100 text-green-800' :
                                   timesheet.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                  'bg-gray-100 text-gray-800'
+                                  'bg-[#FAFAF8] text-[#1a1a1a]'
                                 }`} style={{ fontSize: 9, fontWeight: 500 }}>
                                   {timesheet.status}
                                 </span>

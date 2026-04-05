@@ -722,7 +722,7 @@ export default function TimesheetEntry() {
           </div>
 
           {/* Week Date Range */}
-          <div className="text-center text-sm text-gray-600">
+          <div className="text-center text-sm text-[#777]">
             {getWeekDates()[0].toLocaleDateString('en-US', {
               month: 'short',
               day: 'numeric',
@@ -760,12 +760,12 @@ export default function TimesheetEntry() {
             const isToday = formatDate(new Date()) === dateStr;
 
             return (
-              <div key={dateStr} className={`bg-white rounded-lg shadow-sm border ${isToday ? 'border-[#e31c79] ring-1 ring-[#e31c79]/20' : 'border-gray-200'}`}>
-                <div className={`px-4 py-2 flex justify-between items-center ${isToday ? 'bg-[#e31c79]/5' : 'bg-gray-50'} rounded-t-lg`}>
+              <div key={dateStr} className={`bg-white rounded-lg border ${isToday ? 'border-[#e31c79] ring-1 ring-[#e31c79]/20' : 'border-[#e8e4df]'}`}>
+                <div className={`px-4 py-2 flex justify-between items-center ${isToday ? 'bg-[#e31c79]/5' : 'bg-[#FAFAF8]'} rounded-t-lg`}>
                   <span className={`text-sm font-semibold ${isToday ? 'text-[#e31c79]' : 'text-[#1a1814]'}`}>
                     {dayLabel} {isToday && '(Today)'}
                   </span>
-                  <span className={`text-sm font-bold ${dayTotal > 0 ? 'text-[#e31c79]' : 'text-gray-400'}`}>
+                  <span className={`text-sm font-bold ${dayTotal > 0 ? 'text-[#e31c79]' : 'text-[#bbb]'}`}>
                     {dayTotal.toFixed(1)} hrs
                   </span>
                 </div>
@@ -776,7 +776,7 @@ export default function TimesheetEntry() {
                         value={row.project_id}
                         onChange={(e) => updateRowProject(row.id, e.target.value)}
                         disabled={isLocked}
-                        className="flex-1 text-sm px-2 py-1.5 border border-gray-300 rounded focus:ring-[#e31c79] focus:border-[#e31c79] disabled:bg-gray-100"
+                        className="flex-1 text-sm px-2 py-1.5 border border-[#e8e4df] rounded focus:ring-[#e31c79] focus:border-[#e31c79] disabled:bg-[#FAFAF8]"
                       >
                         <option value="">Project...</option>
                         {projects.map((p) =>
@@ -796,7 +796,7 @@ export default function TimesheetEntry() {
                         onChange={(e) => updateRowHours(row.id, dateStr, parseFloat(e.target.value) || 0)}
                         disabled={isLocked}
                         placeholder="0"
-                        className="w-16 text-center text-sm px-2 py-1.5 border border-gray-300 rounded focus:ring-[#e31c79] focus:border-[#e31c79] disabled:bg-gray-100"
+                        className="w-16 text-center text-sm px-2 py-1.5 border border-[#e8e4df] rounded focus:ring-[#e31c79] focus:border-[#e31c79] disabled:bg-[#FAFAF8]"
                       />
                     </div>
                   ))}
@@ -840,13 +840,13 @@ export default function TimesheetEntry() {
                 {rows.map((row) => {
                   const rowTotal = Object.values(row.hours).reduce((sum, h) => sum + h, 0);
                   return (
-                    <tr key={row.id} className="border-b hover:bg-gray-50">
+                    <tr key={row.id} className="border-b hover:bg-[#FAFAF8]">
                       <td className="px-4 py-3">
                         <select
                           value={row.project_id}
                           onChange={(e) => updateRowProject(row.id, e.target.value)}
                           disabled={isLocked}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#e31c79] focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
+                          className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:ring-2 focus:ring-[#e31c79] focus:border-transparent disabled:bg-[#FAFAF8] disabled:text-[#999]"
                         >
                           <option value="">Select a project...</option>
                           {projects.map((project) =>
@@ -878,7 +878,7 @@ export default function TimesheetEntry() {
                                 )
                               }
                               disabled={isLocked}
-                              className="w-full px-2 py-1 text-center border border-gray-300 rounded focus:ring-2 focus:ring-[#e31c79] focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
+                              className="w-full px-2 py-1 text-center border border-[#e8e4df] rounded focus:ring-2 focus:ring-[#e31c79] focus:border-transparent disabled:bg-[#FAFAF8] disabled:text-[#999]"
                               placeholder="0"
                             />
                           </td>
@@ -895,7 +895,7 @@ export default function TimesheetEntry() {
                           className={`p-1 rounded text-xs font-bold transition-colors ${
                             (row.is_billable !== false)
                               ? 'text-green-600 hover:bg-green-50'
-                              : 'text-gray-400 hover:bg-gray-100'
+                              : 'text-[#bbb] hover:bg-[#FAFAF8]'
                           }`}
                         >
                           $
@@ -913,7 +913,7 @@ export default function TimesheetEntry() {
                 })}
               </tbody>
               <tfoot>
-                <tr className="bg-gray-50 font-medium">
+                <tr className="bg-[#FAFAF8] font-medium">
                   <td className="px-4 py-3 text-[#1a1814]">Daily Totals:</td>
                   {getWeekDates().map((date) => {
                     const dateStr = formatDate(date);
@@ -937,7 +937,7 @@ export default function TimesheetEntry() {
             <button
               onClick={addRow}
               disabled={isLocked}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-[#1a1814] hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-[#1a1814] hover:bg-[#FAFAF8] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="h-4 w-4" />
               Add Row
@@ -955,7 +955,7 @@ export default function TimesheetEntry() {
 
         {/* Summary */}
         <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px', marginBottom: 16 }}>
-          <div className="flex items-center justify-between text-gray-700">
+          <div className="flex items-center justify-between text-[#555]">
             <div className="flex items-center gap-8">
               <div className="flex items-center gap-2">
                 <span className="text-sm">Regular Hours:</span>
@@ -978,7 +978,7 @@ export default function TimesheetEntry() {
                 </span>
               </div>
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-[#777]">
               Status:{' '}
               {timesheetStatus
                 ? timesheetStatus.charAt(0).toUpperCase() + timesheetStatus.slice(1)
@@ -999,9 +999,9 @@ export default function TimesheetEntry() {
               checked={attestation}
               onChange={(e) => setAttestation(e.target.checked)}
               disabled={isLocked}
-              className="mt-1 h-5 w-5 text-[#e31c79] border-gray-300 rounded focus:ring-[#e31c79]"
+              className="mt-1 h-5 w-5 text-[#e31c79] border-[#e8e4df] rounded focus:ring-[#e31c79]"
             />
-            <span className="text-gray-700">
+            <span className="text-[#555]">
               I certify that the hours recorded above are accurate and complete
             </span>
           </label>

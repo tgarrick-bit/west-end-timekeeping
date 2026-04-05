@@ -261,16 +261,16 @@ export default function ExpensesByEmployeeReport() {
     <>
       {/* Header */}
       {/* Navigation */}
-      <div className="bg-gray-100 border-b">
+      <div className="bg-[#FAFAF8] border-b">
         <div className="max-w-full px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8">
             <button 
               onClick={() => router.push('/manager')}
-              className="py-3 text-sm font-medium text-gray-600 hover:text-gray-900"
+              className="py-3 text-sm font-medium text-[#777] hover:text-[#1a1a1a]"
             >
               Review
             </button>
-            <button className="py-3 text-sm font-medium text-gray-900 border-b-2 border-[#e31c79]">
+            <button className="py-3 text-sm font-medium text-[#1a1a1a] border-b-2 border-[#e31c79]">
               Reports
             </button>
           </div>
@@ -281,67 +281,67 @@ export default function ExpensesByEmployeeReport() {
       <div className="max-w-full px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex gap-6">
           {/* Left Sidebar */}
-          <div className="w-64 bg-white rounded-lg shadow-sm p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">Time Reports</h3>
+          <div className="w-64 bg-white rounded-lg p-4">
+            <h3 className="font-semibold text-[#1a1a1a] mb-4">Time Reports</h3>
             <div className="space-y-1">
-              <a href="/manager/reports/time-by-project" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/manager/reports/time-by-project" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Time by Project
               </a>
-              <a href="/manager/reports/time-by-employee" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/manager/reports/time-by-employee" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Time by Employee
               </a>
-              <a href="/manager/reports/time-by-class" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/manager/reports/time-by-class" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Time by Class
               </a>
-              <a href="/manager/reports/time-by-approver" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/manager/reports/time-by-approver" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Time by Approver
               </a>
-              <a href="/manager/reports/time-missing" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/manager/reports/time-missing" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Time Missing
               </a>
             </div>
 
-            <h3 className="font-semibold text-gray-900 mt-6 mb-4">Expense Reports</h3>
+            <h3 className="font-semibold text-[#1a1a1a] mt-6 mb-4">Expense Reports</h3>
             <div className="space-y-1">
-              <a href="/manager/reports/expenses-by-employee" className="flex items-center justify-between px-3 py-2 text-sm bg-gray-100 text-gray-900 rounded">
+              <a href="/manager/reports/expenses-by-employee" className="flex items-center justify-between px-3 py-2 text-sm bg-[#FAFAF8] text-[#1a1a1a] rounded">
                 Expenses by Employee
                 <ChevronRight className="h-4 w-4" />
               </a>
-              <a href="/manager/reports/expenses-by-project" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/manager/reports/expenses-by-project" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Expenses by Project
               </a>
-              <a href="/manager/reports/expenses-by-approver" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+              <a href="/manager/reports/expenses-by-approver" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
                 Expenses by Approver
               </a>
             </div>
           </div>
 
           {/* Report Configuration */}
-          <div className="flex-1 bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Report Details: Expenses by Employee</h2>
+          <div className="flex-1 bg-white rounded-lg p-6">
+            <h2 className="text-[12px] font-semibold text-[#1a1a1a] mb-6">Report Details: Expenses by Employee</h2>
 
             <div className="space-y-6">
               {/* Date Range */}
               <div className="flex items-center gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date Start</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">Date Start</label>
                   <div className="flex items-center">
                     <input 
                       type="date" 
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md"
+                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date Stop</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">Date Stop</label>
                   <div className="flex items-center">
                     <input 
                       type="date" 
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md"
+                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
                     />
                   </div>
                 </div>
@@ -350,22 +350,22 @@ export default function ExpensesByEmployeeReport() {
               {/* Filters */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">User</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">User</label>
                   <select 
                     value={selectedUser}
                     onChange={(e) => setSelectedUser(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
                   >
                     <option>-All-</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Employee Type</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">Employee Type</label>
                   <select 
                     value={selectedEmployeeType}
                     onChange={(e) => setSelectedEmployeeType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
                   >
                     {employeeTypes.map(type => (
                       <option key={type} value={type}>{type}</option>
@@ -374,11 +374,11 @@ export default function ExpensesByEmployeeReport() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Expense Type</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">Expense Type</label>
                   <select 
                     value={selectedExpenseType}
                     onChange={(e) => setSelectedExpenseType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
                   >
                     {expenseTypes.map(type => (
                       <option key={type} value={type}>{type}</option>
@@ -387,11 +387,11 @@ export default function ExpensesByEmployeeReport() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                  <label className="block text-sm font-medium text-[#555] mb-1">Payment Method</label>
                   <select 
                     value={selectedPaymentMethod}
                     onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
                   >
                     {paymentMethods.map(method => (
                       <option key={method} value={method}>{method}</option>
@@ -410,9 +410,9 @@ export default function ExpensesByEmployeeReport() {
                       setReimbursableOnly(e.target.checked)
                       if (e.target.checked) setNonReimbursableOnly(false)
                     }}
-                    className="rounded border-gray-300 text-[#e31c79]"
+                    className="rounded border-[#e8e4df] text-[#e31c79]"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Reimbursable Only</span>
+                  <span className="ml-2 text-sm text-[#555]">Reimbursable Only</span>
                 </label>
                 <label className="flex items-center">
                   <input 
@@ -422,9 +422,9 @@ export default function ExpensesByEmployeeReport() {
                       setNonReimbursableOnly(e.target.checked)
                       if (e.target.checked) setReimbursableOnly(false)
                     }}
-                    className="rounded border-gray-300 text-[#e31c79]"
+                    className="rounded border-[#e8e4df] text-[#e31c79]"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Non-Reimbursable Only</span>
+                  <span className="ml-2 text-sm text-[#555]">Non-Reimbursable Only</span>
                 </label>
                 <label className="flex items-center">
                   <input 
@@ -434,9 +434,9 @@ export default function ExpensesByEmployeeReport() {
                       setBillableOnly(e.target.checked)
                       if (e.target.checked) setNonBillableOnly(false)
                     }}
-                    className="rounded border-gray-300 text-[#e31c79]"
+                    className="rounded border-[#e8e4df] text-[#e31c79]"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Billable Only</span>
+                  <span className="ml-2 text-sm text-[#555]">Billable Only</span>
                 </label>
                 <label className="flex items-center">
                   <input 
@@ -446,27 +446,27 @@ export default function ExpensesByEmployeeReport() {
                       setNonBillableOnly(e.target.checked)
                       if (e.target.checked) setBillableOnly(false)
                     }}
-                    className="rounded border-gray-300 text-[#e31c79]"
+                    className="rounded border-[#e8e4df] text-[#e31c79]"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Non-Billable Only</span>
+                  <span className="ml-2 text-sm text-[#555]">Non-Billable Only</span>
                 </label>
                 <label className="flex items-center">
                   <input 
                     type="checkbox"
                     checked={includeDetails}
                     onChange={(e) => setIncludeDetails(e.target.checked)}
-                    className="rounded border-gray-300 text-[#e31c79]"
+                    className="rounded border-[#e8e4df] text-[#e31c79]"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Include Details</span>
+                  <span className="ml-2 text-sm text-[#555]">Include Details</span>
                 </label>
                 <label className="flex items-center">
                   <input 
                     type="checkbox"
                     checked={summaryOnly}
                     onChange={(e) => setSummaryOnly(e.target.checked)}
-                    className="rounded border-gray-300 text-[#e31c79]"
+                    className="rounded border-[#e8e4df] text-[#e31c79]"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Summary Only</span>
+                  <span className="ml-2 text-sm text-[#555]">Summary Only</span>
                 </label>
               </div>
 
@@ -475,7 +475,7 @@ export default function ExpensesByEmployeeReport() {
                 {reportData.length > 0 && (
                   <button 
                     onClick={handleExportToExcel}
-                    className="px-6 py-2 bg-[#1a1a1a] text-white rounded-md hover:bg-gray-800 font-medium flex items-center"
+                    className="px-6 py-2 bg-white text-[#1a1a1a] rounded-md hover:bg-[#FAFAF8] font-medium flex items-center"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Export to Excel
@@ -486,7 +486,7 @@ export default function ExpensesByEmployeeReport() {
                   disabled={isLoading}
                   className={`px-6 py-2 rounded-md font-medium ${
                     isLoading 
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                      ? 'bg-[#FAFAF8] text-[#999] cursor-not-allowed' 
                       : 'bg-green-600 text-white hover:bg-green-700'
                   }`}
                 >
@@ -497,23 +497,23 @@ export default function ExpensesByEmployeeReport() {
               {/* Results */}
               {reportData.length > 0 && (
                 <div className="mt-6">
-                  <div className="p-4 bg-gray-50 rounded mb-4">
+                  <div className="p-4 bg-[#FAFAF8] rounded mb-4">
                     <div className="grid grid-cols-4 gap-4">
                       <div>
-                        <p className="text-sm text-gray-600">Total Expenses</p>
-                        <p className="text-xl font-semibold">${totals.totalAmount.toFixed(2)}</p>
+                        <p className="text-sm text-[#777]">Total Expenses</p>
+                        <p className="text-[14px] font-semibold">${totals.totalAmount.toFixed(2)}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Reimbursable</p>
-                        <p className="text-xl font-semibold text-green-600">${totals.reimbursable.toFixed(2)}</p>
+                        <p className="text-sm text-[#777]">Reimbursable</p>
+                        <p className="text-[14px] font-semibold text-green-600">${totals.reimbursable.toFixed(2)}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Billable</p>
-                        <p className="text-xl font-semibold text-blue-600">${totals.billable.toFixed(2)}</p>
+                        <p className="text-sm text-[#777]">Billable</p>
+                        <p className="text-[14px] font-semibold text-blue-600">${totals.billable.toFixed(2)}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Count</p>
-                        <p className="text-xl font-semibold">{totals.count}</p>
+                        <p className="text-sm text-[#777]">Count</p>
+                        <p className="text-[14px] font-semibold">{totals.count}</p>
                       </div>
                     </div>
                   </div>
@@ -522,50 +522,50 @@ export default function ExpensesByEmployeeReport() {
                   {!summaryOnly ? (
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-[#FAFAF8]">
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
                               Employee
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
                               Date
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
                               Category
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
                               Description
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-right text-xs font-medium text-[#999] uppercase tracking-wider">
                               Amount
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-center text-xs font-medium text-[#999] uppercase tracking-wider">
                               Method
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-center text-xs font-medium text-[#999] uppercase tracking-wider">
                               Status
                             </th>
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {reportData.map((expense) => (
-                            <tr key={expense.id} className="hover:bg-gray-50">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <tr key={expense.id} className="hover:bg-[#FAFAF8]">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
                                 {expense.employees ? `${expense.employees.first_name} ${expense.employees.last_name}` : 'Unknown'}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
                                 {new Date(expense.expense_date).toLocaleDateString()}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
                                 {expense.category}
                               </td>
-                              <td className="px-6 py-4 text-sm text-gray-900">
+                              <td className="px-6 py-4 text-sm text-[#1a1a1a]">
                                 {expense.description}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-gray-900">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-[#1a1a1a]">
                                 ${expense.amount.toFixed(2)}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-900">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-[#1a1a1a]">
                                 {expense.payment_method || '-'}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -576,7 +576,7 @@ export default function ExpensesByEmployeeReport() {
                                     ? 'bg-yellow-100 text-yellow-800'
                                     : expense.status === 'rejected'
                                     ? 'bg-red-100 text-red-800'
-                                    : 'bg-gray-100 text-gray-800'
+                                    : 'bg-[#FAFAF8] text-[#1a1a1a]'
                                 }`}>
                                   {expense.status}
                                 </span>
@@ -590,24 +590,24 @@ export default function ExpensesByEmployeeReport() {
                     // Summary View
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-[#FAFAF8]">
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
                               Employee
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
                               Department
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-right text-xs font-medium text-[#999] uppercase tracking-wider">
                               Total Amount
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-right text-xs font-medium text-[#999] uppercase tracking-wider">
                               Reimbursable
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-right text-xs font-medium text-[#999] uppercase tracking-wider">
                               Billable
                             </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-center text-xs font-medium text-[#999] uppercase tracking-wider">
                               Count
                             </th>
                           </tr>
@@ -630,14 +630,14 @@ export default function ExpensesByEmployeeReport() {
                               const billableAmount = expenses.filter(e => e.is_billable).reduce((sum, exp) => sum + exp.amount, 0)
                               
                               return (
-                                <tr key={index} className="hover:bg-gray-50">
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <tr key={index} className="hover:bg-[#FAFAF8]">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
                                     {employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown'}
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
                                     {employee?.department || 'N/A'}
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-gray-900">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-[#1a1a1a]">
                                     ${totalAmount.toFixed(2)}
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600">
@@ -646,7 +646,7 @@ export default function ExpensesByEmployeeReport() {
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-blue-600">
                                     ${billableAmount.toFixed(2)}
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-900">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-[#1a1a1a]">
                                     {expenses.length}
                                   </td>
                                 </tr>
