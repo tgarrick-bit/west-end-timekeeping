@@ -657,41 +657,34 @@ export default function TimesheetEntry() {
   const { dailyTotals, weekTotal, regularHours, overtimeHours, doubleTimeHours } = calculateTotals();
 
   return (
-    <div style={{ background: 'var(--we-bg)', minHeight: '100vh' }}>
+    <div style={{ background: '#FAFAF8', minHeight: '100vh' }}>
       {/* Page Header */}
-      <div style={{ background: 'var(--we-bg-white)', borderBottom: '1px solid var(--we-border)' }}>
+      <div style={{ background: '#fff', borderBottom: '0.5px solid #e8e4df' }}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push('/employee')}
-              className="p-2 rounded-lg transition-all duration-200"
-              style={{ color: 'var(--we-text-3)', border: '1px solid var(--we-border)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--we-border-hover)'; e.currentTarget.style.color = 'var(--we-text-1)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--we-border)'; e.currentTarget.style.color = 'var(--we-text-3)'; }}
+              className="p-2 rounded-md transition-colors duration-150"
+              style={{ color: '#999', border: '0.5px solid #e0dcd7' }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#555'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#999'; }}
             >
-              <ArrowLeft size={16} />
+              <ArrowLeft size={15} strokeWidth={1.5} />
             </button>
             <div>
-              <h1 className="text-[20px] font-bold" style={{ color: 'var(--we-text-1)', fontFamily: 'var(--font-heading)' }}>
-                Timesheet Entry
-              </h1>
-              <p className="text-[12px]" style={{ color: 'var(--we-text-3)' }}>
-                Enter your hours for the week
-              </p>
+              <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1a1a1a' }}>Timesheet Entry</h1>
+              <p style={{ fontSize: 12, color: '#bbb' }}>Enter your hours for the week</p>
             </div>
           </div>
         </div>
       </div>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Week Selector + Timer */}
-        <div className="we-card p-5 mb-5">
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px', marginBottom: 16 }}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'rgba(227, 28, 121, 0.06)' }}>
-                <Calendar size={16} style={{ color: 'var(--we-pink)' }} />
-              </div>
-              <span className="text-[15px] font-semibold" style={{ color: 'var(--we-text-1)' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>
                 Week Ending: {getWeekEndingDate(selectedWeek)}
               </span>
               <TimeTimer
@@ -710,26 +703,20 @@ export default function TimesheetEntry() {
               />
             </div>
             <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => navigateWeek(-1)}
-                className="p-2 rounded-lg transition-all duration-200"
-                style={{ color: 'var(--we-text-3)', border: '1px solid var(--we-border)' }}
-              >
-                <ChevronLeft size={16} />
+              <button onClick={() => navigateWeek(-1)} className="p-2 rounded-md transition-colors" style={{ color: '#999', border: '0.5px solid #e0dcd7' }}>
+                <ChevronLeft size={15} strokeWidth={1.5} />
               </button>
               <button
                 onClick={() => setSelectedWeek(new Date())}
-                className="px-3 py-1.5 text-[13px] font-semibold text-white rounded-lg transition-all duration-200"
-                style={{ background: 'var(--we-pink)' }}
+                className="transition-colors duration-150"
+                style={{ padding: '6px 14px', fontSize: 11, fontWeight: 600, color: '#fff', background: '#e31c79', borderRadius: 6, border: 'none' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#cc1069')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#e31c79')}
               >
                 Current Week
               </button>
-              <button
-                onClick={() => navigateWeek(1)}
-                className="p-2 rounded-lg transition-all duration-200"
-                style={{ color: 'var(--we-text-3)', border: '1px solid var(--we-border)' }}
-              >
-                <ChevronRight size={16} />
+              <button onClick={() => navigateWeek(1)} className="p-2 rounded-md transition-colors" style={{ color: '#999', border: '0.5px solid #e0dcd7' }}>
+                <ChevronRight size={15} strokeWidth={1.5} />
               </button>
             </div>
           </div>
@@ -819,20 +806,20 @@ export default function TimesheetEntry() {
           })}
 
           {/* Mobile total */}
-          <div className="rounded-xl p-4 text-center" style={{ background: 'var(--we-navy)', color: '#ffffff' }}>
-            <span className="text-[13px]">Week Total:</span>
-            <span className="text-[22px] font-bold ml-2" style={{ fontFamily: 'var(--font-heading)' }}>{weekTotal.toFixed(1)}</span>
-            <span className="text-[13px] ml-1">hrs</span>
+          <div className="text-center" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 16 }}>
+            <span style={{ fontSize: 11, color: '#999' }}>Week Total:</span>
+            <span style={{ fontSize: 24, fontWeight: 700, color: '#e31c79', marginLeft: 8 }}>{weekTotal.toFixed(1)}</span>
+            <span style={{ fontSize: 11, color: '#999', marginLeft: 4 }}>hrs</span>
           </div>
         </div>
 
         {/* Desktop Time Entry Table */}
-        <div className="hidden md:block we-card overflow-hidden mb-5">
+        <div className="hidden md:block overflow-hidden" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, marginBottom: 16 }}>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr style={{ background: 'var(--we-navy)', color: '#ffffff' }}>
-                  <th className="text-left px-4 py-3 font-medium">PROJECT</th>
+                <tr>
+                  <th className="text-left px-4 py-3" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc' }}>PROJECT</th>
                   {getWeekDates().map((date) => {
                     const header = formatDateHeader(date);
                     return (
@@ -967,7 +954,7 @@ export default function TimesheetEntry() {
         </div>
 
         {/* Summary */}
-        <div className="we-card p-5 mb-5">
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px', marginBottom: 16 }}>
           <div className="flex items-center justify-between text-gray-700">
             <div className="flex items-center gap-8">
               <div className="flex items-center gap-2">
@@ -1002,8 +989,8 @@ export default function TimesheetEntry() {
         </div>
 
         {/* Attestation */}
-        <div className="we-card p-5 mb-5">
-          <h3 className="text-[15px] font-semibold mb-4" style={{ color: 'var(--we-text-1)' }}>
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px', marginBottom: 16 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', marginBottom: 12 }}>
             Timesheet Attestation
           </h3>
           <label className="flex items-start gap-3 cursor-pointer">
@@ -1021,23 +1008,27 @@ export default function TimesheetEntry() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end gap-2">
           <button
             onClick={() => handleSubmit(true)}
             disabled={isLoading || isLocked}
-            className="flex items-center gap-2 px-5 py-3 text-[14px] font-semibold rounded-[var(--we-radius-sm)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ background: 'var(--we-navy)', color: '#ffffff' }}
+            className="flex items-center gap-2 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ padding: '9px 20px', fontSize: 12, fontWeight: 500, color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 7 }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#555'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#777'; }}
           >
-            <Save size={16} />
+            <Save size={14} strokeWidth={1.5} />
             Save as Draft
           </button>
           <button
             onClick={() => handleSubmit(false)}
             disabled={isLoading || !attestation || isLocked}
-            className="flex items-center gap-2 px-5 py-3 text-[14px] font-semibold rounded-[var(--we-radius-sm)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ background: 'var(--we-pink)', color: '#ffffff' }}
+            className="flex items-center gap-2 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ padding: '9px 20px', fontSize: 12, fontWeight: 600, color: '#fff', background: '#e31c79', border: 'none', borderRadius: 7 }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#cc1069')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = '#e31c79')}
           >
-            <Send size={16} />
+            <Send size={14} strokeWidth={1.5} />
             Submit Timesheet
           </button>
         </div>
