@@ -1,41 +1,50 @@
-// src/components/ui/ActionButton.tsx
-import { LucideIcon } from 'lucide-react'
+import { LucideIcon } from 'lucide-react';
 
 interface ActionButtonProps {
-  icon: LucideIcon
-  label: string
-  onClick: () => void
-  variant: 'timesheet' | 'expense'
-  disabled?: boolean
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary';
+  disabled?: boolean;
 }
 
-export function ActionButton({ 
-  icon: Icon, 
-  label, 
-  onClick, 
-  variant,
-  disabled = false 
+export function ActionButton({
+  icon: Icon,
+  label,
+  onClick,
+  variant = 'primary',
+  disabled = false,
 }: ActionButtonProps) {
-  const variantClasses = {
-    timesheet: 'bg-pink hover:bg-pink/90 focus:ring-pink',
-    expense: 'bg-dark-blue hover:bg-dark-blue/90 focus:ring-dark-blue'
-  }
+  const isPrimary = variant === 'primary';
 
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`
-        flex items-center gap-2 px-6 py-3 rounded-lg 
-        text-white font-body font-medium 
-        transition-all duration-200
-        disabled:opacity-50 disabled:cursor-not-allowed
-        focus:outline-none focus:ring-2 focus:ring-offset-2
-        ${variantClasses[variant]}
-      `}
+      className="flex items-center gap-2 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+      style={{
+        padding: '9px 20px',
+        fontSize: 12,
+        fontWeight: 600,
+        borderRadius: 7,
+        border: isPrimary ? 'none' : '0.5px solid #e0dcd7',
+        background: isPrimary ? '#e31c79' : '#fff',
+        color: isPrimary ? '#fff' : '#777',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+      }}
+      onMouseEnter={(e) => {
+        if (!disabled) {
+          e.currentTarget.style.background = isPrimary ? '#cc1069' : '#FDFCFB';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!disabled) {
+          e.currentTarget.style.background = isPrimary ? '#e31c79' : '#fff';
+        }
+      }}
     >
-      <Icon className="w-5 h-5" />
+      <Icon size={15} strokeWidth={1.5} />
       <span>{label}</span>
     </button>
-  )
+  );
 }

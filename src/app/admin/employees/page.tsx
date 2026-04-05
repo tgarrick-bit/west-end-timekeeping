@@ -495,7 +495,7 @@ export default function EmployeeManagement() {
           <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
             Employees
           </h1>
-          <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb', margin: '4px 0 0' }}>
+          <p style={{ fontSize: 13, fontWeight: 400, color: '#999', margin: '4px 0 0' }}>
             Manage employee accounts, roles, and pay rates.
           </p>
         </div>
@@ -720,14 +720,14 @@ export default function EmployeeManagement() {
 
             <div className="p-6">
               {(error || success) && (
-                <div className="mb-4">
+                <div style={{ marginBottom: 16 }}>
                   {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-md text-sm">
+                    <div style={{ background: '#fef2f2', border: '0.5px solid #e8e4df', borderRadius: 7, padding: '8px 16px', fontSize: 12, color: '#b91c1c' }}>
                       {error}
                     </div>
                   )}
                   {success && (
-                    <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-md text-sm">
+                    <div style={{ background: '#ecfdf5', border: '0.5px solid #e8e4df', borderRadius: 7, padding: '8px 16px', fontSize: 12, color: '#2d9b6e' }}>
                       {success}
                     </div>
                   )}
@@ -751,7 +751,7 @@ export default function EmployeeManagement() {
                           first_name: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                     />
                   </div>
 
@@ -769,7 +769,7 @@ export default function EmployeeManagement() {
                           middle_name: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                     />
                   </div>
 
@@ -787,7 +787,7 @@ export default function EmployeeManagement() {
                           last_name: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                     />
                   </div>
                 </div>
@@ -806,7 +806,7 @@ export default function EmployeeManagement() {
                         email: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                   />
                 </div>
 
@@ -824,7 +824,7 @@ export default function EmployeeManagement() {
                         phone: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                   />
                 </div>
 
@@ -841,7 +841,7 @@ export default function EmployeeManagement() {
                         role: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                   >
                     <option value="employee">Employee</option>
                     <option value="manager">Manager / Time Approver</option>
@@ -866,7 +866,7 @@ export default function EmployeeManagement() {
                         employee_id: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                   />
                 </div>
 
@@ -885,7 +885,7 @@ export default function EmployeeManagement() {
                         mybase_payroll_id: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                     placeholder="Leave blank if not needed"
                   />
                   <p className="text-xs text-[#777] mt-1">
@@ -907,7 +907,7 @@ export default function EmployeeManagement() {
                           manager_id: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                       required={formData.role === 'employee'}
                     >
                       <option value="">Select Time Approver</option>
@@ -948,7 +948,7 @@ export default function EmployeeManagement() {
                               value === '' ? 0 : parseFloat(value),
                           });
                         }}
-                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                       />
                     </div>
 
@@ -969,7 +969,7 @@ export default function EmployeeManagement() {
                               value === '' ? 0 : parseFloat(value),
                           });
                         }}
-                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                       />
                       <p className="text-xs text-[#777] mt-1">
                         Optional. Used for billing and margin calculations.
@@ -988,7 +988,7 @@ export default function EmployeeManagement() {
                     onChange={(e) =>
                       setFormData({ ...formData, employee_type: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                   >
                     <option value="">Select type...</option>
                     <option value="WE">WE (West End)</option>
@@ -1015,7 +1015,7 @@ export default function EmployeeManagement() {
                         hire_date: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                   />
                 </div>
 
@@ -1032,7 +1032,7 @@ export default function EmployeeManagement() {
                         state: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                   >
                     <option value="">Select State</option>
                     {US_STATES.map((state) => (
@@ -1061,7 +1061,7 @@ export default function EmployeeManagement() {
                           password: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                       placeholder="Min 6 characters"
                     />
                   </div>

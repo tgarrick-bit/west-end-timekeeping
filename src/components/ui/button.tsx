@@ -1,37 +1,57 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'primary' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'pink';
+  variant?: 'primary' | 'secondary' | 'destructive' | 'ghost' | 'link';
   size?: 'default' | 'sm' | 'lg' | 'icon';
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className = '', variant = 'default', size = 'default', ...props }, ref) => {
-    const baseStyles =
-      'inline-flex items-center justify-center font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--we-pink)] disabled:pointer-events-none disabled:opacity-50';
-
-    const variants: Record<string, string> = {
-      default: 'bg-[var(--we-navy)] text-white hover:opacity-90 rounded-[var(--we-radius-sm)]',
-      primary: 'bg-black text-white hover:bg-[#1a1a1a] hover:-translate-y-[1px] hover:shadow-we-md rounded-[10px]',
-      pink: 'bg-[var(--we-pink)] text-white hover:bg-[var(--we-pink-hover)] rounded-[var(--we-radius-sm)]',
-      destructive: 'bg-red-600 text-white hover:bg-red-700 rounded-[var(--we-radius-sm)]',
-      outline: 'border border-[0.5px] border-[var(--we-border)] bg-white hover:bg-[var(--we-bg-subtle)] hover:border-[var(--we-border-hover)] rounded-[var(--we-radius-sm)]',
-      secondary: 'bg-[var(--we-bg-muted)] hover:bg-[rgba(0,0,0,0.06)] rounded-[var(--we-radius-sm)]',
-      ghost: 'hover:bg-[var(--we-bg-subtle)] rounded-[var(--we-radius-sm)]',
-      link: 'text-[var(--we-pink)] underline-offset-4 hover:underline',
+  ({ className = '', variant = 'primary', size = 'default', style, ...props }, ref) => {
+    const base: React.CSSProperties = {
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontWeight: 600,
+      cursor: 'pointer',
+      transition: 'all 150ms ease',
+      border: 'none',
+      borderRadius: 7,
     };
 
-    const sizes: Record<string, string> = {
-      default: 'h-10 px-4 py-2 text-[14px]',
-      sm: 'h-8 px-3 text-[13px]',
-      lg: 'h-12 px-6 text-[15px]',
-      icon: 'h-10 w-10',
+    const variants: Record<string, React.CSSProperties> = {
+      primary: { background: '#e31c79', color: '#fff' },
+      secondary: { background: '#fff', border: '0.5px solid #e0dcd7', color: '#777' },
+      destructive: { background: '#b91c1c', color: '#fff' },
+      ghost: { background: 'transparent', color: '#999' },
+      link: { background: 'transparent', color: '#e31c79', textDecoration: 'none' },
+    };
+
+    const sizes: Record<string, React.CSSProperties> = {
+      default: { height: 36, padding: '0 16px', fontSize: 12 },
+      sm: { height: 30, padding: '0 12px', fontSize: 11 },
+      lg: { height: 42, padding: '0 24px', fontSize: 13 },
+      icon: { height: 36, width: 36, padding: 0, fontSize: 12 },
     };
 
     return (
       <button
-        className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
+        className={className}
+        style={{ ...base, ...variants[variant], ...sizes[size], ...style }}
         ref={ref}
+        onMouseEnter={(e) => {
+          if (variant === 'primary') e.currentTarget.style.background = '#cc1069';
+          if (variant === 'secondary') e.currentTarget.style.borderColor = '#ccc';
+          if (variant === 'ghost') e.currentTarget.style.background = '#FAFAF8';
+          if (variant === 'link') e.currentTarget.style.textDecoration = 'underline';
+          props.onMouseEnter?.(e);
+        }}
+        onMouseLeave={(e) => {
+          if (variant === 'primary') e.currentTarget.style.background = '#e31c79';
+          if (variant === 'secondary') e.currentTarget.style.borderColor = '#e0dcd7';
+          if (variant === 'ghost') e.currentTarget.style.background = 'transparent';
+          if (variant === 'link') e.currentTarget.style.textDecoration = 'none';
+          props.onMouseLeave?.(e);
+        }}
         {...props}
       />
     );

@@ -1,17 +1,29 @@
 import * as React from "react"
-import { cn } from "@/lib/utils"
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, ...props }, ref) => {
+  ({ className = '', type, style, ...props }, ref) => {
     return (
       <input
         type={type}
-        className={cn(
-          "flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50",
-          className
-        )}
+        className={`flex h-10 w-full bg-white px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+        style={{
+          border: '0.5px solid #e8e4df',
+          borderRadius: 7,
+          outline: 'none',
+          fontSize: 13,
+          color: '#1a1a1a',
+          ...style,
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = '#d3ad6b';
+          props.onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = '#e8e4df';
+          props.onBlur?.(e);
+        }}
         ref={ref}
         {...props}
       />

@@ -1,13 +1,22 @@
-// src/components/ui/SectionHeader.tsx
 interface SectionHeaderProps {
-    title: string
-    className?: string
-  }
-  
-  export function SectionHeader({ title, className = '' }: SectionHeaderProps) {
-    return (
-      <h2 className={`font-heading text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 ${className}`}>
-        {title}
-      </h2>
-    )
-  }
+  title: string;
+  className?: string;
+}
+
+export function SectionHeader({ title, className = '' }: SectionHeaderProps) {
+  return (
+    <h2
+      className={className}
+      style={{
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: 1,
+        color: '#c0bab2',
+        textTransform: 'uppercase',
+        marginBottom: 16,
+      }}
+    >
+      {title}
+    </h2>
+  );
+}

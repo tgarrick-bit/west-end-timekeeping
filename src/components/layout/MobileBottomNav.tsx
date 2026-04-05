@@ -29,9 +29,9 @@ export function MobileBottomNav() {
     <nav
       className="md:hidden fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around"
       style={{
-        height: 'var(--we-mobile-nav-height)',
-        background: 'var(--we-bg-white)',
-        borderTop: '0.5px solid var(--we-border)',
+        height: 56,
+        background: '#fff',
+        borderTop: '0.5px solid #e8e4df',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
@@ -41,24 +41,17 @@ export function MobileBottomNav() {
           <Link
             key={href}
             href={href}
-            className="flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-colors duration-150"
-            style={{ color: active ? 'var(--we-pink)' : 'var(--we-text-3)' }}
+            className="flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-colors duration-150 relative"
+            style={{ color: active ? '#e31c79' : '#ccc' }}
           >
             <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
-            <span
-              className="text-[10px] font-semibold"
-              style={{ letterSpacing: '0.02em' }}
-            >
+            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.02em' }}>
               {label}
             </span>
             {active && (
               <span
                 className="absolute top-0 rounded-full"
-                style={{
-                  width: '20px',
-                  height: '2px',
-                  background: 'var(--we-pink)',
-                }}
+                style={{ width: 20, height: 2, background: '#e31c79' }}
               />
             )}
           </Link>
