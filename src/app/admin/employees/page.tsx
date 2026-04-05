@@ -502,7 +502,6 @@ export default function EmployeeManagement() {
         <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
           {[0,1,2,3,4,5].map((i) => (
             <div key={i} className="flex items-center gap-4" style={{ padding: '14px 20px', borderBottom: i < 5 ? '0.5px solid #f5f2ee' : 'none' }}>
-              <div className="anim-shimmer" style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0 }} />
               <div className="flex-1">
                 <div className="anim-shimmer" style={{ width: '30%', height: 10, borderRadius: 3, marginBottom: 6 }} />
                 <div className="anim-shimmer" style={{ width: '50%', height: 8, borderRadius: 3 }} />
@@ -662,23 +661,14 @@ export default function EmployeeManagement() {
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   onClick={() => openEditModal(employee)}
                 >
-                  {/* Employee name + avatar initial */}
+                  {/* Employee name */}
                   <td style={{ padding: '12px 20px' }}>
-                    <div className="flex items-center gap-3">
-                      <div style={{
-                        width: 30, height: 30, borderRadius: '50%', background: '#f5f2ee',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 10, fontWeight: 600, color: '#c0bab2', flexShrink: 0,
-                      }}>
-                        {(employee.first_name?.[0] || '').toUpperCase()}
+                    <div>
+                      <div style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
+                        {formatName(employee.first_name, employee.middle_name, employee.last_name)}
                       </div>
-                      <div>
-                        <div style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
-                          {formatName(employee.first_name, employee.middle_name, employee.last_name)}
-                        </div>
-                        <div style={{ fontSize: 10.5, color: '#c0bab2', marginTop: 1 }}>
-                          {employee.mybase_payroll_id || employee.employee_id || 'No ID'}
-                        </div>
+                      <div style={{ fontSize: 10.5, color: '#c0bab2', marginTop: 1 }}>
+                        {employee.mybase_payroll_id || employee.employee_id || 'No ID'}
                       </div>
                     </div>
                   </td>
