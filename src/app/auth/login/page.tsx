@@ -68,7 +68,9 @@ export default function LoginPage() {
       const r = emp.role?.toLowerCase();
       router.push(r === 'admin' ? '/admin' : r === 'manager' ? '/manager' : '/employee');
     } catch (err: any) {
-      setError(`Connection error: ${err?.message || err || 'Unknown'}. Please try again.`);
+      const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'NOT SET';
+      const hasKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'YES' : 'NO';
+      setError(`${err?.message || 'Unknown error'} | URL: ${supaUrl.substring(0, 30)}... | Key: ${hasKey}`);
       setLoading(false);
     }
   };
