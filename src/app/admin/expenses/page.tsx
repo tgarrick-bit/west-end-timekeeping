@@ -601,20 +601,49 @@ export default function AdminExpenses() {
   return (
     <>
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div style={{ padding: '36px 40px' }}>
+        {/* Page Header */}
+        <div className="mb-6">
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>Expenses</h1>
+          <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb' }}>Review and approve employee expense reports</p>
+        </div>
+
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-6 mb-6" style={{ borderBottom: '0.5px solid #f0ece7' }}>
+          {([
+            { key: 'all', label: 'All' },
+            { key: 'pending', label: 'Pending' },
+            { key: 'approved', label: 'Approved' },
+          ] as const).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setFilterStatus(tab.key as any)}
+              style={{
+                fontSize: 12,
+                fontWeight: filterStatus === tab.key ? 600 : 400,
+                color: filterStatus === tab.key ? '#1a1a1a' : '#999',
+                borderBottom: filterStatus === tab.key ? '2px solid #e31c79' : '2px solid transparent',
+                paddingBottom: 10,
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {/* Controls Bar */}
-        <div className="bg-white rounded-lg shadow-sm mb-6 p-4 border border-gray-200">
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '16px 22px', marginBottom: 24 }}>
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => changeMonth('prev')}
-                className="p-2 hover:bg-gray-100 rounded-lg"
+                className="p-2 hover:bg-[#FDFCFB] rounded-lg"
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-4 w-4" style={{ color: '#777' }} />
               </button>
               <div className="text-center">
-                <p className="text-sm text-gray-600">Month</p>
-                <p className="font-semibold">
+                <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Month</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
                   {selectedMonth.toLocaleDateString('en-US', {
                     month: 'long',
                     year: 'numeric',
@@ -623,28 +652,18 @@ export default function AdminExpenses() {
               </div>
               <button
                 onClick={() => changeMonth('next')}
-                className="p-2 hover:bg-gray-100 rounded-lg"
+                className="p-2 hover:bg-[#FDFCFB] rounded-lg"
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-4 w-4" style={{ color: '#777' }} />
               </button>
             </div>
 
-            <div className="flex items-center gap-4">
-              <select
-                value={filterStatus}
-                onChange={(e) =>
-                  setFilterStatus(e.target.value as 'all' | 'pending' | 'approved')
-                }
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e31c79] focus:border-transparent"
-              >
-                <option value="all">All Expenses</option>
-                <option value="pending">Pending Only</option>
-                <option value="approved">Approved Only</option>
-              </select>
+            <div className="flex items-center gap-3">
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#e31c79] focus:border-transparent"
+                style={{ border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, padding: '6px 10px' }}
+                className="focus:outline-none focus:border-[#d3ad6b]"
               >
                 <option value="all">All Categories</option>
                 {categories.map((cat) => (
@@ -655,7 +674,8 @@ export default function AdminExpenses() {
               </select>
               <button
                 onClick={exportToCSV}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
+                className="flex items-center gap-2 hover:border-[#ccc] hover:text-[#555]"
+                style={{ padding: '6px 14px', background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 7, fontSize: 12, fontWeight: 500 }}
               >
                 <Download className="h-4 w-4" />
                 Export
@@ -665,52 +685,32 @@ export default function AdminExpenses() {
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Expenses</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(totalAmount)}
-                </p>
-              </div>
-              <DollarSign className="h-8 w-8 text-gray-400" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Total Expenses</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>
+              {formatCurrency(totalAmount)}
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-yellow-400">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Pending Approval</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {totalPendingCount}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {formatCurrency(totalPendingAmount)}
-                </p>
-              </div>
-              <AlertCircle className="h-8 w-8 text-yellow-500" />
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Pending Approval</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#e31c79' }}>
+              {totalPendingCount}
+            </div>
+            <div style={{ fontSize: 11, color: '#999' }}>
+              {formatCurrency(totalPendingAmount)}
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-green-400">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Approved</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {totalApprovedCount}
-                </p>
-              </div>
-              <Check className="h-8 w-8 text-green-500" />
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Approved</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>
+              {totalApprovedCount}
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Clients</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {clientGroups.length}
-                </p>
-              </div>
-              <Building2 className="h-8 w-8 text-gray-400" />
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Clients</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>
+              {clientGroups.length}
             </div>
           </div>
         </div>
@@ -718,17 +718,18 @@ export default function AdminExpenses() {
         {/* Client Groups */}
         <div className="space-y-4">
           {clientGroups.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-              <p className="text-gray-500">No expenses found for this month.</p>
+            <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 32, textAlign: 'center' }}>
+              <p style={{ fontSize: 13, color: '#999' }}>No expenses found for this month.</p>
             </div>
           ) : (
             clientGroups.map((group) => (
               <div
                 key={group.client_id}
-                className="bg-white rounded-lg shadow-sm overflow-hidden border"
+                className="overflow-hidden"
                 style={{
-                  borderColor:
-                    group.totalPending > 0 ? '#facc15' : '#e5e7eb',
+                  background: '#fff',
+                  border: '0.5px solid #e8e4df',
+                  borderRadius: 10,
                 }}
               >
                 {/* Client Header */}
@@ -745,10 +746,10 @@ export default function AdminExpenses() {
                       )}
                       <Building2 className="h-5 w-5 text-[#e31c79]" />
                       <div>
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
                           {group.client_name}
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p style={{ fontSize: 11, color: '#999' }}>
                           {formatCurrency(group.totalAmount)} total
                         </p>
                       </div>
@@ -756,7 +757,7 @@ export default function AdminExpenses() {
                     <div className="flex items-center gap-4">
                       {group.totalPending > 0 && (
                         <>
-                          <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded">
+                          <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-[3px]" style={{ fontSize: 9, fontWeight: 500 }}>
                             {group.totalPending} pending (
                             {formatCurrency(group.pendingAmount)})
                           </span>
@@ -765,13 +766,13 @@ export default function AdminExpenses() {
                               e.stopPropagation();
                               handleBulkApprove(group.client_id);
                             }}
-                            className="px-3 py-1 text-xs text-white bg-[#e31c79] rounded hover:bg-[#c91865]"
+                            style={{ padding: '4px 12px', fontSize: 10, fontWeight: 500, background: '#e31c79', color: '#fff', borderRadius: 5 }}
                           >
                             Approve All
                           </button>
                         </>
                       )}
-                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">
+                      <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded-[3px]" style={{ fontSize: 9, fontWeight: 500 }}>
                         {group.totalApproved} approved
                       </span>
                     </div>
@@ -780,41 +781,31 @@ export default function AdminExpenses() {
 
                 {/* Employee Expenses */}
                 {group.expanded && (
-                  <div className="border-t">
+                  <div style={{ borderTop: '0.5px solid #f0ece7' }}>
                     <table className="w-full">
-                      <thead className="bg-gray-50">
+                      <thead>
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Employee
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Department
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Expenses
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Total Amount
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
-                          </th>
+                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Employee</th>
+                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Department</th>
+                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Expenses</th>
+                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Total Amount</th>
+                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-200">
+                      <tbody>
                         {group.expenses.map((employee) => (
-                          <tr key={employee.employee_id}>
-                            <td className="px-6 py-4">
+                          <tr key={employee.employee_id} className="hover:bg-[#FDFCFB]" style={{ borderBottom: '0.5px solid #f5f2ee' }}>
+                            <td className="px-6 py-3">
                               <div>
-                                <p className="text-sm font-medium text-gray-900">
+                                <p style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
                                   {employee.employee_name}
                                 </p>
-                                <p className="text-xs text-gray-500">
+                                <p style={{ fontSize: 11, color: '#999' }}>
                                   {employee.employee_email}
                                 </p>
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
+                            <td className="px-6 py-3" style={{ fontSize: 12.5, color: '#555' }}>
                               {employee.department || '-'}
                             </td>
                             <td className="px-6 py-4">
@@ -830,9 +821,10 @@ export default function AdminExpenses() {
                                       {formatCurrency(exp.amount)}
                                     </span>
                                     <span
-                                      className={`px-1.5 py-0.5 text-xs font-semibold rounded ${getStatusColor(
+                                      className={`px-1.5 py-0.5 rounded-[3px] ${getStatusColor(
                                         exp.status
                                       )}`}
+                                      style={{ fontSize: 9, fontWeight: 500 }}
                                     >
                                       {exp.status}
                                     </span>

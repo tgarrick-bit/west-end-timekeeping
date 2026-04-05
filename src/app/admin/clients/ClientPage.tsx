@@ -10,13 +10,8 @@ import {
   Edit,
   Trash2,
   X,
-  DollarSign,
-  Calendar,
-  Users,
-  FolderOpen,
-  Phone,
   Mail,
-  MapPin
+  Phone,
 } from 'lucide-react';
 
 interface Client {
@@ -63,7 +58,7 @@ export default function ClientManagement() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  
+
   const supabase = createClient();
   const router = useRouter();
 
@@ -135,7 +130,7 @@ export default function ClientManagement() {
     let filtered = [...clients];
 
     if (searchTerm) {
-      filtered = filtered.filter(client => 
+      filtered = filtered.filter(client =>
         client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         client.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
         client.contact_email?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -151,7 +146,7 @@ export default function ClientManagement() {
         alert('Please enter at least a client name and code.');
         return;
       }
-  
+
       const payload = {
         name: formData.name.trim(),
         code: formData.code.trim(),
@@ -171,7 +166,7 @@ export default function ClientManagement() {
       const { error } = await supabase
         .from('clients')
         .insert([payload]);
-  
+
       if (error) {
         console.error('Supabase insert error:', {
           message: error.message,
@@ -182,7 +177,7 @@ export default function ClientManagement() {
         alert(`Error adding client: ${error.message}`);
         return;
       }
-  
+
       setShowAddModal(false);
       setFormData(initialFormData);
       fetchClients();
@@ -190,11 +185,11 @@ export default function ClientManagement() {
       console.error('Unexpected error adding client:', error);
       alert('Unexpected error adding client. Check console for details.');
     }
-  };   
+  };
 
   const handleUpdateClient = async () => {
     if (!selectedClient) return;
-  
+
     try {
       const payload = {
         name: formData.name.trim(),
@@ -216,7 +211,7 @@ export default function ClientManagement() {
         .from('clients')
         .update(payload)
         .eq('id', selectedClient.id);
-  
+
       if (error) {
         console.error('Supabase update error:', {
           message: error.message,
@@ -227,7 +222,7 @@ export default function ClientManagement() {
         alert(`Error updating client: ${error.message}`);
         return;
       }
-  
+
       setShowEditModal(false);
       setSelectedClient(null);
       setFormData(initialFormData);
@@ -236,7 +231,7 @@ export default function ClientManagement() {
       console.error('Unexpected error updating client:', error);
       alert('Unexpected error updating client. Check console for details.');
     }
-  };  
+  };
 
   const handleDeleteClient = async (id: string) => {
     if (!confirm('Are you sure you want to deactivate this client?')) return;
@@ -279,10 +274,7 @@ export default function ClientManagement() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="flex flex-col items-center gap-4">
-          <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
-            <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
-          </svg>
+          <div className="w-4 h-4 border-2 border-[#e8e4df] border-t-[#e31c79] rounded-full animate-spin" />
           <p className="text-[13px]" style={{ color: '#bbb' }}>Loading...</p>
         </div>
       </div>
@@ -292,373 +284,638 @@ export default function ClientManagement() {
   return (
     <>
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Actions Bar */}
+      <div style={{ padding: '36px 40px' }}>
+        {/* Page title */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
+              Clients
+            </h1>
+            <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb', marginTop: 4 }}>
+              Manage client companies and their details.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2"
+            style={{
+              backgroundColor: '#e31c79',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 7,
+              padding: '8px 18px',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#cc1069')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#e31c79')}
+          >
+            <Plus className="h-4 w-4" />
+            Add Client
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="relative mb-6" style={{ maxWidth: 360 }}>
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2"
+            style={{ width: 14, height: 14, color: '#d0cbc4' }}
+          />
+          <input
+            type="text"
+            placeholder="Search clients..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              paddingLeft: 34,
+              paddingRight: 12,
+              paddingTop: 8,
+              paddingBottom: 8,
+              border: '0.5px solid #e8e4df',
+              borderRadius: 7,
+              fontSize: 12,
+              color: '#1a1a1a',
+              outline: 'none',
+              background: '#fff',
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = '#d3ad6b')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = '#e8e4df')}
+          />
+        </div>
+
+        {/* Summary line */}
+        <div className="mb-4" style={{ fontSize: 12, color: '#999' }}>
+          Showing <span style={{ fontWeight: 600 }}>{filteredClients.length}</span> of{' '}
+          <span style={{ fontWeight: 600 }}>{clients.length}</span> clients
+          {' '}({clients.filter(c => c.is_active).length} active)
+        </div>
+
+        {/* Clients Table Card */}
         <div
-          className="bg-white rounded-lg shadow-sm mb-6 p-4"
-          style={{ borderWidth: '1px', borderColor: '#05202e' }}
+          style={{
+            background: '#fff',
+            border: '0.5px solid #e8e4df',
+            borderRadius: 10,
+            overflow: 'hidden',
+          }}
         >
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search clients..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
-              />
-            </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-pink text-white rounded-lg hover:bg-pink-600 flex items-center gap-2"
-              style={{ backgroundColor: '#e31c79' }}
-            >
-              <Plus className="h-4 w-4" />
-              Add Client
-            </button>
-          </div>
-        </div>
-
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {/* Card header */}
           <div
-            className="bg-white rounded-lg shadow-sm p-6"
-            style={{ borderWidth: '1px', borderColor: '#05202e' }}
+            style={{
+              padding: '14px 22px',
+              borderBottom: '0.5px solid #f0ece7',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Clients</p>
-                <p className="text-2xl font-bold text-gray-900">{clients.length}</p>
-              </div>
-              <Building2 className="h-8 w-8 text-gray-400" />
-            </div>
+            <Building2 style={{ width: 14, height: 14, color: '#bbb' }} />
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>
+              All Clients
+            </span>
           </div>
-          <div
-            className="bg-white rounded-lg shadow-sm p-6"
-            style={{ borderWidth: '1px', borderColor: '#05202e' }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Active Clients</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {clients.filter((c) => c.is_active).length}
-                </p>
-              </div>
-              <Users className="h-8 w-8 text-green-500" />
-            </div>
-          </div>
-          <div
-            className="bg-white rounded-lg shadow-sm p-6"
-            style={{ borderWidth: '1px', borderColor: '#05202e' }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Projects</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {clients.reduce((sum, c) => sum + (c.project_count || 0), 0)}
-                </p>
-              </div>
-              <FolderOpen className="h-8 w-8 text-blue-500" />
-            </div>
-          </div>
-        </div>
 
-        {/* Clients Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredClients.map((client) => (
-            <div
-              key={client.id}
-              className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
-              style={{
-                borderWidth: '1px',
-                borderColor: client.is_active ? '#05202e' : '#ccc',
-              }}
-            >
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-50 rounded-lg">
-                      <Building2 className="h-6 w-6 text-blue-600" />
+          {/* Table */}
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th
+                  style={{
+                    padding: '10px 22px',
+                    textAlign: 'left',
+                    fontSize: 9,
+                    fontWeight: 500,
+                    letterSpacing: 1,
+                    color: '#ccc',
+                    textTransform: 'uppercase',
+                    background: 'transparent',
+                    border: 'none',
+                  }}
+                >
+                  Client
+                </th>
+                <th
+                  style={{
+                    padding: '10px 22px',
+                    textAlign: 'left',
+                    fontSize: 9,
+                    fontWeight: 500,
+                    letterSpacing: 1,
+                    color: '#ccc',
+                    textTransform: 'uppercase',
+                    background: 'transparent',
+                    border: 'none',
+                  }}
+                >
+                  Contact
+                </th>
+                <th
+                  style={{
+                    padding: '10px 22px',
+                    textAlign: 'left',
+                    fontSize: 9,
+                    fontWeight: 500,
+                    letterSpacing: 1,
+                    color: '#ccc',
+                    textTransform: 'uppercase',
+                    background: 'transparent',
+                    border: 'none',
+                  }}
+                >
+                  Rate
+                </th>
+                <th
+                  style={{
+                    padding: '10px 22px',
+                    textAlign: 'left',
+                    fontSize: 9,
+                    fontWeight: 500,
+                    letterSpacing: 1,
+                    color: '#ccc',
+                    textTransform: 'uppercase',
+                    background: 'transparent',
+                    border: 'none',
+                  }}
+                >
+                  Employees
+                </th>
+                <th
+                  style={{
+                    padding: '10px 22px',
+                    textAlign: 'left',
+                    fontSize: 9,
+                    fontWeight: 500,
+                    letterSpacing: 1,
+                    color: '#ccc',
+                    textTransform: 'uppercase',
+                    background: 'transparent',
+                    border: 'none',
+                  }}
+                >
+                  Projects
+                </th>
+                <th
+                  style={{
+                    padding: '10px 22px',
+                    textAlign: 'left',
+                    fontSize: 9,
+                    fontWeight: 500,
+                    letterSpacing: 1,
+                    color: '#ccc',
+                    textTransform: 'uppercase',
+                    background: 'transparent',
+                    border: 'none',
+                  }}
+                >
+                  Status
+                </th>
+                <th
+                  style={{
+                    padding: '10px 22px',
+                    textAlign: 'right',
+                    fontSize: 9,
+                    fontWeight: 500,
+                    letterSpacing: 1,
+                    color: '#ccc',
+                    textTransform: 'uppercase',
+                    background: 'transparent',
+                    border: 'none',
+                  }}
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredClients.map((client) => (
+                <tr
+                  key={client.id}
+                  style={{
+                    borderTop: '0.5px solid #f5f2ee',
+                    cursor: 'default',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#FDFCFB')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  {/* Client name + code */}
+                  <td style={{ padding: '12px 22px' }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 400, color: '#555' }}>
+                      {client.name}
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{client.name}</h3>
-                      <p className="text-sm text-gray-500">Code: {client.code}</p>
+                    <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
+                      {client.code}
                     </div>
-                  </div>
-                  <span
-                    className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      client.is_active
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {client.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
+                  </td>
 
-                <div className="space-y-2 mb-4">
-                  {client.contact_email && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Mail className="h-4 w-4" />
-                      <span>{client.contact_email}</span>
-                    </div>
-                  )}
-                  {client.contact_phone && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Phone className="h-4 w-4" />
-                      <span>{client.contact_phone}</span>
-                    </div>
-                  )}
-                  {client.bill_rate && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <DollarSign className="h-4 w-4" />
-                      <span>${client.bill_rate}/hour</span>
-                    </div>
-                  )}
-                </div>
+                  {/* Contact */}
+                  <td style={{ padding: '12px 22px' }}>
+                    {client.contact_email ? (
+                      <div className="flex items-center gap-1.5" style={{ fontSize: 12.5, color: '#555' }}>
+                        <Mail style={{ width: 11, height: 11, color: '#ccc' }} />
+                        {client.contact_email}
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: 12.5, color: '#ccc' }}>--</span>
+                    )}
+                    {client.contact_phone && (
+                      <div className="flex items-center gap-1.5" style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+                        <Phone style={{ width: 10, height: 10, color: '#ccc' }} />
+                        {client.contact_phone}
+                      </div>
+                    )}
+                  </td>
 
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <div className="flex gap-4 text-sm">
-                    <span className="text-gray-500">
-                      <span className="font-semibold text-gray-700">
-                        {client.employee_count}
-                      </span>{' '}
-                      employees
-                    </span>
-                    <span className="text-gray-500">
-                      <span className="font-semibold text-gray-700">
-                        {client.project_count}
-                      </span>{' '}
-                      projects
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => openEditModal(client)}
-                      className="p-1 hover:bg-gray-100 rounded"
+                  {/* Bill rate */}
+                  <td style={{ padding: '12px 22px', fontSize: 12.5, fontWeight: 400, color: '#555' }}>
+                    {client.bill_rate ? `$${client.bill_rate}/hr` : '--'}
+                  </td>
+
+                  {/* Employee count */}
+                  <td style={{ padding: '12px 22px', fontSize: 12.5, fontWeight: 400, color: '#555' }}>
+                    {client.employee_count}
+                  </td>
+
+                  {/* Project count */}
+                  <td style={{ padding: '12px 22px', fontSize: 12.5, fontWeight: 400, color: '#555' }}>
+                    {client.project_count}
+                  </td>
+
+                  {/* Status */}
+                  <td style={{ padding: '12px 22px' }}>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        fontSize: 10,
+                        fontWeight: 500,
+                        padding: '2px 8px',
+                        borderRadius: 9999,
+                        backgroundColor: client.is_active ? '#f0fdf4' : '#f5f5f5',
+                        color: client.is_active ? '#22c55e' : '#999',
+                      }}
                     >
-                      <Edit className="h-4 w-4 text-gray-600" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClient(client.id)}
-                      className="p-1 hover:bg-gray-100 rounded"
-                    >
-                      <Trash2 className="h-4 w-4 text-red-600" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+                      {client.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+
+                  {/* Actions */}
+                  <td style={{ padding: '12px 22px', textAlign: 'right' }}>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => openEditModal(client)}
+                        style={{
+                          background: '#fff',
+                          border: '0.5px solid #e0dcd7',
+                          borderRadius: 5,
+                          padding: '4px 6px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                        }}
+                        title="Edit"
+                      >
+                        <Edit style={{ width: 12, height: 12, color: '#777' }} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClient(client.id)}
+                        style={{
+                          background: '#fff',
+                          border: '0.5px solid #e0dcd7',
+                          borderRadius: 5,
+                          padding: '4px 6px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                        }}
+                        title="Deactivate"
+                      >
+                        <Trash2 style={{ width: 12, height: 12, color: '#777' }} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+
+              {filteredClients.length === 0 && (
+                <tr>
+                  <td colSpan={7} style={{ padding: '40px 22px', textAlign: 'center' }}>
+                    <p style={{ fontSize: 13, color: '#999' }}>No clients found.</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
       {/* Add/Edit Modal */}
       {(showAddModal || showEditModal) && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {showAddModal ? 'Add New Client' : 'Edit Client'}
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setShowEditModal(false);
-                    setFormData(initialFormData);
-                  }}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+        <div
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.35)', zIndex: 50 }}
+        >
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: 10,
+              border: '0.5px solid #e8e4df',
+              maxWidth: 640,
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}
+          >
+            {/* Modal header */}
+            <div
+              style={{
+                padding: '14px 22px',
+                borderBottom: '0.5px solid #f0ece7',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>
+                {showAddModal ? 'Add New Client' : 'Edit Client'}
+              </span>
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setShowEditModal(false);
+                  setFormData(initialFormData);
+                }}
+                style={{
+                  background: '#fff',
+                  border: '0.5px solid #e0dcd7',
+                  borderRadius: 5,
+                  padding: '4px 6px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                }}
+              >
+                <X style={{ width: 14, height: 14, color: '#777' }} />
+              </button>
             </div>
 
-            <div className="p-6">
+            {/* Modal body */}
+            <div style={{ padding: '20px 22px' }}>
               <div className="grid grid-cols-2 gap-4">
+                {/* Client Name */}
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label style={{ display: 'block', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', marginBottom: 6 }}>
                     Client Name *
                   </label>
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '0.5px solid #e8e4df',
+                      borderRadius: 7,
+                      fontSize: 12,
+                      color: '#1a1a1a',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#d3ad6b')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#e8e4df')}
                     required
                   />
                 </div>
 
+                {/* Client Code */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label style={{ display: 'block', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', marginBottom: 6 }}>
                     Client Code *
                   </label>
                   <input
                     type="text"
                     value={formData.code}
-                    onChange={(e) =>
-                      setFormData({ ...formData, code: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                     placeholder="e.g., CHK001"
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '0.5px solid #e8e4df',
+                      borderRadius: 7,
+                      fontSize: 12,
+                      color: '#1a1a1a',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#d3ad6b')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#e8e4df')}
                     required
                   />
                 </div>
 
+                {/* Bill Rate */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label style={{ display: 'block', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', marginBottom: 6 }}>
                     Bill Rate ($/hour)
                   </label>
                   <input
                     type="number"
                     step="0.01"
                     value={formData.bill_rate}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        bill_rate: parseFloat(e.target.value),
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
+                    onChange={(e) => setFormData({ ...formData, bill_rate: parseFloat(e.target.value) })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '0.5px solid #e8e4df',
+                      borderRadius: 7,
+                      fontSize: 12,
+                      color: '#1a1a1a',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#d3ad6b')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#e8e4df')}
                   />
                 </div>
 
+                {/* Contact Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label style={{ display: 'block', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', marginBottom: 6 }}>
                     Contact Name
                   </label>
                   <input
                     type="text"
                     value={formData.contact_name}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contact_name: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
+                    onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '0.5px solid #e8e4df',
+                      borderRadius: 7,
+                      fontSize: 12,
+                      color: '#1a1a1a',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#d3ad6b')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#e8e4df')}
                   />
                 </div>
 
+                {/* Contact Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label style={{ display: 'block', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', marginBottom: 6 }}>
                     Contact Email
                   </label>
                   <input
                     type="email"
                     value={formData.contact_email}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contact_email: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
+                    onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '0.5px solid #e8e4df',
+                      borderRadius: 7,
+                      fontSize: 12,
+                      color: '#1a1a1a',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#d3ad6b')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#e8e4df')}
                   />
                 </div>
 
+                {/* Contact Phone */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label style={{ display: 'block', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', marginBottom: 6 }}>
                     Contact Phone
                   </label>
                   <input
                     type="tel"
                     value={formData.contact_phone}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contact_phone: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
+                    onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '0.5px solid #e8e4df',
+                      borderRadius: 7,
+                      fontSize: 12,
+                      color: '#1a1a1a',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#d3ad6b')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#e8e4df')}
                   />
                 </div>
 
+                {/* Contract Start */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Contract Start Date
+                  <label style={{ display: 'block', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', marginBottom: 6 }}>
+                    Contract Start
                   </label>
                   <input
                     type="date"
                     value={formData.contract_start}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contract_start: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
+                    onChange={(e) => setFormData({ ...formData, contract_start: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '0.5px solid #e8e4df',
+                      borderRadius: 7,
+                      fontSize: 12,
+                      color: '#1a1a1a',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#d3ad6b')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#e8e4df')}
                   />
                 </div>
 
+                {/* Contract End */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Contract End Date
+                  <label style={{ display: 'block', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', marginBottom: 6 }}>
+                    Contract End
                   </label>
                   <input
                     type="date"
                     value={formData.contract_end}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contract_end: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
+                    onChange={(e) => setFormData({ ...formData, contract_end: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '0.5px solid #e8e4df',
+                      borderRadius: 7,
+                      fontSize: 12,
+                      color: '#1a1a1a',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#d3ad6b')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#e8e4df')}
                   />
                 </div>
 
+                {/* Address */}
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label style={{ display: 'block', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', marginBottom: 6 }}>
                     Street Address
                   </label>
                   <input
                     type="text"
                     value={formData.address}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        address: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '0.5px solid #e8e4df',
+                      borderRadius: 7,
+                      fontSize: 12,
+                      color: '#1a1a1a',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#d3ad6b')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#e8e4df')}
                   />
                 </div>
 
+                {/* City */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label style={{ display: 'block', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', marginBottom: 6 }}>
                     City
                   </label>
                   <input
                     type="text"
                     value={formData.city}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        city: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '0.5px solid #e8e4df',
+                      borderRadius: 7,
+                      fontSize: 12,
+                      color: '#1a1a1a',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#d3ad6b')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#e8e4df')}
                   />
                 </div>
 
+                {/* State */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label style={{ display: 'block', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', marginBottom: 6 }}>
                     State
                   </label>
                   <select
                     value={formData.state}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        state: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
+                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '0.5px solid #e8e4df',
+                      borderRadius: 7,
+                      fontSize: 12,
+                      color: '#1a1a1a',
+                      outline: 'none',
+                      background: '#fff',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#d3ad6b')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#e8e4df')}
                   >
                     <option value="OK">Oklahoma</option>
                     <option value="TX">Texas</option>
@@ -668,36 +925,49 @@ export default function ClientManagement() {
                   </select>
                 </div>
 
+                {/* ZIP */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label style={{ display: 'block', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', marginBottom: 6 }}>
                     ZIP Code
                   </label>
                   <input
                     type="text"
                     value={formData.zip}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        zip: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
+                    onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '0.5px solid #e8e4df',
+                      borderRadius: 7,
+                      fontSize: 12,
+                      color: '#1a1a1a',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#d3ad6b')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#e8e4df')}
                   />
                 </div>
 
+                {/* Status */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label style={{ display: 'block', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', marginBottom: 6 }}>
                     Status
                   </label>
                   <select
                     value={formData.is_active ? 'active' : 'inactive'}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        is_active: e.target.value === 'active',
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink focus:border-transparent"
+                    onChange={(e) => setFormData({ ...formData, is_active: e.target.value === 'active' })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '0.5px solid #e8e4df',
+                      borderRadius: 7,
+                      fontSize: 12,
+                      color: '#1a1a1a',
+                      outline: 'none',
+                      background: '#fff',
+                    }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#d3ad6b')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = '#e8e4df')}
                   >
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
@@ -705,6 +975,7 @@ export default function ClientManagement() {
                 </div>
               </div>
 
+              {/* Modal actions */}
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   onClick={() => {
@@ -712,14 +983,32 @@ export default function ClientManagement() {
                     setShowEditModal(false);
                     setFormData(initialFormData);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  style={{
+                    background: '#fff',
+                    border: '0.5px solid #e0dcd7',
+                    borderRadius: 7,
+                    padding: '8px 18px',
+                    fontSize: 12,
+                    color: '#777',
+                    cursor: 'pointer',
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={showAddModal ? handleAddClient : handleUpdateClient}
-                  className="px-4 py-2 text-white rounded-lg hover:opacity-90"
-                  style={{ backgroundColor: '#e31c79' }}
+                  style={{
+                    backgroundColor: '#e31c79',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 7,
+                    padding: '8px 18px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#cc1069')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#e31c79')}
                 >
                   {showAddModal ? 'Add Client' : 'Save Changes'}
                 </button>

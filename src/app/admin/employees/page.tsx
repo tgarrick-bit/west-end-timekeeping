@@ -4,14 +4,11 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import {
-  Users,
   Plus,
   Search,
   Edit,
   Trash2,
   X,
-  UserCheck,
-  Building2,
 } from 'lucide-react';
 
 const US_STATES = [
@@ -482,10 +479,7 @@ export default function EmployeeManagement() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="flex flex-col items-center gap-4">
-          <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
-            <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
-          </svg>
+          <div className="w-4 h-4 border-2 border-[#e8e4df] border-t-[#e31c79] rounded-full animate-spin" />
           <p className="text-[13px]" style={{ color: '#bbb' }}>Loading...</p>
         </div>
       </div>
@@ -494,228 +488,207 @@ export default function EmployeeManagement() {
 
   return (
     <>
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Actions Bar */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            {/* Left side: search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search employees..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
-              />
-            </div>
-
-            {/* Right side: button */}
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865] flex items-center gap-2 self-start md:self-auto"
-            >
-              <Plus className="h-4 w-4" />
-              Add Employee
-            </button>
-          </div>
+      {/* Page content */}
+      <div style={{ padding: '36px 40px' }}>
+        {/* Page title */}
+        <div style={{ marginBottom: 28 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
+            Employees
+          </h1>
+          <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb', margin: '4px 0 0' }}>
+            Manage employee accounts, roles, and pay rates.
+          </p>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Employees</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {employees.length}
-                </p>
-              </div>
-              <Users className="h-8 w-8 text-gray-400" />
-            </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2', margin: 0 }}>Total</p>
+            <p style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', margin: '4px 0 0' }}>{employees.length}</p>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Active</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {employees.filter((e) => e.is_active).length}
-                </p>
-              </div>
-              <UserCheck className="h-8 w-8 text-green-500" />
-            </div>
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2', margin: 0 }}>Active</p>
+            <p style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', margin: '4px 0 0' }}>{employees.filter((e) => e.is_active).length}</p>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Managers</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {employees.filter((e) => e.role === 'manager').length}
-                </p>
-              </div>
-              <Building2 className="h-8 w-8 text-blue-500" />
-            </div>
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2', margin: 0 }}>Managers</p>
+            <p style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', margin: '4px 0 0' }}>{employees.filter((e) => e.role === 'manager').length}</p>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Admins</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {employees.filter((e) => e.role === 'admin').length}
-                </p>
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2', margin: 0 }}>Admins</p>
+            <p style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', margin: '4px 0 0' }}>{employees.filter((e) => e.role === 'admin').length}</p>
+          </div>
+        </div>
+
+        {/* Section header + search/actions */}
+        <div style={{ marginBottom: 12 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', margin: '0 0 12px' }}>
+            Employee Directory
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+              <div className="relative" style={{ flex: 1, maxWidth: 320 }}>
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search employees..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{ width: '100%', padding: '7px 12px 7px 36px', fontSize: 12, border: '0.5px solid #e8e4df', borderRadius: 7, outline: 'none' }}
+                  onFocus={(e) => (e.target.style.borderColor = '#d3ad6b')}
+                  onBlur={(e) => (e.target.style.borderColor = '#e8e4df')}
+                />
               </div>
-              <UserCheck className="h-8 w-8 text-purple-500" />
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value as RoleFilter)}
+                style={{ fontSize: 12, padding: '7px 10px', border: '0.5px solid #e8e4df', borderRadius: 7, background: '#fff', color: '#777', outline: 'none' }}
+              >
+                <option value="all">All roles</option>
+                <option value="employee">Employees</option>
+                <option value="manager">Managers</option>
+                <option value="admin">Admins</option>
+              </select>
+              <select
+                value={managerFilter}
+                onChange={(e) => setManagerFilter(e.target.value)}
+                style={{ fontSize: 12, padding: '7px 10px', border: '0.5px solid #e8e4df', borderRadius: 7, background: '#fff', color: '#777', outline: 'none' }}
+              >
+                <option value="all">All managers</option>
+                {managers.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {formatName(m.first_name, m.middle_name, m.last_name)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, color: '#999' }}>
+                {filteredEmployees.length} of {employees.length}
+              </span>
+              <button
+                onClick={() => setShowAddModal(true)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 16px', fontSize: 12, fontWeight: 500, background: '#e31c79', color: '#fff', border: 'none', borderRadius: 7, cursor: 'pointer' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#cc1069')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#e31c79')}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Employee
+              </button>
             </div>
           </div>
         </div>
 
         {/* Employee Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <table className="min-w-full">
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              {/* Main header row */}
-              <tr className="bg-[#1a1a1a] text-white">
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+              <tr>
+                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7' }}>
                   Employee
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7' }}>
                   Contact
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7' }}>
                   Role
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7' }}>
                   Manager
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7' }}>
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th style={{ padding: '10px 16px', textAlign: 'right', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7' }}>
                   Actions
                 </th>
               </tr>
-
-              {/* Filter row */}
-              <tr className="bg-gray-50 text-gray-700 text-xs">
-                {/* Employee column – no filter here */}
-                <th className="px-6 py-2" />
-
-                {/* Contact column – no filter here */}
-                <th className="px-6 py-2" />
-
-                {/* Role filter */}
-                <th className="px-6 py-2">
-                  <select
-                    value={roleFilter}
-                    onChange={(e) =>
-                      setRoleFilter(e.target.value as RoleFilter)
-                    }
-                    className="w-full text-xs px-2 py-1 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-[#e31c79]"
-                  >
-                    <option value="all">All</option>
-                    <option value="employee">Employees</option>
-                    <option value="manager">Managers</option>
-                    <option value="admin">Admins</option>
-                  </select>
-                </th>
-
-                {/* Manager filter */}
-                <th className="px-6 py-2">
-                  <select
-                    value={managerFilter}
-                    onChange={(e) => setManagerFilter(e.target.value)}
-                    className="w-full text-xs px-2 py-1 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-[#e31c79]"
-                  >
-                    <option value="all">All</option>
-                    {managers.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {formatName(m.first_name, m.middle_name, m.last_name)}
-                      </option>
-                    ))}
-                  </select>
-                </th>
-
-                {/* Status & Actions – no filters */}
-                <th className="px-6 py-2" />
-                <th className="px-6 py-2" />
-              </tr>
             </thead>
 
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody>
               {filteredEmployees.map((employee) => (
-                <tr key={employee.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                <tr
+                  key={employee.id}
+                  style={{ borderBottom: '0.5px solid #f5f2ee', cursor: 'pointer' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#FDFCFB')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  onClick={() => openEditModal(employee)}
+                >
+                  <td style={{ padding: '10px 16px' }}>
                     <div>
-                      <div className="text-sm font-medium text-gray-900">
+                      <div style={{ fontSize: 12.5, fontWeight: 500, color: '#333' }}>
                         {formatName(
                           employee.first_name,
                           employee.middle_name,
                           employee.last_name
                         )}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div style={{ fontSize: 11, color: '#aaa', marginTop: 1 }}>
                         {employee.mybase_payroll_id ||
                           employee.employee_id ||
                           'No ID'}
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
+                  <td style={{ padding: '10px 16px' }}>
+                    <div style={{ fontSize: 12.5, color: '#555' }}>
                       {employee.email}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div style={{ fontSize: 11, color: '#aaa', marginTop: 1 }}>
                       {employee.phone || 'No phone'}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td style={{ padding: '10px 16px' }}>
                     <span
-                      className={`px-2 inline-flex leading-5 rounded
-                      ${
-                        employee.role === 'admin'
-                          ? 'bg-purple-100 text-purple-800'
+                      style={{
+                        display: 'inline-block',
+                        padding: '2px 8px',
+                        fontSize: 9,
+                        fontWeight: 500,
+                        borderRadius: 3,
+                        ...(employee.role === 'admin'
+                          ? { background: '#f3f0ff', color: '#7c5cbf' }
                           : employee.role === 'manager'
-                          ? 'bg-blue-100 text-blue-800'
+                          ? { background: '#eef6ff', color: '#4a8fd4' }
                           : employee.role === 'time_approver'
-                          ? 'bg-orange-100 text-orange-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
+                          ? { background: '#fff8ee', color: '#c08830' }
+                          : { background: '#f5f5f3', color: '#888' }),
+                      }}
                     >
                       {employee.role}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-700">
-                      {getManagerName(employee)}
-                    </span>
+                  <td style={{ padding: '10px 16px', fontSize: 12.5, color: '#555' }}>
+                    {getManagerName(employee)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td style={{ padding: '10px 16px' }}>
                     <span
-                      className={`px-2 inline-flex leading-5 rounded
-                      ${
-                        employee.is_active
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
+                      style={{
+                        display: 'inline-block',
+                        padding: '2px 8px',
+                        fontSize: 9,
+                        fontWeight: 500,
+                        borderRadius: 3,
+                        ...(employee.is_active
+                          ? { background: '#eefbee', color: '#3d8c40' }
+                          : { background: '#fdf2f2', color: '#c44' }),
+                      }}
                     >
                       {employee.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <td style={{ padding: '10px 16px', textAlign: 'right' }}>
                     <button
-                      onClick={() => openEditModal(employee)}
-                      className="text-[#e31c79] hover:text-[#c91865] mr-3"
+                      onClick={(e) => { e.stopPropagation(); openEditModal(employee); }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e31c79', padding: 4, marginRight: 4 }}
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-3.5 w-3.5" />
                     </button>
                     <button
-                      onClick={() =>
-                        handleDeactivateEmployee(employee.id)
-                      }
-                      className="text-red-600 hover:text-red-900"
+                      onClick={(e) => { e.stopPropagation(); handleDeactivateEmployee(employee.id); }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: 4 }}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </td>
                 </tr>
@@ -723,28 +696,26 @@ export default function EmployeeManagement() {
             </tbody>
           </table>
         </div>
-      </main>
+      </div>
 
       {/* Add/Edit Modal */}
       {(showAddModal || showEditModal) && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {showAddModal ? 'Add New Employee' : 'Edit Employee'}
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setShowEditModal(false);
-                    resetForm();
-                  }}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+        <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{ background: 'rgba(0,0,0,0.35)' }}>
+          <div style={{ background: '#fff', borderRadius: 10, border: '0.5px solid #e8e4df', maxWidth: 640, width: '100%', maxHeight: '90vh', overflow: 'auto' }}>
+            <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h2 style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
+                {showAddModal ? 'Add New Employee' : 'Edit Employee'}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setShowEditModal(false);
+                  resetForm();
+                }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#999' }}
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
             <div className="p-6">
@@ -1140,7 +1111,7 @@ export default function EmployeeManagement() {
                     setShowEditModal(false);
                     resetForm();
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  style={{ padding: '7px 16px', fontSize: 12, fontWeight: 500, background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 7, color: '#777', cursor: 'pointer' }}
                 >
                   Cancel
                 </button>
@@ -1151,7 +1122,9 @@ export default function EmployeeManagement() {
                       : handleUpdateEmployee
                   }
                   disabled={isCreating}
-                  className="px-4 py-2 bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865] disabled:opacity-60"
+                  style={{ padding: '7px 16px', fontSize: 12, fontWeight: 500, background: '#e31c79', border: 'none', borderRadius: 7, color: '#fff', cursor: 'pointer', opacity: isCreating ? 0.6 : 1 }}
+                  onMouseEnter={(e) => { if (!isCreating) e.currentTarget.style.background = '#cc1069'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#e31c79'; }}
                 >
                   {showAddModal
                     ? isCreating

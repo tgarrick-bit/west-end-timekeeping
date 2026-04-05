@@ -383,59 +383,69 @@ export default function AdminSettingsPage() {
 
   return (
     <RoleGuard allowedRoles={['admin']}>
-      <>
-        {/* Save bar */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-end">
+      <div style={{ padding: '36px 40px' }}>
+        {/* Page Header + Save */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>Settings</h1>
+            <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb' }}>Company configuration, time rules, and integrations</p>
+          </div>
           <button
             onClick={saveSettings}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+            className="flex items-center gap-2 disabled:opacity-50"
+            style={{ padding: '8px 16px', background: '#e31c79', color: '#fff', borderRadius: 7, fontSize: 12, fontWeight: 500 }}
+            onMouseEnter={(e) => { if (!saving) e.currentTarget.style.background = '#cc1069'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#e31c79'; }}
           >
             <Save className="h-4 w-4" />
             {saving ? 'Saving...' : 'Save Settings'}
           </button>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {/* Save Message */}
-          {saveMessage && (
-            <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
-              saveMessage.includes('Error') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
-            }`}>
-              {saveMessage.includes('Error') ? (
-                <X className="h-4 w-4" />
-              ) : (
-                <Check className="h-4 w-4" />
-              )}
-              {saveMessage}
-            </div>
-          )}
+        {/* Save Message */}
+        {saveMessage && (
+          <div className={`mb-4 flex items-center gap-2 ${
+            saveMessage.includes('Error') ? 'text-red-700' : 'text-green-700'
+          }`} style={{ padding: '10px 14px', borderRadius: 7, background: saveMessage.includes('Error') ? '#fef2f2' : '#f0fdf4', fontSize: 12 }}>
+            {saveMessage.includes('Error') ? (
+              <X className="h-4 w-4" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
+            {saveMessage}
+          </div>
+        )}
 
-          <div className="flex gap-6">
-            {/* Sidebar Tabs */}
-            <div className="w-64 space-y-1">
-              {TABS.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-white shadow-sm text-blue-600 font-medium'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <tab.icon className="h-5 w-5" />
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+        <div className="flex gap-6">
+          {/* Sidebar Tabs */}
+          <div className="w-64 space-y-1">
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className="w-full flex items-center gap-3 px-4 py-3 transition-colors"
+                style={{
+                  borderRadius: 7,
+                  fontSize: 12,
+                  fontWeight: activeTab === tab.id ? 600 : 400,
+                  color: activeTab === tab.id ? '#1a1a1a' : '#777',
+                  background: activeTab === tab.id ? '#fff' : 'transparent',
+                  border: activeTab === tab.id ? '0.5px solid #e8e4df' : '0.5px solid transparent',
+                }}
+              >
+                <tab.icon className="h-4 w-4" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-            {/* Content Area */}
-            <div className="flex-1 bg-white rounded-lg shadow-sm p-6">
+          {/* Content Area */}
+          <div className="flex-1" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 24 }}>
               {/* Global Settings Tab */}
               {activeTab === 'global' && (
                 <div className="space-y-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Global Settings</h2>
+                  <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', marginBottom: 16 }}>Global Settings</h2>
                   
                   <div className="grid grid-cols-2 gap-6">
                     <div>
@@ -500,7 +510,7 @@ export default function AdminSettingsPage() {
               {/* Defaults Tab */}
               {activeTab === 'defaults' && (
                 <div className="space-y-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Default Settings</h2>
+                  <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', marginBottom: 16 }}>Default Settings</h2>
                   
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -581,7 +591,7 @@ export default function AdminSettingsPage() {
               {activeTab === 'time' && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-gray-900">Time & Attendance Settings</h2>
+                    <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' }}>Time & Attendance Settings</h2>
                     <label className="flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -814,7 +824,7 @@ export default function AdminSettingsPage() {
               {activeTab === 'expense' && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-gray-900">Expense Settings</h2>
+                    <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' }}>Expense Settings</h2>
                     <label className="flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -857,7 +867,7 @@ export default function AdminSettingsPage() {
               {activeTab === 'approvers' && (
                 <div className="space-y-8">
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Enterprise Time Approvers</h2>
+                    <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', marginBottom: 16 }}>Enterprise Time Approvers</h2>
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -908,7 +918,7 @@ export default function AdminSettingsPage() {
                   </div>
 
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Enterprise Expense Approvers</h2>
+                    <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', marginBottom: 16 }}>Enterprise Expense Approvers</h2>
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -964,7 +974,7 @@ export default function AdminSettingsPage() {
               {activeTab === 'integrations' && (
                 <div className="space-y-8">
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">System Integrations</h2>
+                    <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', marginBottom: 16 }}>System Integrations</h2>
                     
                     {/* QuickBooks Integration */}
                     <div className="border rounded-lg p-6 space-y-4 mb-6">
@@ -1063,7 +1073,6 @@ export default function AdminSettingsPage() {
             </div>
           </div>
         </div>
-      </>
     </RoleGuard>
   );
 }

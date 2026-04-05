@@ -363,14 +363,16 @@ export default function PayrollPage() {
     emp ? `${emp.last_name}, ${emp.first_name}` : 'Unknown'
 
   const statusBadge = (status: string) => {
-    const base = 'inline-flex px-2 py-0.5 rounded'
+    const base = 'inline-flex px-2 py-0.5'
+    const radius = 'rounded-[3px]'
+    const font = 'text-[9px] font-medium'
     switch (status) {
-      case 'payroll_approved': return `${base} bg-emerald-100 text-emerald-800`
-      case 'client_approved': return `${base} bg-blue-100 text-blue-800`
-      case 'approved': return `${base} bg-green-100 text-green-800`
-      case 'submitted': return `${base} bg-yellow-100 text-yellow-800`
-      case 'rejected': return `${base} bg-red-100 text-red-800`
-      default: return `${base} bg-gray-100 text-gray-800`
+      case 'payroll_approved': return `${base} ${radius} ${font} bg-emerald-100 text-emerald-800`
+      case 'client_approved': return `${base} ${radius} ${font} bg-blue-100 text-blue-800`
+      case 'approved': return `${base} ${radius} ${font} bg-green-100 text-green-800`
+      case 'submitted': return `${base} ${radius} ${font} bg-yellow-100 text-yellow-800`
+      case 'rejected': return `${base} ${radius} ${font} bg-red-100 text-red-800`
+      default: return `${base} ${radius} ${font} bg-gray-100 text-gray-800`
     }
   }
 
@@ -387,16 +389,23 @@ export default function PayrollPage() {
 
   return (
     <>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div style={{ padding: '36px 40px' }}>
+        {/* Page Header */}
+        <div className="mb-6">
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>Payroll</h1>
+          <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb' }}>Manage pay periods, finalize timesheets, and export payroll data</p>
+        </div>
+
         {/* Period Selector */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6 border border-gray-200">
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px', marginBottom: 24 }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <label className="text-sm font-medium text-gray-700">Pay Period:</label>
+              <label style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Pay Period</label>
               <select
                 value={selectedPeriodId || ''}
                 onChange={(e) => setSelectedPeriodId(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#e31c79] focus:border-[#e31c79] text-sm"
+                style={{ border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, padding: '6px 10px' }}
+                className="focus:outline-none focus:border-[#d3ad6b]"
               >
                 {periods.length === 0 && <option value="">No periods generated</option>}
                 {periods.map(p => (
@@ -405,19 +414,16 @@ export default function PayrollPage() {
                   </option>
                 ))}
               </select>
-              <button onClick={loadTimesheets} className="p-2 hover:bg-gray-100 rounded-lg" title="Refresh">
-                <RefreshCw className="h-4 w-4 text-gray-500" />
+              <button onClick={loadTimesheets} className="p-2 hover:bg-[#FDFCFB] rounded-lg" title="Refresh">
+                <RefreshCw className="h-4 w-4" style={{ color: '#777' }} />
               </button>
             </div>
             <div className="flex items-center gap-2">
               {selectedPeriod && (
                 <button
                   onClick={handleToggleLock}
-                  className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg border ${
-                    selectedPeriod.is_locked
-                      ? 'border-orange-300 text-orange-700 hover:bg-orange-50'
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
+                  style={{ border: '0.5px solid #e0dcd7', borderRadius: 7, fontSize: 12, color: '#777', padding: '6px 12px' }}
+                  className="flex items-center gap-2 hover:border-[#ccc] hover:text-[#555]"
                 >
                   {selectedPeriod.is_locked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
                   {selectedPeriod.is_locked ? 'Unlock Period' : 'Lock Period'}
@@ -429,28 +435,28 @@ export default function PayrollPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-            <div className="text-sm text-gray-600">Total</div>
-            <div className="text-2xl font-bold text-[#1a1814]">{timesheets.length}</div>
-            <div className="text-xs text-gray-500">{totalHours.toFixed(1)} hrs</div>
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Total</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{timesheets.length}</div>
+            <div style={{ fontSize: 11, color: '#999' }}>{totalHours.toFixed(1)} hrs</div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-green-500">
-            <div className="text-sm text-gray-600">Approved</div>
-            <div className="text-2xl font-bold text-green-600">{approved.length}</div>
-            <div className="text-xs text-gray-500">{approvedHours.toFixed(1)} hrs</div>
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Approved</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{approved.length}</div>
+            <div style={{ fontSize: 11, color: '#999' }}>{approvedHours.toFixed(1)} hrs</div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-emerald-500">
-            <div className="text-sm text-gray-600">Finalized</div>
-            <div className="text-2xl font-bold text-emerald-600">{finalized.length}</div>
-            <div className="text-xs text-gray-500">{finalizedHours.toFixed(1)} hrs</div>
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Finalized</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{finalized.length}</div>
+            <div style={{ fontSize: 11, color: '#999' }}>{finalizedHours.toFixed(1)} hrs</div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-yellow-500">
-            <div className="text-sm text-gray-600">Pending</div>
-            <div className="text-2xl font-bold text-yellow-600">{submitted.length}</div>
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Pending</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#e31c79' }}>{submitted.length}</div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-gray-400">
-            <div className="text-sm text-gray-600">Draft / Rejected</div>
-            <div className="text-2xl font-bold text-gray-600">{draft.length + rejected.length}</div>
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Draft / Rejected</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{draft.length + rejected.length}</div>
           </div>
         </div>
 
@@ -459,7 +465,10 @@ export default function PayrollPage() {
           <button
             onClick={handleBulkFinalize}
             disabled={processing || approved.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865] disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            className="flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ padding: '8px 16px', background: '#e31c79', color: '#fff', borderRadius: 7, fontSize: 12, fontWeight: 500 }}
+            onMouseEnter={(e) => { if (!processing && approved.length > 0) (e.currentTarget.style.background = '#cc1069'); }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#e31c79'; }}
           >
             <CheckCircle className="h-4 w-4" />
             Finalize All Approved ({approved.length})
@@ -467,7 +476,8 @@ export default function PayrollPage() {
           <button
             onClick={handleExport}
             disabled={finalized.length === 0 && approved.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            className="flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#ccc] hover:text-[#555]"
+            style={{ padding: '8px 16px', background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 7, fontSize: 12, fontWeight: 500 }}
           >
             <Download className="h-4 w-4" />
             Export Summary
@@ -475,7 +485,8 @@ export default function PayrollPage() {
           <button
             onClick={handleDetailedExport}
             disabled={finalized.length === 0 && approved.length === 0}
-            className="flex items-center gap-2 px-4 py-2 border border-[#33393c] text-[#1a1814] rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            className="flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#ccc] hover:text-[#555]"
+            style={{ padding: '8px 16px', background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 7, fontSize: 12, fontWeight: 500 }}
           >
             <Download className="h-4 w-4" />
             Export Detailed (by entry)
@@ -483,9 +494,9 @@ export default function PayrollPage() {
         </div>
 
         {/* Timesheets Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-[#1a1a1a] px-4 py-3">
-            <h3 className="text-sm font-semibold text-white">
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7' }}>
+            <h3 style={{ fontSize: 12, fontWeight: 600 }}>
               Timesheets for {selectedPeriod ? getPeriodLabel(selectedPeriod as PayPeriod) : '—'}
             </h3>
           </div>
@@ -507,17 +518,17 @@ export default function PayrollPage() {
               <p className="text-sm mt-1">Timesheets will appear here once employees submit them.</p>
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+            <table className="w-full">
+              <thead>
                 <tr>
-                  <th className="text-left px-4 py-2 font-medium text-gray-600">Employee</th>
-                  <th className="text-left px-4 py-2 font-medium text-gray-600">Week Ending</th>
-                  <th className="text-right px-4 py-2 font-medium text-gray-600">Reg Hrs</th>
-                  <th className="text-right px-4 py-2 font-medium text-gray-600">OT Hrs</th>
-                  <th className="text-right px-4 py-2 font-medium text-gray-600">Total</th>
-                  <th className="text-right px-4 py-2 font-medium text-gray-600">Pay</th>
-                  <th className="text-center px-4 py-2 font-medium text-gray-600">Status</th>
-                  <th className="text-center px-4 py-2 font-medium text-gray-600">Approved</th>
+                  <th className="text-left px-4 py-2" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Employee</th>
+                  <th className="text-left px-4 py-2" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Week Ending</th>
+                  <th className="text-right px-4 py-2" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Reg Hrs</th>
+                  <th className="text-right px-4 py-2" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>OT Hrs</th>
+                  <th className="text-right px-4 py-2" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Total</th>
+                  <th className="text-right px-4 py-2" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Pay</th>
+                  <th className="text-center px-4 py-2" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Status</th>
+                  <th className="text-center px-4 py-2" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Approved</th>
                 </tr>
               </thead>
               <tbody>
@@ -530,19 +541,19 @@ export default function PayrollPage() {
                   const pay = (regHrs * rate) + (otHrs * rate * 1.5)
 
                   return (
-                    <tr key={ts.id} className={`border-b ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100`}>
-                      <td className="px-4 py-2">
-                        <div className="font-medium text-gray-900">{formatName(emp)}</div>
-                        <div className="text-xs text-gray-500">
+                    <tr key={ts.id} style={{ borderBottom: '0.5px solid #f5f2ee' }} className="hover:bg-[#FDFCFB]">
+                      <td className="px-4 py-2" style={{ fontSize: 12.5, color: '#555' }}>
+                        <div style={{ fontWeight: 500, color: '#1a1a1a' }}>{formatName(emp)}</div>
+                        <div style={{ fontSize: 11, color: '#999' }}>
                           {emp?.department || ''} {emp?.employee_type ? `· ${emp.employee_type}` : ''}
                           {isExempt ? ' · Exempt' : ''}
                         </div>
                       </td>
-                      <td className="px-4 py-2 text-gray-700">{ts.week_ending}</td>
-                      <td className="px-4 py-2 text-right text-gray-700">{regHrs.toFixed(2)}</td>
-                      <td className="px-4 py-2 text-right text-gray-700">{otHrs.toFixed(2)}</td>
-                      <td className="px-4 py-2 text-right font-medium">{(ts.total_hours || 0).toFixed(2)}</td>
-                      <td className="px-4 py-2 text-right font-medium text-gray-900">${pay.toFixed(2)}</td>
+                      <td className="px-4 py-2" style={{ fontSize: 12.5, color: '#555' }}>{ts.week_ending}</td>
+                      <td className="px-4 py-2 text-right" style={{ fontSize: 12.5, color: '#555' }}>{regHrs.toFixed(2)}</td>
+                      <td className="px-4 py-2 text-right" style={{ fontSize: 12.5, color: '#555' }}>{otHrs.toFixed(2)}</td>
+                      <td className="px-4 py-2 text-right" style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>{(ts.total_hours || 0).toFixed(2)}</td>
+                      <td className="px-4 py-2 text-right" style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>${pay.toFixed(2)}</td>
                       <td className="px-4 py-2 text-center">
                         <span className={statusBadge(ts.status)}>{statusLabel(ts.status)}</span>
                       </td>
@@ -553,8 +564,8 @@ export default function PayrollPage() {
                   )
                 })}
               </tbody>
-              <tfoot className="bg-gray-50 border-t-2 border-gray-300">
-                <tr className="font-semibold">
+              <tfoot style={{ borderTop: '0.5px solid #e8e4df' }}>
+                <tr style={{ fontWeight: 600, fontSize: 12.5 }}>
                   <td className="px-4 py-2 text-gray-900">Totals ({timesheets.length} timesheets)</td>
                   <td></td>
                   <td className="px-4 py-2 text-right">

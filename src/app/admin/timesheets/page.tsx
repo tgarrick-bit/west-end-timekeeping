@@ -372,119 +372,110 @@ export default function AdminTimesheets() {
   return (
     <>
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Controls Bar with All Filters */}
-        <div className="bg-white rounded-lg shadow-sm mb-6 p-4 border border-gray-200">
-          <div className="flex flex-col gap-4">
-            <div className="text-sm text-gray-600">
-              Showing {sortedWeeks.length} weeks of timesheet data
-              {filterStatus !== 'all' && (
-                <span className="ml-2 font-medium">
-                  (Status: {filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)})
-                </span>
-              )}
-              {filterManager !== 'all' && (
-                <span className="ml-2 font-medium">
-                  (Manager: {getManagerName(filterManager)})
-                </span>
-              )}
-            </div>
-            <div className="flex flex-wrap items-center gap-4">
-              <select
-                value={filterWeek}
-                onChange={(e) => setFilterWeek(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Weeks</option>
-                {availableWeeks.map(week => (
-                  <option key={week} value={week}>
-                    Week of {formatWeekDisplay(week)}
-                  </option>
-                ))}
-              </select>
-              
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as any)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Status</option>
-                <option value="draft">Draft</option>
-                <option value="submitted">Submitted</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
-              
-              <select
-                value={filterManager}
-                onChange={(e) => setFilterManager(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Managers</option>
-                {managers.map(manager => (
-                  <option key={manager.id} value={manager.id}>
-                    {manager.first_name} {manager.last_name}
-                  </option>
-                ))}
-                <option value="unassigned">Unassigned</option>
-              </select>
-              
-              <button
-                onClick={exportToCSV}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Export
-              </button>
-            </div>
+      <div style={{ padding: '36px 40px' }}>
+        {/* Page Header */}
+        <div className="mb-6">
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>Timesheets</h1>
+          <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb' }}>Review and manage all employee timesheets</p>
+        </div>
+
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-6 mb-6" style={{ borderBottom: '0.5px solid #f0ece7' }}>
+          {([
+            { key: 'all', label: 'All' },
+            { key: 'submitted', label: 'Pending' },
+            { key: 'approved', label: 'Approved' },
+            { key: 'rejected', label: 'Rejected' },
+          ] as const).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setFilterStatus(tab.key as any)}
+              style={{
+                fontSize: 12,
+                fontWeight: filterStatus === tab.key ? 600 : 400,
+                color: filterStatus === tab.key ? '#1a1a1a' : '#999',
+                borderBottom: filterStatus === tab.key ? '2px solid #e31c79' : '2px solid transparent',
+                paddingBottom: 10,
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Controls Bar */}
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '16px 22px', marginBottom: 24 }}>
+          <div className="flex flex-wrap items-center gap-4">
+            <select
+              value={filterWeek}
+              onChange={(e) => setFilterWeek(e.target.value)}
+              style={{ border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, padding: '6px 10px' }}
+              className="focus:outline-none focus:border-[#d3ad6b]"
+            >
+              <option value="all">All Weeks</option>
+              {availableWeeks.map(week => (
+                <option key={week} value={week}>
+                  Week of {formatWeekDisplay(week)}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filterManager}
+              onChange={(e) => setFilterManager(e.target.value)}
+              style={{ border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, padding: '6px 10px' }}
+              className="focus:outline-none focus:border-[#d3ad6b]"
+            >
+              <option value="all">All Managers</option>
+              {managers.map(manager => (
+                <option key={manager.id} value={manager.id}>
+                  {manager.first_name} {manager.last_name}
+                </option>
+              ))}
+              <option value="unassigned">Unassigned</option>
+            </select>
+
+            <button
+              onClick={exportToCSV}
+              className="flex items-center gap-2 hover:border-[#ccc] hover:text-[#555]"
+              style={{ padding: '6px 14px', background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 7, fontSize: 12, fontWeight: 500 }}
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </button>
+
+            <span style={{ fontSize: 12, color: '#999', marginLeft: 'auto' }}>
+              {sortedWeeks.length} week{sortedWeeks.length !== 1 ? 's' : ''}
+              {filterManager !== 'all' && ` \u00b7 ${getManagerName(filterManager)}`}
+            </span>
           </div>
         </div>
 
-        {/* Summary Stats - Updates based on filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Employees</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalEmployees}</p>
-              </div>
-              <Users className="h-8 w-8 text-gray-400" />
-            </div>
+        {/* Summary Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Employees</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{stats.totalEmployees}</div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-yellow-400">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Pending Approval</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.pendingApproval}</p>
-              </div>
-              <Clock className="h-8 w-8 text-yellow-500" />
-            </div>
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Pending</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#e31c79' }}>{stats.pendingApproval}</div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-green-400">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Approved</p>
-                <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
-              </div>
-              <Check className="h-8 w-8 text-green-500" />
-            </div>
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Approved</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{stats.approved}</div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-blue-400">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Hours</p>
-                <p className="text-xl font-bold text-blue-600">{stats.totalHours.toFixed(0)}</p>
-              </div>
-              <Clock className="h-8 w-8 text-blue-500" />
-            </div>
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Total Hours</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{stats.totalHours.toFixed(0)}</div>
           </div>
         </div>
 
         {/* Timesheets by Week */}
         <div className="space-y-6">
           {sortedWeeks.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-              <p className="text-gray-500">No timesheets found for the selected filters.</p>
+            <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 32, textAlign: 'center' }}>
+              <p style={{ fontSize: 13, color: '#999' }}>No timesheets found for the selected filters.</p>
             </div>
           ) : (
             sortedWeeks.map(([weekEnding, weekTimesheets]) => {
@@ -493,86 +484,72 @@ export default function AdminTimesheets() {
               weekStart.setDate(weekDate.getDate() - 6);
               
               return (
-                <div key={weekEnding} className="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div key={weekEnding} style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
                   {/* Week Header */}
-                  <div className="px-6 py-4 border-b bg-gray-50">
+                  <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7' }}>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-5 w-5 text-gray-500" />
-                        <h2 className="text-lg font-semibold">
-                          Week of {weekStart.toLocaleDateString()} - {weekDate.toLocaleDateString()}
-                        </h2>
-                      </div>
-                      <span className="text-sm text-gray-500">
+                      <h2 style={{ fontSize: 12, fontWeight: 600 }}>
+                        Week of {weekStart.toLocaleDateString()} - {weekDate.toLocaleDateString()}
+                      </h2>
+                      <span style={{ fontSize: 11, color: '#999' }}>
                         {weekTimesheets.length} timesheets
                       </span>
                     </div>
                   </div>
-                  
+
                   {/* Timesheet List */}
                   <div className="overflow-x-auto">
                     <table className="min-w-full">
-                      <thead className="bg-gray-50">
+                      <thead>
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Employee
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Department
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Manager
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Hours
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
-                          </th>
+                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Employee</th>
+                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Department</th>
+                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Manager</th>
+                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Hours</th>
+                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Status</th>
+                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody>
                         {weekTimesheets.map((timesheet) => {
                           const empInfo = getEmployeeInfo(timesheet.employee_id);
                           const managerName = getManagerName(timesheet.employee?.manager_id || '');
                           return (
-                            <tr key={timesheet.id} className="hover:bg-gray-50">
-                              <td className="px-6 py-4 whitespace-nowrap">
+                            <tr key={timesheet.id} className="hover:bg-[#FDFCFB]" style={{ borderBottom: '0.5px solid #f5f2ee' }}>
+                              <td className="px-6 py-3 whitespace-nowrap">
                                 <div>
-                                  <p className="text-sm font-medium text-gray-900">
+                                  <p style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
                                     {empInfo.name}
                                   </p>
-                                  <p className="text-xs text-gray-500">{empInfo.email}</p>
+                                  <p style={{ fontSize: 11, color: '#999' }}>{empInfo.email}</p>
                                 </div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-6 py-3 whitespace-nowrap" style={{ fontSize: 12.5, color: '#555' }}>
                                 {empInfo.department}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-6 py-3 whitespace-nowrap" style={{ fontSize: 12.5, color: '#555' }}>
                                 {managerName}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-6 py-3 whitespace-nowrap" style={{ fontSize: 12.5, color: '#555' }}>
                                 {timesheet.total_hours || 0} hrs
                                 {timesheet.overtime_hours ? ` (+${timesheet.overtime_hours} OT)` : ''}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                              <td className="px-6 py-3 whitespace-nowrap">
+                                <span className={`px-2 py-0.5 rounded-[3px] ${
                                   timesheet.status === 'submitted' ? 'bg-yellow-100 text-yellow-800' :
                                   timesheet.status === 'approved' ? 'bg-green-100 text-green-800' :
                                   timesheet.status === 'rejected' ? 'bg-red-100 text-red-800' :
                                   'bg-gray-100 text-gray-800'
-                                }`}>
+                                }`} style={{ fontSize: 9, fontWeight: 500 }}>
                                   {timesheet.status}
                                 </span>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
+                              <td className="px-6 py-3 whitespace-nowrap">
                                 <div className="flex items-center gap-2">
                                   <button
                                     onClick={() => openTimecardDetail(timesheet)}
-                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                                    className="p-1 hover:bg-[#FDFCFB] rounded"
+                                    style={{ color: '#777' }}
                                   >
                                     <Eye className="h-4 w-4" />
                                   </button>
