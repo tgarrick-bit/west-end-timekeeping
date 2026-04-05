@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { notificationService } from '@/lib/notificationService';
 import { emailService } from '@/lib/emailService';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { sendEmail } from '@/lib/sendEmail';
 
 // POST /api/notifications/send - Send notification reminders for monitoring
 export async function POST(request: NextRequest) {
@@ -126,22 +127,12 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    // Send email using your existing email service
+    // Send email directly via SMTP
     let emailSent = false;
     try {
-      // Use your existing emailService if it has a send method
-      
-      // Or call your send-email endpoint
-      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/notifications/send-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(emailData)
-      });
-      
-      emailSent = emailResponse.ok;
+      emailSent = await sendEmail(emailData);
     } catch (emailError) {
       console.error('Email send error:', emailError);
-      // Continue even if email fails - notification is still created
     }
 
     // Log the reminder action in the database (optional - only if you have this table)

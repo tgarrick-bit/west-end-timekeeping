@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { logAudit } from '@/lib/audit'
+import { sendEmail } from '@/lib/sendEmail'
 
 // Create admin client with service role key for user management
 const supabaseAdmin = createClient(
@@ -218,52 +219,48 @@ export async function POST(request: NextRequest) {
       console.error('Failed to trigger password reset:', resetError)
     }
 
-    // Send welcome email with login instructions
+    // Send welcome email with login instructions (direct SMTP, no self-calling fetch)
     try {
       const logoUrl = 'https://westendworkforce.com/wp-content/uploads/2025/11/WE-logo-SEPT2024v3-WHT.png'
 
-      await fetch(`${appUrl}/api/notifications/send-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: email,
-          subject: 'Welcome to West End Workforce Timekeeping',
-          html: `
-            <div style="max-width:600px;margin:0 auto;font-family:'Montserrat',Arial,sans-serif;">
-              <div style="background:#33393c;padding:20px;text-align:center;">
-                <img src="${logoUrl}" alt="West End Workforce" style="height:40px;" />
-              </div>
-              <div style="padding:30px 20px;background:#ffffff;">
-                <h2 style="color:#33393c;margin:0 0 16px;">Welcome, ${firstName}!</h2>
-                <p style="color:#4b5563;line-height:1.6;">
-                  Your account has been created on the West End Workforce timekeeping portal.
-                  You can now log in to submit timesheets and expense reports.
-                </p>
-                <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:20px 0;">
-                  <p style="margin:0 0 8px;color:#33393c;font-weight:600;">Your Login Details:</p>
-                  <p style="margin:0 0 4px;color:#4b5563;">Email: <strong>${email}</strong></p>
-                  <p style="margin:8px 0 0;color:#4b5563;font-size:13px;">
-                    You will receive a separate email with a link to set your password.
-                    If you don't see it, check your spam folder.
-                  </p>
-                </div>
-                <div style="text-align:center;margin:24px 0;">
-                  <a href="${appUrl}/auth/login"
-                     style="background:#e31c79;color:#ffffff;padding:12px 32px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">
-                    Go to Login
-                  </a>
-                </div>
-                <p style="color:#6b7280;font-size:13px;line-height:1.5;">
-                  If you have any questions, please contact your manager or the payroll team at
-                  <a href="mailto:payroll@westendworkforce.com" style="color:#e31c79;">payroll@westendworkforce.com</a>.
-                </p>
-              </div>
-              <div style="background:#f9fafb;padding:16px;text-align:center;font-size:12px;color:#6b7280;border-top:1px solid #e31c79;">
-                West End Workforce &middot; 800 Town &amp; Country Blvd, Suite 500 &middot; Houston, TX 77024
-              </div>
+      await sendEmail({
+        to: email,
+        subject: 'Welcome to West End Workforce Timekeeping',
+        html: `
+          <div style="max-width:600px;margin:0 auto;font-family:'Montserrat',Arial,sans-serif;">
+            <div style="background:#1a1a1a;padding:20px;text-align:center;">
+              <img src="${logoUrl}" alt="West End Workforce" style="height:40px;" />
             </div>
-          `,
-        }),
+            <div style="padding:30px 20px;background:#ffffff;">
+              <h2 style="color:#1a1a1a;margin:0 0 16px;">Welcome, ${firstName}!</h2>
+              <p style="color:#555;line-height:1.6;">
+                Your account has been created on the West End Workforce timekeeping portal.
+                You can now log in to submit timesheets and expense reports.
+              </p>
+              <div style="background:#FAFAF8;border:0.5px solid #e8e4df;border-radius:10px;padding:16px;margin:20px 0;">
+                <p style="margin:0 0 8px;color:#1a1a1a;font-weight:600;">Your Login Details:</p>
+                <p style="margin:0 0 4px;color:#555;">Email: <strong>${email}</strong></p>
+                <p style="margin:8px 0 0;color:#999;font-size:13px;">
+                  You will receive a separate email with a link to set your password.
+                  If you don't see it, check your spam folder.
+                </p>
+              </div>
+              <div style="text-align:center;margin:24px 0;">
+                <a href="${appUrl}/auth/login"
+                   style="background:#e31c79;color:#ffffff;padding:12px 32px;border-radius:7px;text-decoration:none;font-weight:600;display:inline-block;">
+                  Go to Login
+                </a>
+              </div>
+              <p style="color:#999;font-size:13px;line-height:1.5;">
+                If you have any questions, please contact your manager or the payroll team at
+                <a href="mailto:payroll@westendworkforce.com" style="color:#e31c79;">payroll@westendworkforce.com</a>.
+              </p>
+            </div>
+            <div style="background:#FAFAF8;padding:16px;text-align:center;font-size:12px;color:#c0bab2;border-top:1px solid #e31c79;">
+              West End Workforce &middot; 800 Town &amp; Country Blvd, Suite 500 &middot; Houston, TX 77024
+            </div>
+          </div>
+        `,
       })
     } catch (emailError) {
       // Don't fail the creation if email fails — just log it

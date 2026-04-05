@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { notificationService } from '@/lib/notificationService';
 import { NOTIFICATION_TYPES, PRIORITIES } from '@/types/notifications';
+import { sendEmail } from '@/lib/sendEmail';
 
 // POST /api/notifications/bulk - Send bulk notifications
 export async function POST(request: NextRequest) {
@@ -127,17 +128,11 @@ export async function POST(request: NextRequest) {
             `
           };
 
-          const res = await fetch(`${APP_URL}/api/notifications/send-email`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(emailPayload)
-          });
-
-          if (!res.ok) {
-            console.error(`Bulk email failed for ${email}:`, await res.text());
+          const ok = await sendEmail(emailPayload);
+          if (!ok) {
+            console.error(`Bulk email failed for ${email}`);
           }
-
-          return { email, ok: res.ok };
+          return { email, ok };
         });
 
         const emailResults = await Promise.allSettled(emailPromises);

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { sendEmail } from '@/lib/sendEmail'
 
 // Vercel cron: runs every Friday at 8pm UTC (3pm CT)
 // Sends reminder emails to all active employees who haven't submitted a timesheet for the current week
@@ -77,39 +78,33 @@ export async function GET(request: Request) {
           month: 'long', day: 'numeric', year: 'numeric'
         })
 
-        await fetch(`${appUrl}/api/notifications/send-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: emp.email,
-            subject: `Timesheet reminder — week ending ${weekLabel}`,
-            html: `
-              <div style="max-width:600px;margin:0 auto;font-family:'Montserrat',Arial,sans-serif;">
-                <div style="background:#33393c;padding:20px;text-align:center;">
-                  <div style="color:#ffffff;font-size:20px;font-weight:700;">West End Workforce</div>
-                </div>
-                <div style="padding:24px 20px;background:#ffffff;">
-                  <h2 style="color:#e31c79;font-size:18px;margin:0 0 16px;">Timesheet Reminder</h2>
-                  <p style="color:#374151;line-height:1.6;">
-                    Hi ${name},
-                  </p>
-                  <p style="color:#374151;line-height:1.6;">
-                    Your timesheet for the week ending <strong>${weekLabel}</strong> has not been submitted yet.
-                    Please submit your hours before the end of the day.
-                  </p>
-                  <div style="text-align:center;margin:24px 0;">
-                    <a href="${appUrl}/timesheet/entry"
-                       style="background:#e31c79;color:#ffffff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">
-                      Submit Timesheet
-                    </a>
-                  </div>
-                </div>
-                <div style="background:#f9fafb;padding:12px;text-align:center;font-size:12px;color:#6b7280;border-top:1px solid #e31c79;">
-                  West End Workforce &middot; Automated Reminder
+        await sendEmail({
+          to: emp.email,
+          subject: `Timesheet reminder — week ending ${weekLabel}`,
+          html: `
+            <div style="max-width:600px;margin:0 auto;font-family:'Montserrat',Arial,sans-serif;">
+              <div style="background:#1a1a1a;padding:20px;text-align:center;">
+                <div style="color:#ffffff;font-size:20px;font-weight:700;">West End Workforce</div>
+              </div>
+              <div style="padding:24px 20px;background:#ffffff;">
+                <h2 style="color:#e31c79;font-size:18px;margin:0 0 16px;">Timesheet Reminder</h2>
+                <p style="color:#555;line-height:1.6;">Hi ${name},</p>
+                <p style="color:#555;line-height:1.6;">
+                  Your timesheet for the week ending <strong>${weekLabel}</strong> has not been submitted yet.
+                  Please submit your hours before the end of the day.
+                </p>
+                <div style="text-align:center;margin:24px 0;">
+                  <a href="${appUrl}/timesheet/entry"
+                     style="background:#e31c79;color:#ffffff;padding:12px 28px;border-radius:7px;text-decoration:none;font-weight:600;display:inline-block;">
+                    Submit Timesheet
+                  </a>
                 </div>
               </div>
-            `,
-          }),
+              <div style="background:#FAFAF8;padding:12px;text-align:center;font-size:12px;color:#c0bab2;border-top:1px solid #e31c79;">
+                West End Workforce &middot; Automated Reminder
+              </div>
+            </div>
+          `,
         })
         sent++
       } catch (err) {

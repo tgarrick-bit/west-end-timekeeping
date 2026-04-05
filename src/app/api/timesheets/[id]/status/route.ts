@@ -3,6 +3,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { TimesheetStatus } from '@/lib/status';
 import { writeAuditLog } from '@/lib/auditLog';
 import { createNotification } from '@/lib/notify';
+import { sendEmail } from '@/lib/sendEmail';
 
 type Action = 'save' | 'submit' | 'approve' | 'reject' | 'finalize' | 'client_approve';
 
@@ -12,34 +13,6 @@ interface Body {
 }
 
 export const runtime = 'nodejs';
-
-// tiny helper so logging bad responses is easier
-async function $fetchText(res: Response) {
-  try {
-    return await res.text();
-  } catch {
-    return '<no body>';
-  }
-}
-
-// Shared helper for sending emails via your notifications API
-async function sendEmail(payload: { to: string; subject: string; html: string }) {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-
-    const res = await fetch(`${baseUrl}/api/notifications/send-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      console.error('Failed to send email:', await $fetchText(res));
-    }
-  } catch (err) {
-    console.error('Email send error:', err);
-  }
-}
 
 export async function PATCH(
   req: Request,
