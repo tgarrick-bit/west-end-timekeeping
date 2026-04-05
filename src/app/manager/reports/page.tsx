@@ -326,7 +326,7 @@ export default function ReportsPage() {
             </button>
             <button 
               onClick={() => handleExport('full-report')}
-              className="bg-[#05202E] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#0a2f3f] transition-colors flex items-center"
+              className="bg-[#1a1a1a] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#0a2f3f] transition-colors flex items-center"
             >
               <Download className="w-4 h-4 mr-2" />
               Export Full Report
@@ -343,7 +343,7 @@ export default function ReportsPage() {
           <p className="text-sm opacity-75 mt-1">This week</p>
         </div>
 
-        <div className="p-6 rounded-lg border bg-[#05202E]/10 text-[#1a1814] border-[#33393c]/20">
+        <div className="p-6 rounded-lg border bg-[#1a1a1a]/10 text-[#1a1814] border-[#33393c]/20">
           <h3 className="text-sm font-medium opacity-75">Total Expenses</h3>
           <p className="text-2xl font-bold mt-1">${reportData.weeklySummary.totalExpenses.toLocaleString()}</p>
           <p className="text-sm opacity-75 mt-1">This week</p>
@@ -428,7 +428,7 @@ export default function ReportsPage() {
           </h2>
           <button 
             onClick={() => handleExport('employee-performance')}
-            className="bg-[#05202E] text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-[#0a2f3f] transition-colors flex items-center"
+            className="bg-[#1a1a1a] text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-[#0a2f3f] transition-colors flex items-center"
           >
             <Download className="w-4 h-4 mr-2" />
             Export

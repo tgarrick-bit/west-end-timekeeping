@@ -467,7 +467,7 @@ export default function PayrollPage() {
           <button
             onClick={handleExport}
             disabled={finalized.length === 0 && approved.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-[#05202E] text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
           >
             <Download className="h-4 w-4" />
             Export Summary
@@ -484,7 +484,7 @@ export default function PayrollPage() {
 
         {/* Timesheets Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-[#05202E] px-4 py-3">
+          <div className="bg-[#1a1a1a] px-4 py-3">
             <h3 className="text-sm font-semibold text-white">
               Timesheets for {selectedPeriod ? getPeriodLabel(selectedPeriod as PayPeriod) : '—'}
             </h3>
@@ -497,7 +497,7 @@ export default function PayrollPage() {
                   <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
                   <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
                 </svg>
-                <p className="text-[13px]" style={{ color: 'var(--we-text-3)' }}>Loading...</p>
+                <p className="text-[13px]" style={{ color: '#bbb' }}>Loading...</p>
               </div>
             </div>
           ) : timesheets.length === 0 ? (

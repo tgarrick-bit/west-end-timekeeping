@@ -486,7 +486,7 @@ export default function EmployeeManagement() {
             <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
             <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
           </svg>
-          <p className="text-[13px]" style={{ color: 'var(--we-text-3)' }}>Loading...</p>
+          <p className="text-[13px]" style={{ color: '#bbb' }}>Loading...</p>
         </div>
       </div>
     );
@@ -575,7 +575,7 @@ export default function EmployeeManagement() {
           <table className="min-w-full">
             <thead>
               {/* Main header row */}
-              <tr className="bg-[#05202E] text-white">
+              <tr className="bg-[#1a1a1a] text-white">
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Employee
                 </th>

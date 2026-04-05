@@ -905,7 +905,7 @@ export default function AdminPage() {
 
   if (isLoading) {
     return (
-      <div className="px-6 md:px-8 py-6 space-y-6">
+      <div style={{ padding: '36px 40px' }} className="space-y-6">
         <div>
           <div className="anim-shimmer w-48 h-7 rounded mb-2" />
           <div className="anim-shimmer w-80 h-4 rounded" />
@@ -950,164 +950,129 @@ export default function AdminPage() {
   return (
     <>
       {/* Page Title */}
-      <div style={{ borderBottom: '1px solid var(--we-border)' }}>
-        <div className="px-6 md:px-8 py-5">
-          <h1 className="text-[24px] font-bold" style={{ color: 'var(--we-text-1)', fontFamily: 'var(--font-heading)' }}>
-            Admin Dashboard
-          </h1>
-          <p className="text-[13px] mt-1" style={{ color: 'var(--we-text-3)' }}>
-            Monitor submissions, approvals, and reminders across the organization.
-          </p>
-        </div>
+      <div style={{ padding: '36px 40px 0 40px' }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
+          Admin Dashboard
+        </h1>
+        <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb', marginTop: 4 }}>
+          Monitor submissions, approvals, and reminders across the organization.
+        </p>
       </div>
 
       {/* Navigation Tabs (top-level sections) */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-6">
-            <button 
-              onClick={() => router.push('/admin')}
-              className="py-3 text-sm font-medium text-[#1a1814] border-b-2 border-[#e31c79] whitespace-nowrap"
-            >
-              Review & Approve
-            </button>
-            
-            <button 
-              onClick={() => router.push('/admin/employees')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#1a1814] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
-            >
-              Employees
-            </button>
-            
-            <button 
-              onClick={() => router.push('/admin/clients')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#1a1814] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
-            >
-              Clients
-            </button>
-            
-            <button 
-              onClick={() => router.push('/admin/projects')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#1a1814] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
-            >
-              Projects
-            </button>
+      <div style={{ padding: '0 40px', borderBottom: '0.5px solid #e8e4df' }}>
+        <div className="flex space-x-6" style={{ marginTop: 20 }}>
+          <button
+            onClick={() => router.push('/admin')}
+            style={{ padding: '8px 0', fontSize: 13, fontWeight: 600, color: '#1a1a1a', borderBottom: '2px solid #e31c79', background: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            Review & Approve
+          </button>
 
+          {[
+            { label: 'Employees', path: '/admin/employees' },
+            { label: 'Clients', path: '/admin/clients' },
+            { label: 'Projects', path: '/admin/projects' },
+            { label: 'Billing', path: '/admin/billing' },
+            { label: 'Payroll', path: '/admin/payroll' },
+          ].map(tab => (
             <button
-              onClick={() => router.push('/admin/billing')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#1a1814] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
+              key={tab.path}
+              onClick={() => router.push(tab.path)}
+              style={{ padding: '8px 0', fontSize: 13, fontWeight: 500, color: '#999', borderBottom: '2px solid transparent', background: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+              onMouseEnter={e => { (e.target as HTMLElement).style.color = '#1a1a1a' }}
+              onMouseLeave={e => { (e.target as HTMLElement).style.color = '#999' }}
             >
-              Billing
+              {tab.label}
             </button>
+          ))}
 
-            <button
-              onClick={() => router.push('/admin/payroll')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#1a1814] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
-            >
-              Payroll
+          <div className="relative group">
+            <button style={{ padding: '8px 0', fontSize: 13, fontWeight: 500, color: '#999', borderBottom: '2px solid transparent', background: 'none', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
+              Reports
+              <ChevronDown className="h-4 w-4" />
             </button>
-
-            <div className="relative group">
-              <button className="py-3 text-sm font-medium text-gray-500 hover:text-[#1a1814] flex items-center gap-1 border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap">
-                Reports
-                <ChevronDown className="h-4 w-4" />
-              </button>
-              <div className="absolute left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
-                <div className="py-2 text-sm">
-                  <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                    Time reports
-                  </div>
-                  <a href="/admin/reports/time-by-project" className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700">
-                    Time by project
-                  </a>
-                  <a href="/admin/reports/time-by-employee" className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700">
-                    Time by employee
-                  </a>
-                  <a href="/admin/reports/time-by-approver" className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700">
-                    Time by approver
-                  </a>
-                  <a href="/admin/reports/time-by-class" className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700">
-                    Time by class
-                  </a>
-                  <a href="/admin/reports/time-missing" className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700">
-                    Missing timesheets
-                  </a>
-                  <div className="border-t border-gray-100 my-1"></div>
-                  <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                    Expense reports
-                  </div>
-                  <a href="/admin/reports/expenses-by-employee" className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700">
-                    Expenses by employee
-                  </a>
-                  <a href="/admin/reports/expenses-by-project" className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700">
-                    Expenses by project
-                  </a>
-                  <a href="/admin/reports/expenses-by-approver" className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700">
-                    Expenses by approver
-                  </a>
+            <div className="absolute left-0 mt-1 w-56 bg-white rounded-lg border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50" style={{ borderColor: '#e8e4df' }}>
+              <div className="py-2 text-sm">
+                <div style={{ padding: '6px 16px', fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' }}>
+                  Time reports
                 </div>
+                <a href="/admin/reports/time-by-project" className="block px-4 py-1.5 text-gray-700" style={{ fontSize: 12.5 }} onMouseEnter={e => { (e.target as HTMLElement).style.background = '#FDFCFB' }} onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent' }}>
+                  Time by project
+                </a>
+                <a href="/admin/reports/time-by-employee" className="block px-4 py-1.5 text-gray-700" style={{ fontSize: 12.5 }} onMouseEnter={e => { (e.target as HTMLElement).style.background = '#FDFCFB' }} onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent' }}>
+                  Time by employee
+                </a>
+                <a href="/admin/reports/time-by-approver" className="block px-4 py-1.5 text-gray-700" style={{ fontSize: 12.5 }} onMouseEnter={e => { (e.target as HTMLElement).style.background = '#FDFCFB' }} onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent' }}>
+                  Time by approver
+                </a>
+                <a href="/admin/reports/time-by-class" className="block px-4 py-1.5 text-gray-700" style={{ fontSize: 12.5 }} onMouseEnter={e => { (e.target as HTMLElement).style.background = '#FDFCFB' }} onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent' }}>
+                  Time by class
+                </a>
+                <a href="/admin/reports/time-missing" className="block px-4 py-1.5 text-gray-700" style={{ fontSize: 12.5 }} onMouseEnter={e => { (e.target as HTMLElement).style.background = '#FDFCFB' }} onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent' }}>
+                  Missing timesheets
+                </a>
+                <div style={{ borderTop: '0.5px solid #f0ece7', margin: '4px 0' }} />
+                <div style={{ padding: '6px 16px', fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' }}>
+                  Expense reports
+                </div>
+                <a href="/admin/reports/expenses-by-employee" className="block px-4 py-1.5 text-gray-700" style={{ fontSize: 12.5 }} onMouseEnter={e => { (e.target as HTMLElement).style.background = '#FDFCFB' }} onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent' }}>
+                  Expenses by employee
+                </a>
+                <a href="/admin/reports/expenses-by-project" className="block px-4 py-1.5 text-gray-700" style={{ fontSize: 12.5 }} onMouseEnter={e => { (e.target as HTMLElement).style.background = '#FDFCFB' }} onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent' }}>
+                  Expenses by project
+                </a>
+                <a href="/admin/reports/expenses-by-approver" className="block px-4 py-1.5 text-gray-700" style={{ fontSize: 12.5 }} onMouseEnter={e => { (e.target as HTMLElement).style.background = '#FDFCFB' }} onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent' }}>
+                  Expenses by approver
+                </a>
               </div>
             </div>
-
-            <button 
-              onClick={() => router.push('/admin/settings')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#1a1814] border-b-2 border-transparent hover:border-gray-200 flex items-center gap-2 whitespace-nowrap"
-            >
-              <Settings className="h-4 w-4" />
-              Settings
-            </button>
           </div>
+
+          <button
+            onClick={() => router.push('/admin/settings')}
+            style={{ padding: '8px 0', fontSize: 13, fontWeight: 500, color: '#999', borderBottom: '2px solid transparent', background: 'none', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 8 }}
+            onMouseEnter={e => { (e.target as HTMLElement).style.color = '#1a1a1a' }}
+            onMouseLeave={e => { (e.target as HTMLElement).style.color = '#999' }}
+          >
+            <Settings className="h-4 w-4" />
+            Settings
+          </button>
         </div>
       </div>
 
-{/* Quick Stats Bar */}
-<div className="bg-white border-b border-gray-200">
-  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="inline-flex items-center gap-2 text-sm text-gray-800">
-          <Users className="h-4 w-4 text-gray-500" />
-          <span className="text-gray-600">Employees:</span> 
-          <span className="font-semibold ml-1">{employees.length}</span>
-        </div>
-        <div className="inline-flex items-center gap-2 text-sm text-gray-800">
-          <DollarSign className="h-4 w-4 text-gray-500" />
-          <span className="text-gray-600">Pending amount:</span> 
-          <span className="font-semibold ml-1 text-[#e31c79]">
-            ${submissions
-              .filter(s => s.status === 'submitted')
-              .reduce((sum, s) => sum + s.amount, 0)
-              .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-        </div>
-        <div className="inline-flex items-center gap-2 text-sm text-gray-800">
-          <Clock className="h-4 w-4 text-gray-500" />
-          <span className="text-gray-600">Pending hours:</span> 
-          <span className="font-semibold ml-1">
-            {submissions
-              .filter(s => s.status === 'submitted' && s.type === 'timesheet')
-              .reduce((sum, s) => sum + (s.hours || 0), 0)
-              .toFixed(2)}
-          </span>
-        </div>
+{/* Quick Stats */}
+<div style={{ padding: '24px 40px 0 40px' }}>
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+    <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Overview</div>
+    <button
+      onClick={loadSubmissions}
+      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: 12, fontWeight: 500, color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 6, cursor: 'pointer' }}
+      onMouseEnter={e => { (e.target as HTMLElement).style.borderColor = '#ccc' }}
+      onMouseLeave={e => { (e.target as HTMLElement).style.borderColor = '#e0dcd7' }}
+    >
+      <RotateCw className="h-3 w-3" />
+      Refresh
+    </button>
+  </div>
+  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    {[
+      { label: 'Employees', value: employees.length },
+      { label: 'Pending Hours', value: submissions.filter(s => s.status === 'submitted' && s.type === 'timesheet').reduce((sum, s) => sum + (s.hours || 0), 0).toFixed(2) },
+      { label: 'Pending Amount', value: '$' + submissions.filter(s => s.status === 'submitted').reduce((sum, s) => sum + s.amount, 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
+      { label: 'Approved', value: approvedCount },
+    ].map(card => (
+      <div key={card.label} style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+        <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: 0.5, color: '#999', marginBottom: 8 }}>{card.label}</div>
+        <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{card.value}</div>
       </div>
-      
-      <div className="flex items-center space-x-3">
-        <button 
-          onClick={loadSubmissions}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm text-gray-700 hover:text-gray-900 border border-gray-200 rounded-full hover:bg-gray-50"
-        >
-          <RotateCw className="h-3 w-3" />
-          Refresh data
-        </button>
-      </div>
-    </div>
+    ))}
   </div>
 </div>
 
       {/* Controls - filters line */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div style={{ padding: '0 40px' }}>
+        <div>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 gap-3">
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
@@ -1190,42 +1155,38 @@ export default function AdminPage() {
       </div>
 
       {/* Summary Stats row */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Time summary</span>
-              <div className="mt-1 flex flex-wrap items-center gap-4 text-sm">
-                <span>Approved: <strong className="text-green-600">{approvedTimesheetCount}</strong></span>
-                <span>Pending: <strong className="text-orange-600">{timesheetPendingCount}</strong></span>
-                <span>Rejected: <strong className="text-red-600">{rejectedTimesheetCount}</strong></span>
-                <span>Draft: <strong className="text-gray-700">{draftTimesheetCount}</strong></span>
-              </div>
+      <div style={{ padding: '16px 40px' }}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Time summary</span>
+            <div className="mt-1 flex flex-wrap items-center gap-4" style={{ fontSize: 12.5, color: '#555' }}>
+              <span>Approved: <strong className="text-green-600">{approvedTimesheetCount}</strong></span>
+              <span>Pending: <strong className="text-orange-600">{timesheetPendingCount}</strong></span>
+              <span>Rejected: <strong className="text-red-600">{rejectedTimesheetCount}</strong></span>
+              <span>Draft: <strong style={{ color: '#555' }}>{draftTimesheetCount}</strong></span>
             </div>
-            <div className="text-left sm:text-right">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Expense summary</span>
-              <div className="mt-1 flex flex-wrap items-center gap-4 text-sm sm:justify-end">
-                <span>Approved: <strong className="text-green-600">{approvedExpenseCount}</strong></span>
-                <span>Pending: <strong className="text-orange-600">{expensePendingCount}</strong></span>
-                <span>Rejected: <strong className="text-red-600">{rejectedExpenseCount}</strong></span>
-                <span>Draft: <strong className="text-gray-700">{draftExpenseCount}</strong></span>
-              </div>
+          </div>
+          <div className="text-left sm:text-right">
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Expense summary</span>
+            <div className="mt-1 flex flex-wrap items-center gap-4 sm:justify-end" style={{ fontSize: 12.5, color: '#555' }}>
+              <span>Approved: <strong className="text-green-600">{approvedExpenseCount}</strong></span>
+              <span>Pending: <strong className="text-orange-600">{expensePendingCount}</strong></span>
+              <span>Rejected: <strong className="text-red-600">{rejectedExpenseCount}</strong></span>
+              <span>Draft: <strong style={{ color: '#555' }}>{draftExpenseCount}</strong></span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Analytics Charts */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h3 className="text-lg font-semibold text-[#1a1814] mb-4 flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-[#e31c79]" />
-            Analytics
-          </h3>
+      <div style={{ padding: '0 40px 0 40px' }}>
+        <div style={{ paddingTop: 24, paddingBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 16 }}>Analytics</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Hours by Status */}
-            <div className="border border-gray-200 rounded-2xl p-4">
-              <h4 className="font-medium text-gray-900 mb-3">Timesheet Status Breakdown</h4>
+            <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10 }}>
+              <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7', fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>Timesheet Status Breakdown</div>
+              <div style={{ padding: '16px 22px' }}>
               <div className="space-y-2">
                 {[
                   { label: 'Approved', count: approvedTimesheetCount, color: 'bg-green-500', total: allTimesheetsCount },
@@ -1248,10 +1209,12 @@ export default function AdminPage() {
                 ))}
               </div>
             </div>
+            </div>
 
             {/* Hours by Department */}
-            <div className="border border-gray-200 rounded-2xl p-4">
-              <h4 className="font-medium text-gray-900 mb-3">Hours by Department</h4>
+            <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10 }}>
+              <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7', fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>Hours by Department</div>
+              <div style={{ padding: '16px 22px' }}>
               <div className="space-y-2">
                 {(() => {
                   const deptHours: Record<string, number> = {}
@@ -1279,22 +1242,20 @@ export default function AdminPage() {
                     ))
                 })()}
               </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Monitoring Dashboard */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h3 className="text-lg font-semibold text-[#1a1814] mb-4 flex items-center gap-2">
-            <Bell className="h-5 w-5 text-[#e31c79]" />
-            Monitoring dashboard
-          </h3>
-          
+      <div style={{ padding: '0 40px' }}>
+        <div style={{ paddingTop: 24, paddingBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 16 }}>Monitoring</div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Submittal Monitoring */}
-            <div className="border border-gray-200 rounded-2xl p-4 bg-white">
+            <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h4 className="font-medium text-gray-900">Timecard submittals</h4>
@@ -1303,11 +1264,9 @@ export default function AdminPage() {
                 <button
                   onClick={handleBulkSubmittalReminders}
                   disabled={draftTimesheetCount === 0}
-                  className={`px-3 py-1 text-xs sm:text-sm rounded-full ${
-                    draftTimesheetCount === 0
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-[#e31c79] text-white hover:bg-[#c91865]'
-                  }`}
+                  style={{ padding: '5px 12px', fontSize: 12, fontWeight: 500, borderRadius: 6, border: 'none', cursor: draftTimesheetCount === 0 ? 'not-allowed' : 'pointer', background: draftTimesheetCount === 0 ? '#eee' : '#e31c79', color: draftTimesheetCount === 0 ? '#aaa' : '#fff' }}
+                  onMouseEnter={e => { if (draftTimesheetCount > 0) (e.target as HTMLElement).style.background = '#cc1069' }}
+                  onMouseLeave={e => { if (draftTimesheetCount > 0) (e.target as HTMLElement).style.background = '#e31c79' }}
                 >
                   Send all reminders
                 </button>
@@ -1357,7 +1316,7 @@ export default function AdminPage() {
             </div>
 
             {/* Approval Monitoring by Manager */}
-            <div className="border border-gray-200 rounded-2xl p-4 bg-white">
+            <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h4 className="font-medium text-gray-900">Pending approvals by manager</h4>
@@ -1408,7 +1367,9 @@ export default function AdminPage() {
                               {managerId !== 'unassigned' && (
                                 <button
                                   onClick={() => handleSendApprovalReminder(managerId, data.managerName, data.submissions)}
-                                  className="px-2 py-1 text-xs bg-[#e31c79] text-white rounded-full hover:bg-[#c91865] flex items-center gap-1"
+                                  style={{ padding: '4px 10px', fontSize: 11, background: '#e31c79', color: '#fff', borderRadius: 6, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                                  onMouseEnter={e => { (e.target as HTMLElement).style.background = '#cc1069' }}
+                                  onMouseLeave={e => { (e.target as HTMLElement).style.background = '#e31c79' }}
                                 >
                                   <Send className="h-3 w-3" />
                                   Remind
@@ -1427,7 +1388,7 @@ export default function AdminPage() {
 
           {/* Missing Timesheets for Current Week */}
           {missingEmployees.length > 0 && (
-            <div className="mt-6 border border-red-200 rounded-2xl p-4 bg-red-50">
+            <div style={{ marginTop: 24, background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h4 className="font-medium text-red-900 flex items-center gap-2">
@@ -1476,7 +1437,7 @@ export default function AdminPage() {
       </div>
 
 {/* MAIN CONTENT – Timesheets + Expenses WITH FILTERS/SORTING */}
-<div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div style={{ padding: '0 40px 40px 40px' }}>
   {/* Search above cards */}
   <div className="mb-4 flex justify-between items-center">
     <div className="relative w-full sm:w-80">
@@ -1486,17 +1447,17 @@ export default function AdminPage() {
         placeholder="Search by employee, email, category..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+        style={{ width: '100%', paddingLeft: 36, paddingRight: 12, paddingTop: 8, paddingBottom: 8, fontSize: 13, border: '0.5px solid #e0dcd7', borderRadius: 8, outline: 'none' }}
       />
     </div>
   </div>
 
-  <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+  <div style={{ background: '#fff', borderRadius: 10, border: '0.5px solid #e8e4df' }}>
     {/* TIMESHEETS CARD */}
-    <div className="border-b border-gray-100 rounded-t-2xl overflow-hidden">
-      <div className="bg-[#05202E] px-4 py-3 flex justify-between items-center">
-              <h3 className="text-sm font-semibold text-white">Timesheets</h3>
-              <div className="flex items-center space-x-2 text-xs text-gray-300">
+    <div style={{ borderBottom: '0.5px solid #e8e4df', borderRadius: '10px 10px 0 0', overflow: 'hidden' }}>
+      <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>Timesheets</h3>
+              <div style={{ fontSize: 11, color: '#999' }}>
                 <span>
                   {visibleTimesheetsCountAllTab > 0 ? '1 – ' : '0 of '}
                   {visibleTimesheetsCountAllTab} of {allTimesheetsCount}
@@ -1536,7 +1497,7 @@ export default function AdminPage() {
             ) : (
               <>
                 {/* Filter row */}
-                <div className="px-4 py-2 bg-gray-50 flex items-center text-xs font-semibold text-gray-600 border-b border-gray-200">
+                <div className="flex items-center" style={{ padding: '8px 22px', borderBottom: '0.5px solid #f5f2ee' }}>
                   <div className="w-8" />
                   <div className="flex-1 pr-2">
                     <select
@@ -1580,20 +1541,21 @@ export default function AdminPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="w-24 text-right uppercase tracking-wide">
+                  <div className="w-24 text-right" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' as const }}>
                     Hours
                   </div>
-                  <div className="w-32 text-right uppercase tracking-wide">
+                  <div className="w-32 text-right" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' as const }}>
                     Actions
                   </div>
                 </div>
                 
-                {visibleTimesheetsAllTab.map((submission, index) => (
+                {visibleTimesheetsAllTab.map((submission) => (
                   <div
                     key={submission.id}
-                    className={`px-4 py-3 flex items-center text-sm ${
-                      index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                    } hover:bg-gray-100 border-b border-gray-100`}
+                    className="flex items-center"
+                    style={{ padding: '10px 22px', fontSize: 12.5, fontWeight: 400, color: '#555', borderBottom: '0.5px solid #f5f2ee', cursor: 'default' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#FDFCFB' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
                   >
                     <div className="w-8" />
                     <div className="flex-1">
@@ -1612,13 +1574,7 @@ export default function AdminPage() {
                       {submission.week_range}
                     </div>
                     <div className="w-32 text-center">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        submission.status === 'payroll_approved' ? 'bg-emerald-100 text-emerald-800' :
-                        submission.status === 'approved' ? 'bg-green-100 text-green-800' :
-                        submission.status === 'submitted' ? 'bg-yellow-100 text-yellow-800' :
-                        submission.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span style={{ display: 'inline-flex', padding: '2px 8px', fontSize: 9, fontWeight: 500, borderRadius: 3, background: submission.status === 'payroll_approved' ? '#ecfdf5' : submission.status === 'approved' ? '#f0fdf4' : submission.status === 'submitted' ? '#fefce8' : submission.status === 'rejected' ? '#fef2f2' : '#f5f5f5', color: submission.status === 'payroll_approved' ? '#065f46' : submission.status === 'approved' ? '#166534' : submission.status === 'submitted' ? '#854d0e' : submission.status === 'rejected' ? '#991b1b' : '#555' }}>
                         {submission.status === 'submitted' ? 'Pending' :
                           submission.status === 'payroll_approved' ? 'Payroll' :
                           submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
@@ -1649,7 +1605,9 @@ export default function AdminPage() {
                       {submission.status === 'approved' && (
                         <button
                           onClick={() => handleFinalizeForPayroll(submission)}
-                          className="px-2 py-1 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                          style={{ padding: '3px 10px', fontSize: 10, fontWeight: 500, background: '#e31c79', color: '#fff', borderRadius: 3, border: 'none', cursor: 'pointer' }}
+                          onMouseEnter={e => { (e.target as HTMLElement).style.background = '#cc1069' }}
+                          onMouseLeave={e => { (e.target as HTMLElement).style.background = '#e31c79' }}
                           title="Finalize for payroll"
                         >
                           Finalize
@@ -1667,8 +1625,8 @@ export default function AdminPage() {
                   </div>
                 ))}
 
-                <div className="bg-gray-50 px-4 py-2 flex justify-end items-center">
-                  <span className="text-sm font-semibold text-gray-800">
+                <div style={{ padding: '10px 22px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#555' }}>
                     Total hours:{' '}
                     {visibleTimesheetsAllTab
                       .reduce((sum, s) => sum + (s.hours || 0), 0)
@@ -1680,10 +1638,10 @@ export default function AdminPage() {
           </div>
 
           {/* EXPENSES CARD */}
-          <div className="mt-6 rounded-2xl overflow-hidden border border-gray-100">
-            <div className="bg-[#e31c79] px-4 py-3 flex justify-between items-center">
-              <h3 className="text-sm font-semibold text-white">Expenses</h3>
-              <div className="flex items-center space-x-2 text-xs text-white/90">
+          <div style={{ marginTop: 24, borderRadius: 10, overflow: 'hidden', border: '0.5px solid #e8e4df', background: '#fff' }}>
+            <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>Expenses</h3>
+              <div style={{ fontSize: 11, color: '#999' }}>
                 <span>
                   {visibleExpensesCountAllTab > 0 ? '1 – ' : '0 of '}
                   {visibleExpensesCountAllTab} of {allExpenseSubmissions.length}
@@ -1700,22 +1658,23 @@ export default function AdminPage() {
             ) : (
               <>
                 {/* Header row */}
-                <div className="px-4 py-2 bg-gray-50 flex items-center text-xs font-semibold text-gray-600 border-b border-gray-200 uppercase tracking-wide">
+                <div className="flex items-center" style={{ padding: '8px 22px', borderBottom: '0.5px solid #f5f2ee' }}>
                   <div className="w-8" />
-                  <div className="flex-1">Employee</div>
-                  <div className="w-32">Type</div>
-                  <div className="w-40">Date</div>
-                  <div className="w-32 text-center">Status</div>
-                  <div className="w-24 text-right">Amount</div>
-                  <div className="w-32 text-right">Actions</div>
+                  <div className="flex-1" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' as const }}>Employee</div>
+                  <div className="w-32" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' as const }}>Type</div>
+                  <div className="w-40" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' as const }}>Date</div>
+                  <div className="w-32 text-center" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' as const }}>Status</div>
+                  <div className="w-24 text-right" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' as const }}>Amount</div>
+                  <div className="w-32 text-right" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' as const }}>Actions</div>
                 </div>
                 
-                {visibleExpensesAllTab.map((expense, index) => (
+                {visibleExpensesAllTab.map((expense) => (
                   <div
                     key={expense.id}
-                    className={`px-4 py-3 flex items-center text-sm ${
-                      index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                    } hover:bg-gray-100 border-b border-gray-100`}
+                    className="flex items-center"
+                    style={{ padding: '10px 22px', fontSize: 12.5, fontWeight: 400, color: '#555', borderBottom: '0.5px solid #f5f2ee', cursor: 'default' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#FDFCFB' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
                   >
                     <div className="w-8" />
                     <div className="flex-1">
@@ -1741,12 +1700,7 @@ export default function AdminPage() {
                       })}
                     </div>
                     <div className="w-32 text-center">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        expense.status === 'approved' ? 'bg-green-100 text-green-800' :
-                        expense.status === 'submitted' ? 'bg-yellow-100 text-yellow-800' :
-                        expense.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span style={{ display: 'inline-flex', padding: '2px 8px', fontSize: 9, fontWeight: 500, borderRadius: 3, background: expense.status === 'approved' ? '#f0fdf4' : expense.status === 'submitted' ? '#fefce8' : expense.status === 'rejected' ? '#fef2f2' : '#f5f5f5', color: expense.status === 'approved' ? '#166534' : expense.status === 'submitted' ? '#854d0e' : expense.status === 'rejected' ? '#991b1b' : '#555' }}>
                         {expense.status === 'submitted' ? 'Pending' :
                           expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
                       </span>
@@ -1784,8 +1738,8 @@ export default function AdminPage() {
                   </div>
                 ))}
                 
-                <div className="bg-gray-50 px-4 py-2 flex justify-end items-center">
-                  <span className="text-sm font-semibold text-gray-800">
+                <div style={{ padding: '10px 22px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#555' }}>
                     Total: $
                     {visibleExpensesAllTab
                       .reduce((sum, s) => sum + s.amount, 0)
@@ -1898,7 +1852,7 @@ export default function AdminPage() {
                   setIsExpenseModalOpen(false)
                   setSelectedExpense(null)
                 }}
-                className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                style={{ padding: '8px 16px', fontSize: 13, fontWeight: 500, background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 6, cursor: 'pointer' }}
               >
                 Close
               </button>

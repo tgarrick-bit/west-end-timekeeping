@@ -594,23 +594,23 @@ export default function ExpenseEntryPage() {
   };
 
   return (
-    <div style={{ background: 'var(--we-bg)', minHeight: '100vh' }}>
+    <div style={{ background: '#FAFAF8', minHeight: '100vh' }}>
       {/* Page Header */}
-      <div style={{ background: 'var(--we-bg-white)', borderBottom: '1px solid var(--we-border)' }}>
+      <div style={{ background: '#fff', borderBottom: '1px solid #e8e4df' }}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push('/employee')}
               className="p-2 rounded-lg transition-all duration-200"
-              style={{ color: 'var(--we-text-3)', border: '1px solid var(--we-border)' }}
+              style={{ color: '#bbb', border: '1px solid #e8e4df' }}
             >
               <ArrowLeft size={16} />
             </button>
             <div>
-              <h1 className="text-[20px] font-bold" style={{ color: 'var(--we-text-1)', fontFamily: 'var(--font-heading)' }}>
+              <h1 className="text-[20px] font-bold" style={{ color: '#1a1a1a', fontFamily: 'inherit' }}>
                 Expense Submission
               </h1>
-              <p className="text-[12px]" style={{ color: 'var(--we-text-3)' }}>
+              <p className="text-[12px]" style={{ color: '#bbb' }}>
                 Create and submit expense reports
               </p>
             </div>
@@ -658,7 +658,7 @@ export default function ExpenseEntryPage() {
 
         {/* Expense Entries */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
-          <div className="bg-[#05202E] text-white px-4 py-3">
+          <div className="bg-[#1a1a1a] text-white px-4 py-3">
             <h2 className="text-sm font-medium">EXPENSE ENTRY</h2>
           </div>
           <div className="p-6">

@@ -406,7 +406,7 @@ export default function ProjectEditPage() {
             <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
             <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
           </svg>
-          <p className="text-[13px]" style={{ color: 'var(--we-text-3)' }}>Loading...</p>
+          <p className="text-[13px]" style={{ color: '#bbb' }}>Loading...</p>
         </div>
       </div>
     )
@@ -981,7 +981,7 @@ export default function ProjectEditPage() {
                   <button
                     onClick={handleAddEmployee}
                     disabled={saving}
-                    className="inline-flex w-full items-center justify-center rounded-full bg-[#05202E] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
+                    className="inline-flex w-full items-center justify-center rounded-full bg-[#1a1a1a] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
                   >
                     Add person
                   </button>
@@ -1093,7 +1093,7 @@ export default function ProjectEditPage() {
                   <button
                     onClick={handleAddApprover}
                     disabled={saving}
-                    className="inline-flex w-full items-center justify-center rounded-full bg-[#05202E] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
+                    className="inline-flex w-full items-center justify-center rounded-full bg-[#1a1a1a] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
                   >
                     Add approver
                   </button>
@@ -1336,7 +1336,7 @@ export default function ProjectEditPage() {
               <button
                 onClick={handleSaveAndNext}
                 disabled={saving}
-                className="rounded-full bg-[#05202E] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
+                className="rounded-full bg-[#1a1a1a] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
               >
                 {saving ? 'Saving…' : `Save & ${nextTabLabel}`}
               </button>

@@ -161,7 +161,7 @@ export default function AdminProjectsPage() {
               onClick={() => setShowActiveOnly((prev) => !prev)}
               className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                 showActiveOnly
-                  ? 'border-[#33393c] bg-[#05202E] text-white'
+                  ? 'border-[#33393c] bg-[#1a1a1a] text-white'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-[#e31c79] hover:text-[#e31c79]'
               }`}
             >
@@ -185,7 +185,7 @@ export default function AdminProjectsPage() {
                 <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
                 <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
               </svg>
-              <p className="text-[13px]" style={{ color: 'var(--we-text-3)' }}>Loading...</p>
+              <p className="text-[13px]" style={{ color: '#bbb' }}>Loading...</p>
             </div>
           </div>
         ) : filteredProjects.length === 0 ? (

@@ -7,18 +7,16 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import TimesheetModal from '@/components/TimesheetModal';
-import { AppShell } from '@/components/layout';
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton';
+import { StatCard } from '@/components/ui/StatCard';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
 import {
   CheckCircle,
   XCircle,
-  AlertCircle,
   ChevronDown,
   Eye,
-  Calendar,
   RefreshCw,
-  SlidersHorizontal,
   Search,
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
@@ -881,10 +879,10 @@ export default function ManagerPage() {
 
   if (isLoading) {
     return (
-      <div className="px-6 md:px-8 py-6 space-y-6">
-        <div>
-          <div className="anim-shimmer w-48 h-7 rounded mb-2" />
-          <div className="anim-shimmer w-72 h-4 rounded" />
+      <div style={{ padding: '36px 40px' }}>
+        <div style={{ marginBottom: 24 }}>
+          <div className="anim-shimmer" style={{ width: 200, height: 28, borderRadius: 4, marginBottom: 8 }} />
+          <div className="anim-shimmer" style={{ width: 300, height: 16, borderRadius: 4 }} />
         </div>
         <SkeletonStats count={4} />
         <SkeletonList rows={5} />
@@ -895,21 +893,28 @@ export default function ManagerPage() {
   return (
     <>
       {/* PAGE TITLE */}
-      <div style={{ borderBottom: '1px solid var(--we-border)' }}>
-        <div className="px-6 md:px-8 py-5 flex items-center justify-between">
+      <div style={{ padding: '36px 40px 0 40px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
           <div>
-            <h1 className="text-[24px] font-bold" style={{ color: 'var(--we-text-1)', fontFamily: 'var(--font-heading)' }}>
+            <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
               Review Dashboard
             </h1>
-            <p className="text-[13px] mt-1" style={{ color: 'var(--we-text-3)' }}>
+            <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb', marginTop: 4 }}>
               Review and approve timesheets and expenses for your team.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
               onClick={loadSubmissions}
-              className="hidden sm:inline-flex items-center gap-2 px-3 py-2 text-[13px] font-medium rounded-[var(--we-radius-sm)] transition-all duration-200"
-              style={{ color: 'var(--we-text-3)', border: '1px solid var(--we-border)', background: 'var(--we-bg-white)' }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '7px 14px', fontSize: 13, fontWeight: 500,
+                color: '#777', background: '#fff',
+                border: '0.5px solid #e0dcd7', borderRadius: 6,
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#555'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#777'; }}
             >
               <RefreshCw size={14} />
               Refresh
@@ -920,81 +925,69 @@ export default function ManagerPage() {
       </div>
 
       {/* NAV TABS */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
+      <div style={{ padding: '0 40px', borderBottom: '0.5px solid #f0ece7' }}>
+        <div style={{ display: 'flex', gap: 28 }}>
+          <button
+            onClick={() => router.push('/manager')}
+            style={{
+              padding: '12px 0', fontSize: 12, fontWeight: 600, color: '#1a1a1a',
+              borderBottom: '2px solid #e31c79', background: 'none', border: 'none',
+              borderBottomWidth: 2, borderBottomStyle: 'solid', borderBottomColor: '#e31c79',
+              cursor: 'pointer',
+            }}
+          >
+            Review
+          </button>
+
+          <div className="relative group" style={{ position: 'relative' }}>
             <button
-              onClick={() => router.push('/manager')}
-              className="py-3 text-sm font-medium text-[#1a1814] border-b-2 border-[#e31c79]"
+              style={{
+                padding: '12px 0', fontSize: 12, fontWeight: 400, color: '#999',
+                background: 'none', border: 'none', borderBottom: '2px solid transparent',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+              }}
             >
-              Review
+              Reports
+              <ChevronDown style={{ width: 14, height: 14 }} />
             </button>
-
-            <div className="relative group">
-              <button className="py-3 text-sm font-medium text-gray-500 hover:text-[#1a1814] flex items-center gap-1">
-                Reports
-                <ChevronDown className="h-4 w-4" />
-              </button>
-              <div className="absolute left-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
-                <div className="py-2 text-sm">
-                  <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                    Time reports
-                  </div>
-                  <a
-                    href="/manager/reports/time-by-project"
-                    className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700"
-                  >
-                    Time by project
-                  </a>
-                  <a
-                    href="/manager/reports/time-by-employee"
-                    className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700"
-                  >
-                    Time by employee
-                  </a>
-                  <a
-                    href="/manager/reports/time-by-class"
-                    className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700"
-                  >
-                    Time by class
-                  </a>
-                  <a
-                    href="/manager/reports/time-by-approver"
-                    className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700"
-                  >
-                    Time by approver
-                  </a>
-                  <a
-                    href="/manager/reports/time-missing"
-                    className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700"
-                  >
-                    Time missing
-                  </a>
-
-                  <div className="border-t my-2" />
-
-                  <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                    Expense reports
-                  </div>
-                  <a
-                    href="/manager/reports/expenses-by-employee"
-                    className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700"
-                  >
-                    Expenses by employee
-                  </a>
-                  <a
-                    href="/manager/reports/expenses-by-project"
-                    className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700"
-                  >
-                    Expenses by project
-                  </a>
-                  <a
-                    href="/manager/reports/expenses-by-approver"
-                    className="block px-4 py-1.5 hover:bg-gray-50 text-gray-700"
-                  >
-                    Expenses by approver
-                  </a>
+            <div
+              className="absolute left-0 mt-1 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50"
+              style={{ background: '#fff', borderRadius: 10, border: '0.5px solid #e8e4df' }}
+            >
+              <div style={{ padding: '8px 0', fontSize: 12 }}>
+                <div style={{ padding: '6px 16px', fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>
+                  Time reports
                 </div>
+                <a href="/manager/reports/time-by-project" style={{ display: 'block', padding: '6px 16px', color: '#555', textDecoration: 'none' }}>
+                  Time by project
+                </a>
+                <a href="/manager/reports/time-by-employee" style={{ display: 'block', padding: '6px 16px', color: '#555', textDecoration: 'none' }}>
+                  Time by employee
+                </a>
+                <a href="/manager/reports/time-by-class" style={{ display: 'block', padding: '6px 16px', color: '#555', textDecoration: 'none' }}>
+                  Time by class
+                </a>
+                <a href="/manager/reports/time-by-approver" style={{ display: 'block', padding: '6px 16px', color: '#555', textDecoration: 'none' }}>
+                  Time by approver
+                </a>
+                <a href="/manager/reports/time-missing" style={{ display: 'block', padding: '6px 16px', color: '#555', textDecoration: 'none' }}>
+                  Time missing
+                </a>
+
+                <div style={{ borderTop: '0.5px solid #f0ece7', margin: '6px 0' }} />
+
+                <div style={{ padding: '6px 16px', fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>
+                  Expense reports
+                </div>
+                <a href="/manager/reports/expenses-by-employee" style={{ display: 'block', padding: '6px 16px', color: '#555', textDecoration: 'none' }}>
+                  Expenses by employee
+                </a>
+                <a href="/manager/reports/expenses-by-project" style={{ display: 'block', padding: '6px 16px', color: '#555', textDecoration: 'none' }}>
+                  Expenses by project
+                </a>
+                <a href="/manager/reports/expenses-by-approver" style={{ display: 'block', padding: '6px 16px', color: '#555', textDecoration: 'none' }}>
+                  Expenses by approver
+                </a>
               </div>
             </div>
           </div>
@@ -1002,454 +995,338 @@ export default function ManagerPage() {
       </div>
 
       {/* SUMMARY CARDS */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-[#f8f9fa] border border-gray-200 rounded-xl p-4">
-              <p className="text-xs uppercase font-semibold text-gray-500 mb-1">
-                Timesheets Approved
-              </p>
-              <p className="text-2xl font-bold text-[#1a1814]">
-                {approvedTimesheetCount}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Completed</p>
-            </div>
-            <div className="bg-[#f8f9fa] border border-gray-200 rounded-xl p-4">
-              <p className="text-xs uppercase font-semibold text-gray-500 mb-1">
-                Timesheets Pending
-              </p>
-              <p className="text-2xl font-bold text-[#1a1814]">
-                {timesheetPendingCount}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Awaiting review</p>
-            </div>
-            <div className="bg-[#f8f9fa] border border-gray-200 rounded-xl p-4">
-              <p className="text-xs uppercase font-semibold text-gray-500 mb-1">
-                Expenses Approved
-              </p>
-              <p className="text-2xl font-bold text-[#1a1814]">
-                {approvedExpenseCount}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Ready for payroll</p>
-            </div>
-            <div className="bg-[#f8f9fa] border border-gray-200 rounded-xl p-4">
-              <p className="text-xs uppercase font-semibold text-gray-500 mb-1">
-                Expenses Pending
-              </p>
-              <p className="text-2xl font-bold text-[#1a1814]">
-                {expensePendingCount}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Needs your approval</p>
-            </div>
-          </div>
+      <div style={{ padding: '24px 40px 0 40px' }}>
+        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 14 }}>
+          Overview
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard label="Timesheets Approved" value={approvedTimesheetCount} desc="Completed" color="green" />
+          <StatCard label="Timesheets Pending" value={timesheetPendingCount} desc="Awaiting review" color="gold" />
+          <StatCard label="Expenses Approved" value={approvedExpenseCount} desc="Ready for payroll" color="green" />
+          <StatCard label="Expenses Pending" value={expensePendingCount} desc="Needs your approval" color="gold" />
         </div>
       </div>
 
       {/* MAIN CONTENT */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div style={{ padding: '24px 40px 40px 40px' }}>
         {/* search */}
-        <div className="mb-4 flex justify-between items-center">
-          <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ position: 'relative', width: 320 }}>
+            <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#ccc' }} />
             <input
               type="text"
               placeholder="Search by employee, email, title..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-[#e31c79]"
+              style={{
+                width: '100%', paddingLeft: 34, paddingRight: 12, paddingTop: 8, paddingBottom: 8,
+                fontSize: 12, color: '#555', background: '#fff',
+                border: '0.5px solid #e8e4df', borderRadius: 8,
+                outline: 'none',
+              }}
             />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-          {/* TIMESHEETS SECTION */}
-          <div className="border-b border-gray-100 rounded-t-2xl overflow-hidden">
-            <div className="bg-[#05202E] px-4 py-3 flex justify-between items-center">
-              <h3 className="text-sm font-semibold text-white">Timesheets</h3>
-              <div className="flex items-center space-x-2 text-xs text-gray-300">
-                <span>
-                  {visibleTimesheetsCountAllTab > 0 ? '1 – ' : '0 of '}
-                  {visibleTimesheetsCountAllTab} of {allTimesheetsCount}
-                </span>
-              </div>
-            </div>
-
-            {hasTimesheetFilters && (
-              <div className="px-4 pt-2 pb-3 bg-white">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-50 border border-gray-200 text-xs text-gray-700">
-                  <span className="font-semibold">Currently filtered by:</span>
-                  {employeeFilterLabel && (
-                    <span>Employee: {employeeFilterLabel}</span>
-                  )}
-                  {timesheetWeekFilter !== 'all' && (
-                    <span>Week: {timesheetWeekFilter}</span>
-                  )}
-                  {timesheetStatusCardFilter !== 'all' && (
-                    <span>
-                      Status:{' '}
-                      {timesheetStatusCardFilter
-                        .charAt(0)
-                        .toUpperCase() +
-                        timesheetStatusCardFilter.slice(1)}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={resetTimesheetFilters}
-                    className="ml-2 text-blue-600 hover:text-blue-700 underline decoration-blue-300"
-                  >
-                    Reset filters
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {allTimesheetsCount === 0 ? (
-              <div className="px-4 py-8 text-center text-gray-500 bg-gray-50">
-                No timesheets to display.
-              </div>
-            ) : (
-              <>
-                {/* header row */}
-                <div className="px-4 py-2 bg-gray-50 flex items-center text-xs font-semibold text-gray-600 border-b border-gray-200">
-                  <div className="w-8" />
-                  <div className="flex-1 pr-2">
-                    <select
-                      value={timesheetEmployeeFilter}
-                      onChange={(e) => setTimesheetEmployeeFilter(e.target.value)}
-                      className="w-full text-xs px-2 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                    >
-                      <option value="all">Employee</option>
-                      {timesheetEmployeeOptions.map((emp) => (
-                        <option key={emp.id} value={emp.id}>
-                          {formatName(
-                            emp.first_name,
-                            emp.middle_name || undefined,
-                            emp.last_name
-                          )}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="w-40 pr-2">
-                    <select
-                      value={timesheetWeekFilter}
-                      onChange={(e) => setTimesheetWeekFilter(e.target.value)}
-                      className="w-full text-xs px-2 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                    >
-                      <option value="all">Week</option>
-                      {weekOptions.map((week) => (
-                        <option key={week} value={week}>
-                          {week}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="w-32 pr-2">
-                    <select
-                      value={timesheetStatusCardFilter}
-                      onChange={(e) =>
-                        setTimesheetStatusCardFilter(e.target.value)
-                      }
-                      className="w-full text-xs px-2 py-1 border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                    >
-                      <option value="all">Status</option>
-                      {statusOptions.map((status) => (
-                        <option key={status} value={status}>
-                          {status.charAt(0).toUpperCase() + status.slice(1)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="w-24 text-right uppercase tracking-wide">
-                    Hours
-                  </div>
-                  <div className="w-32 text-right uppercase tracking-wide">
-                    Actions
-                  </div>
-                </div>
-
-                {visibleTimesheetsAllTab.map((submission, index) => (
-                  <div
-                    key={submission.id}
-                    className={`px-4 py-3 flex items-center text-sm border-b border-gray-100
-                      ${
-                        submission.status === 'submitted'
-                          ? 'bg-blue-50 hover:bg-blue-100'
-                          : index % 2 === 0
-                          ? 'bg-white hover:bg-gray-50'
-                          : 'bg-gray-50 hover:bg-gray-100'
-                      }`}
-                  >
-                    <div className="w-8" />
-                    <div className="flex-1">
-                      <button
-                        type="button"
-                        onClick={() => handleViewTimesheet(submission)}
-                        className="text-left text-gray-900 font-medium hover:underline"
-                      >
-                        {formatName(
-                          submission.employee?.first_name,
-                          submission.employee?.middle_name || undefined,
-                          submission.employee?.last_name
-                        )}
-                      </button>
-                    </div>
-                    <div className="w-40 text-sm text-gray-800">
-                      {submission.week_range}
-                    </div>
-                    <div className="w-32 text-center">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          submission.status === 'approved'
-                            ? 'bg-green-100 text-green-800'
-                            : submission.status === 'submitted'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : submission.status === 'rejected'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {submission.status.charAt(0).toUpperCase() +
-                          submission.status.slice(1)}
-                      </span>
-                    </div>
-                    <div className="w-24 text-right font-medium">
-                      {submission.hours?.toFixed(2) || '0.00'}
-                    </div>
-                    <div className="w-32 flex justify-end items-center gap-2">
-                      {submission.status === 'submitted' && (
-                        <>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleApproveTimesheet(submission);
-                            }}
-                            className="p-1 text-green-600 hover:bg-green-50 rounded"
-                            title="Approve"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRejectTimesheet(submission);
-                            }}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded"
-                            title="Reject"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </button>
-                        </>
-                      )}
-                      <button
-                        onClick={() => handleViewTimesheet(submission)}
-                        className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                        disabled={processingId === submission.id}
-                        title="View timesheet"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-                <div className="bg-gray-50 px-4 py-2 flex justify-end items-center">
-                  <span className="text-sm font-semibold text-gray-800">
-                    Total hours:{' '}
-                    {visibleTimesheetsAllTab
-                      .reduce((sum, s) => sum + (s.hours || 0), 0)
-                      .toFixed(2)}
-                  </span>
-                </div>
-              </>
-            )}
+        {/* TIMESHEETS SECTION */}
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, marginBottom: 20, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>Timesheets</span>
+            <span style={{ fontSize: 10, fontWeight: 400, color: '#d0cbc4' }}>
+              {visibleTimesheetsCountAllTab > 0 ? '1 – ' : '0 of '}
+              {visibleTimesheetsCountAllTab} of {allTimesheetsCount}
+            </span>
           </div>
 
-          {/* EXPENSE REPORTS SECTION */}
-          <div className="mt-6 rounded-2xl overflow-hidden border border-gray-100">
-            <div className="bg-[#e31c79] px-4 py-3 flex justify-between items-center">
-              <h3 className="text-sm font-semibold text-white">Expenses</h3>
-              <div className="flex items-center space-x-2 text-xs text-white/90">
-                <span>
-                  {visibleExpensesCountAllTab > 0 ? '1 – ' : '0 of '}
-                  {visibleExpensesCountAllTab} of {allExpenseReportsCount}
+          {hasTimesheetFilters && (
+            <div style={{ padding: '10px 22px', borderBottom: '0.5px solid #f5f2ee' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 12px', borderRadius: 6, background: '#FAFAF8', border: '0.5px solid #e8e4df', fontSize: 10, color: '#777' }}>
+                <span style={{ fontWeight: 600 }}>Filtered by:</span>
+                {employeeFilterLabel && (
+                  <span>Employee: {employeeFilterLabel}</span>
+                )}
+                {timesheetWeekFilter !== 'all' && (
+                  <span>Week: {timesheetWeekFilter}</span>
+                )}
+                {timesheetStatusCardFilter !== 'all' && (
+                  <span>
+                    Status:{' '}
+                    {timesheetStatusCardFilter.charAt(0).toUpperCase() + timesheetStatusCardFilter.slice(1)}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={resetTimesheetFilters}
+                  style={{ marginLeft: 6, color: '#e31c79', background: 'none', border: 'none', cursor: 'pointer', fontSize: 10, textDecoration: 'underline' }}
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+          )}
+
+          {allTimesheetsCount === 0 ? (
+            <div style={{ padding: '32px 22px', textAlign: 'center', fontSize: 12, color: '#999' }}>
+              No timesheets to display.
+            </div>
+          ) : (
+            <>
+              {/* header row */}
+              <div style={{ padding: '8px 18px', display: 'flex', alignItems: 'center', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' as const }}>
+                <div style={{ width: 32 }} />
+                <div style={{ flex: 1, paddingRight: 8 }}>
+                  <select
+                    value={timesheetEmployeeFilter}
+                    onChange={(e) => setTimesheetEmployeeFilter(e.target.value)}
+                    style={{ width: '100%', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' as const, padding: '4px 6px', border: '0.5px solid #e8e4df', borderRadius: 4, background: '#fff', outline: 'none' }}
+                  >
+                    <option value="all">Employee</option>
+                    {timesheetEmployeeOptions.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {formatName(emp.first_name, emp.middle_name || undefined, emp.last_name)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ width: 160, paddingRight: 8 }}>
+                  <select
+                    value={timesheetWeekFilter}
+                    onChange={(e) => setTimesheetWeekFilter(e.target.value)}
+                    style={{ width: '100%', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' as const, padding: '4px 6px', border: '0.5px solid #e8e4df', borderRadius: 4, background: '#fff', outline: 'none' }}
+                  >
+                    <option value="all">Week</option>
+                    {weekOptions.map((week) => (
+                      <option key={week} value={week}>{week}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ width: 128, paddingRight: 8 }}>
+                  <select
+                    value={timesheetStatusCardFilter}
+                    onChange={(e) => setTimesheetStatusCardFilter(e.target.value)}
+                    style={{ width: '100%', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' as const, padding: '4px 6px', border: '0.5px solid #e8e4df', borderRadius: 4, background: '#fff', outline: 'none' }}
+                  >
+                    <option value="all">Status</option>
+                    {statusOptions.map((status) => (
+                      <option key={status} value={status}>
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ width: 96, textAlign: 'right' }}>Hours</div>
+                <div style={{ width: 128, textAlign: 'right' }}>Actions</div>
+              </div>
+
+              {visibleTimesheetsAllTab.map((submission) => (
+                <div
+                  key={submission.id}
+                  style={{
+                    padding: '13px 18px', display: 'flex', alignItems: 'center',
+                    fontSize: 12.5, fontWeight: 400, color: '#555',
+                    borderBottom: '0.5px solid #f5f2ee', cursor: 'pointer',
+                    background: '#fff',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#FDFCFB'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }}
+                >
+                  <div style={{ width: 32 }} />
+                  <div style={{ flex: 1 }}>
+                    <button
+                      type="button"
+                      onClick={() => handleViewTimesheet(submission)}
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 12.5, fontWeight: 500, color: '#1a1a1a', textAlign: 'left' }}
+                    >
+                      {formatName(
+                        submission.employee?.first_name,
+                        submission.employee?.middle_name || undefined,
+                        submission.employee?.last_name
+                      )}
+                    </button>
+                  </div>
+                  <div style={{ width: 160, fontSize: 12.5, color: '#555' }}>
+                    {submission.week_range}
+                  </div>
+                  <div style={{ width: 128, textAlign: 'center' }}>
+                    <StatusBadge status={submission.status} />
+                  </div>
+                  <div style={{ width: 96, textAlign: 'right', fontWeight: 500, color: '#1a1a1a' }}>
+                    {submission.hours?.toFixed(2) || '0.00'}
+                  </div>
+                  <div style={{ width: 128, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6 }}>
+                    {submission.status === 'submitted' && (
+                      <>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleApproveTimesheet(submission); }}
+                          style={{ padding: 4, color: '#2d9b6e', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 4 }}
+                          title="Approve"
+                        >
+                          <CheckCircle style={{ width: 16, height: 16 }} />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleRejectTimesheet(submission); }}
+                          style={{ padding: 4, color: '#b91c1c', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 4 }}
+                          title="Reject"
+                        >
+                          <XCircle style={{ width: 16, height: 16 }} />
+                        </button>
+                      </>
+                    )}
+                    <button
+                      onClick={() => handleViewTimesheet(submission)}
+                      style={{ padding: 4, color: '#999', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 4 }}
+                      disabled={processingId === submission.id}
+                      title="View timesheet"
+                    >
+                      <Eye style={{ width: 16, height: 16 }} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              <div style={{ padding: '10px 22px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', borderTop: '0.5px solid #f0ece7' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#1a1a1a' }}>
+                  Total hours:{' '}
+                  {visibleTimesheetsAllTab.reduce((sum, s) => sum + (s.hours || 0), 0).toFixed(2)}
                 </span>
               </div>
-            </div>
+            </>
+          )}
+        </div>
 
-            {/* Expense status filters */}
-            <div className="px-4 py-3 bg-white flex flex-wrap gap-2 border-b border-gray-200">
-              <button
-                onClick={() => setExpenseStatusFilter('all')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium ${
-                  expenseStatusFilter === 'all'
-                    ? 'bg-[#e31c79] text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setExpenseStatusFilter('submitted')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium ${
-                  expenseStatusFilter === 'submitted'
-                    ? 'bg-[#e31c79] text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Pending
-              </button>
-              <button
-                onClick={() => setExpenseStatusFilter('approved')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium ${
-                  expenseStatusFilter === 'approved'
-                    ? 'bg-[#e31c79] text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Approved
-              </button>
-              <button
-                onClick={() => setExpenseStatusFilter('rejected')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium ${
-                  expenseStatusFilter === 'rejected'
-                    ? 'bg-[#e31c79] text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Rejected
-              </button>
-            </div>
-
-            {visibleExpenseReportsAllTab.length === 0 ? (
-              <div className="bg-gray-50 px-4 py-8 text-center text-gray-500">
-                {timesheetEmployeeFilter !== 'all'
-                  ? 'No expense reports for the selected employee.'
-                  : 'No expense reports to display.'}
-              </div>
-            ) : (
-              <>
-                {/* header */}
-                <div className="px-4 py-2 bg-gray-50 flex items-center text-xs font-semibold text-gray-600 border-b border-gray-200 uppercase tracking-wide">
-                  <div className="w-8" />
-                  <div className="flex-1">Employee</div>
-                  <div className="flex-1">Title</div>
-                  <div className="w-40">Period / Created</div>
-                  <div className="w-32 text-center">Status</div>
-                  <div className="w-28 text-right">Total</div>
-                  <div className="w-28 text-right">Actions</div>
-                </div>
-
-                {visibleExpenseReportsAllTab.map((report, index) => (
-                  <div
-                    key={report.id}
-                    className={`px-4 py-3 flex items-center text-sm border-b border-gray-100 cursor-pointer
-                      ${
-                        report.status === 'submitted'
-                          ? 'bg-blue-50 hover:bg-blue-100'
-                          : index % 2 === 0
-                          ? 'bg-white hover:bg-gray-50'
-                          : 'bg-gray-50 hover:bg-gray-100'
-                      }`}
-                    onClick={() => router.push(`/manager/expense/${report.id}`)}
-                  >
-                    <div className="w-8" />
-                    <div className="flex-1">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/manager/expense/${report.id}`);
-                        }}
-                        className="font-medium text-[#1a1814] hover:underline"
-                      >
-                        {formatName(
-                          report.employee?.first_name,
-                          report.employee?.middle_name || undefined,
-                          report.employee?.last_name
-                        ) || 'Employee'}
-                      </button>
-                    </div>
-                    <div className="flex-1 text-sm text-gray-800">
-                      {report.title || 'Expense Report'}
-                    </div>
-                    <div className="w-40 text-sm text-gray-700">
-                      {report.period_month
-                        ? formatDateDisplay(report.period_month)
-                        : formatDateDisplay(report.created_at)}
-                    </div>
-                    <div className="w-32 text-center">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          report.status === 'approved'
-                            ? 'bg-green-100 text-green-800'
-                            : report.status === 'submitted'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : report.status === 'rejected'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {report.status.charAt(0).toUpperCase() +
-                          report.status.slice(1)}
-                      </span>
-                    </div>
-                    <div className="w-28 text-right font-medium">
-                      ${report.total_amount.toFixed(2)}
-                    </div>
-                    <div className="w-28 flex justify-end items-center gap-2">
-                      {report.status === 'submitted' && (
-                        <>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleApproveExpenseReport(report);
-                            }}
-                            className="p-1 text-green-600 hover:bg-green-50 rounded"
-                            title="Approve report"
-                            disabled={processingId === report.id}
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRejectExpenseReport(report);
-                            }}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded"
-                            title="Reject report"
-                            disabled={processingId === report.id}
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </button>
-                        </>
-                      )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/manager/expense/${report.id}`);
-                        }}
-                        className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                        title="View details"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-                <div className="bg-gray-50 px-4 py-2 flex justify-end items-center">
-                  <span className="text-sm font-semibold text-gray-800">
-                    Total: $
-                    {visibleExpenseReportsAllTab
-                      .reduce((sum, r) => sum + (r.total_amount || 0), 0)
-                      .toFixed(2)}
-                  </span>
-                </div>
-              </>
-            )}
+        {/* EXPENSE REPORTS SECTION */}
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>Expenses</span>
+            <span style={{ fontSize: 10, fontWeight: 400, color: '#d0cbc4' }}>
+              {visibleExpensesCountAllTab > 0 ? '1 – ' : '0 of '}
+              {visibleExpensesCountAllTab} of {allExpenseReportsCount}
+            </span>
           </div>
+
+          {/* Expense status filters */}
+          <div style={{ padding: '12px 22px', borderBottom: '0.5px solid #f0ece7', display: 'flex', gap: 8 }}>
+            {(['all', 'submitted', 'approved', 'rejected'] as const).map((status) => {
+              const isActive = expenseStatusFilter === status;
+              const label = status === 'all' ? 'All' : status === 'submitted' ? 'Pending' : status.charAt(0).toUpperCase() + status.slice(1);
+              return (
+                <button
+                  key={status}
+                  onClick={() => setExpenseStatusFilter(status)}
+                  style={{
+                    padding: '4px 12px', borderRadius: 4, fontSize: 10, fontWeight: 500,
+                    cursor: 'pointer', border: 'none',
+                    background: isActive ? '#e31c79' : '#fff',
+                    color: isActive ? '#fff' : '#777',
+                    ...(isActive ? {} : { border: '0.5px solid #e0dcd7' }),
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          {visibleExpenseReportsAllTab.length === 0 ? (
+            <div style={{ padding: '32px 22px', textAlign: 'center', fontSize: 12, color: '#999' }}>
+              {timesheetEmployeeFilter !== 'all'
+                ? 'No expense reports for the selected employee.'
+                : 'No expense reports to display.'}
+            </div>
+          ) : (
+            <>
+              {/* header */}
+              <div style={{ padding: '8px 18px', display: 'flex', alignItems: 'center', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' as const }}>
+                <div style={{ width: 32 }} />
+                <div style={{ flex: 1 }}>Employee</div>
+                <div style={{ flex: 1 }}>Title</div>
+                <div style={{ width: 160 }}>Period / Created</div>
+                <div style={{ width: 128, textAlign: 'center' }}>Status</div>
+                <div style={{ width: 112, textAlign: 'right' }}>Total</div>
+                <div style={{ width: 112, textAlign: 'right' }}>Actions</div>
+              </div>
+
+              {visibleExpenseReportsAllTab.map((report) => (
+                <div
+                  key={report.id}
+                  style={{
+                    padding: '13px 18px', display: 'flex', alignItems: 'center',
+                    fontSize: 12.5, fontWeight: 400, color: '#555',
+                    borderBottom: '0.5px solid #f5f2ee', cursor: 'pointer',
+                    background: '#fff',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#FDFCFB'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }}
+                  onClick={() => router.push(`/manager/expense/${report.id}`)}
+                >
+                  <div style={{ width: 32 }} />
+                  <div style={{ flex: 1 }}>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); router.push(`/manager/expense/${report.id}`); }}
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 12.5, fontWeight: 500, color: '#1a1a1a', textAlign: 'left' }}
+                    >
+                      {formatName(
+                        report.employee?.first_name,
+                        report.employee?.middle_name || undefined,
+                        report.employee?.last_name
+                      ) || 'Employee'}
+                    </button>
+                  </div>
+                  <div style={{ flex: 1, fontSize: 12.5, color: '#555' }}>
+                    {report.title || 'Expense Report'}
+                  </div>
+                  <div style={{ width: 160, fontSize: 12.5, color: '#555' }}>
+                    {report.period_month
+                      ? formatDateDisplay(report.period_month)
+                      : formatDateDisplay(report.created_at)}
+                  </div>
+                  <div style={{ width: 128, textAlign: 'center' }}>
+                    <StatusBadge status={report.status} />
+                  </div>
+                  <div style={{ width: 112, textAlign: 'right', fontWeight: 500, color: '#1a1a1a' }}>
+                    ${report.total_amount.toFixed(2)}
+                  </div>
+                  <div style={{ width: 112, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6 }}>
+                    {report.status === 'submitted' && (
+                      <>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleApproveExpenseReport(report); }}
+                          style={{ padding: 4, color: '#2d9b6e', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 4 }}
+                          title="Approve report"
+                          disabled={processingId === report.id}
+                        >
+                          <CheckCircle style={{ width: 16, height: 16 }} />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleRejectExpenseReport(report); }}
+                          style={{ padding: 4, color: '#b91c1c', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 4 }}
+                          title="Reject report"
+                          disabled={processingId === report.id}
+                        >
+                          <XCircle style={{ width: 16, height: 16 }} />
+                        </button>
+                      </>
+                    )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); router.push(`/manager/expense/${report.id}`); }}
+                      style={{ padding: 4, color: '#999', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 4 }}
+                      title="View details"
+                    >
+                      <Eye style={{ width: 16, height: 16 }} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              <div style={{ padding: '10px 22px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', borderTop: '0.5px solid #f0ece7' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#1a1a1a' }}>
+                  Total: $
+                  {visibleExpenseReportsAllTab.reduce((sum, r) => sum + (r.total_amount || 0), 0).toFixed(2)}
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

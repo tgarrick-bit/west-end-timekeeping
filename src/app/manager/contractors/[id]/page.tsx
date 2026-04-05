@@ -96,7 +96,7 @@ export default function ContractorDetailPage() {
             <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
             <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
           </svg>
-          <p className="text-[13px]" style={{ color: 'var(--we-text-3)' }}>Loading...</p>
+          <p className="text-[13px]" style={{ color: '#bbb' }}>Loading...</p>
         </div>
       </div>
     )
@@ -152,7 +152,7 @@ export default function ContractorDetailPage() {
                   {contractor.phone && (
                     <button
                       onClick={() => handleContact('phone')}
-                      className="bg-[#05202E] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center space-x-2"
+                      className="bg-[#1a1a1a] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center space-x-2"
                     >
                       <Phone className="h-4 w-4" />
                       <span>Call</span>
@@ -228,7 +228,7 @@ export default function ContractorDetailPage() {
                 </button>
                 <button
                   onClick={handleViewExpenses}
-                  className="bg-[#05202E] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center justify-center space-x-2"
+                  className="bg-[#1a1a1a] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center justify-center space-x-2"
                 >
                   <DollarSign className="h-5 w-5" />
                   <span>Review Expenses</span>
