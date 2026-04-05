@@ -569,7 +569,7 @@ export default function ExpensesByEmployeeReport() {
                                 {expense.payment_method || '-'}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                <span className={`px-2 inline-flex leading-5 rounded ${
                                   expense.status === 'approved' 
                                     ? 'bg-green-100 text-green-800' 
                                     : expense.status === 'pending' || expense.status === 'submitted'

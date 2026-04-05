@@ -363,7 +363,7 @@ export default function PayrollPage() {
     emp ? `${emp.last_name}, ${emp.first_name}` : 'Unknown'
 
   const statusBadge = (status: string) => {
-    const base = 'inline-flex px-2 py-0.5 text-xs font-semibold rounded-full'
+    const base = 'inline-flex px-2 py-0.5 rounded'
     switch (status) {
       case 'payroll_approved': return `${base} bg-emerald-100 text-emerald-800`
       case 'client_approved': return `${base} bg-blue-100 text-blue-800`

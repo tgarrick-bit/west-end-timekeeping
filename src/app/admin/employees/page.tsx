@@ -671,7 +671,7 @@ export default function EmployeeManagement() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                      className={`px-2 inline-flex leading-5 rounded
                       ${
                         employee.role === 'admin'
                           ? 'bg-purple-100 text-purple-800'
@@ -692,7 +692,7 @@ export default function EmployeeManagement() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                      className={`px-2 inline-flex leading-5 rounded
                       ${
                         employee.is_active
                           ? 'bg-green-100 text-green-800'

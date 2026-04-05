@@ -472,7 +472,7 @@ export default function TimeMissingReport() {
                                 {row.employee.employee_type || 'N/A'}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                <span className="px-2 inline-flex leading-5 rounded bg-red-100 text-red-800">
                                   {row.weeks_missing}
                                 </span>
                               </td>
