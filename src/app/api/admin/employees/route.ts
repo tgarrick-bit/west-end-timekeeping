@@ -6,17 +6,14 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { logAudit } from '@/lib/audit'
 import { sendEmail } from '@/lib/sendEmail'
 
-// Create admin client with service role key for user management
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!, // Service role key for admin operations
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-)
+// Lazy admin client — avoids build-time crash when env vars aren't set
+function supabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -130,7 +127,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 1: Create auth user using admin client
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    const { data: authUser, error: authError } = await supabaseAdmin().auth.admin.createUser({
       email,
       password,
       email_confirm: true,
@@ -199,7 +196,7 @@ export async function POST(request: NextRequest) {
       console.error('Employee creation error:', employeeError)
 
       // Cleanup auth user if employee upsert fails for some other reason
-      await supabaseAdmin.auth.admin.deleteUser(authId)
+      await supabaseAdmin().auth.admin.deleteUser(authId)
       
       return NextResponse.json({ 
         error: `Database error: ${employeeError.message}` 
@@ -210,7 +207,7 @@ export async function POST(request: NextRequest) {
     // (avoids sending plaintext passwords in email)
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     try {
-      await supabaseAdmin.auth.admin.generateLink({
+      await supabaseAdmin().auth.admin.generateLink({
         type: 'recovery',
         email,
         options: { redirectTo: `${appUrl}/auth/login` },
@@ -340,7 +337,7 @@ export async function PUT(request: NextRequest) {
 
     // If email changed, update auth user email
     if (body.email) {
-      const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+      const { error: authError } = await supabaseAdmin().auth.admin.updateUserById(
         employeeId,
         { email: body.email }
       )
@@ -395,7 +392,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete auth user
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(employeeId)
+    const { error: authError } = await supabaseAdmin().auth.admin.deleteUser(employeeId)
 
     if (authError) {
       console.error('Failed to delete auth user:', authError)
