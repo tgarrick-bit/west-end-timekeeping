@@ -19,15 +19,14 @@ export type TimesheetStatus =
   | 'draft'
   | 'submitted'
   | 'approved'
-  | 'rejected'
-  | 'paid';
+  | 'payroll_approved'
+  | 'rejected';
 
 export type ExpenseStatus =
   | 'draft'
   | 'submitted'
   | 'approved'
-  | 'rejected'
-  | 'reimbursed';
+  | 'rejected';
 
 // ===== Auth / People =====
 // NOTE: Components read first_name/last_name/role directly from User.
@@ -48,6 +47,17 @@ export interface User {
 export interface Employee extends User {
   department?: string | null;
   state?: string | null;
+  employee_id?: string | null;        // external employee ID / badge number
+  employee_type?: string | null;      // WE, MBP, CNDH, CNDC
+  middle_name?: string | null;
+  phone?: string | null;
+  hourly_rate?: number | null;
+  bill_rate?: number | null;
+  overtime_rate?: number | null;
+  hire_date?: string | null;
+  is_exempt?: boolean | null;
+  mybase_payroll_id?: string | null;
+  notification_prefs?: Record<string, any> | null;
 }
 
 // ===== Clients =====
@@ -60,14 +70,20 @@ export interface Client {
   contact_name?: string;
   contact_email?: string;
   contact_phone?: string;
+  contact_person?: string;
 
   address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+
+  bill_rate?: number | null;
+  contract_start?: string | null;
+  contract_end?: string | null;
+  billing_details?: string | null;
 
   // used in forms & filters as boolean
   is_active?: boolean;
-
-  // some UIs mention this
-  time_tracking_method?: 'detailed' | 'simple';
 
   created_at?: string;
   updated_at?: string;
@@ -80,6 +96,11 @@ export interface Project {
   code?: string | null;
   client_id?: string | null;
 
+  short_name?: string | null;
+  project_number?: string | null;
+  client_name?: string | null;        // denormalized for quick display
+  department?: string | null;
+
   description?: string | null;
   start_date?: string | null;         // keep optional, UI will guard
   end_date?: string | null;
@@ -87,6 +108,10 @@ export interface Project {
   budget?: number;                    // referenced in ProjectManagement
 
   is_active?: boolean | null;
+  track_time?: boolean | null;
+  track_expenses?: boolean | null;
+  is_billable?: boolean | null;
+
   created_at?: string;
   updated_at?: string;
 }
@@ -95,36 +120,39 @@ export interface Project {
 export interface Timesheet {
   id: string;
   employee_id: string;
-  week_ending?: string;               // some UIs expect this
-  week_start_date?: string;           // others reference this
-  total_minutes?: number | null;
+  week_ending?: string;
+  total_hours?: number | null;
+  overtime_hours?: number | null;
   status?: TimesheetStatus;
   submitted_at?: string | null;
   approved_at?: string | null;
   approved_by?: string | null;
+  payroll_approved_at?: string | null;
+  rejection_reason?: string | null;
+  comments?: string | null;
   created_at?: string;
   updated_at?: string;
 }
 
 /**
- * TimeEntry is permissive so different schemas work.
+ * TimeEntry maps to the production `timesheet_entries` table.
+ * Extra fields (start_time, end_time, etc.) kept for future use.
  */
 export interface TimeEntry {
   id: string;
   timesheet_id: string;
   project_id?: string | null;
-  task_id?: string | null;
 
-  // date fields (one or the other)
-  entry_date?: string;                // YYYY-MM-DD
+  // date field — production uses `date`
   date?: string;                      // YYYY-MM-DD
 
-  // durations
-  total_minutes?: number | null;
-  minutes?: number | null;
+  // durations — production uses `hours`
   hours?: number | null;
 
   // optional details
+  description?: string | null;
+
+  // extra fields kept for possible future schema additions
   start_time?: string | null;         // HH:MM:SS
   end_time?: string | null;           // HH:MM:SS
   break_minutes?: number | null;
@@ -141,50 +169,64 @@ export interface TimeEntry {
 export interface ExpenseReport {
   id: string;
   employee_id: string;
-  report_number?: string;
-  report_name?: string;
+  title?: string | null;
+  period_month?: string | null;
   status?: ExpenseStatus;
-  submission_date?: string;           // YYYY-MM-DD
   total_amount?: number | null;
-  project_code?: string | null;
-  department?: string | null;
+  submitted_at?: string | null;
   approved_at?: string | null;
   approved_by?: string | null;
+  rejection_reason?: string | null;
   created_at?: string;
   updated_at?: string;
 }
 
 export interface ExpenseItem {
   id: string;
-  expense_report_id?: string;         // sometimes report_id
-  report_id?: string;
+  employee_id?: string;
+  report_id?: string | null;
+  project_id?: string | null;
 
-  date: string;                        // YYYY-MM-DD
+  expense_date?: string;              // YYYY-MM-DD (production column name)
+  date?: string;                      // alias for backward compat
   amount?: number | null;
-  total_amount?: number | null;
   category?: string | null;
   description?: string | null;
+  vendor?: string | null;
+  payment_method?: string | null;
   receipt_url?: string | null;
-  project_id?: string | null;
+  is_reimbursable?: boolean | null;
+  status?: ExpenseStatus;
+  submitted_at?: string | null;
+  approved_at?: string | null;
+  approved_by?: string | null;
+  rejection_reason?: string | null;
+  comments?: string | null;
 
   created_at?: string;
   updated_at?: string;
 }
 
 // ===== Manager/Project helper shapes used in UI =====
-export interface ProjectAssignment {
+
+/** Maps to production `project_employees` table */
+export interface ProjectEmployee {
   id: string;
-  user_id: string;
+  employee_id: string;
   project_id: string;
-  start_date?: string | null;
-  end_date?: string | null;
-  hourly_rate?: number | null;
+  pay_rate?: number | null;
+  bill_rate?: number | null;
   is_active?: boolean | null;
+  created_at?: string;
+  updated_at?: string;
 
   // joins in UI
-  user?: Pick<User, 'first_name' | 'last_name' | 'email'>;
+  employee?: Pick<User, 'first_name' | 'last_name' | 'email'>;
   project?: Pick<Project, 'name' | 'client_id'>;
 }
+
+/** @deprecated Use ProjectEmployee instead */
+export type ProjectAssignment = ProjectEmployee;
 
 export interface ProjectOverviewItem {
   project: Pick<Project, 'id' | 'name' | 'status' | 'description'>;
@@ -229,6 +271,3 @@ export interface ApprovalSummary {
   timesheets_pending: number;
   expenses_pending: number;
 }
-
-
-

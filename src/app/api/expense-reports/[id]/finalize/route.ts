@@ -57,6 +57,21 @@ export async function POST(
       );
     }
 
+    // Role check: only managers and admins can finalize expense reports
+    const { data: actingEmployee } = await supabase
+      .from('employees')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    const userRole = actingEmployee?.role || 'employee';
+
+    if (!['admin', 'manager', 'time_approver'].includes(userRole)) {
+      return NextResponse.json(
+        { error: 'Forbidden: manager or admin role required.' },
+        { status: 403 }
+      );
+    }
+
     // 1) Load report
     const { data: report, error: reportError } = await supabase
       .from('expense_reports')

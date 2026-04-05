@@ -45,8 +45,13 @@ export default function TimeByClassReport() {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const [startDate, setStartDate] = useState('2025-09-07')
-  const [endDate, setEndDate] = useState('2025-09-13')
+  const now = new Date()
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+
+  const [startDate, setStartDate] = useState(firstOfMonth)
+  const [endDate, setEndDate] = useState(lastOfMonth)
+  const [managedEmployeeIds, setManagedEmployeeIds] = useState<string[]>([])
   const [selectedClass, setSelectedClass] = useState('-All-')
   const [selectedTimeType, setSelectedTimeType] = useState('-All-')
   const [forceCompleteWeeks, setForceCompleteWeeks] = useState(false)
@@ -62,12 +67,24 @@ export default function TimeByClassReport() {
 
   const timeTypes = ['-All-','Regular','Overtime','Doubletime','Sick','Vacation','Holiday','Non-billable','Overtime *','regular *']
 
+  useEffect(() => {
+    (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) return
+      const { data: myEmps } = await supabase.from('employees').select('id').eq('manager_id', authUser.id)
+      setManagedEmployeeIds((myEmps || []).map(e => e.id))
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const handleRunReport = async () => {
     setIsLoading(true)
     try {
+      if (managedEmployeeIds.length === 0) { setReportData([]); setIsLoading(false); return }
       let query = supabase
         .from('timesheets')
         .select(`*, employees!inner (first_name, last_name, department, hourly_rate), projects (name, code)`)
+        .in('employee_id', managedEmployeeIds)
         .gte('week_ending', startDate)
         .lte('week_ending', endDate)
       if (!includeUnapproved) { query = query.eq('status', 'approved') }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
@@ -32,23 +32,54 @@ export default function ExpensesByApproverReport() {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const [startDate, setStartDate] = useState('2025-09-01')
-  const [endDate, setEndDate] = useState('2025-09-30')
+  const now = new Date()
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+
+  const [startDate, setStartDate] = useState(firstOfMonth)
+  const [endDate, setEndDate] = useState(lastOfMonth)
   const [selectedUser, setSelectedUser] = useState('')
+  const [employeeOptions, setEmployeeOptions] = useState<{id: string; name: string}[]>([])
+  const [managedEmployeeIds, setManagedEmployeeIds] = useState<string[]>([])
   const [includeUnapproved, setIncludeUnapproved] = useState(false)
   const [reportData, setReportData] = useState<ExpenseData[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
+  useEffect(() => {
+    (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) return
+      const { data: myEmps } = await supabase.from('employees').select('id, first_name, last_name').eq('manager_id', authUser.id).order('last_name')
+      const empList = (myEmps || []).map(e => ({ id: e.id, name: `${e.first_name} ${e.last_name}` }))
+      setEmployeeOptions(empList)
+      setManagedEmployeeIds(empList.map(e => e.id))
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const handleRunReport = async () => {
     setIsLoading(true)
     try {
-      let query = supabase.from('expenses').select(`*, employees!inner (first_name, last_name, department, email), projects (name, code)`).gte('expense_date', startDate).lte('expense_date', endDate)
+      if (managedEmployeeIds.length === 0) { setReportData([]); setIsLoading(false); return }
+      let query = supabase.from('expenses').select(`*, employees!inner (first_name, last_name, department, email), projects (name, code)`)
+        .in('employee_id', managedEmployeeIds)
+        .gte('expense_date', startDate).lte('expense_date', endDate)
       if (!includeUnapproved) { query = query.eq('status', 'approved') } else { query = query.in('status', ['approved', 'pending', 'submitted', 'rejected']) }
+      if (selectedUser) { query = query.eq('employee_id', selectedUser) }
       const { data, error } = await query
       if (error) { console.error('Error:', error) } else if (data) {
-        const dataWithApprovers = await Promise.all((data as ExpenseData[]).map(async (expense) => {
-          if (expense.approved_by) { const { data: a } = await supabase.from('employees').select('first_name, last_name, email').eq('id', expense.approved_by).single(); return { ...expense, approver: a } }
-          return expense
+        // Batch lookup approver names instead of N+1 queries
+        const approverIds = [...new Set((data as ExpenseData[]).map(d => d.approved_by).filter(Boolean) as string[])]
+        let approverMap: Record<string, { first_name: string; last_name: string; email: string }> = {}
+        if (approverIds.length > 0) {
+          const { data: approvers } = await supabase.from('employees').select('id, first_name, last_name, email').in('id', approverIds)
+          if (approvers) {
+            approvers.forEach(a => { approverMap[a.id] = { first_name: a.first_name, last_name: a.last_name, email: a.email } })
+          }
+        }
+        const dataWithApprovers = (data as ExpenseData[]).map(expense => ({
+          ...expense,
+          approver: expense.approved_by ? approverMap[expense.approved_by] || null : null
         }))
         setReportData(dataWithApprovers)
       }
@@ -99,7 +130,7 @@ export default function ExpensesByApproverReport() {
             <div><label style={labelSt}>Date Start</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={inputSt} /></div>
             <div><label style={labelSt}>Date Stop</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={inputSt} /></div>
           </div>
-          <div><label style={labelSt}>User</label><select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} style={selectSt}><option value=""></option></select></div>
+          <div><label style={labelSt}>User</label><select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} style={selectSt}><option value="">-All-</option>{employeeOptions.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <label style={{ display: 'flex', alignItems: 'center' }}><input type="checkbox" checked={includeUnapproved} onChange={e => setIncludeUnapproved(e.target.checked)} style={checkSt} /><span style={spanSt}>Include Unapproved</span></label>
           </div>

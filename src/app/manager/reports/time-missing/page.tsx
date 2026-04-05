@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
@@ -15,11 +15,17 @@ export default function TimeMissingReport() {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const [startDate, setStartDate] = useState('2025-09-07')
-  const [endDate, setEndDate] = useState('')
+  const now = new Date()
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+
+  const [startDate, setStartDate] = useState(firstOfMonth)
+  const [endDate, setEndDate] = useState(lastOfMonth)
   const [selectedUser, setSelectedUser] = useState('-All-')
   const [selectedEmployeeType, setSelectedEmployeeType] = useState('-All-')
   const [selectedProject, setSelectedProject] = useState('-All-')
+  const [employeeOptions, setEmployeeOptions] = useState<{id: string; name: string}[]>([])
+  const [projectOptionsList, setProjectOptionsList] = useState<{id: string; name: string}[]>([])
   const [byProject, setByProject] = useState(false)
   const [byDay, setByDay] = useState(false)
   const [reportData, setReportData] = useState<MissingTimeData[]>([])
@@ -34,23 +40,75 @@ export default function TimeMissingReport() {
     return weeks
   }
 
+  useEffect(() => {
+    (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) return
+      const { data: myEmps } = await supabase.from('employees').select('id, first_name, last_name').eq('manager_id', authUser.id).order('last_name')
+      setEmployeeOptions((myEmps || []).map(e => ({ id: e.id, name: `${e.first_name} ${e.last_name}` })))
+      const { data: projects } = await supabase.from('projects').select('id, name').eq('status', 'active').order('name')
+      setProjectOptionsList((projects || []).map(p => ({ id: p.id, name: p.name })))
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const handleRunReport = async () => {
     setIsLoading(true)
     try {
-      let employeeQuery = supabase.from('employees').select('*').eq('status', 'active')
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) { setIsLoading(false); return }
+
+      // Scope to manager's team
+      let employeeQuery = supabase.from('employees').select('*').eq('manager_id', authUser.id).eq('status', 'active')
       if (selectedEmployeeType !== '-All-') { employeeQuery = employeeQuery.eq('employee_type', selectedEmployeeType) }
+      if (selectedUser !== '-All-') { employeeQuery = employeeQuery.eq('id', selectedUser) }
       const { data: employees, error: empError } = await employeeQuery
       if (empError) { console.error('Error:', empError); setIsLoading(false); return }
+      if (!employees || employees.length === 0) { setReportData([]); setIsLoading(false); return }
+
+      const effectiveEnd = endDate || startDate
+      const allWeeks = getAllWeeksInRange(startDate, effectiveEnd)
+
+      // Single batch query for all timesheets in range for all employees
+      const employeeIds = employees.map(e => e.id)
+      const { data: allTimesheets } = await supabase
+        .from('timesheets')
+        .select('employee_id, week_ending')
+        .in('employee_id', employeeIds)
+        .gte('week_ending', startDate)
+        .lte('week_ending', effectiveEnd)
+
+      // Build a map of employee_id -> set of submitted weeks
+      const submittedMap: Record<string, Set<string>> = {}
+      ;(allTimesheets || []).forEach(t => {
+        if (!submittedMap[t.employee_id]) submittedMap[t.employee_id] = new Set()
+        submittedMap[t.employee_id].add(t.week_ending)
+      })
+
+      // Single batch query for last submissions
+      const { data: lastTimesheets } = await supabase
+        .from('timesheets')
+        .select('employee_id, week_ending')
+        .in('employee_id', employeeIds)
+        .order('week_ending', { ascending: false })
+
+      const lastSubmissionMap: Record<string, string> = {}
+      ;(lastTimesheets || []).forEach(t => {
+        if (!lastSubmissionMap[t.employee_id]) lastSubmissionMap[t.employee_id] = t.week_ending
+      })
 
       const missingTimeData: MissingTimeData[] = []
-      for (const employee of employees || []) {
-        const { data: timesheets } = await supabase.from('timesheets').select('week_ending').eq('employee_id', employee.id).gte('week_ending', startDate).lte('week_ending', endDate || startDate)
-        const submittedWeeks = timesheets?.map(t => t.week_ending) || []
-        const allWeeks = getAllWeeksInRange(startDate, endDate || startDate)
-        const missingWeeks = allWeeks.filter(week => !submittedWeeks.includes(week))
+      for (const employee of employees) {
+        const submitted = submittedMap[employee.id] || new Set()
+        const missingWeeks = allWeeks.filter(week => !submitted.has(week))
         if (missingWeeks.length > 0) {
-          const { data: lastTimesheet } = await supabase.from('timesheets').select('week_ending').eq('employee_id', employee.id).order('week_ending', { ascending: false }).limit(1).single()
-          missingTimeData.push({ employee, missing_dates: missingWeeks, weeks_missing: missingWeeks.length, last_submission: lastTimesheet?.week_ending, assigned_projects: [] })
+          missingTimeData.push({
+            employee,
+            missing_dates: missingWeeks,
+            weeks_missing: missingWeeks.length,
+            last_submission: lastSubmissionMap[employee.id] || null,
+            assigned_projects: []
+          })
         }
       }
       setReportData(missingTimeData)
@@ -93,9 +151,9 @@ export default function TimeMissingReport() {
             <div><label style={labelSt}>Date Stop</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={inputSt} /></div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div><label style={labelSt}>User</label><select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} style={selectSt}><option>-All-</option></select></div>
+            <div><label style={labelSt}>User</label><select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} style={selectSt}><option value="-All-">-All-</option>{employeeOptions.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
             <div><label style={labelSt}>Employee Type</label><select value={selectedEmployeeType} onChange={e => setSelectedEmployeeType(e.target.value)} style={selectSt}>{employeeTypes.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
-            <div><label style={labelSt}>Project</label><select value={selectedProject} onChange={e => setSelectedProject(e.target.value)} style={selectSt}><option>-All-</option></select></div>
+            <div><label style={labelSt}>Project</label><select value={selectedProject} onChange={e => setSelectedProject(e.target.value)} style={selectSt}><option value="-All-">-All-</option>{projectOptionsList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[{ label: 'By Project', checked: byProject, set: setByProject }, { label: 'By Day', checked: byDay, set: setByDay }].map(opt => (

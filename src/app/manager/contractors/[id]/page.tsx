@@ -2,33 +2,45 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/AuthContext'
+import { createClient } from '@/lib/supabase/client'
 import {
   User,
   Clock,
   DollarSign,
-  Building2,
   Mail,
   Phone,
   ArrowLeft,
 } from 'lucide-react'
 
-interface ContractorDetail {
+interface EmployeeDetail {
   id: string
-  name: string
-  role: string
+  first_name: string
+  last_name: string
   email: string
-  phone?: string
-  status: 'active' | 'inactive' | 'pending'
-  hourlyRate: number
-  totalHours: number
-  totalAmount: number
-  lastActive: string
-  projects: string[]
-  employeeId: string
-  startDate: string
-  skills: string[]
-  notes?: string
+  phone?: string | null
+  role: string | null
+  department: string | null
+  hire_date: string | null
+  employee_type: string | null
+  hourly_rate: number | null
+  status: string | null
+  manager_id: string | null
+}
+
+interface TimesheetRow {
+  id: string
+  week_ending: string
+  total_hours: number
+  overtime_hours: number
+  status: string
+}
+
+interface ExpenseReportRow {
+  id: string
+  title: string
+  total_amount: number
+  status: string
+  created_at: string
 }
 
 const StatusBadge = ({ status }: { status: string }) => {
@@ -36,6 +48,10 @@ const StatusBadge = ({ status }: { status: string }) => {
     active: { bg: '#ecfdf5', color: '#2d9b6e', border: '#2d9b6e' },
     inactive: { bg: '#FAFAF8', color: '#777', border: '#e8e4df' },
     pending: { bg: '#FFF8E1', color: '#c4983a', border: '#c4983a' },
+    submitted: { bg: '#FFF8E1', color: '#c4983a', border: '#c4983a' },
+    approved: { bg: '#ecfdf5', color: '#2d9b6e', border: '#2d9b6e' },
+    rejected: { bg: '#fef2f2', color: '#b91c1c', border: '#b91c1c' },
+    draft: { bg: '#FAFAF8', color: '#777', border: '#e8e4df' },
   }
   const c = colorMap[status] || { bg: '#FAFAF8', color: '#777', border: '#e8e4df' }
   return (
@@ -60,58 +76,83 @@ const StatusBadge = ({ status }: { status: string }) => {
 export default function ContractorDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { user } = useAuth()
-  const [contractor, setContractor] = useState<ContractorDetail | null>(null)
+  const supabase = createClient()
+  const [employee, setEmployee] = useState<EmployeeDetail | null>(null)
+  const [timesheets, setTimesheets] = useState<TimesheetRow[]>([])
+  const [expenseReports, setExpenseReports] = useState<ExpenseReportRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  const contractorId = params.id as string
+  const employeeId = params.id as string
 
   useEffect(() => {
-    // Simulate loading contractor data
-    setTimeout(() => {
-      const mockContractor: ContractorDetail = {
-        id: '1',
-        name: contractorId === 'emp1' ? 'Mike Chen' : 'Sarah Johnson',
-        role: contractorId === 'emp1' ? 'Tech Infrastructure' : 'Software Development',
-        email: contractorId === 'emp1' ? 'mike.chen@techcorp.com' : 'sarah.johnson@devcorp.com',
-        phone: contractorId === 'emp1' ? '+1 (555) 123-4567' : '+1 (555) 234-5678',
-        status: 'active',
-        hourlyRate: contractorId === 'emp1' ? 95 : 110,
-        totalHours: contractorId === 'emp1' ? 156.5 : 142.0,
-        totalAmount: contractorId === 'emp1' ? 14867.50 : 15620.00,
-        lastActive: '2025-01-19',
-        projects: contractorId === 'emp1'
-          ? ['ABC Corp - Tech Infrastructure', 'ABC Corp - System Maintenance']
-          : ['ABC Corp - Software Development', 'ABC Corp - API Integration'],
-        employeeId: contractorId,
-        startDate: '2024-06-01',
-        skills: contractorId === 'emp1'
-          ? ['Network Administration', 'System Security', 'Cloud Infrastructure', 'DevOps']
-          : ['Full-Stack Development', 'React/Node.js', 'API Design', 'Database Design'],
-        notes: contractorId === 'emp1'
-          ? 'Excellent technical skills, very reliable, great communication with stakeholders.'
-          : 'Strong problem-solving abilities, quick learner, excellent team player.'
-      }
-      setContractor(mockContractor)
-      setIsLoading(false)
-    }, 1000)
-  }, [contractorId])
+    loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employeeId])
 
-  const handleContact = (method: 'email' | 'phone') => {
-    if (!contractor) return
-    if (method === 'email') {
-      window.open(`mailto:${contractor.email}`)
-    } else if (method === 'phone' && contractor.phone) {
-      window.open(`tel:${contractor.phone}`)
+  const loadData = async () => {
+    try {
+      setIsLoading(true)
+      setError('')
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setError('Not authenticated'); return }
+
+      // Fetch employee with ownership check
+      const { data: empData, error: empError } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('id', employeeId)
+        .single()
+
+      if (empError || !empData) {
+        setError('Employee not found.')
+        return
+      }
+
+      if (empData.manager_id !== user.id) {
+        setError('You do not have access to this employee.')
+        return
+      }
+
+      setEmployee(empData as EmployeeDetail)
+
+      // Fetch recent timesheets (last 4 weeks)
+      const fourWeeksAgo = new Date()
+      fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28)
+      const { data: tsData } = await supabase
+        .from('timesheets')
+        .select('id, week_ending, total_hours, overtime_hours, status')
+        .eq('employee_id', employeeId)
+        .gte('week_ending', fourWeeksAgo.toISOString().split('T')[0])
+        .order('week_ending', { ascending: false })
+
+      setTimesheets((tsData || []) as TimesheetRow[])
+
+      // Fetch recent expense reports
+      const { data: erData } = await supabase
+        .from('expense_reports')
+        .select('id, title, total_amount, status, created_at')
+        .eq('employee_id', employeeId)
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+      setExpenseReports((erData || []) as ExpenseReportRow[])
+    } catch (err) {
+      console.error('Error loading contractor detail:', err)
+      setError('Something went wrong.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const handleViewTimesheets = () => {
-    router.push(`/manager/approvals?employee=${contractorId}&type=timesheet`)
-  }
-
-  const handleViewExpenses = () => {
-    router.push(`/manager/approvals?employee=${contractorId}&type=expense`)
+  const handleContact = (method: 'email' | 'phone') => {
+    if (!employee) return
+    if (method === 'email') {
+      window.open(`mailto:${employee.email}`)
+    } else if (method === 'phone' && employee.phone) {
+      window.open(`tel:${employee.phone}`)
+    }
   }
 
   if (isLoading) {
@@ -147,31 +188,33 @@ export default function ContractorDetailPage() {
     )
   }
 
-  if (!contractor) {
+  if (error) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <p style={{ fontSize: 13, color: '#999' }}>Contractor not found</p>
-          <button
-            onClick={() => router.back()}
-            style={{
-              marginTop: 16,
-              background: '#e31c79',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 6,
-              padding: '8px 20px',
-              fontSize: 12,
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
-          >
-            Go Back
-          </button>
+      <div style={{ padding: '36px 40px' }}>
+        <div style={{ background: '#fff', border: '0.5px solid #b91c1c', borderRadius: 10, padding: 20, display: 'flex', gap: 10, alignItems: 'center' }}>
+          <span style={{ fontSize: 12.5, color: '#b91c1c' }}>{error}</span>
         </div>
+        <button
+          onClick={() => router.back()}
+          style={{
+            marginTop: 16,
+            background: '#e31c79',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 6,
+            padding: '8px 20px',
+            fontSize: 12,
+            fontWeight: 500,
+            cursor: 'pointer',
+          }}
+        >
+          Go Back
+        </button>
       </div>
     )
   }
+
+  if (!employee) return null
 
   const sectionHeaderStyle: React.CSSProperties = {
     fontSize: 11,
@@ -204,11 +247,13 @@ export default function ContractorDetailPage() {
     marginTop: 2,
   }
 
+  const totalHours = timesheets.reduce((s, t) => s + (t.total_hours || 0), 0)
+
   return (
     <div style={{ padding: '36px 40px' }}>
       {/* Back link */}
       <button
-        onClick={() => router.back()}
+        onClick={() => router.push('/manager/contractors')}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -244,13 +289,13 @@ export default function ContractorDetailPage() {
           </div>
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
-              {contractor.name}
+              {employee.first_name} {employee.last_name}
             </h1>
             <p style={{ fontSize: 13, fontWeight: 400, color: '#999', marginTop: 2 }}>
-              {contractor.role}
+              {employee.department || employee.role || 'Team Member'}
             </p>
             <p style={{ fontSize: 11, color: '#ccc', marginTop: 2 }}>
-              ID: {contractor.employeeId}
+              ID: {employee.id.slice(0, 8)}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -273,7 +318,7 @@ export default function ContractorDetailPage() {
               <Mail className="h-3.5 w-3.5" />
               Email
             </button>
-            {contractor.phone && (
+            {employee.phone && (
               <button
                 onClick={() => handleContact('phone')}
                 style={{
@@ -301,10 +346,10 @@ export default function ContractorDetailPage() {
       {/* Stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 20 }}>
         {[
-          { label: 'Hourly Rate', value: `$${contractor.hourlyRate}/hr` },
-          { label: 'Total Hours', value: `${contractor.totalHours} hrs` },
-          { label: 'Total Amount', value: `$${contractor.totalAmount.toLocaleString()}` },
-          { label: 'Projects', value: `${contractor.projects.length}` },
+          { label: 'Hourly Rate', value: employee.hourly_rate ? `$${employee.hourly_rate}/hr` : '-' },
+          { label: 'Recent Hours', value: `${totalHours.toFixed(1)} hrs` },
+          { label: 'Employee Type', value: employee.employee_type || '-' },
+          { label: 'Status', value: employee.status || 'unknown' },
         ].map((stat) => (
           <div key={stat.label} style={cardStyle}>
             <p style={labelStyle}>{stat.label}</p>
@@ -320,7 +365,7 @@ export default function ContractorDetailPage() {
         <h2 style={sectionHeaderStyle}>Quick Actions</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <button
-            onClick={handleViewTimesheets}
+            onClick={() => router.push('/manager/timesheets')}
             style={{
               background: '#e31c79',
               color: '#fff',
@@ -340,7 +385,7 @@ export default function ContractorDetailPage() {
             Review Timesheets
           </button>
           <button
-            onClick={handleViewExpenses}
+            onClick={() => router.push('/manager/expenses')}
             style={{
               background: 'white',
               color: '#777',
@@ -370,87 +415,105 @@ export default function ContractorDetailPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
               <span style={labelStyle}>Email</span>
-              <p style={valueStyle}>{contractor.email}</p>
+              <p style={valueStyle}>{employee.email}</p>
             </div>
-            {contractor.phone && (
+            {employee.phone && (
               <div>
                 <span style={labelStyle}>Phone</span>
-                <p style={valueStyle}>{contractor.phone}</p>
+                <p style={valueStyle}>{employee.phone}</p>
               </div>
             )}
             <div>
-              <span style={labelStyle}>Start Date</span>
-              <p style={valueStyle}>{new Date(contractor.startDate).toLocaleDateString()}</p>
+              <span style={labelStyle}>Role</span>
+              <p style={valueStyle}>{employee.role || '-'}</p>
             </div>
             <div>
-              <span style={labelStyle}>Last Active</span>
-              <p style={valueStyle}>{new Date(contractor.lastActive).toLocaleDateString()}</p>
+              <span style={labelStyle}>Department</span>
+              <p style={valueStyle}>{employee.department || '-'}</p>
             </div>
+            {employee.hire_date && (
+              <div>
+                <span style={labelStyle}>Hire Date</span>
+                <p style={valueStyle}>{new Date(employee.hire_date).toLocaleDateString()}</p>
+              </div>
+            )}
             <div>
               <span style={labelStyle}>Status</span>
               <div style={{ marginTop: 4 }}>
-                <StatusBadge status={contractor.status} />
+                <StatusBadge status={employee.status || 'inactive'} />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Skills */}
+        {/* Recent Timesheets */}
         <div style={cardStyle}>
-          <h2 style={sectionHeaderStyle}>Skills & Expertise</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {contractor.skills.map((skill, index) => (
-              <span
-                key={index}
+          <h2 style={sectionHeaderStyle}>Recent Timesheets</h2>
+          {timesheets.length === 0 ? (
+            <p style={{ fontSize: 12.5, color: '#999' }}>No recent timesheets</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {timesheets.map(ts => (
+                <div
+                  key={ts.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 14px',
+                    background: '#FDFCFB',
+                    borderRadius: 7,
+                    border: '0.5px solid #f5f2ee',
+                  }}
+                >
+                  <div>
+                    <span style={{ fontSize: 12, color: '#555' }}>
+                      Week of {new Date(ts.week_ending).toLocaleDateString()}
+                    </span>
+                    <span style={{ fontSize: 11, color: '#999', marginLeft: 8 }}>
+                      {ts.total_hours}h{ts.overtime_hours > 0 ? ` (OT: ${ts.overtime_hours}h)` : ''}
+                    </span>
+                  </div>
+                  <StatusBadge status={ts.status} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Recent Expense Reports */}
+      <div style={cardStyle}>
+        <h2 style={sectionHeaderStyle}>Recent Expense Reports</h2>
+        {expenseReports.length === 0 ? (
+          <p style={{ fontSize: 12.5, color: '#999' }}>No recent expense reports</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {expenseReports.map(er => (
+              <div
+                key={er.id}
                 style={{
-                  padding: '4px 12px',
-                  background: 'rgba(227,28,121,0.06)',
-                  color: '#e31c79',
-                  fontSize: 11,
-                  borderRadius: 3,
-                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  background: '#FDFCFB',
+                  borderRadius: 7,
+                  border: '0.5px solid #f5f2ee',
                 }}
               >
-                {skill}
-              </span>
+                <div>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: '#555' }}>{er.title}</span>
+                  <span style={{ fontSize: 11, color: '#999', marginLeft: 8 }}>
+                    ${(er.total_amount || 0).toFixed(2)}
+                  </span>
+                </div>
+                <StatusBadge status={er.status} />
+              </div>
             ))}
           </div>
-        </div>
+        )}
       </div>
-
-      {/* Projects */}
-      <div style={{ ...cardStyle, marginBottom: 20 }}>
-        <h2 style={sectionHeaderStyle}>Current Projects</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {contractor.projects.map((project, index) => (
-            <div
-              key={index}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '10px 14px',
-                background: '#FDFCFB',
-                borderRadius: 7,
-                border: '0.5px solid #f5f2ee',
-              }}
-            >
-              <Building2 className="w-4 h-4" style={{ color: '#ccc' }} />
-              <span style={{ fontSize: 12.5, color: '#555' }}>{project}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Notes */}
-      {contractor.notes && (
-        <div style={cardStyle}>
-          <h2 style={sectionHeaderStyle}>Manager Notes</h2>
-          <p style={{ fontSize: 12.5, color: '#555', lineHeight: 1.6 }}>
-            {contractor.notes}
-          </p>
-        </div>
-      )}
     </div>
   )
 }

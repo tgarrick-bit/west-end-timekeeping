@@ -38,7 +38,7 @@ export function Navigation() {
         <div className="flex justify-between h-16">
           {/* Logo and Brand */}
           <div className="flex items-center">
-            <Link href="/dashboard" className="flex items-center space-x-2">
+            <Link href="/employee" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-[#e31c79] rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">WE</span>
               </div>
@@ -127,7 +127,7 @@ export function Navigation() {
 
 function getNavigationItems(role: string) {
   const baseItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/employee', label: 'Dashboard', icon: LayoutDashboard },
   ]
 
   switch (role) {

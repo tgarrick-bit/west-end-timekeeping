@@ -195,17 +195,115 @@ export default function SupervisorPendingView() {
     setSelectedItems(newSelection);
   };
 
+  const approveItem = async (item: PendingItem): Promise<boolean> => {
+    try {
+      if (item.type === 'timesheet') {
+        const res = await fetch(`/api/timesheets/${item.id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'approve' }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || 'Failed to approve timesheet');
+        }
+      } else {
+        const res = await fetch(`/api/expense-reports/${item.id}/finalize`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'approve' }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || 'Failed to approve expense report');
+        }
+      }
+      return true;
+    } catch (error: any) {
+      console.error('Approve error:', error);
+      return false;
+    }
+  };
+
+  const rejectItem = async (item: PendingItem, reason: string): Promise<boolean> => {
+    try {
+      if (item.type === 'timesheet') {
+        const res = await fetch(`/api/timesheets/${item.id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'reject', rejectionReason: reason }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || 'Failed to reject timesheet');
+        }
+      } else {
+        const res = await fetch(`/api/expense-reports/${item.id}/finalize`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'reject', rejectionReason: reason }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || 'Failed to reject expense report');
+        }
+      }
+      return true;
+    } catch (error: any) {
+      console.error('Reject error:', error);
+      return false;
+    }
+  };
+
   const approveSelected = async () => {
     if (selectedItems.size === 0) {
       showMessage('error', 'No items selected');
       return;
     }
-    showMessage('success', 'Feature coming soon!');
+
+    const itemsToApprove = pendingItems.filter(item => selectedItems.has(item.id));
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const item of itemsToApprove) {
+      const ok = await approveItem(item);
+      if (ok) successCount++;
+      else failCount++;
+    }
+
+    setSelectedItems(new Set());
+
+    if (failCount > 0) {
+      showMessage('error', `Approved ${successCount}, failed ${failCount}`);
+    } else {
+      showMessage('success', `Approved ${successCount} item${successCount !== 1 ? 's' : ''}`);
+    }
+
+    await fetchPendingItems();
   };
 
   const approveSingleItem = async (item: PendingItem) => {
-    showMessage('success', `Approved ${item.type} for ${item.employeeName}`);
+    const ok = await approveItem(item);
     setShowDetailModal(false);
+    if (ok) {
+      showMessage('success', `Approved ${item.type} for ${item.employeeName}`);
+    } else {
+      showMessage('error', `Failed to approve ${item.type} for ${item.employeeName}`);
+    }
+    await fetchPendingItems();
+  };
+
+  const rejectSingleItem = async (item: PendingItem) => {
+    const reason = prompt('Please provide a reason for rejection:');
+    if (!reason || reason.trim() === '') return;
+    const ok = await rejectItem(item, reason.trim());
+    setShowDetailModal(false);
+    if (ok) {
+      showMessage('success', `Rejected ${item.type} for ${item.employeeName}`);
+    } else {
+      showMessage('error', `Failed to reject ${item.type} for ${item.employeeName}`);
+    }
+    await fetchPendingItems();
   };
 
   const formatDate = (dateString: string) => {
@@ -528,6 +626,7 @@ export default function SupervisorPendingView() {
             </div>
             <div style={{ padding: '14px 22px', borderTop: '0.5px solid #f0ece7', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
               <button onClick={() => setShowDetailModal(false)} style={btnOutline}>Cancel</button>
+              <button onClick={() => rejectSingleItem(selectedItemDetail)} style={{ ...btnBase, background: '#fef2f2', color: '#b91c1c', border: '0.5px solid #b91c1c' }}>Reject</button>
               <button onClick={() => approveSingleItem(selectedItemDetail)} style={btnPrimary}>Approve</button>
             </div>
           </div>

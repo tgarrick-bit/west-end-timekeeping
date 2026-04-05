@@ -151,7 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           break;
         case 'employee':
         default:
-          router.push('/dashboard');
+          router.push('/employee');
           break;
       }
 

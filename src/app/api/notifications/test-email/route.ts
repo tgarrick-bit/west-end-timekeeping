@@ -1,16 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 import { emailService } from '@/lib/emailService';
 
 // POST /api/notifications/test-email - Test email configuration
 export async function POST(request: NextRequest) {
   try {
+    // Auth + admin role check
+    const supabase = await createServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const { data: emp } = await supabase.from('employees').select('role').eq('id', user.id).single();
+    if (!emp || emp.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden: admin role required' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { toEmail, testType = 'configuration' } = body;
 
     if (testType === 'configuration') {
       // Test email service configuration
       const result = await emailService.testEmailConfiguration();
-      
+
       if (result.success) {
         return NextResponse.json({
           success: true,
@@ -89,13 +101,18 @@ export async function POST(request: NextRequest) {
 // GET /api/notifications/test-email - Get email service status
 export async function GET() {
   try {
+    // Auth + admin role check
+    const supabase = await createServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const { data: emp } = await supabase.from('employees').select('role').eq('id', user.id).single();
+    if (!emp || emp.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden: admin role required' }, { status: 403 });
+    }
+
     return NextResponse.json({ ok: true });
-    
-    return NextResponse.json({
-      success: true,
-      status,
-      message: 'Email service status retrieved successfully'
-    });
   } catch (error) {
     console.error('Error getting email service status:', error);
     return NextResponse.json(

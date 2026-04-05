@@ -41,7 +41,7 @@ export default function ProtectedRoute({ allowedRoles, children }: Props) {
         } else if (role === 'manager') {
           router.replace('/manager');
         } else {
-          router.replace('/dashboard');
+          router.replace('/employee');
         }
       }
     }

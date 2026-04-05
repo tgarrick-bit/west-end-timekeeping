@@ -488,37 +488,21 @@ export default function TimesheetEntry() {
   
       const authUserId = user.id;
   
-      // Get or create employee record whose id === auth.user.id
+      // Look up employee record — never auto-create
       let { data: employee, error: empError } = await supabase
         .from('employees')
         .select('id')
         .eq('id', authUserId)
         .single();
-  
+
       if (empError && (empError as any).code !== 'PGRST116') {
         throw empError;
       }
-  
+
       if (!employee) {
-        const { data: newEmployee, error: empInsertError } = await supabase
-          .from('employees')
-          .insert({
-            id: authUserId,
-            email: user.email,
-            first_name: user.user_metadata?.first_name || 'Unknown',
-            last_name: user.user_metadata?.last_name || 'User',
-            role: 'employee',
-            is_active: true,
-            hourly_rate: 0,
-            department: 'General',
-          })
-          .select('id')
-          .single();
-  
-        if (empInsertError || !newEmployee) {
-          throw empInsertError || new Error('Could not create employee profile');
-        }
-        employee = newEmployee;
+        setErrorMessage('Your account is not set up yet. Please contact your administrator.');
+        setIsLoading(false);
+        return;
       }
   
       const employeeId = employee.id;

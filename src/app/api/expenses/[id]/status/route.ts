@@ -18,7 +18,23 @@ export async function PATCH(
 
   const supabase = await createServerClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  // Check role - only managers and admins can approve/reject expenses
+  const { data: actingEmployee } = await supabase
+    .from('employees')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  const userRole = actingEmployee?.role || 'employee';
+
+  if (!['admin', 'manager', 'time_approver'].includes(userRole)) {
+    return NextResponse.json({ error: 'Forbidden: manager or admin role required' }, { status: 403 });
+  }
 
   try {
     if (!lineId) {
@@ -164,7 +180,7 @@ export async function PATCH(
 
     // === AUDIT LOG ===
     await writeAuditLog(supabase, {
-      user_id: user?.id || 'system',
+      user_id: user.id,
       action: `expense.${action}`,
       metadata: {
         entity_type: 'expense',

@@ -239,14 +239,14 @@ export default function ClientApproverDashboard({ user }: ClientApproverDashboar
             </div>
             <div className="flex space-x-3">
               <button 
-                onClick={() => window.location.href = '/dashboard'}
+                onClick={() => window.location.href = '/employee'}
                 className="flex items-center px-6 py-3 bg-white text-[#232020] rounded-lg font-semibold hover:bg-gray-50 transition-colors shadow-sm"
               >
                 <FileText className="h-5 w-5 mr-2" />
                 View All Timesheets
               </button>
-              <button 
-                onClick={() => window.location.href = '/dashboard?section=pending'}
+              <button
+                onClick={() => window.location.href = '/employee?section=pending'}
                 className="flex items-center px-6 py-3 bg-white bg-opacity-20 text-white rounded-lg font-semibold hover:bg-white hover:text-[#232020] transition-colors"
               >
                 <AlertCircle className="h-5 w-5 mr-2" />

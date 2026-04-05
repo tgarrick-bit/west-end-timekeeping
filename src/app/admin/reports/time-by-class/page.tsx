@@ -50,8 +50,12 @@ export default function TimeByClassReport() {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const [startDate, setStartDate] = useState('2025-09-07')
-  const [endDate, setEndDate] = useState('2025-09-13')
+  const now = new Date()
+  const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const today = now.toISOString().split('T')[0]
+
+  const [startDate, setStartDate] = useState(firstOfMonth)
+  const [endDate, setEndDate] = useState(today)
   const [selectedClass, setSelectedClass] = useState('-All-')
   const [selectedTimeType, setSelectedTimeType] = useState('-All-')
   const [forceCompleteWeeks, setForceCompleteWeeks] = useState(false)
@@ -66,9 +70,18 @@ export default function TimeByClassReport() {
   const [isLoading, setIsLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
 
+  const [projectList, setProjectList] = useState<{id: string, name: string, code: string}[]>([])
+
   const timeTypes = ['-All-', 'Regular', 'Overtime', 'Doubletime', 'Sick', 'Vacation', 'Holiday', 'Non-billable', 'Overtime *', 'regular *']
 
-  useEffect(() => { const t = setTimeout(() => setPageLoading(false), 400); return () => clearTimeout(t) }, [])
+  useEffect(() => {
+    const loadFilters = async () => {
+      const { data } = await supabase.from('projects').select('id, name, code').eq('status', 'active').order('name')
+      if (data) setProjectList(data)
+      setPageLoading(false)
+    }
+    loadFilters()
+  }, [])
 
   const handleRunReport = async () => {
     setIsLoading(true)
@@ -80,6 +93,7 @@ export default function TimeByClassReport() {
         .lte('week_ending', endDate)
 
       if (!includeUnapproved) { query = query.eq('status', 'approved') }
+      if (selectedClass !== '-All-') { query = query.eq('project_id', selectedClass) }
       const { data, error } = await query
       if (error) { console.error('Error fetching report data:', error) }
       else if (data) { setReportData(data as ReportData[]) }
@@ -180,7 +194,10 @@ export default function TimeByClassReport() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
           <div>
             <label style={labelStyle}>Class</label>
-            <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}><option>-All-</option></select>
+            <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}>
+              <option value="-All-">-All-</option>
+              {projectList.map(p => <option key={p.id} value={p.id}>{p.name} ({p.code})</option>)}
+            </select>
           </div>
           <div>
             <label style={labelStyle}>Time Type</label>

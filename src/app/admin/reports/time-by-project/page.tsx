@@ -32,8 +32,13 @@ export default function TimeByProjectReport() {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const [startDate, setStartDate] = useState('2025-09-07')
-  const [endDate, setEndDate] = useState('2025-09-13')
+  // Default to current month
+  const now = new Date()
+  const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const today = now.toISOString().split('T')[0]
+
+  const [startDate, setStartDate] = useState(firstOfMonth)
+  const [endDate, setEndDate] = useState(today)
   const [selectedProject, setSelectedProject] = useState('-All-')
   const [selectedUser, setSelectedUser] = useState('-All-')
   const [selectedTimeType, setSelectedTimeType] = useState('-All-')
@@ -49,6 +54,10 @@ export default function TimeByProjectReport() {
   const [isLoading, setIsLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
 
+  // Lookup data for filters
+  const [employeeList, setEmployeeList] = useState<{id: string, first_name: string, last_name: string}[]>([])
+  const [projectList, setProjectList] = useState<{id: string, name: string, code: string}[]>([])
+
   const timeTypes = [
     '-All-',
     'Regular',
@@ -63,8 +72,16 @@ export default function TimeByProjectReport() {
   ]
 
   useEffect(() => {
-    const timer = setTimeout(() => setPageLoading(false), 400)
-    return () => clearTimeout(timer)
+    const loadFilters = async () => {
+      const [empRes, projRes] = await Promise.all([
+        supabase.from('employees').select('id, first_name, last_name').eq('is_active', true).order('last_name'),
+        supabase.from('projects').select('id, name, code').eq('status', 'active').order('name'),
+      ])
+      if (empRes.data) setEmployeeList(empRes.data)
+      if (projRes.data) setProjectList(projRes.data)
+      setPageLoading(false)
+    }
+    loadFilters()
   }, [])
 
   const handleRunReport = async () => {
@@ -91,6 +108,13 @@ export default function TimeByProjectReport() {
 
       if (!includeUnapproved) {
         query = query.eq('status', 'approved')
+      }
+
+      if (selectedUser !== '-All-') {
+        query = query.eq('employee_id', selectedUser)
+      }
+      if (selectedProject !== '-All-') {
+        query = query.eq('project_id', selectedProject)
       }
 
       const { data, error } = await query
@@ -280,7 +304,8 @@ export default function TimeByProjectReport() {
               onFocus={(e) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 2px rgba(211,173,107,0.15)' }}
               onBlur={(e) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }}
             >
-              <option>-All-</option>
+              <option value="-All-">-All-</option>
+              {projectList.map(p => <option key={p.id} value={p.id}>{p.name} ({p.code})</option>)}
             </select>
           </div>
           <div>
@@ -292,7 +317,8 @@ export default function TimeByProjectReport() {
               onFocus={(e) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 2px rgba(211,173,107,0.15)' }}
               onBlur={(e) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }}
             >
-              <option>-All-</option>
+              <option value="-All-">-All-</option>
+              {employeeList.map(e => <option key={e.id} value={e.id}>{e.last_name}, {e.first_name}</option>)}
             </select>
           </div>
           <div>

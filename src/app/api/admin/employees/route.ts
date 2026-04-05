@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { logAudit } from '@/lib/audit'
 
 // Create admin client with service role key for user management
 const supabaseAdmin = createClient(
@@ -269,6 +270,14 @@ export async function POST(request: NextRequest) {
       console.error('Failed to send welcome email:', emailError)
     }
 
+    // Audit log: employee created
+    await logAudit(supabase, user.id, 'employee.create', {
+      entity_type: 'employee',
+      entity_id: authId,
+      employee_email: email,
+      role: effectiveRole,
+    })
+
     return NextResponse.json({
       success: true,
       employee,
@@ -324,6 +333,13 @@ export async function PUT(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    // Audit log: employee updated
+    await logAudit(supabase, user.id, 'employee.update', {
+      entity_type: 'employee',
+      entity_id: employeeId,
+      updated_fields: Object.keys(body),
+    })
 
     // If email changed, update auth user email
     if (body.email) {
@@ -383,10 +399,16 @@ export async function DELETE(request: NextRequest) {
 
     // Delete auth user
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(employeeId)
-    
+
     if (authError) {
       console.error('Failed to delete auth user:', authError)
     }
+
+    // Audit log: employee deactivated/deleted
+    await logAudit(supabase, user.id, 'employee.delete', {
+      entity_type: 'employee',
+      entity_id: employeeId,
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -10,6 +10,8 @@ import TimesheetModal from '@/components/TimesheetModal';
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton';
 import { StatCard } from '@/components/ui/StatCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { useToast } from '@/components/ui/Toast';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 import {
   CheckCircle,
@@ -138,6 +140,16 @@ export default function ManagerPage() {
   const [expenseStatusFilter, setExpenseStatusFilter] = useState<
     'all' | 'submitted' | 'approved' | 'rejected'
   >('all');
+
+  // Reject modal state
+  const [rejectModal, setRejectModal] = useState<{
+    open: boolean
+    title: string
+    message: string
+    onConfirm: (reason?: string) => void
+  }>({ open: false, title: '', message: '', onConfirm: () => {} });
+
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchManagerId();
@@ -533,7 +545,7 @@ export default function ManagerPage() {
     try {
       if (!submission.id) return;
       await callTimesheetStatus(submission.id, { action: 'approve' });
-      alert('Timesheet approved successfully.');
+      toast('success', 'Timesheet approved successfully.');
       await loadSubmissions();
       if (selectedTimesheet?.id === submission.id) {
         setIsModalOpen(false);
@@ -541,37 +553,43 @@ export default function ManagerPage() {
       }
     } catch (error: any) {
       console.error('Error approving timesheet:', error);
-      alert(error?.message || 'An error occurred while approving the timesheet.');
+      toast('error', error?.message || 'An error occurred while approving the timesheet.');
     }
   };
 
-  const handleRejectTimesheet = async (submission: Submission) => {
-    try {
-      if (!submission.id) return;
-
-      const reason = window.prompt(
-        'Please provide a reason for rejection (this will be visible to the employee):'
-      );
-      if (!reason || !reason.trim()) {
-        alert('A rejection reason is required.');
-        return;
+  const promptRejectTimesheet = (submission: Submission) => {
+    setRejectModal({
+      open: true,
+      title: 'Reject Timesheet',
+      message: 'Please provide a reason for rejection. This will be visible to the employee.',
+      onConfirm: async (reason) => {
+        setRejectModal(prev => ({ ...prev, open: false }));
+        if (!reason || !reason.trim()) {
+          toast('warning', 'A rejection reason is required.');
+          return;
+        }
+        try {
+          await callTimesheetStatus(submission.id, {
+            action: 'reject',
+            rejectionReason: reason.trim(),
+          });
+          toast('success', 'Timesheet rejected successfully.');
+          await loadSubmissions();
+          if (selectedTimesheet?.id === submission.id) {
+            setIsModalOpen(false);
+            setSelectedTimesheet(null);
+          }
+        } catch (error: any) {
+          console.error('Error rejecting timesheet:', error);
+          toast('error', error?.message || 'An error occurred while rejecting the timesheet.');
+        }
       }
+    });
+  };
 
-      await callTimesheetStatus(submission.id, {
-        action: 'reject',
-        rejectionReason: reason.trim(),
-      });
-
-      alert('Timesheet rejected successfully.');
-      await loadSubmissions();
-      if (selectedTimesheet?.id === submission.id) {
-        setIsModalOpen(false);
-        setSelectedTimesheet(null);
-      }
-    } catch (error: any) {
-      console.error('Error rejecting timesheet:', error);
-      alert(error?.message || 'An error occurred while rejecting the timesheet.');
-    }
+  // Keep old name for modal handler reference
+  const handleRejectTimesheet = (submission: Submission) => {
+    promptRejectTimesheet(submission);
   };
 
   // Modal handlers wrap the same approve/reject
@@ -616,62 +634,64 @@ export default function ManagerPage() {
         throw new Error(message);
       }
 
-      alert('Expense report approved successfully.');
+      toast('success', 'Expense report approved successfully.');
       await loadSubmissions();
     } catch (error: any) {
       console.error('Error approving expense report:', error);
-      alert(error?.message || 'An error occurred while approving the report.');
+      toast('error', error?.message || 'An error occurred while approving the report.');
     } finally {
       setProcessingId(null);
     }
   };
 
-  const handleRejectExpenseReport = async (report: ManagerExpenseReport) => {
-    const reason = window.prompt(
-      `Enter a reason for rejecting "${
-        report.title ?? 'this expense report'
-      }":`
-    );
-
-    if (!reason || !reason.trim()) {
-      alert('A rejection reason is required.');
-      return;
-    }
-
-    try {
-      setProcessingId(report.id);
-
-      const res = await fetch(
-        `/api/expense-reports/${report.id}/finalize`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'reject',
-            reason: reason.trim(),
-          }),
+  const handleRejectExpenseReport = (report: ManagerExpenseReport) => {
+    setRejectModal({
+      open: true,
+      title: 'Reject Expense Report',
+      message: `Enter a reason for rejecting "${report.title ?? 'this expense report'}":`,
+      onConfirm: async (reason) => {
+        setRejectModal(prev => ({ ...prev, open: false }));
+        if (!reason || !reason.trim()) {
+          toast('warning', 'A rejection reason is required.');
+          return;
         }
-      );
 
-      if (!res.ok) {
-        let message = 'Failed to reject expense report.';
         try {
-          const data = await res.json();
-          if (data?.error) message = data.error;
-        } catch {
-          // ignore parse error
-        }
-        throw new Error(message);
-      }
+          setProcessingId(report.id);
 
-      alert('Expense report rejected successfully.');
-      await loadSubmissions();
-    } catch (err: any) {
-      console.error('Error rejecting expense report:', err);
-      alert(err?.message || 'An error occurred while rejecting the report.');
-    } finally {
-      setProcessingId(null);
-    }
+          const res = await fetch(
+            `/api/expense-reports/${report.id}/finalize`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'reject',
+                reason: reason.trim(),
+              }),
+            }
+          );
+
+          if (!res.ok) {
+            let message = 'Failed to reject expense report.';
+            try {
+              const data = await res.json();
+              if (data?.error) message = data.error;
+            } catch {
+              // ignore parse error
+            }
+            throw new Error(message);
+          }
+
+          toast('success', 'Expense report rejected successfully.');
+          await loadSubmissions();
+        } catch (err: any) {
+          console.error('Error rejecting expense report:', err);
+          toast('error', err?.message || 'An error occurred while rejecting the report.');
+        } finally {
+          setProcessingId(null);
+        }
+      }
+    });
   };
 
   const getTimeBasedGreeting = () => {
@@ -1343,6 +1363,20 @@ export default function ManagerPage() {
           onReject={handleModalReject}
         />
       )}
+
+      {/* Reject reason modal */}
+      <ConfirmModal
+        open={rejectModal.open}
+        title={rejectModal.title}
+        message={rejectModal.message}
+        confirmLabel="Reject"
+        variant="danger"
+        inputLabel="Rejection Reason"
+        inputPlaceholder="Enter the reason for rejection..."
+        inputRequired
+        onConfirm={(reason) => rejectModal.onConfirm(reason)}
+        onCancel={() => setRejectModal(prev => ({ ...prev, open: false }))}
+      />
     </>
   );
 }

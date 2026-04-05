@@ -39,10 +39,17 @@ export default function TimeByProjectReport() {
   const { user } = useAuth()
   const supabase = createClient()
   
-  const [startDate, setStartDate] = useState('2025-09-07')
-  const [endDate, setEndDate] = useState('2025-09-13')
+  const now = new Date()
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+
+  const [startDate, setStartDate] = useState(firstOfMonth)
+  const [endDate, setEndDate] = useState(lastOfMonth)
   const [selectedProject, setSelectedProject] = useState('-All-')
   const [selectedUser, setSelectedUser] = useState('-All-')
+  const [employeeOptions, setEmployeeOptions] = useState<{id: string; name: string}[]>([])
+  const [projectOptionsList, setProjectOptionsList] = useState<{id: string; name: string}[]>([])
+  const [managedEmployeeIds, setManagedEmployeeIds] = useState<string[]>([])
   const [selectedTimeType, setSelectedTimeType] = useState('-All-')
   const [selectedClass, setSelectedClass] = useState('-All-')
   const [forceCompleteWeeks, setForceCompleteWeeks] = useState(false)
@@ -68,11 +75,28 @@ export default function TimeByProjectReport() {
     'regular *'
   ]
 
+  useEffect(() => {
+    loadFilterOptions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const loadFilterOptions = async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) return
+    const { data: myEmps } = await supabase.from('employees').select('id, first_name, last_name').eq('manager_id', authUser.id).order('last_name')
+    const empList = (myEmps || []).map(e => ({ id: e.id, name: `${e.first_name} ${e.last_name}` }))
+    setEmployeeOptions(empList)
+    setManagedEmployeeIds(empList.map(e => e.id))
+    const { data: projects } = await supabase.from('projects').select('id, name').eq('status', 'active').order('name')
+    setProjectOptionsList((projects || []).map(p => ({ id: p.id, name: p.name })))
+  }
+
   const handleRunReport = async () => {
     setIsLoading(true)
-    
+
     try {
-      // Build query
+      if (managedEmployeeIds.length === 0) { setReportData([]); setIsLoading(false); return }
+
       let query = supabase
         .from('timesheets')
         .select(`
@@ -88,13 +112,15 @@ export default function TimeByProjectReport() {
             code
           )
         `)
+        .in('employee_id', managedEmployeeIds)
         .gte('week_ending', startDate)
         .lte('week_ending', endDate)
 
-      // Add status filter based on includeUnapproved
       if (!includeUnapproved) {
         query = query.eq('status', 'approved')
       }
+      if (selectedProject !== '-All-') { query = query.eq('project_id', selectedProject) }
+      if (selectedUser !== '-All-') { query = query.eq('employee_id', selectedUser) }
 
       const { data, error } = await query
 
@@ -209,8 +235,8 @@ export default function TimeByProjectReport() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-            <div><label style={labelSt}>Project</label><select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} style={selectSt}><option>-All-</option></select></div>
-            <div><label style={labelSt}>User</label><select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} style={selectSt}><option>-All-</option></select></div>
+            <div><label style={labelSt}>Project</label><select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} style={selectSt}><option value="-All-">-All-</option>{projectOptionsList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+            <div><label style={labelSt}>User</label><select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} style={selectSt}><option value="-All-">-All-</option>{employeeOptions.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
             <div><label style={labelSt}>Time Type</label><select value={selectedTimeType} onChange={(e) => setSelectedTimeType(e.target.value)} style={selectSt}>{timeTypes.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
             <div><label style={labelSt}>Class</label><select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} style={selectSt}><option>-All-</option></select></div>
           </div>

@@ -6,6 +6,8 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import ExpenseModal from '@/components/ExpenseModal';
+import { useToast } from '@/components/ui/Toast';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import {
   Receipt,
   ChevronLeft,
@@ -116,6 +118,15 @@ export default function AdminExpenses() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
+  // Reject modal state
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  // Bulk approve modal state
+  const [bulkApproveModalOpen, setBulkApproveModalOpen] = useState(false);
+  const [bulkApproveClientId, setBulkApproveClientId] = useState<string | null>(null);
+  // Bulk progress
+  const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null);
+
+  const { toast } = useToast();
   const supabase = createClient();
   const router = useRouter();
 
@@ -355,38 +366,29 @@ export default function AdminExpenses() {
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         console.error('Error approving expense:', body);
-        alert(body.error || 'Failed to approve expense.');
+        toast('error', body.error || 'Failed to approve expense.');
         return;
       }
 
+      toast('success', 'Expense approved successfully.');
       await fetchExpenses();
       setSelectedExpense(null);
     } catch (error) {
       console.error('Error approving expense:', error);
-      alert('Network error approving expense.');
+      toast('error', 'Network error approving expense.');
     } finally {
       setProcessing(false);
     }
   };
 
-  // REJECT via /api/expenses/[id]/status with rejectionReason
-  const handleRejectExpense = async () => {
+  // REJECT via modal
+  const promptRejectExpense = () => {
     if (!selectedExpense) return;
+    setRejectModalOpen(true);
+  };
 
-    const label =
-      selectedExpense.description ||
-      selectedExpense.category ||
-      selectedExpense.expense_date;
-
-    const reason = window.prompt(
-      `Enter a reason for rejecting "${label || 'this expense report'}":`
-    );
-
-    if (!reason || !reason.trim()) {
-      alert('A rejection reason is required.');
-      return;
-    }
-
+  const handleRejectExpenseWithReason = async (reason: string) => {
+    if (!selectedExpense) return;
     setProcessing(true);
 
     try {
@@ -395,24 +397,26 @@ export default function AdminExpenses() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'reject',
-          rejectionReason: reason.trim(),
+          rejectionReason: reason,
         }),
       });
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         console.error('Error rejecting expense report:', body);
-        alert(body.error || 'Failed to reject expense report.');
+        toast('error', body.error || 'Failed to reject expense report.');
         return;
       }
 
+      toast('success', 'Expense rejected.');
       await fetchExpenses();
       setSelectedExpense(null);
     } catch (err) {
       console.error('Error rejecting expense report:', err);
-      alert('Network error rejecting expense report.');
+      toast('error', 'Network error rejecting expense report.');
     } finally {
       setProcessing(false);
+      setRejectModalOpen(false);
     }
   };
 
@@ -442,36 +446,63 @@ export default function AdminExpenses() {
     setSelectedExpense(expenseDetail);
   };
 
-  const handleBulkApprove = async (clientId: string) => {
-    if (!confirm('Approve all pending expenses for this client?')) return;
+  const promptBulkApprove = (clientId: string) => {
+    setBulkApproveClientId(clientId);
+    setBulkApproveModalOpen(true);
+  };
+
+  const handleBulkApprove = async () => {
+    if (!bulkApproveClientId) return;
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      const client = clientGroups.find((g) => g.client_id === clientId);
+      const client = clientGroups.find((g) => g.client_id === bulkApproveClientId);
       if (!client) return;
 
       const pendingExpenses = client.expenses
         .flatMap((emp) => emp.expenses)
         .filter((exp) => exp.status === 'submitted');
 
-      await Promise.all(
-        pendingExpenses.map((exp) =>
-          supabase
-            .from('expenses')
-            .update({
-              status: 'approved',
-              approved_at: new Date().toISOString(),
-              approved_by: user?.id,
-            })
-            .eq('id', exp.id)
-        )
-      );
+      if (pendingExpenses.length === 0) {
+        toast('info', 'No pending expenses to approve.');
+        setBulkApproveModalOpen(false);
+        setBulkApproveClientId(null);
+        return;
+      }
 
-      fetchExpenses();
+      setProcessing(true);
+      let succeeded = 0;
+      let failed = 0;
+
+      for (let i = 0; i < pendingExpenses.length; i++) {
+        setBulkProgress({ current: i + 1, total: pendingExpenses.length });
+        try {
+          const res = await fetch(`/api/expenses/${pendingExpenses[i].id}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'approve' }),
+          });
+          if (res.ok) succeeded++;
+          else failed++;
+        } catch {
+          failed++;
+        }
+      }
+
+      if (failed === 0) {
+        toast('success', `All ${succeeded} expenses approved.`);
+      } else {
+        toast('warning', `Approved ${succeeded}, failed ${failed}.`);
+      }
+
+      await fetchExpenses();
     } catch (error) {
       console.error('Error bulk approving:', error);
+      toast('error', 'Error during bulk approve.');
+    } finally {
+      setProcessing(false);
+      setBulkProgress(null);
+      setBulkApproveModalOpen(false);
+      setBulkApproveClientId(null);
     }
   };
 
@@ -819,7 +850,7 @@ export default function AdminExpenses() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleBulkApprove(group.client_id);
+                              promptBulkApprove(group.client_id);
                             }}
                             style={{ padding: '4px 12px', fontSize: 10, fontWeight: 600, background: '#e31c79', color: '#fff', borderRadius: 5 }}
                             onMouseEnter={(e) => { e.currentTarget.style.background = '#cc1069'; }}
@@ -977,10 +1008,34 @@ export default function AdminExpenses() {
           onClose={() => setSelectedExpense(null)}
           expense={selectedExpense}
           onApprove={handleApproveExpense}
-          onReject={handleRejectExpense}
+          onReject={promptRejectExpense}
           processing={processing}
         />
       )}
+
+      {/* Reject reason modal */}
+      <ConfirmModal
+        open={rejectModalOpen}
+        title="Reject Expense"
+        message={`Enter a reason for rejecting "${selectedExpense?.description || selectedExpense?.category || 'this expense'}":`}
+        confirmLabel="Reject"
+        variant="danger"
+        inputLabel="Rejection Reason"
+        inputPlaceholder="Enter the reason for rejection..."
+        inputRequired
+        onConfirm={(reason) => handleRejectExpenseWithReason(reason || '')}
+        onCancel={() => setRejectModalOpen(false)}
+      />
+
+      {/* Bulk approve confirm */}
+      <ConfirmModal
+        open={bulkApproveModalOpen}
+        title="Bulk Approve Expenses"
+        message="Approve all pending expenses for this client? This action cannot be undone."
+        confirmLabel={bulkProgress ? `Approving ${bulkProgress.current} of ${bulkProgress.total}...` : 'Approve All'}
+        onConfirm={handleBulkApprove}
+        onCancel={() => { setBulkApproveModalOpen(false); setBulkApproveClientId(null); }}
+      />
     </>
   );
 }

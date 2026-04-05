@@ -36,10 +36,9 @@ export default function QuickTimeEntry() {
 
     const payload: Partial<TimeEntry> = {
       project_id: projectId || null,
-      entry_date: date,
-      total_minutes,
+      date: date,
+      hours: hours,
       notes: notes || null,
-      task_id: taskId || null,
     };
 
     await supabase.from('time_entries').insert(payload);

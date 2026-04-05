@@ -170,7 +170,7 @@ export default function ManagerExpenseReportPage() {
       const { data: reportData, error: reportError } = await supabase
         .from('expense_reports')
         .select(
-          '*, employees!expense_reports_employee_id_fkey(first_name,last_name)'
+          '*, employees!expense_reports_employee_id_fkey(first_name,last_name,manager_id)'
         )
         .eq('id', reportId)
         .single();
@@ -178,6 +178,13 @@ export default function ManagerExpenseReportPage() {
       if (reportError || !reportData) {
         console.error('Error loading expense report:', reportError);
         setLoadErrorMessage('Expense report not found.');
+        return;
+      }
+
+      // Ownership check: employee's manager_id must match current user
+      const empData = (reportData as any).employees;
+      if (empData && empData.manager_id !== user.id) {
+        setLoadErrorMessage('You do not have access to this expense report.');
         return;
       }
 

@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/client'
 import TimesheetModal from '@/components/TimesheetModal'
 import { AppShell } from '@/components/layout'
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton'
+import { useToast } from '@/components/ui/Toast'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 import {
   Clock,
   FileText,
@@ -126,7 +128,11 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'approved' | 'pending' | 'rejected' | 'unsubmitted'>('pending')
   const [managerFilter, setManagerFilter] = useState<string>('all')
   const [employeeFilter, setEmployeeFilter] = useState<string>('all')
+  const [clientFilter, setClientFilter] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState<string>('')
+  const [clientsList, setClientsList] = useState<{id: string, name: string}[]>([])
+  const [projectClientMap, setProjectClientMap] = useState<Record<string, string>>({})
+  const [employeeClientMap, setEmployeeClientMap] = useState<Record<string, string>>({})
 
   // Missing timesheet detection
   const [missingEmployees, setMissingEmployees] = useState<Employee[]>([])
@@ -148,6 +154,24 @@ export default function AdminPage() {
 
   const [expenseEmployeeSort, setExpenseEmployeeSort] = useState<'asc' | 'desc' | null>(null)
   const [expenseDateSort, setExpenseDateSort] = useState<'asc' | 'desc' | null>(null)
+
+  // Confirm modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean
+    title: string
+    message: string
+    confirmLabel?: string
+    variant?: 'danger' | 'primary'
+    inputLabel?: string
+    inputPlaceholder?: string
+    inputRequired?: boolean
+    onConfirm: (inputValue?: string) => void
+  }>({ open: false, title: '', message: '', onConfirm: () => {} })
+
+  // Bulk progress
+  const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null)
+
+  const { toast } = useToast()
 
   useEffect(() => {
     checkAdminAndLoad()
@@ -172,12 +196,23 @@ export default function AdminPage() {
         if (adminData?.role === 'manager') {
           router.push('/manager')
         } else {
-          router.push('/dashboard')
+          router.push('/employee')
         }
         return
       }
       
       setAdminId(user.id)
+
+      // Load clients + project-client mapping for client filter
+      const { data: clientsData } = await supabase.from('clients').select('id, name').eq('is_active', true).order('name')
+      if (clientsData) setClientsList(clientsData)
+
+      const { data: projectsData } = await supabase.from('projects').select('id, client_id')
+      if (projectsData) {
+        const pcMap: Record<string, string> = {}
+        projectsData.forEach(p => { if (p.client_id) pcMap[p.id] = p.client_id })
+        setProjectClientMap(pcMap)
+      }
     }
   }
 
@@ -348,53 +383,54 @@ export default function AdminPage() {
 
   const handleSendSubmittalReminder = async (submission: Submission) => {
     if (!submission.employee) return
-    
-    const confirmed = confirm(
-      `Send reminder to ${formatName(
-        submission.employee.first_name,
-        submission.employee.middle_name,
-        submission.employee.last_name,
-        'firstLast'
-      )} for unsubmitted timecard?`
+
+    const empName = formatName(
+      submission.employee.first_name,
+      submission.employee.middle_name,
+      submission.employee.last_name,
+      'firstLast'
     )
-    if (!confirmed) return
-    
-    try {
-      const response = await fetch('/api/notifications/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'timecard_reminder',
-          recipient_id: submission.employee.id,
-          recipient_email: submission.employee.email,
-          data: {
-            week_ending: submission.date,
-            employee_name: formatName(
-              submission.employee.first_name,
-              submission.employee.middle_name,
-              submission.employee.last_name,
-              'firstLast'
-            ),
-            status: 'unsubmitted'
+
+    setConfirmModal({
+      open: true,
+      title: 'Send Reminder',
+      message: `Send reminder to ${empName} for unsubmitted timecard?`,
+      confirmLabel: 'Send',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, open: false }))
+        try {
+          const response = await fetch('/api/notifications/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'timecard_reminder',
+              recipient_id: submission.employee!.id,
+              recipient_email: submission.employee!.email,
+              data: {
+                week_ending: submission.date,
+                employee_name: empName,
+                status: 'unsubmitted'
+              }
+            })
+          })
+
+          if (response.ok) {
+            toast('success', 'Reminder sent successfully!')
+          } else {
+            toast('error', 'Failed to send reminder')
           }
-        })
-      })
-      
-      if (response.ok) {
-        alert('Reminder sent successfully!')
-      } else {
-        alert('Failed to send reminder')
+        } catch (error) {
+          console.error('Error sending reminder:', error)
+          toast('error', 'Error sending reminder')
+        }
       }
-    } catch (error) {
-      console.error('Error sending reminder:', error)
-      alert('Error sending reminder')
-    }
+    })
   }
 
   const handleSendApprovalReminder = async (managerId: string, managerName: string, pendingSubmissions: Submission[]) => {
     const manager = employees.find(e => e.id === managerId)
     if (!manager) {
-      alert('Manager not found')
+      toast('error', 'Manager not found')
       return
     }
 
@@ -413,37 +449,43 @@ export default function AdminPage() {
       .map(d => `• ${d.employee} - ${d.week}`)
       .join('\n')
     
-    const confirmMessage = `Send approval reminder to ${managerName} for ${pendingSubmissions.length} pending timecard(s)?\n\nPending approvals:\n${detailsList}${pendingSubmissions.length > 5 ? `\n... and ${pendingSubmissions.length - 5} more` : ''}`
-    
-    const confirmed = confirm(confirmMessage)
-    if (!confirmed) return
-    
-    try {
-      const response = await fetch('/api/notifications/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'approval_reminder',
-          recipient_id: managerId,
-          recipient_email: manager.email,
-          data: {
-            manager_name: managerName,
-            pending_count: pendingSubmissions.length,
-            pending_details: pendingDetails,
-            status: 'pending_approval'
+    const summaryText = `Send approval reminder to ${managerName} for ${pendingSubmissions.length} pending timecard(s)?`
+
+    setConfirmModal({
+      open: true,
+      title: 'Send Approval Reminder',
+      message: summaryText,
+      confirmLabel: 'Send',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, open: false }))
+        try {
+          const response = await fetch('/api/notifications/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'approval_reminder',
+              recipient_id: managerId,
+              recipient_email: manager.email,
+              data: {
+                manager_name: managerName,
+                pending_count: pendingSubmissions.length,
+                pending_details: pendingDetails,
+                status: 'pending_approval'
+              }
+            })
+          })
+
+          if (response.ok) {
+            toast('success', `Reminder sent successfully to ${managerName}!`)
+          } else {
+            toast('error', 'Failed to send reminder')
           }
-        })
-      })
-      
-      if (response.ok) {
-        alert(`Reminder sent successfully to ${managerName}!`)
-      } else {
-        alert('Failed to send reminder')
+        } catch (error) {
+          console.error('Error sending reminder:', error)
+          toast('error', 'Error sending reminder')
+        }
       }
-    } catch (error) {
-      console.error('Error sending reminder:', error)
-      alert('Error sending reminder')
-    }
+    })
   }
 
   const handleBulkSubmittalReminders = async () => {
@@ -452,46 +494,54 @@ export default function AdminPage() {
     )
     
     if (unsubmittedWithEmployees.length === 0) {
-      alert('No unsubmitted timecards to send reminders for')
+      toast('info', 'No unsubmitted timecards to send reminders for')
       return
     }
     
-    const confirmed = confirm(`Send reminders to ${unsubmittedWithEmployees.length} employees for unsubmitted timecards?`)
-    if (!confirmed) return
-    
-    let sent = 0
-    let failed = 0
-    
-    for (const submission of unsubmittedWithEmployees) {
-      try {
-        const response = await fetch('/api/notifications/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'timecard_reminder',
-            recipient_id: submission.employee!.id,
-            recipient_email: submission.employee!.email,
-            data: {
-              week_ending: submission.date,
-              employee_name: formatName(
-                submission.employee!.first_name,
-                submission.employee!.middle_name,
-                submission.employee!.last_name,
-                'firstLast'
-              ),
-              status: 'unsubmitted'
-            }
-          })
-        })
-        
-        if (response.ok) sent++
-        else failed++
-      } catch (error) {
-        failed++
+    setConfirmModal({
+      open: true,
+      title: 'Send Bulk Reminders',
+      message: `Send reminders to ${unsubmittedWithEmployees.length} employees for unsubmitted timecards?`,
+      confirmLabel: 'Send All',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, open: false }))
+        let sent = 0
+        let failed = 0
+
+        for (let i = 0; i < unsubmittedWithEmployees.length; i++) {
+          const sub = unsubmittedWithEmployees[i]
+          setBulkProgress({ current: i + 1, total: unsubmittedWithEmployees.length })
+          try {
+            const response = await fetch('/api/notifications/send', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'timecard_reminder',
+                recipient_id: sub.employee!.id,
+                recipient_email: sub.employee!.email,
+                data: {
+                  week_ending: sub.date,
+                  employee_name: formatName(
+                    sub.employee!.first_name,
+                    sub.employee!.middle_name,
+                    sub.employee!.last_name,
+                    'firstLast'
+                  ),
+                  status: 'unsubmitted'
+                }
+              })
+            })
+            if (response.ok) sent++
+            else failed++
+          } catch {
+            failed++
+          }
+        }
+        setBulkProgress(null)
+        if (failed === 0) toast('success', `All ${sent} reminders sent.`)
+        else toast('warning', `Sent ${sent}, failed ${failed}.`)
       }
-    }
-    
-    alert(`Reminders sent: ${sent} successful, ${failed} failed`)
+    })
   }
 
   const handleViewTimesheet = async (submission: Submission) => {
@@ -613,14 +663,14 @@ export default function AdminPage() {
         setIsExpenseModalOpen(false)
         setSelectedExpense(null)
       }
+      toast('success', `${submission.type === 'timesheet' ? 'Timesheet' : 'Expense'} approved.`)
     } catch (error: any) {
       console.error('Error approving:', error)
-      alert(error?.message || 'Error approving submission')
+      toast('error', error?.message || 'Error approving submission')
     }
   }
 
-  const handleReject = async (submission: Submission) => {
-    const reason = prompt('Please provide a reason for rejection:')
+  const handleReject = async (submission: Submission, reason?: string) => {
     if (!reason || !reason.trim()) return
 
     try {
@@ -656,10 +706,28 @@ export default function AdminPage() {
         setIsExpenseModalOpen(false)
         setSelectedExpense(null)
       }
+      toast('success', `${submission.type === 'timesheet' ? 'Timesheet' : 'Expense'} rejected.`)
     } catch (error: any) {
       console.error('Error rejecting:', error)
-      alert(error?.message || 'Error rejecting submission')
+      toast('error', error?.message || 'Error rejecting submission')
     }
+  }
+
+  const promptReject = (submission: Submission) => {
+    setConfirmModal({
+      open: true,
+      title: `Reject ${submission.type === 'timesheet' ? 'Timesheet' : 'Expense'}`,
+      message: 'Please provide a reason for rejection. This will be visible to the employee.',
+      confirmLabel: 'Reject',
+      variant: 'danger',
+      inputLabel: 'Rejection Reason',
+      inputPlaceholder: 'Enter the reason for rejection...',
+      inputRequired: true,
+      onConfirm: async (reason) => {
+        setConfirmModal(prev => ({ ...prev, open: false }))
+        await handleReject(submission, reason)
+      }
+    })
   }
 
   const handleModalApprove = async () => {
@@ -673,49 +741,60 @@ export default function AdminPage() {
 
   const handleModalReject = async () => {
     if (!selectedTimesheet) return
-    
+
     const submission = submissions.find(s => s.id === selectedTimesheet.id)
     if (submission) {
-      await handleReject(submission)
+      promptReject(submission)
     }
   }
 
   const handleBulkApprove = async () => {
-    for (const submissionId of selectedItems) {
-      const submission = submissions.find(s => s.id === submissionId)
-      if (submission && submission.status === 'submitted') {
-        await handleApprove(submission)
-      }
+    const items = Array.from(selectedItems)
+    const toApprove = items.map(id => submissions.find(s => s.id === id)).filter(s => s && s.status === 'submitted') as Submission[]
+
+    if (toApprove.length === 0) {
+      toast('info', 'No pending items selected.')
+      return
     }
+
+    for (let i = 0; i < toApprove.length; i++) {
+      setBulkProgress({ current: i + 1, total: toApprove.length })
+      await handleApprove(toApprove[i])
+    }
+    setBulkProgress(null)
     setSelectedItems(new Set())
   }
 
   const handleFinalizeForPayroll = async (submission: Submission) => {
     if (submission.type !== 'timesheet') return
 
-    const confirmed = confirm(
-      `Finalize this timesheet for payroll processing?\n\n` +
-      `Employee: ${formatName(submission.employee?.first_name, submission.employee?.middle_name, submission.employee?.last_name, 'firstLast')}\n` +
-      `Week: ${submission.week_range}\n` +
-      `Hours: ${submission.hours?.toFixed(2)}`
-    )
-    if (!confirmed) return
+    const empName = formatName(submission.employee?.first_name, submission.employee?.middle_name, submission.employee?.last_name, 'firstLast')
 
-    try {
-      const res = await fetch(`/api/timesheets/${submission.id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'finalize' }),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || 'Failed to finalize timesheet')
+    setConfirmModal({
+      open: true,
+      title: 'Finalize for Payroll',
+      message: `Finalize this timesheet for payroll processing?\n\nEmployee: ${empName}\nWeek: ${submission.week_range}\nHours: ${submission.hours?.toFixed(2)}`,
+      confirmLabel: 'Finalize',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, open: false }))
+        try {
+          const res = await fetch(`/api/timesheets/${submission.id}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'finalize' }),
+          })
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}))
+            throw new Error(data.error || 'Failed to finalize timesheet')
+          }
+          toast('success', 'Timesheet finalized for payroll.')
+          loadSubmissions()
+        } catch (error: any) {
+          console.error('Error finalizing:', error)
+          toast('error', error?.message || 'Error finalizing timesheet for payroll')
+        }
       }
-      loadSubmissions()
-    } catch (error: any) {
-      console.error('Error finalizing:', error)
-      alert(error?.message || 'Error finalizing timesheet for payroll')
-    }
+    })
   }
 
   const toggleItemSelection = (id: string) => {
@@ -786,7 +865,15 @@ export default function AdminPage() {
     if (employeeFilter && employeeFilter !== 'all') {
       filtered = filtered.filter(s => s.employee?.id === employeeFilter)
     }
-  
+
+    if (clientFilter && clientFilter !== 'all') {
+      filtered = filtered.filter(s => {
+        // Check employee's direct client assignment
+        if ((s.employee as any)?.client_id === clientFilter) return true
+        return false
+      })
+    }
+
     return filtered
   })()  
 
@@ -825,6 +912,9 @@ export default function AdminPage() {
     }
     if (employeeFilter && employeeFilter !== 'all') {
       filtered = filtered.filter(s => s.employee?.id === employeeFilter)
+    }
+    if (clientFilter && clientFilter !== 'all') {
+      filtered = filtered.filter(s => (s.employee as any)?.client_id === clientFilter)
     }
     return filtered
   })()
@@ -1072,6 +1162,22 @@ export default function AdminPage() {
                         {formatName(emp.first_name, emp.middle_name, emp.last_name)}
                       </option>
                     ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span style={{ fontSize: 11, color: '#c0bab2' }}>Client:</span>
+                <select
+                  style={{ fontSize: 12, padding: '6px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, background: '#fff', outline: 'none' }}
+                  onFocus={(e: any) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)' }}
+                  onBlur={(e: any) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }}
+                  value={clientFilter}
+                  onChange={(e) => setClientFilter(e.target.value)}
+                >
+                  <option value="all">All</option>
+                  {clientsList.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1546,7 +1652,7 @@ export default function AdminPage() {
                             <CheckCircle className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => handleReject(submission)}
+                            onClick={() => promptReject(submission)}
                             style={{ padding: 4, color: '#b91c1c', background: 'none', border: 'none', borderRadius: 5, cursor: 'pointer' }}
                             onMouseEnter={(e: any) => { e.currentTarget.style.background = '#fef2f2' }}
                             onMouseLeave={(e: any) => { e.currentTarget.style.background = 'none' }}
@@ -1677,7 +1783,7 @@ export default function AdminPage() {
                             <CheckCircle className="h-4 w-4" />
                           </button>
                           <button 
-                            onClick={() => handleReject(expense)}
+                            onClick={() => promptReject(expense)}
                             style={{ padding: 4, color: '#b91c1c', background: 'none', border: 'none', borderRadius: 5, cursor: 'pointer' }}
                             onMouseEnter={(e: any) => { e.currentTarget.style.background = '#fef2f2' }}
                             onMouseLeave={(e: any) => { e.currentTarget.style.background = 'none' }}
@@ -1820,6 +1926,33 @@ export default function AdminPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Confirm/Reject Modal */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        variant={confirmModal.variant}
+        inputLabel={confirmModal.inputLabel}
+        inputPlaceholder={confirmModal.inputPlaceholder}
+        inputRequired={confirmModal.inputRequired}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+      />
+
+      {/* Bulk progress indicator */}
+      {bulkProgress && (
+        <div style={{
+          position: 'fixed', bottom: 80, right: 24, zIndex: 9997,
+          background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10,
+          padding: '12px 18px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+          fontFamily: 'var(--font-montserrat), Montserrat, sans-serif',
+          fontSize: 12.5, fontWeight: 500, color: '#1a1a1a',
+        }}>
+          Processing {bulkProgress.current} of {bulkProgress.total}...
         </div>
       )}
     </>

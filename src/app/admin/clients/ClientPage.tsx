@@ -80,6 +80,7 @@ export default function ClientManagement() {
   };
 
   const [formData, setFormData] = useState<ClientFormData>(initialFormData);
+  const [activeFilter, setActiveFilter] = useState<'active' | 'inactive' | 'all'>('active');
 
   useEffect(() => {
     fetchClients();
@@ -87,7 +88,7 @@ export default function ClientManagement() {
 
   useEffect(() => {
     filterClients();
-  }, [clients, searchTerm]);
+  }, [clients, searchTerm, activeFilter]);
 
   const fetchClients = async () => {
     try {
@@ -129,6 +130,13 @@ export default function ClientManagement() {
 
   const filterClients = () => {
     let filtered = [...clients];
+
+    // Active filter
+    if (activeFilter === 'active') {
+      filtered = filtered.filter(client => client.is_active);
+    } else if (activeFilter === 'inactive') {
+      filtered = filtered.filter(client => !client.is_active);
+    }
 
     if (searchTerm) {
       filtered = filtered.filter(client =>
@@ -248,6 +256,23 @@ export default function ClientManagement() {
     } catch (error) {
       console.error('Error deactivating client:', error);
       alert('Error deactivating client');
+    }
+  };
+
+  const handleReactivateClient = async (id: string) => {
+    if (!confirm('Are you sure you want to reactivate this client?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ is_active: true })
+        .eq('id', id);
+
+      if (error) throw error;
+      fetchClients();
+    } catch (error) {
+      console.error('Error reactivating client:', error);
+      alert('Error reactivating client');
     }
   };
 
@@ -424,10 +449,21 @@ export default function ClientManagement() {
               }}
             />
           </div>
-          <div style={{ fontSize: 11, color: '#c0bab2' }}>
-            Showing <span style={{ fontWeight: 600 }}>{filteredClients.length}</span> of{' '}
-            <span style={{ fontWeight: 600 }}>{clients.length}</span> clients
-            {' '}({activeCount} active)
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <select
+              value={activeFilter}
+              onChange={(e) => setActiveFilter(e.target.value as 'active' | 'inactive' | 'all')}
+              style={{ fontSize: 12, padding: '8px 10px', border: '0.5px solid #e8e4df', borderRadius: 7, background: '#fff', color: '#777', outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="active">Active only</option>
+              <option value="inactive">Inactive only</option>
+              <option value="all">All statuses</option>
+            </select>
+            <span style={{ fontSize: 11, color: '#c0bab2' }}>
+              Showing <span style={{ fontWeight: 600 }}>{filteredClients.length}</span> of{' '}
+              <span style={{ fontWeight: 600 }}>{clients.length}</span> clients
+              {' '}({activeCount} active)
+            </span>
           </div>
         </div>
 
@@ -582,24 +618,46 @@ export default function ClientManagement() {
                       >
                         <Edit style={{ width: 12, height: 12, color: '#777' }} />
                       </button>
-                      <button
-                        onClick={() => handleDeleteClient(client.id)}
-                        style={{
-                          background: '#fff',
-                          border: '0.5px solid #e0dcd7',
-                          borderRadius: 5,
-                          padding: '4px 6px',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          transition: 'border-color 0.15s ease',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#b91c1c' }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0dcd7' }}
-                        title="Deactivate"
-                      >
-                        <Trash2 style={{ width: 12, height: 12, color: '#777' }} />
-                      </button>
+                      {client.is_active ? (
+                        <button
+                          onClick={() => handleDeleteClient(client.id)}
+                          style={{
+                            background: '#fff',
+                            border: '0.5px solid #e0dcd7',
+                            borderRadius: 5,
+                            padding: '4px 6px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            transition: 'border-color 0.15s ease',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = '#b91c1c' }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0dcd7' }}
+                          title="Deactivate"
+                        >
+                          <Trash2 style={{ width: 12, height: 12, color: '#777' }} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleReactivateClient(client.id)}
+                          style={{
+                            background: '#fff',
+                            border: '0.5px solid #e0dcd7',
+                            borderRadius: 5,
+                            padding: '4px 8px',
+                            cursor: 'pointer',
+                            fontSize: 10,
+                            fontWeight: 600,
+                            color: '#777',
+                            transition: 'all 0.15s ease',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = '#2d9b6e'; e.currentTarget.style.color = '#2d9b6e'; e.currentTarget.style.background = '#ecfdf5'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#777'; e.currentTarget.style.background = '#fff'; }}
+                          title="Reactivate"
+                        >
+                          Reactivate
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

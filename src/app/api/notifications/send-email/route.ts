@@ -1,11 +1,19 @@
 // src/app/api/notifications/send-email/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 import nodemailer from 'nodemailer';
 import { Notification } from '@/types/notifications';
 
 // POST /api/notifications/send-email - Send email notification
 export async function POST(request: NextRequest) {
   try {
+    // Auth check — internal server-to-server calls also need valid session
+    const supabase = await createServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
 
     // Two shapes supported:

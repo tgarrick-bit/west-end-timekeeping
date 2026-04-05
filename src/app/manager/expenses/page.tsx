@@ -78,6 +78,22 @@ export default function ExpenseApprovalPage() {
   const loadReports = async () => {
     setLoading(true);
     try {
+      // Get current user for manager scoping
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      // Get employees managed by this user
+      const { data: myEmployees } = await supabase
+        .from('employees')
+        .select('id')
+        .eq('manager_id', user.id);
+      const employeeIds = myEmployees?.map(e => e.id) || [];
+      if (employeeIds.length === 0) {
+        setReports([]);
+        setLoading(false);
+        return;
+      }
+
       let query = supabase
         .from('expense_reports')
         .select(
@@ -97,6 +113,7 @@ export default function ExpenseApprovalPage() {
           )
         `
         )
+        .in('employee_id', employeeIds)
         .order('submitted_at', { ascending: false })
         .order('created_at', { ascending: false });
 

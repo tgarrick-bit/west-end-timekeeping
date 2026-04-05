@@ -56,8 +56,12 @@ export default function TimeByApproverReport() {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const [startDate, setStartDate] = useState('2025-09-07')
-  const [endDate, setEndDate] = useState('2025-09-13')
+  const now = new Date()
+  const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const today = now.toISOString().split('T')[0]
+
+  const [startDate, setStartDate] = useState(firstOfMonth)
+  const [endDate, setEndDate] = useState(today)
   const [selectedUser, setSelectedUser] = useState('')
   const [selectedTimeType, setSelectedTimeType] = useState('-All-')
   const [forceCompleteWeeks, setForceCompleteWeeks] = useState(false)
@@ -68,9 +72,18 @@ export default function TimeByApproverReport() {
   const [isLoading, setIsLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
 
+  const [approverList, setApproverList] = useState<{id: string, first_name: string, last_name: string}[]>([])
+
   const timeTypes = ['-All-', 'Regular', 'Overtime', 'Doubletime', 'Sick', 'Vacation', 'Holiday', 'Non-billable', 'Overtime *', 'regular *']
 
-  useEffect(() => { const t = setTimeout(() => setPageLoading(false), 400); return () => clearTimeout(t) }, [])
+  useEffect(() => {
+    const loadFilters = async () => {
+      const { data } = await supabase.from('employees').select('id, first_name, last_name').in('role', ['manager', 'admin', 'time_approver']).eq('is_active', true).order('last_name')
+      if (data) setApproverList(data)
+      setPageLoading(false)
+    }
+    loadFilters()
+  }, [])
 
   const handleRunReport = async () => {
     setIsLoading(true)
@@ -85,6 +98,10 @@ export default function TimeByApproverReport() {
         query = query.eq('status', 'approved')
       } else {
         query = query.in('status', ['approved', 'pending', 'submitted'])
+      }
+
+      if (selectedUser) {
+        query = query.eq('approved_by', selectedUser)
       }
 
       const { data, error } = await query
@@ -194,7 +211,10 @@ export default function TimeByApproverReport() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
           <div>
             <label style={labelStyle}>User</label>
-            <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}><option value=""></option></select>
+            <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}>
+              <option value="">All Approvers</option>
+              {approverList.map(a => <option key={a.id} value={a.id}>{a.last_name}, {a.first_name}</option>)}
+            </select>
           </div>
           <div>
             <label style={labelStyle}>Time Type</label>

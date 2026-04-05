@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ui/Toast';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import {
   Plus,
   Search,
@@ -134,7 +136,13 @@ export default function EmployeeManagement() {
 
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [managerFilter, setManagerFilter] = useState<string>('all');
+  const [activeFilter, setActiveFilter] = useState<'active' | 'inactive' | 'all'>('active');
 
+  const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
+  const [deactivateTargetId, setDeactivateTargetId] = useState<string | null>(null);
+  const [deactivateAction, setDeactivateAction] = useState<'deactivate' | 'reactivate'>('deactivate');
+
+  const { toast } = useToast();
   const supabase = createClient();
   const router = useRouter();
 
@@ -165,7 +173,7 @@ export default function EmployeeManagement() {
 
   useEffect(() => {
     filterEmployees();
-  }, [employees, searchTerm, roleFilter, managerFilter]);
+  }, [employees, searchTerm, roleFilter, managerFilter, activeFilter]);
 
   const checkAuthAndFetch = async () => {
     try {
@@ -186,7 +194,7 @@ export default function EmployeeManagement() {
         .single();
 
       if (userData?.role !== 'admin') {
-        router.push('/dashboard');
+        router.push('/employee');
         return;
       }
 
@@ -247,6 +255,13 @@ export default function EmployeeManagement() {
           emp.email?.toLowerCase().includes(term) ||
           emp.employee_id?.toLowerCase().includes(term)
       );
+    }
+
+    // Active filter
+    if (activeFilter === 'active') {
+      filtered = filtered.filter((emp) => emp.is_active !== false);
+    } else if (activeFilter === 'inactive') {
+      filtered = filtered.filter((emp) => emp.is_active === false);
     }
 
     // Role filter
@@ -400,23 +415,59 @@ export default function EmployeeManagement() {
       fetchEmployees();
     } catch (error: any) {
       console.error('Error updating employee:', error);
-      alert(`Error: ${error.message}`);
+      toast('error', `Error: ${error.message}`);
     }
   };
 
-  const handleDeactivateEmployee = async (id: string) => {
-    if (!confirm('Are you sure you want to deactivate this employee?')) return;
+  const promptDeactivateEmployee = (id: string) => {
+    setDeactivateTargetId(id);
+    setDeactivateAction('deactivate');
+    setDeactivateModalOpen(true);
+  };
 
+  const handleDeactivateEmployee = async () => {
+    if (!deactivateTargetId) return;
     try {
       const { error } = await supabase
         .from('employees')
         .update({ is_active: false })
-        .eq('id', id);
+        .eq('id', deactivateTargetId);
 
       if (error) throw error;
+      toast('success', 'Employee deactivated.');
       fetchEmployees();
     } catch (error) {
       console.error('Error deactivating employee:', error);
+      toast('error', 'Error deactivating employee.');
+    } finally {
+      setDeactivateModalOpen(false);
+      setDeactivateTargetId(null);
+    }
+  };
+
+  const promptReactivateEmployee = (id: string) => {
+    setDeactivateTargetId(id);
+    setDeactivateAction('reactivate');
+    setDeactivateModalOpen(true);
+  };
+
+  const handleReactivateEmployee = async () => {
+    if (!deactivateTargetId) return;
+    try {
+      const { error } = await supabase
+        .from('employees')
+        .update({ is_active: true })
+        .eq('id', deactivateTargetId);
+
+      if (error) throw error;
+      toast('success', 'Employee reactivated.');
+      fetchEmployees();
+    } catch (error) {
+      console.error('Error reactivating employee:', error);
+      toast('error', 'Error reactivating employee.');
+    } finally {
+      setDeactivateModalOpen(false);
+      setDeactivateTargetId(null);
     }
   };
 
@@ -606,6 +657,15 @@ export default function EmployeeManagement() {
                   </option>
                 ))}
               </select>
+              <select
+                value={activeFilter}
+                onChange={(e) => setActiveFilter(e.target.value as 'active' | 'inactive' | 'all')}
+                style={{ fontSize: 12, padding: '8px 10px', border: '0.5px solid #e8e4df', borderRadius: 7, background: '#fff', color: '#777', outline: 'none', cursor: 'pointer' }}
+              >
+                <option value="active">Active only</option>
+                <option value="inactive">Inactive only</option>
+                <option value="all">All statuses</option>
+              </select>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 11, color: '#c0bab2', fontWeight: 500 }}>
@@ -726,15 +786,27 @@ export default function EmployeeManagement() {
                       >
                         <Edit size={13} strokeWidth={1.5} />
                       </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDeactivateEmployee(employee.id); }}
-                        className="transition-colors duration-150"
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: 6, borderRadius: 4 }}
-                        onMouseEnter={(e) => { e.currentTarget.style.color = '#b91c1c'; e.currentTarget.style.background = '#fef2f2'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.color = '#ccc'; e.currentTarget.style.background = 'none'; }}
-                      >
-                        <Trash2 size={13} strokeWidth={1.5} />
-                      </button>
+                      {employee.is_active ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); promptDeactivateEmployee(employee.id); }}
+                          className="transition-colors duration-150"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: 6, borderRadius: 4 }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = '#b91c1c'; e.currentTarget.style.background = '#fef2f2'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = '#ccc'; e.currentTarget.style.background = 'none'; }}
+                        >
+                          <Trash2 size={13} strokeWidth={1.5} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); promptReactivateEmployee(employee.id); }}
+                          className="transition-colors duration-150"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: '4px 10px', borderRadius: 4, fontSize: 10, fontWeight: 600 }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = '#2d9b6e'; e.currentTarget.style.background = '#ecfdf5'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = '#ccc'; e.currentTarget.style.background = 'none'; }}
+                        >
+                          Reactivate
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1198,7 +1270,19 @@ export default function EmployeeManagement() {
           </div>
         </div>
       )}
+
+      {/* Deactivate/Reactivate confirm modal */}
+      <ConfirmModal
+        open={deactivateModalOpen}
+        title={deactivateAction === 'deactivate' ? 'Deactivate Employee' : 'Reactivate Employee'}
+        message={deactivateAction === 'deactivate'
+          ? 'Are you sure you want to deactivate this employee? They will no longer be able to log in.'
+          : 'Are you sure you want to reactivate this employee?'}
+        confirmLabel={deactivateAction === 'deactivate' ? 'Deactivate' : 'Reactivate'}
+        variant={deactivateAction === 'deactivate' ? 'danger' : 'primary'}
+        onConfirm={deactivateAction === 'deactivate' ? handleDeactivateEmployee : handleReactivateEmployee}
+        onCancel={() => { setDeactivateModalOpen(false); setDeactivateTargetId(null); }}
+      />
     </>
   );
 }
-

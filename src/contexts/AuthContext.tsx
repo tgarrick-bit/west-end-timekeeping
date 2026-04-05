@@ -37,25 +37,6 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
-// Demo users for testing - these should match what's in your Supabase
-const DEMO_USERS = {
-  'admin@westend-test.com': {
-    password: 'TestDemo123!',
-    role: 'admin',
-    name: 'Admin Demo'
-  },
-  'manager@westend-test.com': {
-    password: 'TestDemo123!',
-    role: 'manager',
-    name: 'Manager Demo'
-  },
-  'employee@westend-test.com': {
-    password: 'TestDemo123!',
-    role: 'employee',
-    name: 'Employee Demo'
-  }
-};
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [employee, setEmployee] = useState<Employee | null>(null);
@@ -94,44 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      
-      // Check if it's a demo user first
-      const demoUser = DEMO_USERS[email as keyof typeof DEMO_USERS];
-      
-      if (demoUser && password === demoUser.password) {
-        // For demo users, try Supabase auth first
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
 
-        if (!error && data.user) {
-          // Fetch the employee data
-          const { data: employeeData, error: employeeError } = await supabase
-            .from('employees')
-            .select('*')
-            .eq('email', email)
-            .single();
-
-          if (!employeeError && employeeData) {
-            setUser(data.user);
-            setEmployee(employeeData);
-            
-            // Route based on role
-            const role = employeeData.role || demoUser.role;
-            if (role === 'admin') {
-              router.push('/admin');
-            } else if (role === 'manager' || role === 'approver') {
-              router.push('/manager/pending');
-            } else {
-              router.push('/dashboard');
-            }
-            return;
-          }
-        }
-      }
-      
-      // For non-demo users, use regular Supabase auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -163,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (role === 'manager' || role === 'approver') {
           router.push('/manager/pending');
         } else {
-          router.push('/dashboard');
+          router.push('/employee');
         }
       }
     } catch (error) {

@@ -50,8 +50,12 @@ export default function ExpensesByProjectReport() {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const [startDate, setStartDate] = useState('2025-09-01')
-  const [endDate, setEndDate] = useState('2025-09-30')
+  const now = new Date()
+  const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const today = now.toISOString().split('T')[0]
+
+  const [startDate, setStartDate] = useState(firstOfMonth)
+  const [endDate, setEndDate] = useState(today)
   const [selectedProject, setSelectedProject] = useState('-All-')
   const [selectedExpenseType, setSelectedExpenseType] = useState('-All-')
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('-All-')
@@ -68,7 +72,16 @@ export default function ExpensesByProjectReport() {
   const expenseTypes = ['-All-', 'Airfare', 'Breakfast', 'Dinner', 'Fuel', 'Incidental', 'Lodging', 'Lunch', 'Meals and Incidentals(GSA)', 'Mileage', 'Miscellaneous', 'Parking', 'Rental Car - Standard size']
   const paymentMethods = ['-All-', 'Company Card', 'Personal Card', 'Cash', 'Check', 'Direct Bill']
 
-  useEffect(() => { const t = setTimeout(() => setPageLoading(false), 400); return () => clearTimeout(t) }, [])
+  const [projectListData, setProjectListData] = useState<{id: string, name: string, code: string}[]>([])
+
+  useEffect(() => {
+    const loadFilters = async () => {
+      const { data } = await supabase.from('projects').select('id, name, code').eq('status', 'active').order('name')
+      if (data) setProjectListData(data)
+      setPageLoading(false)
+    }
+    loadFilters()
+  }, [])
 
   const handleRunReport = async () => {
     setIsLoading(true)
@@ -143,7 +156,7 @@ export default function ExpensesByProjectReport() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16, marginBottom: 24 }}>
-          <div><label style={labelStyle}>Project</label><select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}><option>-All-</option></select></div>
+          <div><label style={labelStyle}>Project</label><select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}><option value="-All-">-All-</option>{projectListData.map(p => <option key={p.id} value={p.id}>{p.name} ({p.code})</option>)}</select></div>
           <div><label style={labelStyle}>Expense Type</label><select value={selectedExpenseType} onChange={(e) => setSelectedExpenseType(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}>{expenseTypes.map(t => (<option key={t} value={t}>{t}</option>))}</select></div>
           <div><label style={labelStyle}>Payment Method</label><select value={selectedPaymentMethod} onChange={(e) => setSelectedPaymentMethod(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}>{paymentMethods.map(m => (<option key={m} value={m}>{m}</option>))}</select></div>
         </div>

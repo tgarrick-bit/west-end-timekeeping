@@ -280,14 +280,14 @@ export default function PayrollDashboard({ user }: PayrollDashboardProps) {
             </div>
             <div className="flex space-x-3">
               <button 
-                onClick={() => window.location.href = '/dashboard'}
+                onClick={() => window.location.href = '/employee'}
                 className="flex items-center px-6 py-3 bg-white text-green-700 rounded-lg font-semibold hover:bg-green-50 transition-colors shadow-sm"
               >
                 <FileText className="h-5 w-5 mr-2" />
                 View Timesheets
               </button>
-              <button 
-                onClick={() => window.location.href = '/dashboard?section=pending'}
+              <button
+                onClick={() => window.location.href = '/employee?section=pending'}
                 className="flex items-center px-6 py-3 bg-white bg-opacity-20 text-white rounded-lg font-semibold hover:bg-white hover:text-green-700 transition-colors"
               >
                 <Calculator className="h-5 w-5 mr-2" />

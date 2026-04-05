@@ -39,8 +39,12 @@ export default function TimeMissingReport() {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const [startDate, setStartDate] = useState('2025-09-07')
-  const [endDate, setEndDate] = useState('')
+  const now = new Date()
+  const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const today = now.toISOString().split('T')[0]
+
+  const [startDate, setStartDate] = useState(firstOfMonth)
+  const [endDate, setEndDate] = useState(today)
   const [selectedUser, setSelectedUser] = useState('-All-')
   const [selectedEmployeeType, setSelectedEmployeeType] = useState('-All-')
   const [selectedProject, setSelectedProject] = useState('-All-')
@@ -50,15 +54,30 @@ export default function TimeMissingReport() {
   const [isLoading, setIsLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
 
+  const [employeeList, setEmployeeList] = useState<{id: string, first_name: string, last_name: string}[]>([])
+  const [projectList, setProjectList] = useState<{id: string, name: string, code: string}[]>([])
+
   const employeeTypes = ['-All-', 'Internal', 'Hourly', '1099', 'Corp2Corp', 'Salary', 'External']
 
-  useEffect(() => { const t = setTimeout(() => setPageLoading(false), 400); return () => clearTimeout(t) }, [])
+  useEffect(() => {
+    const loadFilters = async () => {
+      const [empRes, projRes] = await Promise.all([
+        supabase.from('employees').select('id, first_name, last_name').eq('is_active', true).order('last_name'),
+        supabase.from('projects').select('id, name, code').eq('status', 'active').order('name'),
+      ])
+      if (empRes.data) setEmployeeList(empRes.data)
+      if (projRes.data) setProjectList(projRes.data)
+      setPageLoading(false)
+    }
+    loadFilters()
+  }, [])
 
   const handleRunReport = async () => {
     setIsLoading(true)
     try {
-      let employeeQuery = supabase.from('employees').select('*').eq('status', 'active')
+      let employeeQuery = supabase.from('employees').select('*').eq('is_active', true)
       if (selectedEmployeeType !== '-All-') { employeeQuery = employeeQuery.eq('employee_type', selectedEmployeeType) }
+      if (selectedUser !== '-All-') { employeeQuery = employeeQuery.eq('id', selectedUser) }
       const { data: employees, error: empError } = await employeeQuery
       if (empError) { console.error('Error fetching employees:', empError); setIsLoading(false); return }
 
@@ -189,7 +208,10 @@ export default function TimeMissingReport() {
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16, marginBottom: 24 }}>
           <div>
             <label style={labelStyle}>User</label>
-            <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}><option>-All-</option></select>
+            <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}>
+              <option value="-All-">-All-</option>
+              {employeeList.map(e => <option key={e.id} value={e.id}>{e.last_name}, {e.first_name}</option>)}
+            </select>
           </div>
           <div>
             <label style={labelStyle}>Employee Type</label>
@@ -199,7 +221,10 @@ export default function TimeMissingReport() {
           </div>
           <div>
             <label style={labelStyle}>Project</label>
-            <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}><option>-All-</option></select>
+            <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}>
+              <option value="-All-">-All-</option>
+              {projectList.map(p => <option key={p.id} value={p.id}>{p.name} ({p.code})</option>)}
+            </select>
           </div>
         </div>
 

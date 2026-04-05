@@ -5,6 +5,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
+import { useToast } from '@/components/ui/Toast';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { Clock, CheckCircle, XCircle, Eye, AlertCircle } from 'lucide-react';
 
 interface Employee {
@@ -69,6 +71,9 @@ export default function ManagerTimesheets() {
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectTargetId, setRejectTargetId] = useState<string | null>(null);
+  const { toast } = useToast();
   const router = useRouter();
   const supabase = createSupabaseClient();
 
@@ -80,6 +85,22 @@ export default function ManagerTimesheets() {
   const loadTimesheets = async () => {
     try {
       setLoading(true);
+
+      // Get current user for manager scoping
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get employees managed by this user
+      const { data: myEmployees } = await supabase
+        .from('employees')
+        .select('id')
+        .eq('manager_id', user.id);
+      const employeeIds = myEmployees?.map(e => e.id) || [];
+      if (employeeIds.length === 0) {
+        setTimesheets([]);
+        setLoading(false);
+        return;
+      }
 
       let query = supabase
         .from('timesheets')
@@ -96,6 +117,7 @@ export default function ManagerTimesheets() {
           )
         `
         )
+        .in('employee_id', employeeIds)
         .order('week_ending', { ascending: false });
 
       if (filter !== 'all') {
@@ -147,45 +169,38 @@ export default function ManagerTimesheets() {
   const handleApproveTimesheet = async (timesheetId: string) => {
     try {
       await callTimesheetStatus(timesheetId, { action: 'approve' });
-      alert('Timesheet approved successfully.');
+      toast('success', 'Timesheet approved successfully.');
       await loadTimesheets();
     } catch (error: any) {
       console.error('Error approving timesheet:', error);
-      alert(error?.message || 'An error occurred while approving the timesheet.');
+      toast('error', error?.message || 'An error occurred while approving the timesheet.');
     }
   };
 
-  const handleRejectTimesheet = async (timesheetId: string) => {
+  const promptRejectTimesheet = (timesheetId: string) => {
+    setRejectTargetId(timesheetId);
+    setRejectModalOpen(true);
+  };
+
+  const handleRejectTimesheet = async (timesheetId: string, reason: string) => {
     try {
-      const reason = prompt('Please provide a reason for rejection:');
-
-      if (!reason || reason.trim() === '') {
-        alert('Rejection reason is required.');
-        return;
-      }
-
       await callTimesheetStatus(timesheetId, {
         action: 'reject',
-        rejectionReason: reason.trim(),
+        rejectionReason: reason,
       });
-
-      alert('Timesheet rejected successfully.');
+      toast('success', 'Timesheet rejected successfully.');
       await loadTimesheets();
     } catch (error: any) {
       console.error('Error rejecting timesheet:', error);
-      alert(error?.message || 'An error occurred while rejecting the timesheet.');
+      toast('error', error?.message || 'An error occurred while rejecting the timesheet.');
+    } finally {
+      setRejectModalOpen(false);
+      setRejectTargetId(null);
     }
   };
 
   const handleViewTimesheet = (timesheet: Timesheet) => {
-    alert(`
-Employee: ${timesheet.employee?.first_name} ${timesheet.employee?.last_name}
-Week Ending: ${new Date(timesheet.week_ending).toLocaleDateString()}
-Total Hours: ${timesheet.total_hours}
-Overtime: ${timesheet.overtime_hours || 0}
-Status: ${timesheet.status}
-${timesheet.rejection_reason ? `Rejection Reason: ${timesheet.rejection_reason}` : ''}
-    `);
+    toast('info', `${timesheet.employee?.first_name} ${timesheet.employee?.last_name} - ${timesheet.total_hours}h - ${timesheet.status}`);
   };
 
   const tabs = [
@@ -348,7 +363,7 @@ ${timesheet.rejection_reason ? `Rejection Reason: ${timesheet.rejection_reason}`
                           <CheckCircle className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleRejectTimesheet(timesheet.id)}
+                          onClick={() => promptRejectTimesheet(timesheet.id)}
                           style={{
                             background: 'none',
                             border: 'none',
@@ -371,6 +386,20 @@ ${timesheet.rejection_reason ? `Rejection Reason: ${timesheet.rejection_reason}`
 
         {timesheets.length === 0 && <EmptyState message="No timesheets found" />}
       </div>
+
+      {/* Reject reason modal */}
+      <ConfirmModal
+        open={rejectModalOpen}
+        title="Reject Timesheet"
+        message="Please provide a reason for rejection. This will be visible to the employee."
+        confirmLabel="Reject"
+        variant="danger"
+        inputLabel="Rejection Reason"
+        inputPlaceholder="Enter the reason for rejection..."
+        inputRequired
+        onConfirm={(reason) => { if (rejectTargetId) handleRejectTimesheet(rejectTargetId, reason || ''); }}
+        onCancel={() => { setRejectModalOpen(false); setRejectTargetId(null); }}
+      />
     </div>
   );
 }

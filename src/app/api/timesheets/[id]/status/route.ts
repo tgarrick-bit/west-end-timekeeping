@@ -86,6 +86,15 @@ export async function PATCH(
 
   const isOwner = existing.employee_id === user.id;
 
+  // Look up acting user's role for authorization
+  const { data: actingEmployee } = await supabase
+    .from('employees')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  const userRole = actingEmployee?.role || 'employee';
+  const isAdminOrManager = ['admin', 'manager', 'time_approver'].includes(userRole);
+
   // === BASIC STATE MACHINE ===
   switch (body.action) {
     case 'save': {
@@ -132,6 +141,12 @@ export async function PATCH(
     }
 
     case 'approve': {
+      if (!isAdminOrManager) {
+        return NextResponse.json(
+          { error: 'Only managers and admins can approve timesheets.' },
+          { status: 403 }
+        );
+      }
       if (currentStatus !== 'submitted') {
         return NextResponse.json(
           { error: 'Only submitted timesheets can be approved.' },
@@ -146,6 +161,12 @@ export async function PATCH(
     }
 
     case 'reject': {
+      if (!isAdminOrManager) {
+        return NextResponse.json(
+          { error: 'Only managers and admins can reject timesheets.' },
+          { status: 403 }
+        );
+      }
       if (currentStatus !== 'submitted') {
         return NextResponse.json(
           { error: 'Only submitted timesheets can be rejected.' },
@@ -164,6 +185,12 @@ export async function PATCH(
     }
 
     case 'finalize': {
+      if (!['admin', 'payroll'].includes(userRole)) {
+        return NextResponse.json(
+          { error: 'Only admins and payroll can finalize timesheets.' },
+          { status: 403 }
+        );
+      }
       if (currentStatus !== 'approved' && currentStatus !== 'client_approved') {
         return NextResponse.json(
           { error: 'Only approved or client-approved timesheets can be finalized for payroll.' },
@@ -176,6 +203,12 @@ export async function PATCH(
     }
 
     case 'client_approve': {
+      if (!isAdminOrManager) {
+        return NextResponse.json(
+          { error: 'Only managers and admins can client-approve timesheets.' },
+          { status: 403 }
+        );
+      }
       if (currentStatus !== 'approved') {
         return NextResponse.json(
           { error: 'Only manager-approved timesheets can be client-approved.' },

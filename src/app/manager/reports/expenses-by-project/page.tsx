@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
@@ -31,9 +31,15 @@ export default function ExpensesByProjectReport() {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const [startDate, setStartDate] = useState('2025-09-01')
-  const [endDate, setEndDate] = useState('2025-09-30')
+  const now = new Date()
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+
+  const [startDate, setStartDate] = useState(firstOfMonth)
+  const [endDate, setEndDate] = useState(lastOfMonth)
   const [selectedProject, setSelectedProject] = useState('-All-')
+  const [projectOptionsList, setProjectOptionsList] = useState<{id: string; name: string}[]>([])
+  const [managedEmployeeIds, setManagedEmployeeIds] = useState<string[]>([])
   const [selectedExpenseType, setSelectedExpenseType] = useState('-All-')
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('-All-')
   const [reimbursableOnly, setReimbursableOnly] = useState(false)
@@ -48,10 +54,25 @@ export default function ExpensesByProjectReport() {
   const expenseTypes = ['-All-','Airfare','Breakfast','Dinner','Fuel','Incidental','Lodging','Lunch','Meals and Incidentals(GSA)','Mileage','Miscellaneous','Parking','Rental Car - Standard size']
   const paymentMethods = ['-All-','Company Card','Personal Card','Cash','Check','Direct Bill']
 
+  useEffect(() => {
+    (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) return
+      const { data: myEmps } = await supabase.from('employees').select('id').eq('manager_id', authUser.id)
+      setManagedEmployeeIds((myEmps || []).map(e => e.id))
+      const { data: projects } = await supabase.from('projects').select('id, name').eq('status', 'active').order('name')
+      setProjectOptionsList((projects || []).map(p => ({ id: p.id, name: p.name })))
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const handleRunReport = async () => {
     setIsLoading(true)
     try {
-      let query = supabase.from('expenses').select(`*, employees!inner (first_name, last_name, department, email), projects (name, code, client_name)`).gte('expense_date', startDate).lte('expense_date', endDate)
+      if (managedEmployeeIds.length === 0) { setReportData([]); setIsLoading(false); return }
+      let query = supabase.from('expenses').select(`*, employees!inner (first_name, last_name, department, email), projects (name, code, client_name)`)
+        .in('employee_id', managedEmployeeIds)
+        .gte('expense_date', startDate).lte('expense_date', endDate)
       if (selectedProject !== '-All-') query = query.eq('project_id', selectedProject)
       if (selectedExpenseType !== '-All-') query = query.eq('category', selectedExpenseType)
       if (selectedPaymentMethod !== '-All-') query = query.eq('payment_method', selectedPaymentMethod)
@@ -109,7 +130,7 @@ export default function ExpensesByProjectReport() {
             <div><label style={labelSt}>Date Stop</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={inputSt} /></div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div><label style={labelSt}>Project</label><select value={selectedProject} onChange={e => setSelectedProject(e.target.value)} style={selectSt}><option>-All-</option></select></div>
+            <div><label style={labelSt}>Project</label><select value={selectedProject} onChange={e => setSelectedProject(e.target.value)} style={selectSt}><option value="-All-">-All-</option>{projectOptionsList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
             <div><label style={labelSt}>Expense Type</label><select value={selectedExpenseType} onChange={e => setSelectedExpenseType(e.target.value)} style={selectSt}>{expenseTypes.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
             <div><label style={labelSt}>Payment Method</label><select value={selectedPaymentMethod} onChange={e => setSelectedPaymentMethod(e.target.value)} style={selectSt}>{paymentMethods.map(m => <option key={m} value={m}>{m}</option>)}</select></div>
           </div>

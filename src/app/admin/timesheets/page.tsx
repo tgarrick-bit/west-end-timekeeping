@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import TimesheetModal from '@/components/TimesheetModal';
+import { useToast } from '@/components/ui/Toast';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import {
   Clock,
   Calendar,
@@ -85,6 +87,11 @@ export default function AdminTimesheets() {
   const [filterWeek, setFilterWeek] = useState<string>('all');
   const [filterManager, setFilterManager] = useState<string>('all');
 
+  // Reject modal state
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectTargetId, setRejectTargetId] = useState<string | null>(null);
+
+  const { toast } = useToast();
   const supabase = createClient();
   const router = useRouter();
 
@@ -140,59 +147,66 @@ export default function AdminTimesheets() {
   const handleApproveTimesheet = async (timesheetId: string) => {
     setProcessing(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const res = await fetch(`/api/timesheets/${timesheetId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'approve' }),
+      });
 
-      const { error } = await supabase
-        .from('timesheets')
-        .update({
-          status: 'approved',
-          approved_at: new Date().toISOString(),
-          approved_by: user?.id
-        })
-        .eq('id', timesheetId);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to approve timesheet');
+      }
 
-      if (error) throw error;
-
-      // Refresh data
+      toast('success', 'Timesheet approved successfully.');
       await fetchAllData();
 
-      // Close modal if this was the selected timesheet
       if (selectedTimesheet?.id === timesheetId) {
         setIsModalOpen(false);
         setSelectedTimesheet(null);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error approving timesheet:', error);
+      toast('error', error?.message || 'Error approving timesheet');
     } finally {
       setProcessing(false);
     }
   };
 
-  const handleRejectTimesheet = async (timesheetId: string) => {
+  const promptRejectTimesheet = (timesheetId: string) => {
+    setRejectTargetId(timesheetId);
+    setRejectModalOpen(true);
+  };
+
+  const handleRejectTimesheet = async (reason: string) => {
+    if (!rejectTargetId) return;
     setProcessing(true);
     try {
-      const { error } = await supabase
-        .from('timesheets')
-        .update({
-          status: 'rejected',
-          comments: 'Please review and resubmit'
-        })
-        .eq('id', timesheetId);
+      const res = await fetch(`/api/timesheets/${rejectTargetId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reject', rejectionReason: reason }),
+      });
 
-      if (error) throw error;
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to reject timesheet');
+      }
 
-      // Refresh data
+      toast('success', 'Timesheet rejected.');
       await fetchAllData();
 
-      // Close modal if this was the selected timesheet
-      if (selectedTimesheet?.id === timesheetId) {
+      if (selectedTimesheet?.id === rejectTargetId) {
         setIsModalOpen(false);
         setSelectedTimesheet(null);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error rejecting timesheet:', error);
+      toast('error', error?.message || 'Error rejecting timesheet');
     } finally {
       setProcessing(false);
+      setRejectModalOpen(false);
+      setRejectTargetId(null);
     }
   };
 
@@ -637,7 +651,7 @@ export default function AdminTimesheets() {
                                         <Check className="h-4 w-4" />
                                       </button>
                                       <button
-                                        onClick={() => handleRejectTimesheet(timesheet.id)}
+                                        onClick={() => promptRejectTimesheet(timesheet.id)}
                                         disabled={processing}
                                         className="p-1 rounded disabled:opacity-50 transition-colors"
                                         style={{ color: '#b91c1c' }}
@@ -676,10 +690,24 @@ export default function AdminTimesheets() {
             handleApproveTimesheet(selectedTimesheet.id);
           }}
           onReject={() => {
-            handleRejectTimesheet(selectedTimesheet.id);
+            promptRejectTimesheet(selectedTimesheet.id);
           }}
         />
       )}
+
+      {/* Reject reason modal */}
+      <ConfirmModal
+        open={rejectModalOpen}
+        title="Reject Timesheet"
+        message="Please provide a reason for rejection. This will be visible to the employee."
+        confirmLabel="Reject"
+        variant="danger"
+        inputLabel="Rejection Reason"
+        inputPlaceholder="Enter the reason for rejection..."
+        inputRequired
+        onConfirm={(reason) => handleRejectTimesheet(reason || '')}
+        onCancel={() => { setRejectModalOpen(false); setRejectTargetId(null); }}
+      />
     </>
   );
 }

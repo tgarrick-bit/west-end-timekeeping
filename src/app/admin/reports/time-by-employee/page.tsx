@@ -33,8 +33,12 @@ export default function TimeByEmployeeReport() {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const [startDate, setStartDate] = useState('2025-09-07')
-  const [endDate, setEndDate] = useState('2025-09-13')
+  const now = new Date()
+  const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const today = now.toISOString().split('T')[0]
+
+  const [startDate, setStartDate] = useState(firstOfMonth)
+  const [endDate, setEndDate] = useState(today)
   const [selectedUser, setSelectedUser] = useState('-All-')
   const [selectedProject, setSelectedProject] = useState('-All-')
   const [selectedEmployeeType, setSelectedEmployeeType] = useState('-All-')
@@ -51,6 +55,9 @@ export default function TimeByEmployeeReport() {
   const [isLoading, setIsLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
 
+  const [employeeList, setEmployeeList] = useState<{id: string, first_name: string, last_name: string}[]>([])
+  const [projectList, setProjectList] = useState<{id: string, name: string, code: string}[]>([])
+
   const timeTypes = [
     '-All-', 'Regular', 'Overtime', 'Doubletime', 'Sick',
     'Vacation', 'Holiday', 'Non-billable', 'Overtime *', 'regular *'
@@ -61,8 +68,16 @@ export default function TimeByEmployeeReport() {
   ]
 
   useEffect(() => {
-    const timer = setTimeout(() => setPageLoading(false), 400)
-    return () => clearTimeout(timer)
+    const loadFilters = async () => {
+      const [empRes, projRes] = await Promise.all([
+        supabase.from('employees').select('id, first_name, last_name').eq('is_active', true).order('last_name'),
+        supabase.from('projects').select('id, name, code').eq('status', 'active').order('name'),
+      ])
+      if (empRes.data) setEmployeeList(empRes.data)
+      if (projRes.data) setProjectList(projRes.data)
+      setPageLoading(false)
+    }
+    loadFilters()
   }, [])
 
   const handleRunReport = async () => {
@@ -90,6 +105,16 @@ export default function TimeByEmployeeReport() {
 
       if (!includeUnapproved) {
         query = query.eq('status', 'approved')
+      }
+
+      if (selectedUser !== '-All-') {
+        query = query.eq('employee_id', selectedUser)
+      }
+      if (selectedProject !== '-All-') {
+        query = query.eq('project_id', selectedProject)
+      }
+      if (selectedEmployeeType !== '-All-') {
+        query = query.eq('employees.employee_type', selectedEmployeeType)
       }
 
       const { data, error } = await query
@@ -259,13 +284,15 @@ export default function TimeByEmployeeReport() {
           <div>
             <label style={labelStyle}>User</label>
             <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} style={selectStyle} {...focusHandlers}>
-              <option>-All-</option>
+              <option value="-All-">-All-</option>
+              {employeeList.map(e => <option key={e.id} value={e.id}>{e.last_name}, {e.first_name}</option>)}
             </select>
           </div>
           <div>
             <label style={labelStyle}>Project</label>
             <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} style={selectStyle} {...focusHandlers}>
-              <option>-All-</option>
+              <option value="-All-">-All-</option>
+              {projectList.map(p => <option key={p.id} value={p.id}>{p.name} ({p.code})</option>)}
             </select>
           </div>
           <div>

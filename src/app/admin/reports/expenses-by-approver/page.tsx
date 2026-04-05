@@ -51,15 +51,28 @@ export default function ExpensesByApproverReport() {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const [startDate, setStartDate] = useState('2025-09-01')
-  const [endDate, setEndDate] = useState('2025-09-30')
+  const now = new Date()
+  const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const today = now.toISOString().split('T')[0]
+
+  const [startDate, setStartDate] = useState(firstOfMonth)
+  const [endDate, setEndDate] = useState(today)
   const [selectedUser, setSelectedUser] = useState('')
   const [includeUnapproved, setIncludeUnapproved] = useState(false)
   const [reportData, setReportData] = useState<ExpenseData[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
 
-  useEffect(() => { const t = setTimeout(() => setPageLoading(false), 400); return () => clearTimeout(t) }, [])
+  const [approverListData, setApproverListData] = useState<{id: string, first_name: string, last_name: string}[]>([])
+
+  useEffect(() => {
+    const loadFilters = async () => {
+      const { data } = await supabase.from('employees').select('id, first_name, last_name').in('role', ['manager', 'admin', 'time_approver']).eq('is_active', true).order('last_name')
+      if (data) setApproverListData(data)
+      setPageLoading(false)
+    }
+    loadFilters()
+  }, [])
 
   const handleRunReport = async () => {
     setIsLoading(true)
@@ -71,6 +84,7 @@ export default function ExpensesByApproverReport() {
         .lte('expense_date', endDate)
       if (!includeUnapproved) { query = query.eq('status', 'approved') }
       else { query = query.in('status', ['approved', 'pending', 'submitted', 'rejected']) }
+      if (selectedUser) { query = query.eq('approved_by', selectedUser) }
       const { data, error } = await query
       if (error) { console.error('Error fetching report data:', error) }
       else if (data) {
@@ -148,7 +162,10 @@ export default function ExpensesByApproverReport() {
 
         <div style={{ marginBottom: 24 }}>
           <label style={labelStyle}>User</label>
-          <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}><option value=""></option></select>
+          <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}>
+            <option value="">All Approvers</option>
+            {approverListData.map(a => <option key={a.id} value={a.id}>{a.last_name}, {a.first_name}</option>)}
+          </select>
         </div>
 
         <div style={sectionLabel}>Options</div>

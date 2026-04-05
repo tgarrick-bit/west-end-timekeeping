@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
@@ -30,9 +30,15 @@ export default function TimeByApproverReport() {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const [startDate, setStartDate] = useState('2025-09-07')
-  const [endDate, setEndDate] = useState('2025-09-13')
+  const now = new Date()
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+
+  const [startDate, setStartDate] = useState(firstOfMonth)
+  const [endDate, setEndDate] = useState(lastOfMonth)
   const [selectedUser, setSelectedUser] = useState('')
+  const [employeeOptions, setEmployeeOptions] = useState<{id: string; name: string}[]>([])
+  const [managedEmployeeIds, setManagedEmployeeIds] = useState<string[]>([])
   const [selectedTimeType, setSelectedTimeType] = useState('-All-')
   const [forceCompleteWeeks, setForceCompleteWeeks] = useState(false)
   const [byProject, setByProject] = useState(false)
@@ -43,16 +49,41 @@ export default function TimeByApproverReport() {
 
   const timeTypes = ['-All-','Regular','Overtime','Doubletime','Sick','Vacation','Holiday','Non-billable','Overtime *','regular *']
 
+  useEffect(() => {
+    (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) return
+      const { data: myEmps } = await supabase.from('employees').select('id, first_name, last_name').eq('manager_id', authUser.id).order('last_name')
+      const empList = (myEmps || []).map(e => ({ id: e.id, name: `${e.first_name} ${e.last_name}` }))
+      setEmployeeOptions(empList)
+      setManagedEmployeeIds(empList.map(e => e.id))
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const handleRunReport = async () => {
     setIsLoading(true)
     try {
-      let query = supabase.from('timesheets').select(`*, employees!inner (first_name, last_name, department, hourly_rate), projects (name, code)`).gte('week_ending', startDate).lte('week_ending', endDate)
+      if (managedEmployeeIds.length === 0) { setReportData([]); setIsLoading(false); return }
+      let query = supabase.from('timesheets').select(`*, employees!inner (first_name, last_name, department, hourly_rate), projects (name, code)`)
+        .in('employee_id', managedEmployeeIds)
+        .gte('week_ending', startDate).lte('week_ending', endDate)
       if (!includeUnapproved) { query = query.eq('status', 'approved') } else { query = query.in('status', ['approved', 'pending', 'submitted']) }
+      if (selectedUser) { query = query.eq('employee_id', selectedUser) }
       const { data, error } = await query
       if (error) { console.error('Error:', error) } else if (data) {
-        const dataWithApprovers = await Promise.all(data.map(async (item) => {
-          if (item.approved_by) { const { data: a } = await supabase.from('employees').select('first_name, last_name').eq('id', item.approved_by).single(); return { ...item, approver: a } }
-          return item
+        // Batch lookup approver names instead of N+1 queries
+        const approverIds = [...new Set(data.map(d => d.approved_by).filter(Boolean))]
+        let approverMap: Record<string, { first_name: string; last_name: string }> = {}
+        if (approverIds.length > 0) {
+          const { data: approvers } = await supabase.from('employees').select('id, first_name, last_name').in('id', approverIds)
+          if (approvers) {
+            approvers.forEach(a => { approverMap[a.id] = { first_name: a.first_name, last_name: a.last_name } })
+          }
+        }
+        const dataWithApprovers = data.map(item => ({
+          ...item,
+          approver: item.approved_by ? approverMap[item.approved_by] || null : null
         }))
         setReportData(dataWithApprovers as ReportData[])
       }
@@ -102,7 +133,7 @@ export default function TimeByApproverReport() {
             <div style={{ display: 'flex', alignItems: 'center', marginTop: 24 }}><input type="checkbox" checked={forceCompleteWeeks} onChange={e => setForceCompleteWeeks(e.target.checked)} style={checkSt} /><span style={spanSt}>Force Complete Weeks</span></div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-            <div><label style={labelSt}>User</label><select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} style={selectSt}><option value=""></option></select></div>
+            <div><label style={labelSt}>User</label><select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} style={selectSt}><option value="">-All-</option>{employeeOptions.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}</select></div>
             <div><label style={labelSt}>Time Type</label><select value={selectedTimeType} onChange={e => setSelectedTimeType(e.target.value)} style={selectSt}>{timeTypes.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

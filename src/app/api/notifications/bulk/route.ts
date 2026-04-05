@@ -6,6 +6,17 @@ import { NOTIFICATION_TYPES, PRIORITIES } from '@/types/notifications';
 // POST /api/notifications/bulk - Send bulk notifications
 export async function POST(request: NextRequest) {
   try {
+    // Auth + role check: only admins and managers can send bulk notifications
+    const supabaseAuth = await createServerClient();
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const { data: emp } = await supabaseAuth.from('employees').select('role').eq('id', user.id).single();
+    if (!emp || !['admin', 'manager'].includes(emp.role)) {
+      return NextResponse.json({ error: 'Forbidden: admin or manager role required' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { 
       type, 
@@ -167,6 +178,16 @@ export async function POST(request: NextRequest) {
 // GET /api/notifications/bulk - Get bulk notification statistics
 export async function GET() {
   try {
+    // Auth + role check
+    const supabaseAuth = await createServerClient();
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const { data: emp } = await supabaseAuth.from('employees').select('role').eq('id', user.id).single();
+    if (!emp || !['admin', 'manager'].includes(emp.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     // In a real implementation, this would query the database for bulk notification stats
     const stats = {
       totalBulkNotifications: 0,

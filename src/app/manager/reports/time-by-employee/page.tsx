@@ -39,10 +39,17 @@ export default function TimeByEmployeeReport() {
   const { user } = useAuth()
   const supabase = createClient()
   
-  const [startDate, setStartDate] = useState('2025-09-07')
-  const [endDate, setEndDate] = useState('2025-09-13')
+  const now = new Date()
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+
+  const [startDate, setStartDate] = useState(firstOfMonth)
+  const [endDate, setEndDate] = useState(lastOfMonth)
   const [selectedUser, setSelectedUser] = useState('-All-')
   const [selectedProject, setSelectedProject] = useState('-All-')
+  const [employeeOptions, setEmployeeOptions] = useState<{id: string; name: string}[]>([])
+  const [projectOptions, setProjectOptions] = useState<{id: string; name: string}[]>([])
+  const [managedEmployeeIds, setManagedEmployeeIds] = useState<string[]>([])
   const [selectedEmployeeType, setSelectedEmployeeType] = useState('-All-')
   const [selectedTimeType, setSelectedTimeType] = useState('-All-')
   const [selectedClass, setSelectedClass] = useState('-All-')
@@ -79,10 +86,43 @@ export default function TimeByEmployeeReport() {
     'External'
   ]
 
+  useEffect(() => {
+    loadFilterOptions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const loadFilterOptions = async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) return
+
+    const { data: myEmps } = await supabase
+      .from('employees')
+      .select('id, first_name, last_name')
+      .eq('manager_id', authUser.id)
+      .order('last_name')
+
+    const empList = (myEmps || []).map(e => ({ id: e.id, name: `${e.first_name} ${e.last_name}` }))
+    setEmployeeOptions(empList)
+    setManagedEmployeeIds(empList.map(e => e.id))
+
+    const { data: projects } = await supabase
+      .from('projects')
+      .select('id, name')
+      .eq('status', 'active')
+      .order('name')
+    setProjectOptions((projects || []).map(p => ({ id: p.id, name: p.name })))
+  }
+
   const handleRunReport = async () => {
     setIsLoading(true)
-    
+
     try {
+      if (managedEmployeeIds.length === 0) {
+        setReportData([])
+        setIsLoading(false)
+        return
+      }
+
       let query = supabase
         .from('timesheets')
         .select(`
@@ -99,11 +139,24 @@ export default function TimeByEmployeeReport() {
             code
           )
         `)
+        .in('employee_id', managedEmployeeIds)
         .gte('week_ending', startDate)
         .lte('week_ending', endDate)
 
       if (!includeUnapproved) {
         query = query.eq('status', 'approved')
+      }
+
+      if (selectedUser !== '-All-') {
+        query = query.eq('employee_id', selectedUser)
+      }
+
+      if (selectedProject !== '-All-') {
+        query = query.eq('project_id', selectedProject)
+      }
+
+      if (selectedEmployeeType !== '-All-') {
+        query = query.eq('employees.employee_type', selectedEmployeeType)
       }
 
       const { data, error } = await query
@@ -237,22 +290,24 @@ export default function TimeByEmployeeReport() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#c0bab2', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>User</label>
-                  <select 
+                  <select
                     value={selectedUser}
                     onChange={(e) => setSelectedUser(e.target.value)}
                     style={{ width: '100%', padding: '8px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, color: '#555', outline: 'none' }}
                   >
-                    <option>-All-</option>
+                    <option value="-All-">-All-</option>
+                    {employeeOptions.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#c0bab2', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Project</label>
-                  <select 
+                  <select
                     value={selectedProject}
                     onChange={(e) => setSelectedProject(e.target.value)}
                     style={{ width: '100%', padding: '8px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, color: '#555', outline: 'none' }}
                   >
-                    <option>-All-</option>
+                    <option value="-All-">-All-</option>
+                    {projectOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
                 <div>

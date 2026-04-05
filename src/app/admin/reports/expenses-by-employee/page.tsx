@@ -58,8 +58,12 @@ export default function ExpensesByEmployeeReport() {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const [startDate, setStartDate] = useState('2025-09-01')
-  const [endDate, setEndDate] = useState('2025-09-30')
+  const now = new Date()
+  const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const today = now.toISOString().split('T')[0]
+
+  const [startDate, setStartDate] = useState(firstOfMonth)
+  const [endDate, setEndDate] = useState(today)
   const [selectedUser, setSelectedUser] = useState('-All-')
   const [selectedEmployeeType, setSelectedEmployeeType] = useState('-All-')
   const [selectedExpenseType, setSelectedExpenseType] = useState('-All-')
@@ -78,7 +82,16 @@ export default function ExpensesByEmployeeReport() {
   const expenseTypes = ['-All-', 'Airfare', 'Breakfast', 'Dinner', 'Fuel', 'Incidental', 'Lodging', 'Lunch', 'Meals and Incidentals(GSA)', 'Mileage', 'Miscellaneous', 'Parking', 'Rental Car - Standard size']
   const paymentMethods = ['-All-', 'Company Card', 'Personal Card', 'Cash', 'Check', 'Direct Bill']
 
-  useEffect(() => { const t = setTimeout(() => setPageLoading(false), 400); return () => clearTimeout(t) }, [])
+  const [employeeListData, setEmployeeListData] = useState<{id: string, first_name: string, last_name: string}[]>([])
+
+  useEffect(() => {
+    const loadFilters = async () => {
+      const { data } = await supabase.from('employees').select('id, first_name, last_name').eq('is_active', true).order('last_name')
+      if (data) setEmployeeListData(data)
+      setPageLoading(false)
+    }
+    loadFilters()
+  }, [])
 
   const handleRunReport = async () => {
     setIsLoading(true)
@@ -88,6 +101,7 @@ export default function ExpensesByEmployeeReport() {
         .select(`*, employees!inner (first_name, last_name, department, employee_type, email), projects (name, code)`)
         .gte('expense_date', startDate)
         .lte('expense_date', endDate)
+      if (selectedUser !== '-All-') { query = query.eq('employee_id', selectedUser) }
       if (selectedEmployeeType !== '-All-') { query = query.eq('employees.employee_type', selectedEmployeeType) }
       if (selectedExpenseType !== '-All-') { query = query.eq('category', selectedExpenseType) }
       if (selectedPaymentMethod !== '-All-') { query = query.eq('payment_method', selectedPaymentMethod) }
@@ -170,7 +184,7 @@ export default function ExpensesByEmployeeReport() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16, marginBottom: 24 }}>
-          <div><label style={labelStyle}>User</label><select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}><option>-All-</option></select></div>
+          <div><label style={labelStyle}>User</label><select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}><option value="-All-">-All-</option>{employeeListData.map(e => <option key={e.id} value={e.id}>{e.last_name}, {e.first_name}</option>)}</select></div>
           <div><label style={labelStyle}>Employee Type</label><select value={selectedEmployeeType} onChange={(e) => setSelectedEmployeeType(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}>{employeeTypes.map(t => (<option key={t} value={t}>{t}</option>))}</select></div>
           <div><label style={labelStyle}>Expense Type</label><select value={selectedExpenseType} onChange={(e) => setSelectedExpenseType(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}>{expenseTypes.map(t => (<option key={t} value={t}>{t}</option>))}</select></div>
           <div><label style={labelStyle}>Payment Method</label><select value={selectedPaymentMethod} onChange={(e) => setSelectedPaymentMethod(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}>{paymentMethods.map(m => (<option key={m} value={m}>{m}</option>))}</select></div>
