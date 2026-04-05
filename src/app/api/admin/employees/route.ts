@@ -238,11 +238,11 @@ export async function POST(request: NextRequest) {
                 You can now log in to submit timesheets and expense reports.
               </p>
               <div style="background:#FAFAF8;border:0.5px solid #e8e4df;border-radius:10px;padding:16px;margin:20px 0;">
-                <p style="margin:0 0 8px;color:#1a1a1a;font-weight:600;">Your Login Details:</p>
-                <p style="margin:0 0 4px;color:#555;">Email: <strong>${email}</strong></p>
-                <p style="margin:8px 0 0;color:#999;font-size:13px;">
-                  You will receive a separate email with a link to set your password.
-                  If you don't see it, check your spam folder.
+                <p style="margin:0 0 12px;color:#1a1a1a;font-weight:600;">Your Login Details:</p>
+                <p style="margin:0 0 6px;color:#555;">Email: <strong>${email}</strong></p>
+                <p style="margin:0 0 6px;color:#555;">Temporary Password: <strong style="color:#e31c79;letter-spacing:0.5px;">${password}</strong></p>
+                <p style="margin:10px 0 0;color:#999;font-size:12px;">
+                  Please change your password after your first login.
                 </p>
               </div>
               <div style="text-align:center;margin:24px 0;">

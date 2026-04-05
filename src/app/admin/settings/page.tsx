@@ -7,7 +7,8 @@ import {
   Settings, Globe, Clock, CreditCard, Receipt,
   FileText, Users, Save, Bell,
   Link, AlertCircle, Check, X, Plus, Trash2,
-  Building2, Calendar, DollarSign
+  Building2, Calendar, DollarSign, RefreshCw, Loader2,
+  UserPlus, FolderPlus, Briefcase, CheckCircle, XCircle
 } from 'lucide-react';
 
 interface CompanySettings {
@@ -112,6 +113,353 @@ const checkboxLabelStyle: React.CSSProperties = {
   fontSize: 12,
   color: '#555',
 };
+
+// ─── Tracker Sync Card Component ───────────────────────────────────────────
+
+interface TrackerSyncCardProps {
+  enabled: boolean;
+  onToggle: (val: boolean) => void;
+  apiKey: string;
+  onApiKeyChange: (val: string) => void;
+  inputStyle: React.CSSProperties;
+  inputFocusClass: string;
+  labelStyle: React.CSSProperties;
+}
+
+interface TrackerSyncResult {
+  success: boolean;
+  startedAt: string;
+  completedAt: string;
+  placementsFetched: number;
+  placementsSkipped: number;
+  clientsCreated: number;
+  clientsUpdated: number;
+  employeesCreated: number;
+  employeesUpdated: number;
+  projectsCreated: number;
+  projectsUpdated: number;
+  assignmentsCreated: number;
+  assignmentsUpdated: number;
+  approversLinked: number;
+  errors: string[];
+}
+
+function TrackerSyncCard({
+  enabled,
+  onToggle,
+  apiKey,
+  onApiKeyChange,
+  inputStyle,
+  inputFocusClass,
+  labelStyle,
+}: TrackerSyncCardProps) {
+  const [syncing, setSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState<string | null>(null);
+  const [lastResult, setLastResult] = useState<TrackerSyncResult | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [loadingStatus, setLoadingStatus] = useState(true);
+
+  useEffect(() => {
+    loadSyncStatus();
+  }, []);
+
+  const loadSyncStatus = async () => {
+    try {
+      const res = await fetch('/api/admin/tracker-sync');
+      if (res.ok) {
+        const data = await res.json();
+        setLastSync(data.lastSync || null);
+        setLastResult(data.lastResult || null);
+      }
+    } catch (err) {
+      console.error('Failed to load sync status:', err);
+    } finally {
+      setLoadingStatus(false);
+    }
+  };
+
+  const triggerSync = async () => {
+    setSyncing(true);
+    setSyncError(null);
+    try {
+      const res = await fetch('/api/admin/tracker-sync', { method: 'POST' });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setSyncError(data.error || data.message || 'Sync failed');
+        return;
+      }
+
+      setLastResult(data);
+      setLastSync(data.completedAt);
+    } catch (err: any) {
+      setSyncError(err.message || 'Network error during sync');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const formatDate = (iso: string | null) => {
+    if (!iso) return 'Never';
+    return new Date(iso).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  return (
+    <div style={{ border: '0.5px solid #e8e4df', borderRadius: 10, padding: 24 }} className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div style={{ width: 40, height: 40, background: 'rgba(227,28,121,0.06)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Building2 className="h-5 w-5" style={{ color: '#e31c79' }} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>Tracker RMS</h3>
+            <p style={{ fontSize: 11, color: '#999' }}>Sync placements, employees, clients, and projects</p>
+          </div>
+        </div>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => onToggle(e.target.checked)}
+            className="rounded border-[#e8e4df] accent-[#e31c79]"
+          />
+          <span style={{ fontSize: 12, fontWeight: 500, color: '#555' }}>Enable</span>
+        </label>
+      </div>
+
+      {enabled && (
+        <div className="pt-4 space-y-5" style={{ borderTop: '0.5px solid #f0ece7' }}>
+          {/* API Key */}
+          <div>
+            <label style={labelStyle}>API Bearer Token</label>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => onApiKeyChange(e.target.value)}
+              placeholder="Enter your Tracker RMS API token"
+              style={inputStyle}
+              className={`${inputFocusClass} outline-none placeholder:text-[#ccc]`}
+            />
+            <p style={{ fontSize: 10.5, color: '#c0bab2', marginTop: 4 }}>
+              Token is also read from TRACKER_API_TOKEN environment variable
+            </p>
+          </div>
+
+          {/* Sync Status Card */}
+          <div style={{ background: '#FAFAF8', border: '0.5px solid #e8e4df', borderRadius: 8, padding: 16 }}>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>
+                  Sync Status
+                </span>
+                <div style={{ fontSize: 12, color: '#777', marginTop: 2 }}>
+                  {loadingStatus ? (
+                    <span className="flex items-center gap-1">
+                      <div className="w-3 h-3 border border-[#e8e4df] border-t-[#e31c79] rounded-full animate-spin" />
+                      Loading...
+                    </span>
+                  ) : (
+                    <>Last sync: {formatDate(lastSync)}</>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={triggerSync}
+                disabled={syncing}
+                className="flex items-center gap-2 disabled:opacity-50"
+                style={{
+                  padding: '8px 16px',
+                  background: '#e31c79',
+                  color: '#fff',
+                  borderRadius: 7,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: syncing ? 'not-allowed' : 'pointer',
+                }}
+                onMouseEnter={(e) => { if (!syncing) { e.currentTarget.style.background = '#cc1069'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#e31c79'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
+                {syncing ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                {syncing ? 'Syncing...' : 'Sync Now'}
+              </button>
+            </div>
+
+            {/* Sync Error */}
+            {syncError && (
+              <div
+                className="flex items-center gap-2 mb-3"
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 7,
+                  background: 'rgba(185,28,28,0.06)',
+                  border: '0.5px solid rgba(185,28,28,0.15)',
+                }}
+              >
+                <XCircle className="h-3.5 w-3.5 flex-shrink-0" style={{ color: '#b91c1c' }} />
+                <span style={{ fontSize: 11, color: '#b91c1c' }}>{syncError}</span>
+              </div>
+            )}
+
+            {/* Sync Results */}
+            {lastResult && !loadingStatus && (
+              <div className="space-y-3">
+                {/* Success/Fail Banner */}
+                <div
+                  className="flex items-center gap-2"
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 7,
+                    background: lastResult.success
+                      ? 'rgba(45,155,110,0.06)'
+                      : 'rgba(185,28,28,0.06)',
+                    border: `0.5px solid ${lastResult.success ? 'rgba(45,155,110,0.15)' : 'rgba(185,28,28,0.15)'}`,
+                  }}
+                >
+                  {lastResult.success ? (
+                    <CheckCircle className="h-3.5 w-3.5 flex-shrink-0" style={{ color: '#2d9b6e' }} />
+                  ) : (
+                    <XCircle className="h-3.5 w-3.5 flex-shrink-0" style={{ color: '#b91c1c' }} />
+                  )}
+                  <span style={{ fontSize: 11, color: lastResult.success ? '#2d9b6e' : '#b91c1c', fontWeight: 500 }}>
+                    {lastResult.success
+                      ? `Sync completed successfully`
+                      : `Sync completed with ${lastResult.errors.length} error(s)`}
+                  </span>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-2" style={{ fontSize: 11 }}>
+                  <SyncStat
+                    icon={<Briefcase className="h-3.5 w-3.5" style={{ color: '#e31c79' }} />}
+                    label="Placements fetched"
+                    value={lastResult.placementsFetched}
+                  />
+                  <SyncStat
+                    icon={<UserPlus className="h-3.5 w-3.5" style={{ color: '#2d9b6e' }} />}
+                    label="Employees"
+                    value={`${lastResult.employeesCreated} new / ${lastResult.employeesUpdated} updated`}
+                  />
+                  <SyncStat
+                    icon={<FolderPlus className="h-3.5 w-3.5" style={{ color: '#5b7ff5' }} />}
+                    label="Projects"
+                    value={`${lastResult.projectsCreated} new / ${lastResult.projectsUpdated} updated`}
+                  />
+                  <SyncStat
+                    icon={<Building2 className="h-3.5 w-3.5" style={{ color: '#d3ad6b' }} />}
+                    label="Clients"
+                    value={`${lastResult.clientsCreated} new / ${lastResult.clientsUpdated} updated`}
+                  />
+                  <SyncStat
+                    icon={<Users className="h-3.5 w-3.5" style={{ color: '#8b5cf6' }} />}
+                    label="Assignments"
+                    value={`${lastResult.assignmentsCreated} new / ${lastResult.assignmentsUpdated} updated`}
+                  />
+                  <SyncStat
+                    icon={<Check className="h-3.5 w-3.5" style={{ color: '#2d9b6e' }} />}
+                    label="Approvers linked"
+                    value={lastResult.approversLinked}
+                  />
+                </div>
+
+                {/* Errors List */}
+                {lastResult.errors.length > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: '#b91c1c', textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>
+                      Errors ({lastResult.errors.length})
+                    </span>
+                    <div
+                      style={{
+                        marginTop: 4,
+                        maxHeight: 120,
+                        overflowY: 'auto',
+                        padding: '8px 10px',
+                        background: 'rgba(185,28,28,0.03)',
+                        borderRadius: 6,
+                        border: '0.5px solid rgba(185,28,28,0.1)',
+                      }}
+                    >
+                      {lastResult.errors.map((err, i) => (
+                        <p key={i} style={{ fontSize: 10.5, color: '#b91c1c', lineHeight: 1.5, marginBottom: 2 }}>
+                          {err}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Cron Info */}
+          <div style={{ background: 'rgba(211,173,107,0.06)', border: '0.5px solid rgba(211,173,107,0.2)', borderRadius: 7, padding: 12 }}>
+            <div className="flex gap-2">
+              <Calendar className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: '#d3ad6b' }} />
+              <div style={{ fontSize: 12, color: '#777' }}>
+                <p style={{ fontWeight: 600, marginBottom: 4 }}>Automatic Sync</p>
+                <p>Runs daily at 6:00 AM UTC (1:00 AM CT). Syncs active placements with statuses:</p>
+                <ul className="list-disc list-inside space-y-0.5 mt-2" style={{ fontSize: 11.5 }}>
+                  <li>On Assignment - WE</li>
+                  <li>On Assignment - EOR</li>
+                  <li>Placed Direct</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Integration Features */}
+          <div style={{ background: 'rgba(91,127,245,0.04)', border: '0.5px solid rgba(91,127,245,0.15)', borderRadius: 7, padding: 12 }}>
+            <div className="flex gap-2">
+              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: '#5b7ff5' }} />
+              <div style={{ fontSize: 12, color: '#777' }}>
+                <p style={{ fontWeight: 600, marginBottom: 4 }}>What Syncs</p>
+                <ul className="list-disc list-inside space-y-0.5" style={{ fontSize: 11.5 }}>
+                  <li>Clients from placement client names</li>
+                  <li>Employees from candidate records (creates auth accounts)</li>
+                  <li>Projects from job orders with billing rates</li>
+                  <li>Project assignments with pay and bill rates</li>
+                  <li>Time approvers from placement custom fields</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SyncStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
+  return (
+    <div
+      className="flex items-center gap-2"
+      style={{
+        padding: '6px 10px',
+        background: '#fff',
+        borderRadius: 6,
+        border: '0.5px solid #e8e4df',
+      }}
+    >
+      {icon}
+      <div>
+        <div style={{ fontSize: 10, color: '#c0bab2', fontWeight: 500 }}>{label}</div>
+        <div style={{ fontSize: 12, color: '#1a1a1a', fontWeight: 600 }}>{value}</div>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminSettingsPage() {
   const [activeTab, setActiveTab] = useState('global');
@@ -1020,58 +1368,15 @@ export default function AdminSettingsPage() {
                   </div>
 
                   {/* Tracker RMS Integration */}
-                  <div style={{ border: '0.5px solid #e8e4df', borderRadius: 10, padding: 24 }} className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div style={{ width: 40, height: 40, background: 'rgba(227,28,121,0.06)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Building2 className="h-5 w-5" style={{ color: '#e31c79' }} />
-                        </div>
-                        <div>
-                          <h3 style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>Tracker RMS</h3>
-                          <p style={{ fontSize: 11, color: '#999' }}>Applicant Tracking System integration</p>
-                        </div>
-                      </div>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={settings.tracker_rms_enabled}
-                          onChange={(e) => updateSetting('tracker_rms_enabled', e.target.checked)}
-                          className="rounded border-[#e8e4df] accent-[#e31c79]"
-                        />
-                        <span style={{ fontSize: 12, fontWeight: 500, color: '#555' }}>Enable</span>
-                      </label>
-                    </div>
-
-                    {settings.tracker_rms_enabled && (
-                      <div className="pt-4 space-y-4" style={{ borderTop: '0.5px solid #f0ece7' }}>
-                        <div>
-                          <label style={labelStyle}>API Key</label>
-                          <input
-                            type="password"
-                            value={settings.tracker_rms_api_key}
-                            onChange={(e) => updateSetting('tracker_rms_api_key', e.target.value)}
-                            placeholder="Enter your Tracker RMS API key"
-                            style={inputStyle}
-                            className={`${inputFocusClass} outline-none placeholder:text-[#ccc]`}
-                          />
-                        </div>
-
-                        <div style={{ background: 'rgba(211,173,107,0.06)', border: '0.5px solid rgba(211,173,107,0.2)', borderRadius: 7, padding: 12 }}>
-                          <div className="flex gap-2">
-                            <AlertCircle className="h-4 w-4 mt-0.5" style={{ color: '#d3ad6b' }} />
-                            <div style={{ fontSize: 12, color: '#777' }}>
-                              <p style={{ fontWeight: 600, marginBottom: 4 }}>Integration Features:</p>
-                              <ul className="list-disc list-inside space-y-1">
-                                <li>Auto-sync candidate placements to employees</li>
-                                <li>Import timesheet data to Tracker</li>
-                                <li>Sync client and project information</li>
-                              </ul>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <TrackerSyncCard
+                    enabled={settings.tracker_rms_enabled}
+                    onToggle={(val) => updateSetting('tracker_rms_enabled', val)}
+                    apiKey={settings.tracker_rms_api_key}
+                    onApiKeyChange={(val) => updateSetting('tracker_rms_api_key', val)}
+                    inputStyle={inputStyle}
+                    inputFocusClass={inputFocusClass}
+                    labelStyle={labelStyle}
+                  />
                 </div>
               </div>
             )}
