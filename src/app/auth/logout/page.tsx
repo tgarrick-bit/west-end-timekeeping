@@ -1,96 +1,65 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 
-type LogoutStatus = 'clearing' | 'logging-out' | 'success' | 'error';
-
 export default function LogoutPage() {
-  const [status, setStatus] = useState<LogoutStatus>('clearing');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [progress, setProgress] = useState(0);
-  const router = useRouter();
+  const [done, setDone] = useState(false);
   const supabase = createClient();
 
   const handleLogout = useCallback(async () => {
     try {
-      setProgress(20);
       if (typeof window !== 'undefined') {
-        const keys: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k && (k.includes('session') || k.includes('user') || k.includes('lastActivity') || k.includes('currentProject') || k.includes('remember') || k.includes('role'))) keys.push(k);
-        }
-        keys.forEach(k => localStorage.removeItem(k));
+        ['session', 'user', 'lastActivity', 'currentProject', 'remember', 'role'].forEach(k => {
+          for (let i = localStorage.length - 1; i >= 0; i--) {
+            const key = localStorage.key(i);
+            if (key?.includes(k)) localStorage.removeItem(key);
+          }
+        });
         sessionStorage.clear();
       }
-      setProgress(50); setStatus('logging-out'); setProgress(80);
-      const { error } = await supabase.auth.signOut();
-      if (error) { setErrorMessage(error.message); setStatus('error'); }
-      else { setProgress(100); setStatus('success'); }
-      setTimeout(() => { window.location.href = '/auth/login'; }, 1500);
-    } catch (err) {
-      setStatus('error'); setErrorMessage('Unexpected error during logout');
-      setTimeout(() => { window.location.href = '/auth/login'; }, 2000);
-    }
+      await supabase.auth.signOut();
+    } catch {}
+    setDone(true);
+    setTimeout(() => { window.location.href = '/auth/login'; }, 1500);
   }, [supabase]);
 
   useEffect(() => { handleLogout(); }, [handleLogout]);
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(227, 28, 121, 0.06) 0%, transparent 70%)' }} />
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{ background: '#0a0a0a' }}>
+      <div className="absolute pointer-events-none" style={{
+        top: '-20%', right: '-15%', width: '60%', height: '140%',
+        background: 'radial-gradient(ellipse at center, rgba(227,28,120,0.14) 0%, rgba(227,28,120,0.05) 40%, transparent 65%)',
+      }} />
 
-      <div className="relative w-full max-w-sm mx-4">
-        <div className="rounded-2xl p-10 flex flex-col items-center text-center" style={{
-          background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(229, 221, 216, 0.08)',
-          backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-        }}>
-          {(status === 'clearing' || status === 'logging-out') && (
-            <>
-              <svg className="animate-spin mb-5" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <circle cx="10" cy="10" r="8" stroke="rgba(229, 221, 216, 0.1)" strokeWidth="1.5" />
-                <path d="M18 10a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-              <p className="text-sm font-medium text-white mb-3">
-                {status === 'clearing' ? 'Clearing session...' : 'Signing out...'}
-              </p>
-              <div className="w-full rounded-full overflow-hidden" style={{ height: '2px', background: 'rgba(229, 221, 216, 0.06)' }}>
-                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, background: '#e31c79' }} />
-              </div>
-            </>
-          )}
-
-          {status === 'success' && (
-            <>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="mb-5">
-                <path d="M4 10.5l4 4L16 6" stroke="#d3ad6b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <p className="text-sm font-medium text-white mb-2">Signed out</p>
-              <p className="text-xs" style={{ color: '#6b6360' }}>Redirecting to login...</p>
-            </>
-          )}
-
-          {status === 'error' && (
-            <>
-              <p className="text-sm font-medium text-white mb-2">Logout issue</p>
-              {errorMessage && <p className="text-xs mb-3" style={{ color: '#e31c79' }}>{errorMessage}</p>}
-              <p className="text-xs" style={{ color: '#6b6360' }}>Redirecting...</p>
-            </>
-          )}
-
-          {(status === 'success' || status === 'error') && (
-            <button onClick={() => (window.location.href = '/auth/login')}
-              className="w-full mt-6 py-3 px-5 rounded-xl text-sm font-semibold text-white transition-all duration-200"
-              style={{ background: 'rgba(229, 221, 216, 0.08)', border: '1px solid rgba(229, 221, 216, 0.12)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(229, 221, 216, 0.12)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(229, 221, 216, 0.08)'; }}>
-              Go to Login
-            </button>
-          )}
+      <div className="relative z-10 w-[360px] mx-4 text-center">
+        <div className="mx-auto mb-5" style={{ width: 180, height: 50 }}>
+          <Image src="/WE-logo-SEPT2024v3-WHT.png" alt="West End Workforce" width={180} height={50} className="w-full h-full object-contain" priority />
         </div>
-        <p className="text-center text-xs mt-6" style={{ color: '#6b6360' }}>W|E Always Find a Way.</p>
+
+        {!done ? (
+          <>
+            <div className="w-4 h-4 border-2 border-[rgba(227,28,120,0.3)] border-t-[#e31c79] rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-[12px]" style={{ color: 'rgba(232,232,232,0.35)' }}>Signing out...</p>
+          </>
+        ) : (
+          <>
+            <p className="text-[14px] font-medium mb-2" style={{ color: '#e8e8e8' }}>Signed out</p>
+            <p className="text-[12px]" style={{ color: 'rgba(232,232,232,0.35)' }}>Redirecting to login...</p>
+          </>
+        )}
+
+        <button onClick={() => (window.location.href = '/auth/login')}
+          className="mt-6 transition-all duration-200" style={{
+            padding: '10px 20px', fontSize: 12, fontWeight: 500, color: 'rgba(232,232,232,0.5)',
+            background: 'rgba(255,255,255,0.04)', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: '8px',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}>
+          Go to login
+        </button>
       </div>
     </div>
   );
