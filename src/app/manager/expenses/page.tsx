@@ -4,12 +4,10 @@ import { useState, useEffect } from 'react';
 import { createSupabaseClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import {
-  DollarSign,
   Eye,
   Receipt,
-  Clock,
   Search,
-  Check,
+  AlertCircle,
 } from 'lucide-react';
 
 interface ExpenseReportRow {
@@ -30,20 +28,44 @@ interface ExpenseReportRow {
     | null;
 }
 
+const StatusBadge = ({ status }: { status: string }) => {
+  const colors: Record<string, string> = {
+    submitted: 'bg-amber-50 text-amber-700 border-amber-200',
+    approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    rejected: 'bg-red-50 text-red-700 border-red-200',
+    draft: 'bg-gray-50 text-gray-600 border-gray-200',
+  };
+  const cls = colors[status] || 'bg-gray-50 text-gray-600 border-gray-200';
+  return (
+    <span
+      className={`inline-flex items-center px-2 py-0.5 border font-medium ${cls}`}
+      style={{ fontSize: 9, borderRadius: 3 }}
+    >
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  );
+};
+
+const EmptyState = ({ message }: { message: string }) => (
+  <div className="text-center py-16">
+    <Receipt className="mx-auto h-8 w-8" style={{ color: '#ccc' }} />
+    <p className="mt-3" style={{ fontSize: 13, color: '#999' }}>
+      {message}
+    </p>
+  </div>
+);
+
 export default function ExpenseApprovalPage() {
   const [reports, setReports] = useState<ExpenseReportRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<
     'all' | 'submitted' | 'approved' | 'rejected'
-  >('submitted');
+  >('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   const supabase = createSupabaseClient();
   const router = useRouter();
 
-  // ---------------------------------------------------------
-  // LOAD EXPENSE REPORTS
-  // ---------------------------------------------------------
   const loadReports = async () => {
     setLoading(true);
     try {
@@ -92,9 +114,6 @@ export default function ExpenseApprovalPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
-  // ---------------------------------------------------------
-  // HELPERS
-  // ---------------------------------------------------------
   const handleViewExpenseReport = (reportId: string) => {
     router.push(`/manager/expense/${reportId}`);
   };
@@ -136,36 +155,15 @@ export default function ExpenseApprovalPage() {
     }).format(amount);
   };
 
-  const getStatusBadgeClass = (status: ExpenseReportRow['status']): string => {
-    switch (status) {
-      case 'approved':
-        return 'bg-green-100 text-green-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
-      case 'submitted':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'draft':
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  // ---------------------------------------------------------
-  // SUMMARY COUNTS
-  // ---------------------------------------------------------
   const filteredReports = getFilteredReports();
-  const totalAmount = filteredReports.reduce(
-    (sum, r) => sum + (r.total_amount || 0),
-    0
-  );
 
-  const pendingCount = reports.filter((r) => r.status === 'submitted').length;
-  const approvedCount = reports.filter((r) => r.status === 'approved').length;
-  const rejectedCount = reports.filter((r) => r.status === 'rejected').length;
+  const tabs = [
+    { key: 'all', label: 'All' },
+    { key: 'submitted', label: 'Pending' },
+    { key: 'approved', label: 'Approved' },
+    { key: 'rejected', label: 'Rejected' },
+  ];
 
-  // ---------------------------------------------------------
-  // LOADING STATE
-  // ---------------------------------------------------------
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -180,218 +178,164 @@ export default function ExpenseApprovalPage() {
     );
   }
 
-  // ---------------------------------------------------------
-  // PAGE LAYOUT
-  // ---------------------------------------------------------
   return (
-    <>
-      {/* Main Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          {/* Total Reports */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Reports</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {reports.length}
-                </p>
-              </div>
-              <Receipt className="h-8 w-8 text-purple-500" />
-            </div>
-          </div>
+    <div style={{ padding: '36px 40px' }}>
+      {/* Page title */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
+          Expense Reports
+        </h1>
+        <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb', marginTop: 4 }}>
+          Review and approve employee expense reports
+        </p>
+      </div>
 
-          {/* Pending */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Pending Approval</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {pendingCount}
-                </p>
-              </div>
-              <Clock className="h-8 w-8 text-yellow-500" />
-            </div>
-          </div>
+      {/* Underline filter tabs */}
+      <div style={{ display: 'flex', gap: 20, borderBottom: '1px solid #f0ede8', marginBottom: 20 }}>
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setStatusFilter(tab.key as any)}
+            style={{
+              fontSize: 12,
+              fontWeight: statusFilter === tab.key ? 600 : 400,
+              color: statusFilter === tab.key ? '#1a1a1a' : '#999',
+              background: 'none',
+              border: 'none',
+              borderBottom: statusFilter === tab.key ? '2px solid #e31c79' : '2px solid transparent',
+              paddingBottom: 10,
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-          {/* Approved */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Approved</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {approvedCount}
-                </p>
-              </div>
-              <Check className="h-8 w-8 text-green-500" />
-            </div>
-          </div>
-
-          {/* Total Amount */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Amount</p>
-                <p className="text-2xl font-bold text-[#e31c79]">
-                  {formatCurrency(totalAmount)}
-                </p>
-              </div>
-              <DollarSign className="h-8 w-8 text-[#e31c79]" />
-            </div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="p-4 border-b">
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* Search */}
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search by employee or report title..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-[#e31c79] focus:border-[#e31c79]"
-                  />
-                </div>
-              </div>
-
-              {/* Status Filters */}
-              <div className="flex gap-2">
-                {[
-                  { key: 'all', label: 'All' },
-                  { key: 'submitted', label: `Pending (${pendingCount})` },
-                  { key: 'approved', label: 'Approved' },
-                  { key: 'rejected', label: 'Rejected' },
-                ].map((item) => (
-                  <button
-                    key={item.key}
-                    onClick={() =>
-                      setStatusFilter(item.key as any)
-                    }
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      statusFilter === item.key
-                        ? 'bg-[#e31c79] text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Reports Table */}
-          <div className="overflow-x-auto">
-            {filteredReports.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <Receipt className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                <p>No expense reports found</p>
-              </div>
-            ) : (
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
-                      Employee
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
-                      Title
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
-                      Period / Created
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
-                      Status
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
-                      Total
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-gray-200">
-                  {filteredReports.map((report) => {
-                    const emp = report.employees?.[0] || null;
-                    const name =
-                      (emp?.first_name || '') +
-                      ' ' +
-                      (emp?.last_name || '');
-
-                    return (
-                      <tr key={report.id} className="hover:bg-gray-50">
-                        {/* EMPLOYEE */}
-                        <td className="py-3 px-4">
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {name.trim() || '—'}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {emp?.email || ''}
-                            </p>
-                          </div>
-                        </td>
-
-                        {/* TITLE */}
-                        <td className="py-3 px-4 text-sm">
-                          {report.title}
-                        </td>
-
-                        {/* PERIOD */}
-                        <td className="py-3 px-4 text-sm">
-                          {formatPeriod(
-                            report.period_month,
-                            report.created_at
-                          )}
-                        </td>
-
-                        {/* STATUS */}
-                        <td className="py-3 px-4">
-                          <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(
-                              report.status
-                            )}`}
-                          >
-                            {report.status.charAt(0).toUpperCase() +
-                              report.status.slice(1)}
-                          </span>
-                        </td>
-
-                        {/* TOTAL */}
-                        <td className="py-3 px-4 font-semibold">
-                          {formatCurrency(report.total_amount || 0)}
-                        </td>
-
-                        {/* ACTIONS */}
-                        <td className="py-3 px-4">
-                          <button
-                            onClick={() =>
-                              handleViewExpenseReport(report.id)
-                            }
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                            title="View Report"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-
-              </table>
-            )}
-          </div>
+      {/* Search bar */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ position: 'relative', maxWidth: 360 }}>
+          <Search
+            className="absolute"
+            style={{ left: 10, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#bbb' }}
+          />
+          <input
+            type="text"
+            placeholder="Search by employee or title..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              paddingLeft: 32,
+              paddingRight: 12,
+              paddingTop: 8,
+              paddingBottom: 8,
+              border: '0.5px solid #e8e4df',
+              borderRadius: 7,
+              fontSize: 12,
+              color: '#555',
+              outline: 'none',
+              transition: 'border-color 0.15s',
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = '#d3ad6b')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = '#e8e4df')}
+          />
         </div>
       </div>
-    </>
+
+      {/* Data card */}
+      <div
+        style={{
+          background: '#fff',
+          border: '0.5px solid #e8e4df',
+          borderRadius: 10,
+          overflow: 'hidden',
+        }}
+      >
+        {filteredReports.length === 0 ? (
+          <EmptyState message="No expense reports found" />
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                {['Employee', 'Title', 'Period', 'Status', 'Total', 'Actions'].map((h) => (
+                  <th
+                    key={h}
+                    style={{
+                      textAlign: 'left',
+                      padding: '12px 20px',
+                      fontSize: 9,
+                      fontWeight: 500,
+                      letterSpacing: 1,
+                      color: '#ccc',
+                      textTransform: 'uppercase',
+                      borderBottom: '0.5px solid #f5f2ee',
+                      background: 'transparent',
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredReports.map((report) => {
+                const emp = report.employees?.[0] || null;
+                const name =
+                  (emp?.first_name || '') +
+                  ' ' +
+                  (emp?.last_name || '');
+
+                return (
+                  <tr
+                    key={report.id}
+                    style={{ borderBottom: '0.5px solid #f5f2ee', cursor: 'default' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#FDFCFB')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <td style={{ padding: '14px 20px' }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 400, color: '#555' }}>
+                        {name.trim() || '\u2014'}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
+                        {emp?.email || ''}
+                      </div>
+                    </td>
+                    <td style={{ padding: '14px 20px', fontSize: 12.5, fontWeight: 400, color: '#555' }}>
+                      {report.title}
+                    </td>
+                    <td style={{ padding: '14px 20px', fontSize: 12.5, fontWeight: 400, color: '#555' }}>
+                      {formatPeriod(report.period_month, report.created_at)}
+                    </td>
+                    <td style={{ padding: '14px 20px' }}>
+                      <StatusBadge status={report.status} />
+                    </td>
+                    <td style={{ padding: '14px 20px', fontSize: 12.5, fontWeight: 500, color: '#555' }}>
+                      {formatCurrency(report.total_amount || 0)}
+                    </td>
+                    <td style={{ padding: '14px 20px' }}>
+                      <button
+                        onClick={() => handleViewExpenseReport(report.id)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#999',
+                          cursor: 'pointer',
+                          padding: 4,
+                        }}
+                        title="View Report"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
   );
 }

@@ -3,30 +3,52 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Users } from 'lucide-react';
+import { Users, ArrowLeft } from 'lucide-react';
 
 export default function ContractorsIndexClient() {
   const router = useRouter();
   const { user } = useAuth() as any;
 
   return (
-    <main className="p-6">
-      <h1 className="text-2xl font-bold text-[#232020] flex items-center gap-2">
-        <Users className="w-6 h-6 text-[#e31c79]" />
-        Contractors
-      </h1>
-      <p className="text-sm text-[#465079] mt-1">
-        Signed in as {user?.email ?? 'manager'}.
-      </p>
+    <div style={{ padding: '36px 40px' }}>
+      {/* Page title */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
+          Contractors
+        </h1>
+        <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb', marginTop: 4 }}>
+          Signed in as {user?.email ?? 'manager'}
+        </p>
+      </div>
 
-      <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6">
+      <div
+        style={{
+          background: '#fff',
+          border: '0.5px solid #e8e4df',
+          borderRadius: 10,
+          padding: 24,
+        }}
+      >
         <button
           onClick={() => router.push('/manager')}
-          className="px-4 py-2 bg-[#1a1a1a] text-white rounded-lg hover:bg-[#0a2f3f] transition-colors"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'white',
+            border: '0.5px solid #e0dcd7',
+            borderRadius: 6,
+            padding: '8px 16px',
+            fontSize: 12,
+            fontWeight: 500,
+            color: '#777',
+            cursor: 'pointer',
+          }}
         >
+          <ArrowLeft className="w-3.5 h-3.5" />
           Back to Manager
         </button>
       </div>
-    </main>
+    </div>
   );
 }

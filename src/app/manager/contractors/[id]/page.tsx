@@ -31,6 +31,23 @@ interface ContractorDetail {
   notes?: string
 }
 
+const StatusBadge = ({ status }: { status: string }) => {
+  const colors: Record<string, string> = {
+    active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    inactive: 'bg-gray-50 text-gray-600 border-gray-200',
+    pending: 'bg-amber-50 text-amber-700 border-amber-200',
+  }
+  const cls = colors[status] || 'bg-gray-50 text-gray-600 border-gray-200'
+  return (
+    <span
+      className={`inline-flex items-center px-2 py-0.5 border font-medium ${cls}`}
+      style={{ fontSize: 9, borderRadius: 3 }}
+    >
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  )
+}
+
 export default function ContractorDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -106,10 +123,20 @@ export default function ContractorDetailPage() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center">
-          <p className="text-gray-600">Contractor not found</p>
+          <p style={{ fontSize: 13, color: '#999' }}>Contractor not found</p>
           <button
             onClick={() => router.back()}
-            className="mt-4 bg-[#e31c79] text-white px-4 py-2 rounded-lg hover:bg-[#c91865] transition-colors"
+            style={{
+              marginTop: 16,
+              background: '#e31c79',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              padding: '8px 20px',
+              fontSize: 12,
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
           >
             Go Back
           </button>
@@ -118,201 +145,282 @@ export default function ContractorDetailPage() {
     )
   }
 
+  const sectionHeaderStyle: React.CSSProperties = {
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: 1,
+    color: '#c0bab2',
+    textTransform: 'uppercase',
+    marginBottom: 16,
+  }
+
+  const cardStyle: React.CSSProperties = {
+    background: '#fff',
+    border: '0.5px solid #e8e4df',
+    borderRadius: 10,
+    padding: 24,
+  }
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11,
+    fontWeight: 500,
+    color: '#999',
+  }
+
+  const valueStyle: React.CSSProperties = {
+    fontSize: 12.5,
+    fontWeight: 400,
+    color: '#555',
+    marginTop: 2,
+  }
+
   return (
-    <>
-      <div className="space-y-6 p-4 sm:p-6 lg:p-8">
-            {/* Back Button */}
+    <div style={{ padding: '36px 40px' }}>
+      {/* Back link */}
+      <button
+        onClick={() => router.back()}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          background: 'none',
+          border: 'none',
+          color: '#e31c79',
+          fontSize: 12,
+          cursor: 'pointer',
+          padding: 0,
+          marginBottom: 24,
+        }}
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        Back to Contractors
+      </button>
+
+      {/* Header card */}
+      <div style={{ ...cardStyle, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: '50%',
+              background: 'rgba(227,28,121,0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <User className="w-6 h-6" style={{ color: '#e31c79' }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
+              {contractor.name}
+            </h1>
+            <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb', marginTop: 2 }}>
+              {contractor.role}
+            </p>
+            <p style={{ fontSize: 11, color: '#ccc', marginTop: 2 }}>
+              ID: {contractor.employeeId}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
             <button
-              onClick={() => router.back()}
-              className="flex items-center space-x-2 text-[#e31c79] hover:text-[#c41a6b] transition-colors"
+              onClick={() => handleContact('email')}
+              style={{
+                background: '#e31c79',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                padding: '8px 16px',
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Contractors</span>
+              <Mail className="h-3.5 w-3.5" />
+              Email
             </button>
+            {contractor.phone && (
+              <button
+                onClick={() => handleContact('phone')}
+                style={{
+                  background: 'white',
+                  color: '#777',
+                  border: '0.5px solid #e0dcd7',
+                  borderRadius: 6,
+                  padding: '8px 16px',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Phone className="h-3.5 w-3.5" />
+                Call
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
-            {/* Contractor Header */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center space-x-4">
-                <div className="w-20 h-20 bg-[#e31c79] bg-opacity-10 rounded-full flex items-center justify-center">
-                  <User className="w-10 h-10 text-[#e31c79]" />
-                </div>
-                <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-[#232020]">{contractor.name}</h1>
-                  <p className="text-xl text-[#465079]">{contractor.role}</p>
-                  <p className="text-sm text-gray-500">Employee ID: {contractor.employeeId}</p>
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleContact('email')}
-                    className="bg-[#e31c79] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#c91865] transition-colors flex items-center space-x-2"
-                  >
-                    <Mail className="h-4 w-4" />
-                    <span>Email</span>
-                  </button>
-                  {contractor.phone && (
-                    <button
-                      onClick={() => handleContact('phone')}
-                      className="bg-[#1a1a1a] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center space-x-2"
-                    >
-                      <Phone className="h-4 w-4" />
-                      <span>Call</span>
-                    </button>
-                  )}
-                </div>
-              </div>
+      {/* Stats row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 20 }}>
+        {[
+          { label: 'Hourly Rate', value: `$${contractor.hourlyRate}/hr` },
+          { label: 'Total Hours', value: `${contractor.totalHours} hrs` },
+          { label: 'Total Amount', value: `$${contractor.totalAmount.toLocaleString()}` },
+          { label: 'Projects', value: `${contractor.projects.length}` },
+        ].map((stat) => (
+          <div key={stat.label} style={cardStyle}>
+            <p style={labelStyle}>{stat.label}</p>
+            <p style={{ fontSize: 20, fontWeight: 600, color: '#1a1a1a', marginTop: 4 }}>
+              {stat.value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Quick Actions */}
+      <div style={{ ...cardStyle, marginBottom: 20 }}>
+        <h2 style={sectionHeaderStyle}>Quick Actions</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <button
+            onClick={handleViewTimesheets}
+            style={{
+              background: '#e31c79',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              padding: '12px 20px',
+              fontSize: 12,
+              fontWeight: 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
+            <Clock className="h-4 w-4" />
+            Review Timesheets
+          </button>
+          <button
+            onClick={handleViewExpenses}
+            style={{
+              background: 'white',
+              color: '#777',
+              border: '0.5px solid #e0dcd7',
+              borderRadius: 6,
+              padding: '12px 20px',
+              fontSize: 12,
+              fontWeight: 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
+            <DollarSign className="h-4 w-4" />
+            Review Expenses
+          </button>
+        </div>
+      </div>
+
+      {/* Details grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+        {/* Personal Info */}
+        <div style={cardStyle}>
+          <h2 style={sectionHeaderStyle}>Personal Information</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <span style={labelStyle}>Email</span>
+              <p style={valueStyle}>{contractor.email}</p>
             </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-full bg-[#e31c79]">
-                    <DollarSign className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-[#465079]">Hourly Rate</p>
-                    <p className="text-2xl font-semibold text-[#232020]">${contractor.hourlyRate}/hr</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-full bg-[#465079]">
-                    <Clock className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-[#465079]">Total Hours</p>
-                    <p className="text-2xl font-semibold text-[#232020]">{contractor.totalHours} hrs</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-full bg-green-500">
-                    <DollarSign className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-[#465079]">Total Amount</p>
-                    <p className="text-2xl font-semibold text-[#232020]">
-                      ${contractor.totalAmount.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-full bg-orange-500">
-                    <Building2 className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-[#465079]">Projects</p>
-                    <p className="text-2xl font-semibold text-[#232020]">{contractor.projects.length}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-[#232020] mb-4">Quick Actions</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button
-                  onClick={handleViewTimesheets}
-                  className="bg-[#e31c79] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#c91865] transition-colors flex items-center justify-center space-x-2"
-                >
-                  <Clock className="h-5 w-5" />
-                  <span>Review Timesheets</span>
-                </button>
-                <button
-                  onClick={handleViewExpenses}
-                  className="bg-[#1a1a1a] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center justify-center space-x-2"
-                >
-                  <DollarSign className="h-5 w-5" />
-                  <span>Review Expenses</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Details */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Personal */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-[#232020] mb-4">Personal Information</h2>
-                <div className="space-y-3">
-                  <div>
-                    <span className="text-sm font-medium text-[#465079]">Email:</span>
-                    <p className="text-[#232020]">{contractor.email}</p>
-                  </div>
-                  {contractor.phone && (
-                    <div>
-                      <span className="text-sm font-medium text-[#465079]">Phone:</span>
-                      <p className="text-[#232020]">{contractor.phone}</p>
-                    </div>
-                  )}
-                  <div>
-                    <span className="text-sm font-medium text-[#465079]">Start Date:</span>
-                    <p className="text-[#232020]">{new Date(contractor.startDate).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-[#465079]">Last Active:</span>
-                    <p className="text-[#232020]">{new Date(contractor.lastActive).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-[#465079]">Status:</span>
-                    <span
-                      className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                        contractor.status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {contractor.status.charAt(0).toUpperCase() + contractor.status.slice(1)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Skills */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-[#232020] mb-4">Skills & Expertise</h2>
-                <div className="flex flex-wrap gap-2">
-                  {contractor.skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-[#e31c79] bg-opacity-10 text-[#e31c79] text-sm rounded-full"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Projects */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-[#232020] mb-4">Current Projects</h2>
-              <div className="space-y-3">
-                {contractor.projects.map((project, index) => (
-                  <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <Building2 className="w-5 h-5 text-[#e31c79]" />
-                    <span className="text-[#232020]">{project}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Notes */}
-            {contractor.notes && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-[#232020] mb-4">Manager Notes</h2>
-                <p className="text-[#465079]">{contractor.notes}</p>
+            {contractor.phone && (
+              <div>
+                <span style={labelStyle}>Phone</span>
+                <p style={valueStyle}>{contractor.phone}</p>
               </div>
             )}
+            <div>
+              <span style={labelStyle}>Start Date</span>
+              <p style={valueStyle}>{new Date(contractor.startDate).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <span style={labelStyle}>Last Active</span>
+              <p style={valueStyle}>{new Date(contractor.lastActive).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <span style={labelStyle}>Status</span>
+              <div style={{ marginTop: 4 }}>
+                <StatusBadge status={contractor.status} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Skills */}
+        <div style={cardStyle}>
+          <h2 style={sectionHeaderStyle}>Skills & Expertise</h2>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {contractor.skills.map((skill, index) => (
+              <span
+                key={index}
+                style={{
+                  padding: '4px 12px',
+                  background: 'rgba(227,28,121,0.06)',
+                  color: '#e31c79',
+                  fontSize: 11,
+                  borderRadius: 3,
+                  fontWeight: 500,
+                }}
+              >
+                {skill}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
-    </>
+
+      {/* Projects */}
+      <div style={{ ...cardStyle, marginBottom: 20 }}>
+        <h2 style={sectionHeaderStyle}>Current Projects</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {contractor.projects.map((project, index) => (
+            <div
+              key={index}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 14px',
+                background: '#FDFCFB',
+                borderRadius: 7,
+                border: '0.5px solid #f5f2ee',
+              }}
+            >
+              <Building2 className="w-4 h-4" style={{ color: '#ccc' }} />
+              <span style={{ fontSize: 12.5, color: '#555' }}>{project}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Notes */}
+      {contractor.notes && (
+        <div style={cardStyle}>
+          <h2 style={sectionHeaderStyle}>Manager Notes</h2>
+          <p style={{ fontSize: 12.5, color: '#555', lineHeight: 1.6 }}>
+            {contractor.notes}
+          </p>
+        </div>
+      )}
+    </div>
   )
 }
-

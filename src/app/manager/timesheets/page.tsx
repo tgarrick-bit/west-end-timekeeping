@@ -30,10 +30,36 @@ interface Timesheet {
   employee?: Employee;
 }
 
+const StatusBadge = ({ status }: { status: string }) => {
+  const colors: Record<string, string> = {
+    submitted: 'bg-amber-50 text-amber-700 border-amber-200',
+    approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    rejected: 'bg-red-50 text-red-700 border-red-200',
+  };
+  const cls = colors[status] || 'bg-gray-50 text-gray-600 border-gray-200';
+  return (
+    <span
+      className={`inline-flex items-center px-2 py-0.5 border font-medium ${cls}`}
+      style={{ fontSize: 9, borderRadius: 3 }}
+    >
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  );
+};
+
+const EmptyState = ({ message }: { message: string }) => (
+  <div className="text-center py-16">
+    <AlertCircle className="mx-auto h-8 w-8" style={{ color: '#ccc' }} />
+    <p className="mt-3" style={{ fontSize: 13, color: '#999' }}>
+      {message}
+    </p>
+  </div>
+);
+
 export default function ManagerTimesheets() {
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, submitted, approved, rejected
+  const [filter, setFilter] = useState('all');
   const router = useRouter();
   const supabase = createSupabaseClient();
 
@@ -63,7 +89,6 @@ export default function ManagerTimesheets() {
         )
         .order('week_ending', { ascending: false });
 
-      // Apply filter
       if (filter !== 'all') {
         query = query.eq('status', filter);
       }
@@ -144,7 +169,6 @@ export default function ManagerTimesheets() {
   };
 
   const handleViewTimesheet = (timesheet: Timesheet) => {
-    // You can replace this with a modal in the future
     alert(`
 Employee: ${timesheet.employee?.first_name} ${timesheet.employee?.last_name}
 Week Ending: ${new Date(timesheet.week_ending).toLocaleDateString()}
@@ -155,37 +179,12 @@ ${timesheet.rejection_reason ? `Rejection Reason: ${timesheet.rejection_reason}`
     `);
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'submitted':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            <Clock className="w-3 h-3 mr-1" />
-            Submitted
-          </span>
-        );
-      case 'approved':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Approved
-          </span>
-        );
-      case 'rejected':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            <XCircle className="w-3 h-3 mr-1" />
-            Rejected
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-            {status}
-          </span>
-        );
-    }
-  };
+  const tabs = [
+    { key: 'all', label: 'All' },
+    { key: 'submitted', label: 'Pending' },
+    { key: 'approved', label: 'Approved' },
+    { key: 'rejected', label: 'Rejected' },
+  ];
 
   if (loading) {
     return (
@@ -202,154 +201,158 @@ ${timesheet.rejection_reason ? `Rejection Reason: ${timesheet.rejection_reason}`
   }
 
   return (
-    <>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#1a1814]">Timesheet Management</h1>
-          <p className="text-gray-600 mt-2">Review and approve employee timesheets</p>
-        </div>
-
-        {/* Filter Tabs */}
-        <div className="bg-white shadow-sm rounded-lg mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="flex -mb-px">
-              <button
-                onClick={() => setFilter('all')}
-                className={`py-2 px-6 border-b-2 font-medium text-sm ${
-                  filter === 'all'
-                    ? 'border-[#e31c79] text-[#e31c79]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setFilter('submitted')}
-                className={`py-2 px-6 border-b-2 font-medium text-sm ${
-                  filter === 'submitted'
-                    ? 'border-[#e31c79] text-[#e31c79]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Pending Review
-              </button>
-              <button
-                onClick={() => setFilter('approved')}
-                className={`py-2 px-6 border-b-2 font-medium text-sm ${
-                  filter === 'approved'
-                    ? 'border-[#e31c79] text-[#e31c79]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Approved
-              </button>
-              <button
-                onClick={() => setFilter('rejected')}
-                className={`py-2 px-6 border-b-2 font-medium text-sm ${
-                  filter === 'rejected'
-                    ? 'border-[#e31c79] text-[#e31c79]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Rejected
-              </button>
-            </nav>
-          </div>
-        </div>
-
-        {/* Timesheets Table */}
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Employee
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Week Ending
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Hours
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {timesheets.map((timesheet) => (
-                <tr key={timesheet.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {timesheet.employee?.first_name} {timesheet.employee?.last_name}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {timesheet.employee?.email}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(timesheet.week_ending).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {timesheet.total_hours} hrs
-                    </div>
-                    {timesheet.overtime_hours && timesheet.overtime_hours > 0 && (
-                      <div className="text-sm text-gray-500">
-                        OT: {timesheet.overtime_hours} hrs
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(timesheet.status)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleViewTimesheet(timesheet)}
-                        className="text-blue-600 hover:text-blue-900"
-                        title="View Details"
-                      >
-                        <Eye className="w-5 h-5" />
-                      </button>
-                      {timesheet.status === 'submitted' && (
-                        <>
-                          <button
-                            onClick={() => handleApproveTimesheet(timesheet.id)}
-                            className="text-green-600 hover:text-green-900"
-                            title="Approve"
-                          >
-                            <CheckCircle className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleRejectTimesheet(timesheet.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Reject"
-                          >
-                            <XCircle className="w-5 h-5" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {timesheets.length === 0 && (
-            <div className="text-center py-12">
-              <AlertCircle className="mx-auto h-12 w-12 text-gray-400" />
-              <p className="mt-2 text-sm text-gray-600">No timesheets found</p>
-            </div>
-          )}
-        </div>
+    <div style={{ padding: '36px 40px' }}>
+      {/* Page title */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
+          Timesheet Management
+        </h1>
+        <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb', marginTop: 4 }}>
+          Review and approve employee timesheets
+        </p>
       </div>
-    </>
+
+      {/* Underline filter tabs */}
+      <div style={{ display: 'flex', gap: 20, borderBottom: '1px solid #f0ede8', marginBottom: 20 }}>
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setFilter(tab.key)}
+            style={{
+              fontSize: 12,
+              fontWeight: filter === tab.key ? 600 : 400,
+              color: filter === tab.key ? '#1a1a1a' : '#999',
+              background: 'none',
+              border: 'none',
+              borderBottom: filter === tab.key ? '2px solid #e31c79' : '2px solid transparent',
+              paddingBottom: 10,
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Data card */}
+      <div
+        style={{
+          background: '#fff',
+          border: '0.5px solid #e8e4df',
+          borderRadius: 10,
+          overflow: 'hidden',
+        }}
+      >
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              {['Employee', 'Week Ending', 'Hours', 'Status', 'Actions'].map((h) => (
+                <th
+                  key={h}
+                  style={{
+                    textAlign: 'left',
+                    padding: '12px 20px',
+                    fontSize: 9,
+                    fontWeight: 500,
+                    letterSpacing: 1,
+                    color: '#ccc',
+                    textTransform: 'uppercase',
+                    borderBottom: '0.5px solid #f5f2ee',
+                    background: 'transparent',
+                  }}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {timesheets.map((timesheet) => (
+              <tr
+                key={timesheet.id}
+                style={{ borderBottom: '0.5px solid #f5f2ee', cursor: 'default' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#FDFCFB')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <td style={{ padding: '14px 20px' }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 400, color: '#555' }}>
+                    {timesheet.employee?.first_name} {timesheet.employee?.last_name}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
+                    {timesheet.employee?.email}
+                  </div>
+                </td>
+                <td style={{ padding: '14px 20px', fontSize: 12.5, fontWeight: 400, color: '#555' }}>
+                  {new Date(timesheet.week_ending).toLocaleDateString()}
+                </td>
+                <td style={{ padding: '14px 20px' }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 400, color: '#555' }}>
+                    {timesheet.total_hours} hrs
+                  </div>
+                  {timesheet.overtime_hours && timesheet.overtime_hours > 0 && (
+                    <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
+                      OT: {timesheet.overtime_hours} hrs
+                    </div>
+                  )}
+                </td>
+                <td style={{ padding: '14px 20px' }}>
+                  <StatusBadge status={timesheet.status} />
+                </td>
+                <td style={{ padding: '14px 20px' }}>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      onClick={() => handleViewTimesheet(timesheet)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#999',
+                        cursor: 'pointer',
+                        padding: 4,
+                      }}
+                      title="View Details"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    {timesheet.status === 'submitted' && (
+                      <>
+                        <button
+                          onClick={() => handleApproveTimesheet(timesheet.id)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#4aba70',
+                            cursor: 'pointer',
+                            padding: 4,
+                          }}
+                          title="Approve"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleRejectTimesheet(timesheet.id)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#e05252',
+                            cursor: 'pointer',
+                            padding: 4,
+                          }}
+                          title="Reject"
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {timesheets.length === 0 && <EmptyState message="No timesheets found" />}
+      </div>
+    </div>
   );
 }

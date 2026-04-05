@@ -4,11 +4,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import styles from './pending.module.css';
-import { 
-  AlertCircle, 
-  Clock, 
-  DollarSign, 
-  TrendingUp,
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import {
   Check,
   Search,
   ChevronDown,
@@ -38,6 +35,15 @@ interface PendingWeek {
   totalAmount: number;
   totalHours: number;
   expanded: boolean;
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 export default function SupervisorPendingView() {
@@ -72,9 +78,9 @@ export default function SupervisorPendingView() {
     try {
       const response = await fetch('/api/manager/pending-all');
       const data = await response.json();
-      
+
       if (data.error) throw new Error(data.error);
-      
+
       setPendingItems(data.items || []);
       setStats(data.stats);
     } catch (error) {
@@ -89,17 +95,17 @@ export default function SupervisorPendingView() {
     const filtered = pendingItems.filter(item => {
       const matchesSearch = item.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           item.projectName.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesFilter = filterType === 'all' || 
+      const matchesFilter = filterType === 'all' ||
                           (filterType === 'timesheets' && item.type === 'timesheet') ||
                           (filterType === 'expenses' && item.type === 'expense');
       return matchesSearch && matchesFilter;
     });
 
     const weeks = new Map<string, PendingWeek>();
-    
+
     filtered.forEach(item => {
       const weekKey = new Date(item.weekEnding).toISOString().split('T')[0];
-      
+
       if (!weeks.has(weekKey)) {
         weeks.set(weekKey, {
           weekEnding: weekKey,
@@ -109,10 +115,10 @@ export default function SupervisorPendingView() {
           expanded: true
         });
       }
-      
+
       const week = weeks.get(weekKey)!;
       week.items.push(item);
-      
+
       if (item.type === 'timesheet') {
         week.totalHours += item.hours || 0;
       } else {
@@ -120,10 +126,10 @@ export default function SupervisorPendingView() {
       }
     });
 
-    const sortedWeeks = Array.from(weeks.values()).sort((a, b) => 
+    const sortedWeeks = Array.from(weeks.values()).sort((a, b) =>
       new Date(b.weekEnding).getTime() - new Date(a.weekEnding).getTime()
     );
-    
+
     setGroupedWeeks(sortedWeeks);
   };
 
@@ -133,8 +139,8 @@ export default function SupervisorPendingView() {
   };
 
   const toggleWeekExpansion = (weekEnding: string) => {
-    setGroupedWeeks(prev => prev.map(week => 
-      week.weekEnding === weekEnding 
+    setGroupedWeeks(prev => prev.map(week =>
+      week.weekEnding === weekEnding
         ? { ...week, expanded: !week.expanded }
         : week
     ));
@@ -180,8 +186,8 @@ export default function SupervisorPendingView() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', { 
-      month: 'short', 
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       year: 'numeric'
     });
@@ -201,6 +207,8 @@ export default function SupervisorPendingView() {
     );
   }
 
+  const totalPending = stats.pendingTimesheets + stats.pendingExpenses;
+
   return (
     <div className={styles.container}>
       {/* Notification Message */}
@@ -210,48 +218,43 @@ export default function SupervisorPendingView() {
         </div>
       )}
 
-      {/* Header Summary Card */}
-      <div className={styles.summaryCard}>
-        <div className={styles.summaryHeader}>
-          <h1>
-            <AlertCircle className={styles.alertIcon} />
-            {stats.pendingTimesheets + stats.pendingExpenses} Items Pending Your Approval
-          </h1>
+      {/* Page Title */}
+      <h1 className={styles.pageTitle}>Pending Approvals</h1>
+      <p className={styles.pageSubtitle}>
+        {totalPending} item{totalPending !== 1 ? 's' : ''} waiting for your review
+      </p>
+
+      {/* Section Header */}
+      <p className={styles.sectionHeader}>Overview</p>
+
+      {/* Stat Cards — no icons, no colored backgrounds */}
+      <div className={styles.statsGrid}>
+        <div className={styles.statItem}>
+          <p className={styles.statLabel}>Timesheets</p>
+          <p className={styles.statValue}>{stats.pendingTimesheets}</p>
+          {stats.urgentItems > 0 && (
+            <span className={styles.urgentBadge}>{stats.urgentItems} urgent</span>
+          )}
         </div>
-        <div className={styles.statsGrid}>
-          <div className={styles.statItem}>
-            <Clock className={styles.statIcon} />
-            <div>
-              <p className={styles.statLabel}>Timesheets</p>
-              <p className={styles.statValue}>{stats.pendingTimesheets}</p>
-              {stats.urgentItems > 0 && (
-                <span className={styles.urgentBadge}>{stats.urgentItems} urgent</span>
-              )}
-            </div>
-          </div>
-          
-          <div className={styles.statItem}>
-            <DollarSign className={styles.statIcon} />
-            <div>
-              <p className={styles.statLabel}>Expenses</p>
-              <p className={styles.statValue}>{stats.pendingExpenses}</p>
-            </div>
-          </div>
-          
-          <div className={styles.statItem}>
-            <TrendingUp className={styles.statIcon} />
-            <div>
-              <p className={styles.statLabel}>Total Hours</p>
-              <p className={styles.statValue}>{stats.totalPendingHours.toFixed(1)}</p>
-            </div>
-          </div>
+
+        <div className={styles.statItem}>
+          <p className={styles.statLabel}>Expenses</p>
+          <p className={styles.statValue}>{stats.pendingExpenses}</p>
+        </div>
+
+        <div className={styles.statItem}>
+          <p className={styles.statLabel}>Total Hours</p>
+          <p className={styles.statValue}>{stats.totalPendingHours.toFixed(1)}</p>
         </div>
       </div>
+
+      {/* Section Header */}
+      <p className={styles.sectionHeader}>Actions</p>
 
       {/* Bulk Actions Bar */}
       <div className={styles.actionsBar}>
         <div className={styles.actionButtons}>
-          <button 
+          <button
             onClick={approveSelected}
             disabled={selectedItems.size === 0}
             className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLarge}`}
@@ -266,7 +269,7 @@ export default function SupervisorPendingView() {
             Clear Selection
           </button>
         </div>
-        
+
         <div className={styles.filters}>
           <div className={styles.searchWrapper}>
             <Search className={styles.searchIcon} />
@@ -278,10 +281,10 @@ export default function SupervisorPendingView() {
               className={styles.searchInput}
             />
           </div>
-          
+
           <select
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value as any)}
+            onChange={(e) => setFilterType(e.target.value as 'all' | 'timesheets' | 'expenses')}
             className={styles.filterSelect}
           >
             <option value="all">All Items</option>
@@ -291,44 +294,47 @@ export default function SupervisorPendingView() {
         </div>
       </div>
 
+      {/* Section Header */}
+      <p className={styles.sectionHeader}>Pending Items</p>
+
       {/* Week Stack View */}
       <div className={styles.weeksList}>
         {groupedWeeks.map(week => (
           <div key={week.weekEnding} className={styles.weekCard}>
-            <div 
+            <div
               className={styles.weekHeader}
               onClick={() => toggleWeekExpansion(week.weekEnding)}
             >
               <div className={styles.weekInfo}>
-                {week.expanded ? 
-                  <ChevronDown className={styles.expandIcon} /> : 
+                {week.expanded ?
+                  <ChevronDown className={styles.expandIcon} /> :
                   <ChevronRight className={styles.expandIcon} />
                 }
                 <div>
                   <h3>Week of {formatDate(week.weekEnding)}</h3>
                   <p className={styles.weekSummary}>
-                    {week.items.length} items • {week.totalHours}h • ${week.totalAmount.toFixed(2)}
+                    {week.items.length} items &middot; {week.totalHours}h &middot; ${week.totalAmount.toFixed(2)}
                   </p>
                 </div>
               </div>
-              
+
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   selectWeek(week);
                 }}
-                className={`${styles.btn} ${styles.btnSmall}`}
+                className={`${styles.btn} ${styles.btnSmall} ${styles.btnOutline}`}
               >
                 Select Week
               </button>
             </div>
-            
+
             {week.expanded && (
               <div className={styles.weekItems}>
                 {week.items.map(item => {
                   const daysOld = getDaysOld(item.submittedAt);
                   const isUrgent = daysOld > 3;
-                  
+
                   return (
                     <div
                       key={item.id}
@@ -343,8 +349,12 @@ export default function SupervisorPendingView() {
                           className={styles.checkbox}
                           onClick={(e) => e.stopPropagation()}
                         />
-                        
-                        <div 
+
+                        <div className={styles.avatar}>
+                          {getInitials(item.employeeName)}
+                        </div>
+
+                        <div
                           className={styles.itemInfo}
                           onClick={() => {
                             setSelectedItemDetail(item);
@@ -358,17 +368,17 @@ export default function SupervisorPendingView() {
                             </span>
                             {isUrgent && (
                               <span className={styles.urgentBadge}>
-                                {daysOld} days old
+                                {daysOld}d ago
                               </span>
                             )}
                           </div>
                           <p className={styles.itemDetails}>
-                            {item.projectName} • {item.employeeEmail}
+                            {item.projectName} &middot; {item.employeeEmail}
                           </p>
                         </div>
                       </div>
-                      
-                      <div 
+
+                      <div
                         className={styles.itemRight}
                         onClick={() => {
                           setSelectedItemDetail(item);
@@ -376,7 +386,7 @@ export default function SupervisorPendingView() {
                         }}
                       >
                         <p className={styles.itemAmount}>
-                          {item.type === 'timesheet' 
+                          {item.type === 'timesheet'
                             ? `${item.hours}h`
                             : `$${item.amount.toFixed(2)}`
                           }
@@ -397,7 +407,7 @@ export default function SupervisorPendingView() {
       {groupedWeeks.length === 0 && (
         <div className={styles.emptyState}>
           <CheckCircle className={styles.emptyIcon} />
-          <h3>All Caught Up!</h3>
+          <h3>All Caught Up</h3>
           <p>No pending items require your approval at this time.</p>
         </div>
       )}
@@ -409,7 +419,7 @@ export default function SupervisorPendingView() {
             <div className={styles.modalHeader}>
               <h2>{selectedItemDetail.type === 'timesheet' ? 'Timesheet Details' : 'Expense Details'}</h2>
               <button onClick={() => setShowDetailModal(false)} className={styles.closeButton}>
-                <X />
+                <X size={16} />
               </button>
             </div>
             <div className={styles.modalContent}>
@@ -423,16 +433,17 @@ export default function SupervisorPendingView() {
                 <p><strong>Amount:</strong> ${selectedItemDetail.amount.toFixed(2)}</p>
               )}
               <p><strong>Submitted:</strong> {formatDate(selectedItemDetail.submittedAt)}</p>
+              <p><strong>Status:</strong> <StatusBadge status={selectedItemDetail.status} /></p>
             </div>
             <div className={styles.modalFooter}>
-              <button 
-                onClick={() => setShowDetailModal(false)} 
+              <button
+                onClick={() => setShowDetailModal(false)}
                 className={`${styles.btn} ${styles.btnOutline}`}
               >
                 Cancel
               </button>
-              <button 
-                onClick={() => approveSingleItem(selectedItemDetail)} 
+              <button
+                onClick={() => approveSingleItem(selectedItemDetail)}
                 className={`${styles.btn} ${styles.btnPrimary}`}
               >
                 Approve
