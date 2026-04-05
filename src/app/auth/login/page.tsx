@@ -127,8 +127,8 @@ export default function LoginPage() {
               color: '#e8e8e8',
               fontSize: 12,
             }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+            onFocus={() => {}}
+            onBlur={() => {}}
           />
 
           <input
@@ -146,8 +146,8 @@ export default function LoginPage() {
               color: '#e8e8e8',
               fontSize: 12,
             }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+            onFocus={() => {}}
+            onBlur={() => {}}
           />
 
           {/* Remember me */}
