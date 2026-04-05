@@ -6,18 +6,20 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
 import TimesheetModal from '@/components/TimesheetModal';
-import Image from 'next/image';
 import {
   Clock,
   FileText,
-  User,
-  LogOut,
   Receipt,
   AlertCircle,
   RefreshCw,
   DollarSign,
   CheckCircle,
 } from 'lucide-react';
+import { AppShell } from '@/components/layout';
+import { StatCard } from '@/components/ui/StatCard';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton';
 import NotificationBell from '@/components/NotificationBell';
 
 interface Timecard {
@@ -535,298 +537,171 @@ export default function EmployeeDashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e31c79] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+      <AppShell
+        role="employee"
+        userName={profile?.first_name}
+        userEmail={profile?.email}
+        onSignOut={handleSignOut}
+        showBottomNav
+      >
+        <div className="px-6 md:px-8 py-6 space-y-6">
+          <div>
+            <div className="anim-shimmer w-48 h-7 rounded mb-2" />
+            <div className="anim-shimmer w-64 h-4 rounded" />
+          </div>
+          <SkeletonStats count={4} />
+          <SkeletonList rows={3} />
         </div>
-      </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-[#05202E] shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <div className="flex items-center gap-3">
-                <Image
-                  src="/WE-logo-SEPT2024v3-WHT.png"
-                  alt="West End Workforce"
-                  width={200}
-                  height={50}
-                  className="h-9 w-auto"
-                  priority
-                />
-                <div className="border-l border-gray-600 pl-3">
-                  <span className="text-sm text-gray-300">Employee Portal</span>
-                </div>
-              </div>
+    <AppShell
+      role="employee"
+      userName={profile?.first_name}
+      userEmail={profile?.email}
+      onSignOut={handleSignOut}
+      showBottomNav
+    >
+      <div className="px-6 md:px-8 py-6">
+        {/* Welcome + Quick Actions */}
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h2
+                className="text-[24px] font-bold"
+                style={{ color: 'var(--we-text-1)', fontFamily: 'var(--font-heading)' }}
+              >
+                {getTimeBasedGreeting()}{profile?.first_name ? `, ${profile.first_name}` : ''}
+              </h2>
+              <p className="text-[13px] mt-1" style={{ color: 'var(--we-text-3)' }}>
+                Manage your timesheets and expenses
+              </p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               <button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-200 hover:text-white transition-colors disabled:opacity-50"
-                title="Refresh data"
+                className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium rounded-[var(--we-radius-sm)] transition-all duration-200 disabled:opacity-50"
+                style={{
+                  color: 'var(--we-text-3)',
+                  border: '1px solid var(--we-border)',
+                  background: 'var(--we-bg-white)',
+                }}
               >
-                <RefreshCw
-                  className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
-                />
+                <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
                 Refresh
               </button>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-sm text-gray-200">
-                  {getTimeBasedGreeting()},{' '}
-                  {profile?.first_name || 'Employee'}
-                </span>
-              </div>
               <NotificationBell />
-              <button
-                onClick={handleSignOut}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-200 hover:text-white transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </button>
             </div>
           </div>
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-[#05202E] mb-2">
-            Welcome back{profile?.first_name ? `, ${profile.first_name}` : ''}!
-          </h2>
-          <p className="text-gray-600">Manage your timesheets and expenses</p>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mb-8 flex flex-wrap gap-4">
-          <button
-            onClick={() => router.push('/timesheet/entry')}
-            className="flex items-center gap-3 px-6 py-3 bg-[#05202E] text-white rounded-lg hover:bg-[#0a2a3d] transition-all duration-200 font-medium shadow-lg"
-          >
-            <FileText className="h-5 w-5" />
-            Access Timesheet
-          </button>
-
-          <button
-            onClick={() => router.push('/expense/entry')}
-            className="flex items-center gap-3 px-6 py-3 bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865] transition-all duration-200 font-medium shadow-lg"
-          >
-            <Receipt className="h-5 w-5" />
-            Submit Expense
-          </button>
+          {/* Quick Actions */}
+          <div className="flex flex-wrap gap-3 mb-8">
+            <button
+              onClick={() => router.push('/timesheet/entry')}
+              className="flex items-center gap-2.5 px-5 py-3 text-[14px] font-semibold text-white rounded-[var(--we-radius-sm)] transition-all duration-200 hover:-translate-y-[1px]"
+              style={{ background: 'var(--we-navy)', boxShadow: 'var(--we-shadow-sm)' }}
+            >
+              <FileText size={16} />
+              Access Timesheet
+            </button>
+            <button
+              onClick={() => router.push('/expense/entry')}
+              className="flex items-center gap-2.5 px-5 py-3 text-[14px] font-semibold text-white rounded-[var(--we-radius-sm)] transition-all duration-200 hover:-translate-y-[1px]"
+              style={{ background: 'var(--we-pink)', boxShadow: 'var(--we-shadow-sm)' }}
+            >
+              <Receipt size={16} />
+              Submit Expense
+            </button>
+          </div>
         </div>
 
         {/* TIMESHEET SUMMARY */}
         <div className="mb-8">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
-            Timesheet Summary
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* All Time Card */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <Clock className="h-5 w-5 text-[#05202E]" />
-                <span className="text-xs font-medium text-gray-500 uppercase">
-                  All Time
-                </span>
-              </div>
-              <p className="text-3xl font-bold text-[#05202E]">
-                {stats.totalHours.toFixed(1)}
-              </p>
-              <p className="text-sm text-gray-500 mt-1">Total Hours</p>
-            </div>
-
-            {/* Pending Card */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <FileText className="h-5 w-5 text-[#05202E]" />
-                <span className="text-xs font-medium text-gray-500 uppercase">
-                  Pending
-                </span>
-              </div>
-              <p className="text-3xl font-bold text-[#05202E]">
-                {stats.pendingTimecards}
-              </p>
-              <p className="text-sm text-gray-500 mt-1">Awaiting Review</p>
-            </div>
-
-            {/* Approved Card */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <CheckCircle className="h-5 w-5 text-green-500" />
-                <span className="text-xs font-medium text-gray-500 uppercase">
-                  Approved
-                </span>
-              </div>
-              <p className="text-3xl font-bold text-[#05202E]">
-                {stats.approvedTimecards}
-              </p>
-              <p className="text-sm text-gray-500 mt-1">Approved</p>
-            </div>
-
-            {/* Rejected Card */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <AlertCircle className="h-5 w-5 text-red-500" />
-                <span className="text-xs font-medium text-gray-500 uppercase">
-                  Rejected
-                </span>
-              </div>
-              <p className="text-3xl font-bold text-gray-500">
-                {stats.rejectedTimecards}
-              </p>
-              <p className="text-sm text-gray-500 mt-1">Need Action</p>
-            </div>
+          <p className="we-section-label mb-4">Timesheet Summary</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard icon={Clock} label="All Time" value={stats.totalHours.toFixed(1)} subtitle="Total Hours" variant="expense" />
+            <StatCard icon={FileText} label="Pending" value={stats.pendingTimecards} subtitle="Awaiting Review" variant="warning" />
+            <StatCard icon={CheckCircle} label="Approved" value={stats.approvedTimecards} subtitle="Approved" variant="success" />
+            <StatCard icon={AlertCircle} label="Rejected" value={stats.rejectedTimecards} subtitle="Need Action" variant="danger" />
           </div>
         </div>
 
         {/* EXPENSE SUMMARY */}
         <div className="mb-8">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
-            Expense Summary
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Total Card */}
-            <div className="bg-white rounded-lg border border-[#e31c79]/20 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <DollarSign className="h-5 w-5 text-[#e31c79]" />
-                <span className="text-xs font-medium text-gray-500 uppercase">
-                  All Time
-                </span>
-              </div>
-              <p className="text-2xl font-bold text-[#e31c79]">
-                {formatCurrencyLocal(stats.totalExpenses)}
-              </p>
-              <p className="text-sm text-gray-500 mt-1">Total Expenses</p>
-            </div>
-
-            {/* Pending Card */}
-            <div className="bg-white rounded-lg border border-[#e31c79]/20 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <Receipt className="h-5 w-5 text-[#e31c79]" />
-                <span className="text-xs font-medium text-gray-500 uppercase">
-                  Pending
-                </span>
-              </div>
-              <p className="text-2xl font-bold text-[#e31c79]">
-                {formatCurrencyLocal(stats.pendingExpenses)}
-              </p>
-              <p className="text-sm text-gray-500 mt-1">Awaiting Review</p>
-            </div>
-
-            {/* Approved Card */}
-            <div className="bg-white rounded-lg border border-[#e31c79]/20 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <CheckCircle className="h-5 w-5 text-green-500" />
-                <span className="text-xs font-medium text-gray-500 uppercase">
-                  Approved
-                </span>
-              </div>
-              <p className="text-2xl font-bold text-[#e31c79]">
-                {formatCurrencyLocal(stats.approvedExpenses)}
-              </p>
-              <p className="text-sm text-gray-500 mt-1">Approved</p>
-            </div>
-
-            {/* Rejected Card */}
-            <div className="bg-white rounded-lg border border-[#e31c79]/20 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[4px_4px_12px_rgba(0,0,0,0.12)] transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <AlertCircle className="h-5 w-5 text-red-500" />
-                <span className="text-xs font-medium text-gray-500 uppercase">
-                  Rejected
-                </span>
-              </div>
-              <p className="text-2xl font-bold text-gray-500">
-                {stats.rejectedExpenses}
-              </p>
-              <p className="text-sm text-gray-500 mt-1">Need Action</p>
-            </div>
+          <p className="we-section-label mb-4">Expense Summary</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard icon={DollarSign} label="All Time" value={formatCurrencyLocal(stats.totalExpenses)} subtitle="Total Expenses" variant="timesheet" />
+            <StatCard icon={Receipt} label="Pending" value={formatCurrencyLocal(stats.pendingExpenses)} subtitle="Awaiting Review" variant="warning" />
+            <StatCard icon={CheckCircle} label="Approved" value={formatCurrencyLocal(stats.approvedExpenses)} subtitle="Approved" variant="success" />
+            <StatCard icon={AlertCircle} label="Rejected" value={stats.rejectedExpenses} subtitle="Need Action" variant="danger" />
           </div>
         </div>
 
         {/* Recent Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-2">
           {/* Recent Timecards */}
-          <div>
-            <div className="bg-white rounded-t-lg border border-gray-200 px-6 py-4 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
-              <h3 className="text-lg font-semibold text-[#05202E]">
+          <div className="we-card overflow-hidden">
+            <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--we-border-faint)' }}>
+              <h3 className="text-[15px] font-semibold" style={{ color: 'var(--we-text-1)' }}>
                 Recent Timesheets
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-[12px] mt-0.5" style={{ color: 'var(--we-text-3)' }}>
                 Your latest timesheet submissions
               </p>
             </div>
-            <div className="bg-white rounded-b-lg border-x border-b border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
+            <div className="p-4">
               {timecards.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-gray-600 font-medium">No timecards yet</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Click "Access Timecards" to get started
-                  </p>
-                </div>
+                <EmptyState
+                  icon={FileText}
+                  title="No timesheets yet"
+                  description="Click 'Access Timesheet' to get started"
+                  action={{ label: 'Access Timesheet', onClick: () => router.push('/timesheet/entry') }}
+                />
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {timecards.map((timecard) => {
                     const { title, rangeLabel } = getFiscalWeekInfo(
                       timecard.week_ending,
                       timecard.total_hours || 0
                     );
-
                     const isRejected = timecard.status === 'rejected';
-                    const rejectionReason =
-                      (timecard as any).rejection_reason || null;
+                    const rejectionReason = (timecard as any).rejection_reason || null;
 
                     return (
                       <div
                         key={timecard.id}
-                        className={`p-4 border rounded-lg transition-colors cursor-pointer ${
-                          isRejected
-                            ? 'border-red-200 bg-red-50/40 hover:bg-red-50'
-                            : 'border-gray-100 hover:bg-gray-50'
-                        }`}
+                        className="p-4 rounded-xl cursor-pointer transition-all duration-200"
+                        style={{
+                          border: `1px solid ${isRejected ? 'rgba(239, 68, 68, 0.15)' : 'var(--we-border-faint)'}`,
+                          background: isRejected ? 'var(--we-status-rejected-bg)' : 'transparent',
+                        }}
                         onClick={() => handleTimesheetClick(timecard)}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = isRejected ? 'rgba(239, 68, 68, 0.08)' : 'var(--we-bg-subtle)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = isRejected ? 'var(--we-status-rejected-bg)' : 'transparent';
+                        }}
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-medium text-[#05202E]">
-                              {title}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {rangeLabel}
-                            </p>
-
+                            <p className="text-[14px] font-semibold" style={{ color: 'var(--we-text-1)' }}>{title}</p>
+                            <p className="text-[12px]" style={{ color: 'var(--we-text-3)' }}>{rangeLabel}</p>
                             {isRejected && rejectionReason && (
-                              <p className="mt-1 text-xs text-red-600">
+                              <p className="mt-1.5 text-[12px]" style={{ color: 'var(--we-status-rejected)' }}>
                                 Reason: {rejectionReason}
                               </p>
                             )}
                             {isRejected && (
-                              <p className="mt-1 text-xs text-red-700">
-                                Update this week’s hours in the time entry
-                                screen, then re-submit for approval.
+                              <p className="mt-1 text-[11px]" style={{ color: 'var(--we-status-rejected)' }}>
+                                Update hours and re-submit for approval.
                               </p>
                             )}
                           </div>
-                          <span
-                            className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                              timecard.status
-                            )}`}
-                          >
-                            {renderTimecardStatus(timecard.status)}
-                          </span>
+                          <StatusBadge status={timecard.status} />
                         </div>
                       </div>
                     );
@@ -837,59 +712,53 @@ export default function EmployeeDashboard() {
           </div>
 
           {/* Recent Expense Reports */}
-          <div>
-            <div className="bg-white rounded-t-lg border border-gray-200 px-6 py-4 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
-              <h3 className="text-lg font-semibold text-[#05202E]">
+          <div className="we-card overflow-hidden">
+            <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--we-border-faint)' }}>
+              <h3 className="text-[15px] font-semibold" style={{ color: 'var(--we-text-1)' }}>
                 Recent Expenses
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-[12px] mt-0.5" style={{ color: 'var(--we-text-3)' }}>
                 Your latest expense submissions
               </p>
             </div>
-            <div className="bg-white rounded-b-lg border-x border-b border-gray-200 p-6 shadow-[2px_2px_8px_rgba(0,0,0,0.08)]">
+            <div className="p-4">
               {expenseReports.length === 0 ? (
-                <div className="text-center py-8">
-                  <Receipt className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-gray-600 font-medium">
-                    No expense reports yet
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Click "Submit Expense" to get started
-                  </p>
-                </div>
+                <EmptyState
+                  icon={Receipt}
+                  title="No expense reports yet"
+                  description="Click 'Submit Expense' to get started"
+                  action={{ label: 'Submit Expense', onClick: () => router.push('/expense/entry') }}
+                />
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {expenseReports.map((report) => (
                     <div
                       key={report.id}
-                      className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                      className="p-4 rounded-xl cursor-pointer transition-all duration-200"
+                      style={{
+                        border: `1px solid ${report.status === 'rejected' ? 'rgba(239, 68, 68, 0.15)' : 'var(--we-border-faint)'}`,
+                        background: report.status === 'rejected' ? 'var(--we-status-rejected-bg)' : 'transparent',
+                      }}
                       onClick={() => router.push(`/expense/${report.id}`)}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--we-bg-subtle)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = report.status === 'rejected' ? 'var(--we-status-rejected-bg)' : 'transparent')}
                     >
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="font-medium text-[#05202E]">
+                          <p className="text-[14px] font-semibold" style={{ color: 'var(--we-text-1)' }}>
                             {report.title || 'Expense Report'}
                           </p>
-                          <p className="text-sm text-gray-500">
-                            {formatCurrencyLocal(report.total_amount)} •{' '}
-                            {report.period_month
-                              ? formatDate(report.period_month)
-                              : formatDate(report.created_at)}
+                          <p className="text-[12px]" style={{ color: 'var(--we-text-3)' }}>
+                            {formatCurrencyLocal(report.total_amount)} &bull;{' '}
+                            {report.period_month ? formatDate(report.period_month) : formatDate(report.created_at)}
                           </p>
                           {report.status === 'rejected' && (
-                            <p className="mt-1 text-xs text-red-600">
-                              Rejected – open to review details and resubmit.
+                            <p className="mt-1.5 text-[12px]" style={{ color: 'var(--we-status-rejected)' }}>
+                              Rejected &ndash; open to review and resubmit.
                             </p>
                           )}
                         </div>
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                            report.status
-                          )}`}
-                        >
-                          {report.status.charAt(0).toUpperCase() +
-                            report.status.slice(1)}
-                        </span>
+                        <StatusBadge status={report.status} />
                       </div>
                     </div>
                   ))}
@@ -898,7 +767,7 @@ export default function EmployeeDashboard() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
 
       <TimesheetModal
         isOpen={isModalOpen}
@@ -906,6 +775,6 @@ export default function EmployeeDashboard() {
         timesheet={selectedTimesheet}
         isEmployeeView={true}
       />
-    </div>
+    </AppShell>
   );
 }

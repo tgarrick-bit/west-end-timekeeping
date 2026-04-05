@@ -2,7 +2,14 @@
 
 import { ReactNode } from 'react';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthenticatedShell } from '@/components/layout/AuthenticatedShell';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  return <AuthProvider>{children}</AuthProvider>;
+  return (
+    <AuthProvider>
+      <AuthenticatedShell role="admin">
+        {children}
+      </AuthenticatedShell>
+    </AuthProvider>
+  );
 }

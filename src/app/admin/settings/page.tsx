@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import RoleGuard from '@/components/auth/RoleGuard';
-import { 
-  Settings, Globe, Clock, CreditCard, Receipt, 
-  FileText, Users, Save, ChevronLeft, Bell,
+import {
+  Settings, Globe, Clock, CreditCard, Receipt,
+  FileText, Users, Save, Bell,
   Link, AlertCircle, Check, X, Plus, Trash2,
   Building2, Calendar, DollarSign
 } from 'lucide-react';
@@ -369,10 +369,13 @@ export default function AdminSettingsPage() {
 
   if (loading || !settings) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading settings...</p>
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-4">
+          <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
+            <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <p className="text-[13px]" style={{ color: 'var(--we-text-3)' }}>Loading...</p>
         </div>
       </div>
     );
@@ -380,33 +383,17 @@ export default function AdminSettingsPage() {
 
   return (
     <RoleGuard allowedRoles={['admin']}>
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <div className="bg-gray-900 shadow-lg">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => router.push('/admin')}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
-                <div>
-                  <h1 className="text-xl font-semibold text-white">System Settings</h1>
-                  <p className="text-xs text-gray-400">Configure West End Workforce</p>
-                </div>
-              </div>
-              <button
-                onClick={saveSettings}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-              >
-                <Save className="h-4 w-4" />
-                {saving ? 'Saving...' : 'Save Settings'}
-              </button>
-            </div>
-          </div>
+      <>
+        {/* Save bar */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-end">
+          <button
+            onClick={saveSettings}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+          >
+            <Save className="h-4 w-4" />
+            {saving ? 'Saving...' : 'Save Settings'}
+          </button>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -1076,7 +1063,7 @@ export default function AdminSettingsPage() {
             </div>
           </div>
         </div>
-      </div>
+      </>
     </RoleGuard>
   );
 }

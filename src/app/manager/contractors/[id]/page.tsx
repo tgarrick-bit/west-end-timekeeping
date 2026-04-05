@@ -11,14 +11,6 @@ import {
   Mail,
   Phone,
   ArrowLeft,
-  LogOut,
-  Menu,
-  X,
-  BarChart3,
-  Users,
-  Receipt,
-  TrendingUp,
-  FileText
 } from 'lucide-react'
 
 interface ContractorDetail {
@@ -42,18 +34,9 @@ interface ContractorDetail {
 export default function ContractorDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
   const [contractor, setContractor] = useState<ContractorDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  // ------- SAFE DISPLAY NAME FOR SUPABASE USER --------
-  const meta: any = (user as any)?.user_metadata ?? {}
-  const displayName =
-    (meta.first_name && meta.last_name)
-      ? `${meta.first_name} ${meta.last_name}`
-      : (user?.email ?? '')
-  // ----------------------------------------------------
 
   const contractorId = params.id as string
 
@@ -105,21 +88,15 @@ export default function ContractorDetailPage() {
     router.push(`/manager/approvals?employee=${contractorId}&type=expense`)
   }
 
-  const navigationItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3, active: false },
-    { id: 'contractors', label: 'Contractors', icon: Users, active: true },
-    { id: 'timesheets', label: 'Timesheets', icon: Clock, active: false },
-    { id: 'expenses', label: 'Expenses', icon: Receipt, active: false },
-    { id: 'reports', label: 'Reports', icon: TrendingUp, active: false },
-    { id: 'approvals', label: 'Approvals', icon: FileText, active: false }
-  ]
-
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e31c79] mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading Contractor Details...</p>
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-4">
+          <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
+            <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <p className="text-[13px]" style={{ color: 'var(--we-text-3)' }}>Loading...</p>
         </div>
       </div>
     )
@@ -127,7 +104,7 @@ export default function ContractorDetailPage() {
 
   if (!contractor) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <p className="text-gray-600">Contractor not found</p>
           <button
@@ -142,106 +119,8 @@ export default function ContractorDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#33393c] transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-700">
-          <div className="flex items-center">
-            <span className="text-white font-semibold text-lg">Manager Portal</span>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-400 hover:text-white"
-          >
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-
-        <nav className="mt-6 px-4">
-          <ul className="space-y-1">
-            {navigationItems.map((item) => {
-              const Icon = item.icon
-              return (
-                <li key={item.id}>
-                  <button
-                    onClick={() =>
-                      router.push(`/manager/${item.id === 'dashboard' ? '' : item.id}`)
-                    }
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                      item.active
-                        ? 'bg-[#e31c79] text-white shadow-sm'
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                    }`}
-                  >
-                    <Icon className="h-5 w-5 mr-3 flex-shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
-
-        <div className="absolute bottom-0 w-full p-4 border-t border-gray-700">
-          <div className="text-white text-sm">
-            <p className="font-medium truncate">{displayName}</p>
-            <p className="text-gray-300 text-xs">Manager</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="lg:pl-64">
-        {/* Top header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-            <div className="flex items-center">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
-              >
-                <Menu className="h-6 w-6" />
-              </button>
-              <div className="ml-4 lg:ml-0">
-                <h1 className="text-2xl font-bold text-[#232020]">Contractor Details</h1>
-                <p className="text-[#465079]">View detailed information about {contractor.name}</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm text-[#465079]">Company</p>
-                <p className="text-sm font-medium text-[#232020]">ABC Corporation</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-[#465079]">Role</p>
-                <p className="text-sm font-medium text-[#232020] capitalize">Manager</p>
-              </div>
-              <button
-                onClick={signOut}
-                className="ml-4 px-4 py-2 text-[#465079] hover:text-[#e31c79] hover:bg-gray-100 rounded-lg transition-colors flex items-center"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* Main content */}
-        <main className="p-4 sm:p-6 lg:p-8">
-          <div className="space-y-6">
+    <>
+      <div className="space-y-6 p-4 sm:p-6 lg:p-8">
             {/* Back Button */}
             <button
               onClick={() => router.back()}
@@ -432,10 +311,8 @@ export default function ContractorDetailPage() {
                 <p className="text-[#465079]">{contractor.notes}</p>
               </div>
             )}
-          </div>
-        </main>
       </div>
-    </div>
+    </>
   )
 }
 

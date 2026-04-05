@@ -657,39 +657,41 @@ export default function TimesheetEntry() {
   const { dailyTotals, weekTotal, regularHours, overtimeHours, doubleTimeHours } = calculateTotals();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-[#33393c] shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/employee')}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5 text-white" />
-              </button>
-              <div className="flex items-center gap-3">
-                <div className="bg-white/10 p-2 rounded-lg">
-                  <Briefcase className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-semibold text-white">New Timesheet Entry</h1>
-                  <span className="text-xs text-gray-300">West End Workforce</span>
-                </div>
-              </div>
+    <div style={{ background: 'var(--we-bg)', minHeight: '100vh' }}>
+      {/* Page Header */}
+      <div style={{ background: 'var(--we-bg-white)', borderBottom: '1px solid var(--we-border)' }}>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.push('/employee')}
+              className="p-2 rounded-lg transition-all duration-200"
+              style={{ color: 'var(--we-text-3)', border: '1px solid var(--we-border)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--we-border-hover)'; e.currentTarget.style.color = 'var(--we-text-1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--we-border)'; e.currentTarget.style.color = 'var(--we-text-3)'; }}
+            >
+              <ArrowLeft size={16} />
+            </button>
+            <div>
+              <h1 className="text-[20px] font-bold" style={{ color: 'var(--we-text-1)', fontFamily: 'var(--font-heading)' }}>
+                Timesheet Entry
+              </h1>
+              <p className="text-[12px]" style={{ color: 'var(--we-text-3)' }}>
+                Enter your hours for the week
+              </p>
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Week Selector + Timer */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="we-card p-5 mb-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <Calendar className="h-5 w-5 text-[#e31c79]" />
-              <span className="text-lg font-semibold text-[#33393c]">
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'rgba(227, 28, 121, 0.06)' }}>
+                <Calendar size={16} style={{ color: 'var(--we-pink)' }} />
+              </div>
+              <span className="text-[15px] font-semibold" style={{ color: 'var(--we-text-1)' }}>
                 Week Ending: {getWeekEndingDate(selectedWeek)}
               </span>
               <TimeTimer
@@ -707,24 +709,27 @@ export default function TimesheetEntry() {
                 }}
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => navigateWeek(-1)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 rounded-lg transition-all duration-200"
+                style={{ color: 'var(--we-text-3)', border: '1px solid var(--we-border)' }}
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft size={16} />
               </button>
               <button
                 onClick={() => setSelectedWeek(new Date())}
-                className="px-3 py-1 text-sm bg-[#e31c79] text-white rounded-md hover:bg-[#c91865] transition-colors"
+                className="px-3 py-1.5 text-[13px] font-semibold text-white rounded-lg transition-all duration-200"
+                style={{ background: 'var(--we-pink)' }}
               >
                 Current Week
               </button>
               <button
                 onClick={() => navigateWeek(1)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 rounded-lg transition-all duration-200"
+                style={{ color: 'var(--we-text-3)', border: '1px solid var(--we-border)' }}
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight size={16} />
               </button>
             </div>
           </div>
@@ -814,19 +819,19 @@ export default function TimesheetEntry() {
           })}
 
           {/* Mobile total */}
-          <div className="bg-[#33393c] rounded-lg p-4 text-white text-center">
-            <span className="text-sm">Week Total:</span>
-            <span className="text-2xl font-bold ml-2">{weekTotal.toFixed(1)}</span>
-            <span className="text-sm ml-1">hrs</span>
+          <div className="rounded-xl p-4 text-center" style={{ background: 'var(--we-navy)', color: '#ffffff' }}>
+            <span className="text-[13px]">Week Total:</span>
+            <span className="text-[22px] font-bold ml-2" style={{ fontFamily: 'var(--font-heading)' }}>{weekTotal.toFixed(1)}</span>
+            <span className="text-[13px] ml-1">hrs</span>
           </div>
         </div>
 
         {/* Desktop Time Entry Table */}
-        <div className="hidden md:block bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+        <div className="hidden md:block we-card overflow-hidden mb-5">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-[#33393c] text-white">
+                <tr style={{ background: 'var(--we-navy)', color: '#ffffff' }}>
                   <th className="text-left px-4 py-3 font-medium">PROJECT</th>
                   {getWeekDates().map((date) => {
                     const header = formatDateHeader(date);
@@ -962,7 +967,7 @@ export default function TimesheetEntry() {
         </div>
 
         {/* Summary */}
-        <div className="bg-white rounded-lg p-6 mb-6 border border-gray-200">
+        <div className="we-card p-5 mb-5">
           <div className="flex items-center justify-between text-gray-700">
             <div className="flex items-center gap-8">
               <div className="flex items-center gap-2">
@@ -997,8 +1002,8 @@ export default function TimesheetEntry() {
         </div>
 
         {/* Attestation */}
-        <div className="bg-white rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-[#33393c] mb-4">
+        <div className="we-card p-5 mb-5">
+          <h3 className="text-[15px] font-semibold mb-4" style={{ color: 'var(--we-text-1)' }}>
             Timesheet Attestation
           </h3>
           <label className="flex items-start gap-3 cursor-pointer">
@@ -1020,17 +1025,19 @@ export default function TimesheetEntry() {
           <button
             onClick={() => handleSubmit(true)}
             disabled={isLoading || isLocked}
-            className="flex items-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-5 py-3 text-[14px] font-semibold rounded-[var(--we-radius-sm)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ background: 'var(--we-navy)', color: '#ffffff' }}
           >
-            <Save className="h-5 w-5" />
+            <Save size={16} />
             Save as Draft
           </button>
           <button
             onClick={() => handleSubmit(false)}
             disabled={isLoading || !attestation || isLocked}
-            className="flex items-center gap-2 px-6 py-3 bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-5 py-3 text-[14px] font-semibold rounded-[var(--we-radius-sm)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ background: 'var(--we-pink)', color: '#ffffff' }}
           >
-            <Send className="h-5 w-5" />
+            <Send size={16} />
             Submit Timesheet
           </button>
         </div>

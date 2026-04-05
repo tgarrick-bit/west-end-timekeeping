@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import TimesheetModal from '@/components/TimesheetModal'
-import Image from 'next/image'
+import { AppShell } from '@/components/layout'
+import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton'
 import {
   Clock,
   FileText,
   CheckCircle,
   XCircle,
-  LogOut,
   AlertCircle,
   ChevronDown,
   Settings,
@@ -24,11 +24,10 @@ import {
   Eye,
   Send,
   Bell,
-  User,
   ArrowUpDown,
   Search,
 } from 'lucide-react'
-import NotificationBell from '@/components/NotificationBell'
+// NotificationBell is now in the sidebar
 
 // Shared helper for names: "Last, First Middle" by default
 function formatName(
@@ -906,11 +905,13 @@ export default function AdminPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F7F8FC] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e31c79] mx-auto"></div>
-          <p className="mt-3 text-gray-600">Loading admin dashboard...</p>
+      <div className="px-6 md:px-8 py-6 space-y-6">
+        <div>
+          <div className="anim-shimmer w-48 h-7 rounded mb-2" />
+          <div className="anim-shimmer w-80 h-4 rounded" />
         </div>
+        <SkeletonStats count={4} />
+        <SkeletonList rows={6} />
       </div>
     )
   }
@@ -947,63 +948,16 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F8FC]">
-      {/* Header */}
-      <header className="bg-[#33393c] shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Image
-                src="/WE-logo-SEPT2024v3-WHT.png"
-                alt="West End Workforce"
-                width={180}
-                height={40}
-                className="h-9 w-auto"
-                priority
-              />
-              <div className="border-l border-gray-600 pl-3">
-                <p className="text-xs text-gray-300 uppercase tracking-wide">
-                  Admin Portal
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/manager')}
-                className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 text-xs text-gray-200 hover:text-white border border-white/20 rounded-full"
-              >
-                Manager view
-              </button>
-              <div className="hidden sm:flex items-center gap-2">
-                <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-sm text-gray-100 truncate max-w-[220px]">
-                  {greeting}, {displayName}
-                </span>
-              </div>
-              <NotificationBell />
-              <button
-                onClick={async () => { await supabase.auth.signOut(); router.push('/auth/login'); }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-gray-200 hover:text-white transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>    
-
+    <>
       {/* Page Title */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-4">
-            <h1 className="text-2xl font-semibold text-[#33393c]">Admin dashboard</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Monitor submissions, approvals, and reminders across the organization.
-            </p>
-          </div>
+      <div style={{ borderBottom: '1px solid var(--we-border)' }}>
+        <div className="px-6 md:px-8 py-5">
+          <h1 className="text-[24px] font-bold" style={{ color: 'var(--we-text-1)', fontFamily: 'var(--font-heading)' }}>
+            Admin Dashboard
+          </h1>
+          <p className="text-[13px] mt-1" style={{ color: 'var(--we-text-3)' }}>
+            Monitor submissions, approvals, and reminders across the organization.
+          </p>
         </div>
       </div>
 
@@ -1952,6 +1906,6 @@ export default function AdminPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }

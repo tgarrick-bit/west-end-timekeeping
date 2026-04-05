@@ -2,15 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { 
+import {
   Building2,
   Plus,
   Search,
   Edit,
   Trash2,
-  ChevronLeft,
   X,
   DollarSign,
   Calendar,
@@ -279,61 +277,20 @@ export default function ClientManagement() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading clients...</p>
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-4">
+          <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
+            <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <p className="text-[13px]" style={{ color: 'var(--we-text-3)' }}>Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top Admin Navigation */}
-      <header className="bg-[#33393c] text-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-
-          {/* LEFT: Back arrow + Logo + Page Title */}
-          <div className="flex items-center gap-4">
-
-            {/* Back Arrow */}
-            <button
-              onClick={() => router.push('/admin')}
-              className="flex items-center justify-center h-8 w-8 rounded-full border border-white/20 hover:bg-white/10 transition"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-
-            {/* Logo */}
-            <Image
-              src="/WE-logo-SEPT2024v3-WHT.png"
-              alt="West End Workforce"
-              width={150}
-              height={40}
-              className="h-8 w-auto"
-              priority
-            />
-
-            {/* Page Title + Subtitle */}
-            <div className="border-l border-white/20 pl-4">
-              <h1 className="text-base font-semibold tracking-wide">Client Management</h1>
-              <p className="text-xs text-gray-300">
-                Manage client organizations and contracts
-              </p>
-            </div>
-          </div>
-
-          {/* RIGHT: Sign Out */}
-          <button
-            onClick={() => router.push('/auth/logout')}
-            className="text-sm hover:underline flex items-center gap-2"
-          >
-            Sign Out
-          </button>
-        </div>
-      </header>
-
+    <>
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Actions Bar */}
@@ -771,6 +728,6 @@ export default function ClientManagement() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

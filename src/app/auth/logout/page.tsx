@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { LogOut, CheckCircle, Loader2, AlertCircle, Shield } from 'lucide-react';
 
 type LogoutStatus = 'logging-out' | 'success' | 'error' | 'clearing';
 
@@ -20,17 +19,14 @@ export default function LogoutPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  // Calculate session statistics
   const calculateSessionStats = useCallback(() => {
     if (typeof window !== 'undefined') {
       const loginTime = localStorage.getItem('sessionStartTime');
       const lastActivity = localStorage.getItem('lastActivity');
-      
       if (loginTime) {
         const duration = Date.now() - parseInt(loginTime);
         const hours = Math.floor(duration / 3600000);
         const minutes = Math.floor((duration % 3600000) / 60000);
-        
         setStats({
           sessionDuration: hours > 0 ? `${hours}h ${minutes}m` : `${minutes} minutes`,
           lastActivity: lastActivity ? new Date(parseInt(lastActivity)).toLocaleTimeString() : undefined
@@ -39,41 +35,24 @@ export default function LogoutPage() {
     }
   }, []);
 
-  // Clear all application data
   const clearApplicationData = useCallback(async () => {
     setStatus('clearing');
     setProgress(10);
-
     try {
       if (typeof window !== 'undefined') {
-        // Clear all localStorage items with your app prefix
         const keysToRemove: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
-          if (key) {
-            // Add keys that belong to your application
-            if (key.includes('session') || 
-                key.includes('user') || 
-                key.includes('lastActivity') || 
-                key.includes('currentProject') ||
-                key.includes('remember') ||
-                key.includes('role')) {
-              keysToRemove.push(key);
-            }
+          if (key && (key.includes('session') || key.includes('user') ||
+              key.includes('lastActivity') || key.includes('currentProject') ||
+              key.includes('remember') || key.includes('role'))) {
+            keysToRemove.push(key);
           }
         }
-        
         setProgress(30);
-        
-        // Remove identified keys
         keysToRemove.forEach(key => localStorage.removeItem(key));
-        
-        // Clear sessionStorage as well
         sessionStorage.clear();
-        
         setProgress(50);
-        
-        // Clear any cookies if you're using them
         if (document.cookie) {
           document.cookie.split(";").forEach((c) => {
             document.cookie = c
@@ -82,223 +61,317 @@ export default function LogoutPage() {
           });
         }
       }
-      
       setProgress(70);
     } catch (error) {
       console.error('Error clearing application data:', error);
     }
   }, []);
 
-  // Main logout handler
   const handleLogout = useCallback(async () => {
     try {
-      // First calculate stats before clearing
       calculateSessionStats();
-      
-      // Clear application data
       await clearApplicationData();
-      
       setStatus('logging-out');
       setProgress(80);
-      
-      // Get current session before signing out (for audit logging)
+
       const { data: { session } } = await supabase.auth.getSession();
-      
-      // Log the logout event (if you have an audit table)
       if (session?.user?.id) {
         try {
           await supabase.from('audit_logs').insert({
             user_id: session.user.id,
             action: 'logout',
             timestamp: new Date().toISOString(),
-            metadata: {
-              session_duration: stats.sessionDuration,
-              method: 'manual' // vs 'timeout' or 'forced'
-            }
+            metadata: { session_duration: stats.sessionDuration, method: 'manual' }
           });
         } catch (auditError) {
           console.error('Audit log error:', auditError);
-          // Don't block logout if audit fails
         }
       }
-      
+
       setProgress(90);
-      
-      // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
-      
+
       if (error) {
         console.error('Logout error:', error);
         setErrorMessage(error.message);
         setStatus('error');
-        
-        // Force redirect even on error
-        setTimeout(() => {
-          window.location.href = '/auth/login';
-        }, 2000);
+        setTimeout(() => { window.location.href = '/auth/login'; }, 2000);
       } else {
         setProgress(100);
         setStatus('success');
-        
-        // Use location.href for a hard redirect to clear any React state
-        setTimeout(() => {
-          window.location.href = '/auth/login';
-        }, 1500);
+        setTimeout(() => { window.location.href = '/auth/login'; }, 1500);
       }
     } catch (err) {
       console.error('Unexpected logout error:', err);
       setStatus('error');
       setErrorMessage('An unexpected error occurred during logout');
-      
-      // Force redirect on any error
-      setTimeout(() => {
-        window.location.href = '/auth/login';
-      }, 2000);
+      setTimeout(() => { window.location.href = '/auth/login'; }, 2000);
     }
   }, [supabase, clearApplicationData, calculateSessionStats, stats.sessionDuration]);
 
-  // Run logout on mount
-  useEffect(() => {
-    handleLogout();
-  }, [handleLogout]);
+  useEffect(() => { handleLogout(); }, [handleLogout]);
 
-  // Prevent back button after logout
   useEffect(() => {
     if (status === 'success') {
       window.history.pushState(null, '', window.location.href);
-      window.onpopstate = () => {
-        window.history.go(1);
-      };
+      window.onpopstate = () => { window.history.go(1); };
     }
   }, [status]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#33393c] to-[#0a3044]">
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-lg shadow-2xl p-8">
-          <div className="text-center">
+    <div
+      className="min-h-screen flex items-center justify-center relative overflow-hidden"
+      style={{ background: '#ffffff' }}
+    >
+      {/* Ambient glows */}
+      <div
+        className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle, rgba(227, 28, 121, 0.06) 0%, transparent 70%)',
+          filter: 'blur(80px)',
+        }}
+      />
+      <div
+        className="absolute bottom-[-15%] left-[-5%] w-[500px] h-[500px] rounded-full pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle, rgba(211, 173, 107, 0.06) 0%, transparent 70%)',
+          filter: 'blur(80px)',
+        }}
+      />
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(0,0,0,0.015) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,0,0,0.015) 1px, transparent 1px)
+          `,
+          backgroundSize: '60px 60px',
+        }}
+      />
+
+      <div className="relative w-full max-w-[400px] mx-4">
+        <div
+          className="rounded-2xl p-10"
+          style={{
+            background: 'rgba(255, 255, 255, 0.7)',
+            border: '0.5px solid rgba(0, 0, 0, 0.08)',
+            backdropFilter: 'blur(40px)',
+            WebkitBackdropFilter: 'blur(40px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02)',
+          }}
+        >
+          <div className="flex flex-col items-center text-center">
             {(status === 'clearing' || status === 'logging-out') && (
               <>
-                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4 relative">
-                  <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+                <div
+                  className="flex items-center justify-center mb-6"
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '14px',
+                    background: 'rgba(227, 28, 121, 0.04)',
+                    border: '0.5px solid rgba(227, 28, 121, 0.1)',
+                  }}
+                >
+                  <svg className="animate-spin" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
+                    <path d="M21 12a9 9 0 00-9-9" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  {status === 'clearing' ? 'Clearing Session Data' : 'Logging Out'}
+                <h2
+                  className="text-[22px] font-bold mb-2"
+                  style={{ color: '#000000', fontFamily: 'var(--font-heading), sans-serif' }}
+                >
+                  {status === 'clearing' ? 'Clearing Session' : 'Logging Out'}
                 </h2>
-                <p className="text-gray-600 mb-4">
+                <p className="text-[13px] mb-6" style={{ color: '#a18b75' }}>
                   Please wait while we securely log you out...
                 </p>
-                
-                {/* Progress bar */}
-                <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-                  <div 
-                    className="bg-[#e31c79] h-2 rounded-full transition-all duration-500 ease-out"
-                    style={{ width: `${progress}%` }}
+
+                {/* Progress */}
+                <div
+                  className="w-full rounded-full overflow-hidden mb-4"
+                  style={{ height: '3px', background: 'rgba(0, 0, 0, 0.04)' }}
+                >
+                  <div
+                    className="h-full rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${progress}%`, background: '#e31c79' }}
                   />
                 </div>
-                
-                <div className="flex items-center justify-center text-xs text-gray-500">
-                  <Shield className="h-3 w-3 mr-1" />
-                  Secure logout in progress
+
+                <div className="flex items-center gap-2">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <rect x="2" y="5" width="8" height="6" rx="1" stroke="#a18b75" strokeWidth="1" />
+                    <path d="M4 5V3.5a2 2 0 014 0V5" stroke="#a18b75" strokeWidth="1" strokeLinecap="round" />
+                  </svg>
+                  <span className="text-[11px]" style={{ color: '#a18b75' }}>
+                    Secure logout in progress
+                  </span>
                 </div>
               </>
             )}
 
             {status === 'success' && (
               <>
-                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
-                  <CheckCircle className="h-8 w-8 text-green-600" />
+                <div
+                  className="flex items-center justify-center mb-6"
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '14px',
+                    background: 'rgba(34, 197, 94, 0.06)',
+                    border: '0.5px solid rgba(34, 197, 94, 0.15)',
+                  }}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M5 13l4 4L19 7" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Successfully Logged Out
+                <h2
+                  className="text-[22px] font-bold mb-2"
+                  style={{ color: '#000000', fontFamily: 'var(--font-heading), sans-serif' }}
+                >
+                  Signed Out
                 </h2>
-                <p className="text-gray-600 mb-4">
-                  You have been securely logged out of your account.
+                <p className="text-[13px] mb-5" style={{ color: '#a18b75' }}>
+                  You have been securely logged out.
                 </p>
-                
-                {/* Session stats */}
+
                 {(stats.sessionDuration || stats.lastActivity) && (
-                  <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                    <p className="text-xs font-semibold text-gray-700 mb-2">Session Summary</p>
+                  <div
+                    className="w-full rounded-xl p-4 mb-5"
+                    style={{
+                      background: 'rgba(0, 0, 0, 0.02)',
+                      border: '0.5px solid rgba(0, 0, 0, 0.06)',
+                    }}
+                  >
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] mb-2" style={{ color: '#a18b75' }}>
+                      Session Summary
+                    </p>
                     {stats.sessionDuration && (
-                      <p className="text-xs text-gray-600">
-                        Duration: {stats.sessionDuration}
+                      <p className="text-[12px]" style={{ color: '#000000' }}>
+                        Duration: <span className="font-semibold">{stats.sessionDuration}</span>
                       </p>
                     )}
                     {stats.lastActivity && (
-                      <p className="text-xs text-gray-600">
-                        Last activity: {stats.lastActivity}
+                      <p className="text-[12px]" style={{ color: '#000000' }}>
+                        Last activity: <span className="font-semibold">{stats.lastActivity}</span>
                       </p>
                     )}
                   </div>
                 )}
-                
-                <p className="text-sm text-gray-500">
-                  Redirecting to login page...
+
+                <p className="text-[12px] mb-5" style={{ color: '#a18b75' }}>
+                  Redirecting to login...
                 </p>
               </>
             )}
 
             {status === 'error' && (
               <>
-                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
-                  <AlertCircle className="h-8 w-8 text-red-600" />
+                <div
+                  className="flex items-center justify-center mb-6"
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '14px',
+                    background: 'rgba(227, 28, 121, 0.04)',
+                    border: '0.5px solid rgba(227, 28, 121, 0.1)',
+                  }}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="#e31c79" strokeWidth="1.5" />
+                    <path d="M12 8v4M12 16v.5" stroke="#e31c79" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                <h2
+                  className="text-[22px] font-bold mb-2"
+                  style={{ color: '#000000', fontFamily: 'var(--font-heading), sans-serif' }}
+                >
                   Logout Issue
                 </h2>
-                <p className="text-gray-600 mb-2">
+                <p className="text-[13px] mb-4" style={{ color: '#a18b75' }}>
                   We encountered an issue, but your session will be terminated.
                 </p>
                 {errorMessage && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                    <p className="text-sm text-red-700">
-                      {errorMessage}
-                    </p>
+                  <div
+                    className="w-full rounded-xl p-4 mb-5"
+                    style={{
+                      background: 'rgba(227, 28, 121, 0.04)',
+                      border: '0.5px solid rgba(227, 28, 121, 0.12)',
+                    }}
+                  >
+                    <p className="text-[13px]" style={{ color: '#e31c79' }}>{errorMessage}</p>
                   </div>
                 )}
-                <p className="text-sm text-gray-500">
-                  Redirecting to login page...
+                <p className="text-[12px]" style={{ color: '#a18b75' }}>
+                  Redirecting to login...
                 </p>
               </>
             )}
-          </div>
 
-          {/* Manual redirect button */}
-          {status !== 'clearing' && status !== 'logging-out' && (
-            <div className="mt-6">
+            {/* Manual redirect */}
+            {(status === 'success' || status === 'error') && (
               <button
-                onClick={() => window.location.href = '/auth/login'}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#e31c79] hover:bg-[#c91865] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#e31c79] transition-colors"
+                onClick={() => (window.location.href = '/auth/login')}
+                className="w-full mt-5 transition-all duration-200"
+                style={{
+                  padding: '13px 20px',
+                  borderRadius: '10px',
+                  background: '#000000',
+                  color: '#ffffff',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-body), sans-serif',
+                  letterSpacing: '0.02em',
+                  border: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#1a1a1a';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.12)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#000000';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               >
-                {status === 'success' ? 'Return to Login' : 'Go to Login Page'}
+                {status === 'success' ? 'Return to Login' : 'Go to Login'}
               </button>
-            </div>
-          )}
+            )}
 
-          {/* Security notice */}
-          {status === 'success' && (
-            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <div className="flex">
-                <Shield className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                <div className="ml-2">
-                  <p className="text-xs text-blue-800 font-medium">Security Tip</p>
-                  <p className="text-xs text-blue-700 mt-1">
-                    For additional security, close this browser tab or window after logging out.
-                  </p>
+            {/* Security tip */}
+            {status === 'success' && (
+              <div
+                className="w-full rounded-xl p-4 mt-4"
+                style={{
+                  background: 'rgba(211, 173, 107, 0.04)',
+                  border: '0.5px solid rgba(211, 173, 107, 0.12)',
+                }}
+              >
+                <div className="flex items-start gap-2">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="mt-0.5 shrink-0">
+                    <rect x="3" y="6" width="8" height="6" rx="1" stroke="#d3ad6b" strokeWidth="1" />
+                    <path d="M5 6V4.5a2 2 0 014 0V6" stroke="#d3ad6b" strokeWidth="1" strokeLinecap="round" />
+                  </svg>
+                  <div>
+                    <p className="text-[11px] font-semibold" style={{ color: '#d3ad6b' }}>Security Tip</p>
+                    <p className="text-[11px] mt-0.5" style={{ color: '#a18b75' }}>
+                      Close this browser tab for additional security.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-300">
-            West End Workforce
+        {/* Footer */}
+        <div className="mt-8 text-center">
+          <p style={{ fontSize: '11px', color: '#a18b75', letterSpacing: '0.04em' }}>
+            W|E Always Find a Way.
           </p>
-          <p className="text-xs text-gray-400">
-            Time Management System © {new Date().getFullYear()}
-            </p>
         </div>
       </div>
     </div>

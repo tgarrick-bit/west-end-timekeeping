@@ -4,20 +4,19 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import TimesheetModal from '@/components/TimesheetModal';
+import { AppShell } from '@/components/layout';
+import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton';
 
 import {
   CheckCircle,
   XCircle,
-  LogOut,
   AlertCircle,
   ChevronDown,
   Eye,
   Calendar,
-  User,
   RefreshCw,
   SlidersHorizontal,
   Search,
@@ -882,80 +881,40 @@ export default function ManagerPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e31c79] mx-auto" />
-          <p className="mt-3 text-gray-600">Loading submissions...</p>
+      <div className="px-6 md:px-8 py-6 space-y-6">
+        <div>
+          <div className="anim-shimmer w-48 h-7 rounded mb-2" />
+          <div className="anim-shimmer w-72 h-4 rounded" />
         </div>
+        <SkeletonStats count={4} />
+        <SkeletonList rows={5} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F8FC]">
-      {/* HEADER */}
-      <header className="bg-[#33393c] shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Image
-                src="/WE-logo-SEPT2024v3-WHT.png"
-                alt="West End Workforce"
-                width={180}
-                height={40}
-                className="h-9 w-auto"
-                priority
-              />
-              <div className="border-l border-gray-600 pl-3">
-                <p className="text-xs text-gray-300 uppercase tracking-wide">
-                  Manager Portal
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={loadSubmissions}
-                className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 text-sm text-gray-200 hover:text-white transition-colors"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Refresh
-              </button>
-              <div className="hidden sm:flex items-center gap-2">
-                <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-sm text-gray-100 truncate max-w-[220px]">
-                  {greeting}, {displayName}
-                </span>
-              </div>
-              <NotificationBell />
-              <button
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  router.push('/auth/login');
-                }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-gray-200 hover:text-white transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <>
       {/* PAGE TITLE */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-[#33393c]">
-                Review dashboard
-              </h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Review and approve timesheets and expenses for your team.
-              </p>
-            </div>
+      <div style={{ borderBottom: '1px solid var(--we-border)' }}>
+        <div className="px-6 md:px-8 py-5 flex items-center justify-between">
+          <div>
+            <h1 className="text-[24px] font-bold" style={{ color: 'var(--we-text-1)', fontFamily: 'var(--font-heading)' }}>
+              Review Dashboard
+            </h1>
+            <p className="text-[13px] mt-1" style={{ color: 'var(--we-text-3)' }}>
+              Review and approve timesheets and expenses for your team.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={loadSubmissions}
+              className="hidden sm:inline-flex items-center gap-2 px-3 py-2 text-[13px] font-medium rounded-[var(--we-radius-sm)] transition-all duration-200"
+              style={{ color: 'var(--we-text-3)', border: '1px solid var(--we-border)', background: 'var(--we-bg-white)' }}
+            >
+              <RefreshCw size={14} />
+              Refresh
+            </button>
+            <NotificationBell />
           </div>
         </div>
       </div>
@@ -1507,6 +1466,6 @@ export default function ManagerPage() {
           onReject={handleModalReject}
         />
       )}
-    </div>
+    </>
   );
 }

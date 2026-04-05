@@ -189,17 +189,20 @@ ${timesheet.rejection_reason ? `Rejection Reason: ${timesheet.rejection_reason}`
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e31c79] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading timesheets...</p>
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-4">
+          <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
+            <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <p className="text-[13px]" style={{ color: 'var(--we-text-3)' }}>Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-[#33393c]">Timesheet Management</h1>
@@ -347,6 +350,6 @@ ${timesheet.rejection_reason ? `Rejection Reason: ${timesheet.rejection_reason}`
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }

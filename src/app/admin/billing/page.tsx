@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import RoleGuard from '@/components/auth/RoleGuard';
-import { 
-  ChevronLeft, DollarSign, FileText, Download, 
-  Calendar, Filter, Search, CreditCard, Receipt
+import {
+  DollarSign, FileText, Download,
+  Calendar, CreditCard, Receipt
 } from 'lucide-react';
 
 export default function BillingPage() {
@@ -16,38 +16,7 @@ export default function BillingPage() {
   
   return (
     <RoleGuard allowedRoles={['admin']}>
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <div className="bg-gray-900 shadow-lg">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => router.push('/admin')}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
-                <div className="flex items-center gap-3">
-                  <div className="bg-white/10 p-2 rounded-lg">
-                    <DollarSign className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-semibold text-white">Billing & Invoicing</h1>
-                    <p className="text-xs text-gray-400">Manage invoices and payments</p>
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={() => router.push('/admin')}
-                className="text-sm text-gray-200 hover:text-white"
-              >
-                Back to Dashboard
-              </button>
-            </div>
-          </div>
-        </div>
-
+      <>
         {/* Tabs */}
         <div className="bg-white border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -185,7 +154,7 @@ export default function BillingPage() {
             </div>
           </div>
         </div>
-      </div>
+      </>
     </RoleGuard>
   );
 }

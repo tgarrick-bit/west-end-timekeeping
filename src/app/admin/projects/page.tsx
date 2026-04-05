@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Plus, Search, Filter } from 'lucide-react'
@@ -117,39 +116,7 @@ export default function AdminProjectsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F8FC] text-gray-900">
-      {/* Admin Portal blue nav with back arrow */}
-      <header className="bg-[#33393c] shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <button
-                type="button"
-                onClick={() => router.push('/admin')}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 text-white hover:bg-white/10"
-              >
-                <span className="sr-only">Back</span>
-                ←
-              </button>
-              <Image
-                src="/WE-logo-SEPT2024v3-WHT.png"
-                alt="West End Workforce"
-                width={180}
-                height={40}
-                className="h-9 w-auto"
-                priority
-              />
-              <div className="border-l border-gray-600 pl-3">
-                <p className="text-xs text-gray-300 uppercase tracking-wide">
-                  Admin Portal
-                </p>
-              </div>
-            </div>
-            <div />
-          </div>
-        </div>
-      </header>
-
+    <>
       {/* Page Header */}
       <section className="bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
@@ -212,12 +179,13 @@ export default function AdminProjectsPage() {
 
         {/* Projects list */}
         {loading ? (
-          <div className="flex h-48 items-center justify-center">
-            <div className="text-center">
-              <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-[#e31c79]" />
-              <p className="mt-3 text-sm text-gray-500">
-                Loading projects…
-              </p>
+          <div className="flex items-center justify-center py-20">
+            <div className="flex flex-col items-center gap-4">
+              <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
+                <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
+                <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              <p className="text-[13px]" style={{ color: 'var(--we-text-3)' }}>Loading...</p>
             </div>
           </div>
         ) : filteredProjects.length === 0 ? (
@@ -342,6 +310,6 @@ export default function AdminProjectsPage() {
           </div>
         )}
       </main>
-    </div>
+    </>
   )
 }

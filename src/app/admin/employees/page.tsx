@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import {
@@ -13,7 +12,6 @@ import {
   X,
   UserCheck,
   Building2,
-  ChevronLeft,
 } from 'lucide-react';
 
 const US_STATES = [
@@ -482,55 +480,20 @@ export default function EmployeeManagement() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e31c79] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading employees...</p>
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-4">
+          <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
+            <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <p className="text-[13px]" style={{ color: 'var(--we-text-3)' }}>Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header (match other admin pages) */}
-      <header className="bg-[#33393c] shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Left section: Back button + Logo + Title */}
-            <div className="flex items-center gap-4">
-              {/* Back arrow */}
-              <button
-                onClick={() => router.push('/admin')}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-200 hover:text-white"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-
-              {/* Logo */}
-              <Image
-                src="/WE-logo-SEPT2024v3-WHT.png"
-                alt="West End Workforce"
-                width={180}
-                height={40}
-                className="h-9 w-auto"
-                priority
-              />
-
-              {/* Portal title */}
-              <div className="border-l border-gray-600 pl-3">
-                <p className="text-xs text-gray-300 uppercase tracking-wide">
-                  Admin Portal
-                </p>
-                <p className="text-sm text-gray-100">
-                  Employee Management
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <>
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Actions Bar */}
@@ -1201,7 +1164,7 @@ export default function EmployeeManagement() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

@@ -3,10 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import Image from 'next/image'
 import * as XLSX from 'xlsx'
 import {
-  ChevronLeft,
   Lock,
   Unlock,
   Download,
@@ -388,35 +386,7 @@ export default function PayrollPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F8FC]">
-      {/* Header */}
-      <header className="bg-[#33393c] shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/admin')}
-                className="flex items-center justify-center h-8 w-8 rounded-full border border-white/20 hover:bg-white/10 transition"
-              >
-                <ChevronLeft className="h-4 w-4 text-white" />
-              </button>
-              <Image
-                src="/WE-logo-SEPT2024v3-WHT.png"
-                alt="West End Workforce"
-                width={150}
-                height={40}
-                className="h-8 w-auto"
-                priority
-              />
-              <div className="border-l border-white/20 pl-4">
-                <h1 className="text-base font-semibold text-white tracking-wide">Payroll Processing</h1>
-                <p className="text-xs text-gray-300">Finalize timesheets and export payroll data</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Period Selector */}
         <div className="bg-white rounded-lg shadow-sm p-4 mb-6 border border-gray-200">
@@ -521,9 +491,14 @@ export default function PayrollPage() {
           </div>
 
           {loading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e31c79] mx-auto"></div>
-              <p className="mt-3 text-sm text-gray-500">Loading timesheets...</p>
+            <div className="flex items-center justify-center py-20">
+              <div className="flex flex-col items-center gap-4">
+                <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
+                  <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
+                  <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                <p className="text-[13px]" style={{ color: 'var(--we-text-3)' }}>Loading...</p>
+              </div>
             </div>
           ) : timesheets.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
@@ -613,6 +588,6 @@ export default function PayrollPage() {
           )}
         </div>
       </div>
-    </div>
+    </>
   )
 }

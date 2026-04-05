@@ -13,7 +13,6 @@ import {
   XCircle,
   RotateCw,
   User,
-  LogOut,
 } from 'lucide-react';
 
 interface ExpenseReport {
@@ -349,11 +348,6 @@ export default function ManagerExpenseReportPage() {
     }
   };   
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/auth/login');
-  };
-
   const handleRefresh = () => {
     loadReport();
   };
@@ -502,80 +496,33 @@ export default function ManagerExpenseReportPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600 text-sm">Loading expense report...</p>
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-4">
+          <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
+            <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <p className="text-[13px]" style={{ color: 'var(--we-text-3)' }}>Loading...</p>
+        </div>
       </div>
     );
   }
 
-  const ManagerHeader = () => (
-    <header className="bg-[#022234] text-white shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-14 items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push('/manager')}
-              className="mr-1 p-2 hover:bg.white/10 rounded-full transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-            <div className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/WE-logo-SEPT2024v3-WHT.png"
-                alt="West End Workforce"
-                className="h-9 w-9 object-contain"
-              />
-              <span className="h-6 w-px bg-white/30" />
-              <span className="text-sm tracking-wide">Manager Portal</span>
-              <span className="ml-3 text-xs text-gray-300">
-                Expense Approval
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-5 text-sm">
-            <button
-              type="button"
-              onClick={handleRefresh}
-              className="inline-flex items-center gap-1 text-gray-200 hover:text-gray-100"
-            >
-              <RotateCw className="h-4 w-4" />
-              <span className="font-normal">Refresh</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="inline-flex items-center gap-1 text-gray-200 hover:text-gray-100"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="font-normal">Sign Out</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-
   if (loadErrorMessage && !report) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <ManagerHeader />
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-2">
-            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-            <span className="text-red-700 text-sm">{loadErrorMessage}</span>
-          </div>
-        </main>
-      </div>
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-2">
+          <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+          <span className="text-red-700 text-sm">{loadErrorMessage}</span>
+        </div>
+      </main>
     );
   }
 
   if (!report) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <ManagerHeader />
-
+    <>
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
           {/* header */}
@@ -954,6 +901,6 @@ export default function ManagerExpenseReportPage() {
           </div>
         </div>
       </main>
-    </div>
+    </>
   );
 }

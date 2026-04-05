@@ -1,17 +1,40 @@
-export function LoadingSpinner() {
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="mx-auto w-16 h-16 bg-[#e31c79] rounded-full flex items-center justify-center mb-4 animate-pulse">
-          <span className="text-white font-bold text-xl">WE</span>
-        </div>
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e31c79] mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading...</p>
-      </div>
-    </div>
-  )
+interface LoadingSpinnerProps {
+  message?: string;
+  fullScreen?: boolean;
 }
 
+export function LoadingSpinner({ message = 'Loading...', fullScreen = true }: LoadingSpinnerProps) {
+  const content = (
+    <div className="flex flex-col items-center justify-center gap-4">
+      <div
+        className="flex items-center justify-center"
+        style={{
+          width: '48px',
+          height: '48px',
+          borderRadius: '14px',
+          background: 'rgba(227, 28, 121, 0.06)',
+          border: '0.5px solid rgba(227, 28, 121, 0.1)',
+        }}
+      >
+        <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
+          <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </div>
+      <p className="text-[13px] font-medium" style={{ color: 'var(--we-text-3)' }}>
+        {message}
+      </p>
+    </div>
+  );
 
+  if (!fullScreen) return content;
 
-
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center"
+      style={{ background: 'var(--we-bg)' }}
+    >
+      {content}
+    </div>
+  );
+}

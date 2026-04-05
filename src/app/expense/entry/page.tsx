@@ -594,64 +594,32 @@ export default function ExpenseEntryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header – match Employee Portal style */}
-      <header className="bg-[#022234] text-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex h-14 items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => router.push('/employee')}
-                className="mr-1 p-2 hover:bg-white/10 rounded-full transition-colors"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-              <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/WE-logo-SEPT2024v3-WHT.png"
-                  alt="West End Workforce"
-                  className="h-9 w-9 object-contain"
-                />
-                <span className="h-6 w-px bg-white/30" />
-                <span className="text-sm tracking-wide">
-                  Employee Portal
-                </span>
-                <span className="ml-3 text-xs text-gray-300">
-                  Expense Submission
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-5 text-sm">
-              <button
-                type="button"
-                onClick={handleRefresh}
-                className="inline-flex items-center gap-1 text-gray-200 hover:text-gray-100"
-              >
-                <RotateCw className="h-4 w-4" />
-                <span className="font-normal">Refresh</span>
-              </button>
-              <div className="hidden sm:flex items-center gap-2 text-gray-200">
-                <User className="h-4 w-4 opacity-80" />
-                <span className="font-normal">
-                  Good day, {employeeName ? employeeName.split(' ')[0] : 'Employee'}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="inline-flex items-center gap-1 text-gray-200 hover:text-gray-100"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="font-normal">Sign Out</span>
-              </button>
+    <div style={{ background: 'var(--we-bg)', minHeight: '100vh' }}>
+      {/* Page Header */}
+      <div style={{ background: 'var(--we-bg-white)', borderBottom: '1px solid var(--we-border)' }}>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.push('/employee')}
+              className="p-2 rounded-lg transition-all duration-200"
+              style={{ color: 'var(--we-text-3)', border: '1px solid var(--we-border)' }}
+            >
+              <ArrowLeft size={16} />
+            </button>
+            <div>
+              <h1 className="text-[20px] font-bold" style={{ color: 'var(--we-text-1)', fontFamily: 'var(--font-heading)' }}>
+                Expense Submission
+              </h1>
+              <p className="text-[12px]" style={{ color: 'var(--we-text-3)' }}>
+                Create and submit expense reports
+              </p>
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Report Title + Expense Report Date */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
@@ -690,7 +658,7 @@ export default function ExpenseEntryPage() {
 
         {/* Expense Entries */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
-          <div className="bg-[#33393c] text-white px-4 py-3">
+          <div className="bg-[#05202E] text-white px-4 py-3">
             <h2 className="text-sm font-medium">EXPENSE ENTRY</h2>
           </div>
           <div className="p-6">

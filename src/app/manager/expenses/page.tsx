@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import {
   DollarSign,
   Eye,
-  ChevronLeft,
   Receipt,
   Clock,
   Search,
@@ -169,10 +168,13 @@ export default function ExpenseApprovalPage() {
   // ---------------------------------------------------------
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#e31c79] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading expense reports...</p>
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-4">
+          <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
+            <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <p className="text-[13px]" style={{ color: 'var(--we-text-3)' }}>Loading...</p>
         </div>
       </div>
     );
@@ -182,37 +184,7 @@ export default function ExpenseApprovalPage() {
   // PAGE LAYOUT
   // ---------------------------------------------------------
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-[#33393c] text-white">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/manager')}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-
-              <div>
-                <h1 className="text-2xl font-bold">Expense Reports</h1>
-                <p className="text-sm text-gray-300">
-                  Review and approve employee expense reports
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => router.push('/auth/logout')}
-              className="px-4 py-2 hover:bg-white/10 rounded transition-colors"
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
-      </header>
-
+    <>
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Summary Cards */}
@@ -420,6 +392,6 @@ export default function ExpenseApprovalPage() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
