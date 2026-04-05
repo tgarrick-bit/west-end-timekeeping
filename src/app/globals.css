@@ -134,12 +134,15 @@ textarea {
 }
 
 button:focus-visible,
-input:focus-visible,
 select:focus-visible,
-textarea:focus-visible,
 a:focus-visible {
   outline: 2px solid var(--we-pink);
   outline-offset: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
 }
 
 /* ── Scrollbar ────────────────────────────────────────────────── */
