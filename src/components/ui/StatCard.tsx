@@ -1,58 +1,41 @@
-import { type LucideIcon } from 'lucide-react';
-
 interface StatCardProps {
-  icon?: LucideIcon;
   label: string;
   value: string | number;
-  subtitle?: string;
-  accent?: boolean;
+  desc?: string;
+  color?: 'default' | 'pink' | 'gold' | 'green';
   loading?: boolean;
-  className?: string;
 }
 
-export function StatCard({
-  icon: Icon,
-  label,
-  value,
-  subtitle,
-  accent = false,
-  loading = false,
-  className = '',
-}: StatCardProps) {
+const VALUE_COLORS = {
+  default: '#1a1a1a',
+  pink: '#e31c79',
+  gold: '#c4a96a',
+  green: '#2d9b6e',
+};
+
+export function StatCard({ label, value, desc, color = 'default', loading }: StatCardProps) {
   if (loading) {
     return (
-      <div className={`p-5 ${className}`} style={{ background: '#ffffff', borderLeft: '4px solid transparent' }}>
-        <div className="anim-shimmer w-20 h-3 rounded mb-3" />
-        <div className="anim-shimmer w-16 h-7 rounded mb-2" />
-        <div className="anim-shimmer w-24 h-3 rounded" />
+      <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+        <div className="anim-shimmer" style={{ width: 80, height: 8, borderRadius: 3, marginBottom: 12 }} />
+        <div className="anim-shimmer" style={{ width: 60, height: 22, borderRadius: 3, marginBottom: 8 }} />
+        <div className="anim-shimmer" style={{ width: 90, height: 8, borderRadius: 3 }} />
       </div>
     );
   }
 
   return (
-    <div
-      className={`p-5 ${className}`}
-      style={{
-        background: '#ffffff',
-        ...(accent ? { borderLeft: '4px solid #e31c79' } : {}),
-      }}
-    >
-      <p
-        className="text-xs font-semibold uppercase tracking-widest mb-3"
-        style={{ color: '#a0978e' }}
-      >
+    <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+      <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: 1.2, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 8 }}>
         {label}
-      </p>
-      <p
-        className="text-2xl font-extrabold leading-none mb-1"
-        style={{ color: accent ? '#e31c79' : '#000000' }}
-      >
+      </div>
+      <div style={{ fontSize: 28, fontWeight: 700, color: VALUE_COLORS[color], lineHeight: 1 }}>
         {value}
-      </p>
-      {subtitle && (
-        <p className="text-xs mt-2" style={{ color: '#a0978e' }}>
-          {subtitle}
-        </p>
+      </div>
+      {desc && (
+        <div style={{ fontSize: 10, fontWeight: 400, color: '#d0cbc4', marginTop: 6 }}>
+          {desc}
+        </div>
       )}
     </div>
   );

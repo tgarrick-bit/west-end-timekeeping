@@ -1,81 +1,32 @@
-interface SkeletonProps {
-  className?: string;
-  variant?: 'text' | 'card' | 'avatar' | 'stat';
+export function Skeleton({ className = '', style = {} }: { className?: string; style?: React.CSSProperties }) {
+  return <div className={`anim-shimmer ${className}`} style={{ borderRadius: 3, ...style }} />;
 }
 
-export function Skeleton({ className = '', variant = 'text' }: SkeletonProps) {
-  const baseClass = 'anim-shimmer rounded';
-
-  switch (variant) {
-    case 'card':
-      return (
-        <div
-          className={`rounded-xl p-5 ${className}`}
-          style={{
-            background: 'var(--we-bg-white)',
-            border: '0.5px solid var(--we-border)',
-          }}
-        >
-          <div className={`${baseClass} w-full h-4 mb-3`} />
-          <div className={`${baseClass} w-3/4 h-3 mb-2`} />
-          <div className={`${baseClass} w-1/2 h-3`} />
-        </div>
-      );
-    case 'avatar':
-      return <div className={`${baseClass} w-9 h-9 rounded-lg ${className}`} />;
-    case 'stat':
-      return (
-        <div
-          className={`rounded-xl p-5 ${className}`}
-          style={{
-            background: 'var(--we-bg-white)',
-            border: '0.5px solid var(--we-border)',
-            boxShadow: 'var(--we-shadow-card)',
-          }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className={`${baseClass} w-9 h-9 rounded-lg`} />
-            <div className={`${baseClass} w-16 h-3`} />
-          </div>
-          <div className={`${baseClass} w-20 h-7 mb-2`} />
-          <div className={`${baseClass} w-24 h-3`} />
-        </div>
-      );
-    default:
-      return <div className={`${baseClass} h-4 ${className}`} />;
-  }
-}
-
-/** Row of skeleton stat cards */
 export function SkeletonStats({ count = 4 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(count, 4)}, 1fr)`, gap: 14 }}>
       {Array.from({ length: count }).map((_, i) => (
-        <Skeleton key={i} variant="stat" />
+        <div key={i} style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
+          <Skeleton style={{ width: 80, height: 8, marginBottom: 12 }} />
+          <Skeleton style={{ width: 60, height: 22, marginBottom: 8 }} />
+          <Skeleton style={{ width: 90, height: 8 }} />
+        </div>
       ))}
     </div>
   );
 }
 
-/** Skeleton list rows */
 export function SkeletonList({ rows = 4 }: { rows?: number }) {
   return (
-    <div className="space-y-3">
+    <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10 }}>
       {Array.from({ length: rows }).map((_, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-4 p-4 rounded-xl"
-          style={{
-            background: 'var(--we-bg-white)',
-            border: '0.5px solid var(--we-border)',
-          }}
-        >
-          <Skeleton variant="avatar" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="w-1/3 h-4" />
-            <Skeleton className="w-1/2 h-3" />
+        <div key={i} className="flex items-center gap-3" style={{ padding: '14px 22px', borderBottom: i < rows - 1 ? '0.5px solid #f5f2ee' : 'none' }}>
+          <Skeleton style={{ width: 32, height: 32, borderRadius: '50%' }} />
+          <div className="flex-1 space-y-1.5">
+            <Skeleton style={{ width: '35%', height: 10 }} />
+            <Skeleton style={{ width: '55%', height: 8 }} />
           </div>
-          <Skeleton className="w-16 h-6 rounded-lg" />
+          <Skeleton style={{ width: 50, height: 16, borderRadius: 3 }} />
         </div>
       ))}
     </div>

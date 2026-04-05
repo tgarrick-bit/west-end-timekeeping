@@ -6,17 +6,12 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
 import TimesheetModal from '@/components/TimesheetModal';
-import {
-  FileText,
-  Receipt,
-  RefreshCw,
-} from 'lucide-react';
+import { FileText, Receipt } from 'lucide-react';
 import { AppShell } from '@/components/layout';
 import { StatCard } from '@/components/ui/StatCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton';
-import NotificationBell from '@/components/NotificationBell';
 
 interface Timecard {
   id: string;
@@ -533,172 +528,102 @@ export default function EmployeeDashboard() {
 
   if (isLoading) {
     return (
-      <AppShell
-        role="employee"
-        userName={profile?.first_name}
-        userEmail={profile?.email}
-        onSignOut={handleSignOut}
-        showBottomNav
-      >
-        <div className="px-6 md:px-8 py-6 space-y-6">
-          <div>
-            <div className="anim-shimmer w-48 h-7 rounded mb-2" />
-            <div className="anim-shimmer w-64 h-4 rounded" />
-          </div>
+      <AppShell role="employee" userName={profile?.first_name} userEmail={profile?.email} onSignOut={handleSignOut}>
+        <div style={{ padding: '36px 40px' }}>
           <SkeletonStats count={4} />
-          <SkeletonList rows={3} />
+          <div style={{ marginTop: 24 }}><SkeletonList rows={3} /></div>
         </div>
       </AppShell>
     );
   }
 
   return (
-    <AppShell
-      role="employee"
-      userName={profile?.first_name}
-      userEmail={profile?.email}
-      onSignOut={handleSignOut}
-      showBottomNav
-    >
-      <div className="px-6 md:px-8 py-6">
-        {/* Welcome + Quick Actions */}
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div>
-              <h2
-                className="text-[24px] font-bold"
-                style={{ color: 'var(--we-text-1)', fontFamily: 'var(--font-heading)' }}
-              >
-                {getTimeBasedGreeting()}{profile?.first_name ? `, ${profile.first_name}` : ''}
-              </h2>
-              <p className="text-[13px] mt-1" style={{ color: 'var(--we-text-3)' }}>
-                Manage your timesheets and expenses
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium rounded-[var(--we-radius-sm)] transition-all duration-200 disabled:opacity-50"
-                style={{
-                  color: 'var(--we-text-3)',
-                  border: '1px solid var(--we-border)',
-                  background: 'var(--we-bg-white)',
-                }}
-              >
-                <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
-                Refresh
-              </button>
-              <NotificationBell />
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="flex flex-wrap gap-3 mb-8">
+    <AppShell role="employee" userName={profile?.first_name} userEmail={profile?.email} onSignOut={handleSignOut}>
+      <div style={{ padding: '36px 40px' }}>
+        {/* Greeting */}
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>
+            {getTimeBasedGreeting()}{profile?.first_name ? `, ${profile.first_name}` : ''}
+          </h1>
+          <div className="flex flex-wrap gap-2 mt-4">
             <button
               onClick={() => router.push('/timesheet/entry')}
-              className="flex items-center gap-2.5 px-5 py-3 text-[14px] font-semibold text-white rounded-[var(--we-radius-sm)] transition-all duration-200 hover:-translate-y-[1px]"
-              style={{ background: 'var(--we-navy)', boxShadow: 'var(--we-shadow-sm)' }}
+              className="transition-colors duration-150"
+              style={{ fontSize: 12, fontWeight: 500, padding: '8px 18px', color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 7 }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#555'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#777'; }}
             >
-              <FileText size={16} />
-              Access Timesheet
+              Access timesheet
             </button>
             <button
               onClick={() => router.push('/expense/entry')}
-              className="flex items-center gap-2.5 px-5 py-3 text-[14px] font-semibold text-white rounded-[var(--we-radius-sm)] transition-all duration-200 hover:-translate-y-[1px]"
-              style={{ background: 'var(--we-pink)', boxShadow: 'var(--we-shadow-sm)' }}
+              className="transition-colors duration-150"
+              style={{ fontSize: 12, fontWeight: 600, padding: '8px 18px', color: '#fff', background: '#e31c79', border: 'none', borderRadius: 7 }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = '#cc1069')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = '#e31c79')}
             >
-              <Receipt size={16} />
-              Submit Expense
+              Submit expense
             </button>
           </div>
         </div>
 
         {/* TIMESHEET SUMMARY */}
-        <div className="mb-8">
-          <p className="we-section-label mb-4">Timesheet Summary</p>
-          <div className="flex gap-0 rounded-xl overflow-hidden" style={{ border: '1px solid var(--we-border)' }}>
-            <StatCard label="Total Hours" value={stats.totalHours.toFixed(1)} subtitle="all time" accent />
-            <StatCard label="Pending" value={stats.pendingTimecards} subtitle="awaiting review" />
-            <StatCard label="Approved" value={stats.approvedTimecards} subtitle="approved" />
-            <StatCard label="Rejected" value={stats.rejectedTimecards} subtitle="need action" />
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 14 }}>
+            Timesheet Summary
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+            <StatCard label="Total Hours" value={stats.totalHours.toFixed(1)} desc="all time" color="pink" />
+            <StatCard label="Pending" value={stats.pendingTimecards} desc="awaiting review" color="pink" />
+            <StatCard label="Approved" value={stats.approvedTimecards} desc="approved" color="green" />
+            <StatCard label="Rejected" value={stats.rejectedTimecards} desc="need action" />
           </div>
         </div>
 
         {/* EXPENSE SUMMARY */}
-        <div className="mb-8">
-          <p className="we-section-label mb-4">Expense Summary</p>
-          <div className="flex gap-0 rounded-xl overflow-hidden" style={{ border: '1px solid var(--we-border)' }}>
-            <StatCard label="Total Expenses" value={formatCurrencyLocal(stats.totalExpenses)} subtitle="all time" accent />
-            <StatCard label="Pending" value={formatCurrencyLocal(stats.pendingExpenses)} subtitle="awaiting review" />
-            <StatCard label="Approved" value={formatCurrencyLocal(stats.approvedExpenses)} subtitle="approved" />
-            <StatCard label="Rejected" value={stats.rejectedExpenses} subtitle="need action" />
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 14 }}>
+            Expense Summary
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+            <StatCard label="Total Expenses" value={formatCurrencyLocal(stats.totalExpenses)} desc="all time" color="pink" />
+            <StatCard label="Pending" value={formatCurrencyLocal(stats.pendingExpenses)} desc="awaiting review" color="pink" />
+            <StatCard label="Approved" value={formatCurrencyLocal(stats.approvedExpenses)} desc="approved" color="green" />
+            <StatCard label="Rejected" value={stats.rejectedExpenses} desc="need action" />
           </div>
         </div>
 
-        {/* Recent Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-2">
-          {/* Recent Timecards */}
-          <div className="we-card overflow-hidden">
-            <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--we-border-faint)' }}>
-              <h3 className="text-[15px] font-semibold" style={{ color: 'var(--we-text-1)' }}>
-                Recent Timesheets
-              </h3>
-              <p className="text-[12px] mt-0.5" style={{ color: 'var(--we-text-3)' }}>
-                Your latest timesheet submissions
-              </p>
+        {/* Recent sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: 14 }}>
+          {/* Recent Timesheets */}
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10 }}>
+            <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>Recent Timesheets</span>
             </div>
-            <div className="p-4">
+            <div style={{ padding: 22 }}>
               {timecards.length === 0 ? (
-                <EmptyState
-                  icon={FileText}
-                  title="No timesheets yet"
-                  description="Click 'Access Timesheet' to get started"
-                  action={{ label: 'Access Timesheet', onClick: () => router.push('/timesheet/entry') }}
-                />
+                <EmptyState icon={FileText} title="No timesheets yet" description="Submit your first timesheet" action={{ label: 'Access Timesheet', onClick: () => router.push('/timesheet/entry') }} />
               ) : (
-                <div className="space-y-2">
-                  {timecards.map((timecard) => {
-                    const { title, rangeLabel } = getFiscalWeekInfo(
-                      timecard.week_ending,
-                      timecard.total_hours || 0
-                    );
-                    const isRejected = timecard.status === 'rejected';
-                    const rejectionReason = (timecard as any).rejection_reason || null;
-
+                <div>
+                  {timecards.map((tc) => {
+                    const { title, rangeLabel } = getFiscalWeekInfo(tc.week_ending, tc.total_hours || 0);
                     return (
                       <div
-                        key={timecard.id}
-                        className="p-4 rounded-xl cursor-pointer transition-all duration-200"
-                        style={{
-                          border: `1px solid ${isRejected ? 'rgba(239, 68, 68, 0.15)' : 'var(--we-border-faint)'}`,
-                          background: isRejected ? 'var(--we-status-rejected-bg)' : 'transparent',
-                        }}
-                        onClick={() => handleTimesheetClick(timecard)}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = isRejected ? 'rgba(239, 68, 68, 0.08)' : 'var(--we-bg-subtle)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = isRejected ? 'var(--we-status-rejected-bg)' : 'transparent';
-                        }}
+                        key={tc.id}
+                        onClick={() => handleTimesheetClick(tc)}
+                        className="cursor-pointer transition-colors duration-150"
+                        style={{ padding: '13px 0', borderBottom: '0.5px solid #f5f2ee', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = '#FDFCFB')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                       >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="text-[14px] font-semibold" style={{ color: 'var(--we-text-1)' }}>{title}</p>
-                            <p className="text-[12px]" style={{ color: 'var(--we-text-3)' }}>{rangeLabel}</p>
-                            {isRejected && rejectionReason && (
-                              <p className="mt-1.5 text-[12px]" style={{ color: 'var(--we-status-rejected)' }}>
-                                Reason: {rejectionReason}
-                              </p>
-                            )}
-                            {isRejected && (
-                              <p className="mt-1 text-[11px]" style={{ color: 'var(--we-status-rejected)' }}>
-                                Update hours and re-submit for approval.
-                              </p>
-                            )}
-                          </div>
-                          <StatusBadge status={timecard.status} />
+                        <div>
+                          <p style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a' }}>{title}</p>
+                          <p style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>{rangeLabel}</p>
+                          {tc.status === 'rejected' && (tc as any).rejection_reason && (
+                            <p style={{ fontSize: 11, color: '#b91c1c', marginTop: 4 }}>Reason: {(tc as any).rejection_reason}</p>
+                          )}
                         </div>
+                        <StatusBadge status={tc.status} />
                       </div>
                     );
                   })}
@@ -707,55 +632,32 @@ export default function EmployeeDashboard() {
             </div>
           </div>
 
-          {/* Recent Expense Reports */}
-          <div className="we-card overflow-hidden">
-            <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--we-border-faint)' }}>
-              <h3 className="text-[15px] font-semibold" style={{ color: 'var(--we-text-1)' }}>
-                Recent Expenses
-              </h3>
-              <p className="text-[12px] mt-0.5" style={{ color: 'var(--we-text-3)' }}>
-                Your latest expense submissions
-              </p>
+          {/* Recent Expenses */}
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10 }}>
+            <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>Recent Expenses</span>
             </div>
-            <div className="p-4">
+            <div style={{ padding: 22 }}>
               {expenseReports.length === 0 ? (
-                <EmptyState
-                  icon={Receipt}
-                  title="No expense reports yet"
-                  description="Click 'Submit Expense' to get started"
-                  action={{ label: 'Submit Expense', onClick: () => router.push('/expense/entry') }}
-                />
+                <EmptyState icon={Receipt} title="No expense reports yet" description="Submit your first expense" action={{ label: 'Submit Expense', onClick: () => router.push('/expense/entry') }} />
               ) : (
-                <div className="space-y-2">
-                  {expenseReports.map((report) => (
+                <div>
+                  {expenseReports.map((r) => (
                     <div
-                      key={report.id}
-                      className="p-4 rounded-xl cursor-pointer transition-all duration-200"
-                      style={{
-                        border: `1px solid ${report.status === 'rejected' ? 'rgba(239, 68, 68, 0.15)' : 'var(--we-border-faint)'}`,
-                        background: report.status === 'rejected' ? 'var(--we-status-rejected-bg)' : 'transparent',
-                      }}
-                      onClick={() => router.push(`/expense/${report.id}`)}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--we-bg-subtle)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = report.status === 'rejected' ? 'var(--we-status-rejected-bg)' : 'transparent')}
+                      key={r.id}
+                      onClick={() => router.push(`/expense/${r.id}`)}
+                      className="cursor-pointer transition-colors duration-150"
+                      style={{ padding: '13px 0', borderBottom: '0.5px solid #f5f2ee', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = '#FDFCFB')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-[14px] font-semibold" style={{ color: 'var(--we-text-1)' }}>
-                            {report.title || 'Expense Report'}
-                          </p>
-                          <p className="text-[12px]" style={{ color: 'var(--we-text-3)' }}>
-                            {formatCurrencyLocal(report.total_amount)} &bull;{' '}
-                            {report.period_month ? formatDate(report.period_month) : formatDate(report.created_at)}
-                          </p>
-                          {report.status === 'rejected' && (
-                            <p className="mt-1.5 text-[12px]" style={{ color: 'var(--we-status-rejected)' }}>
-                              Rejected &ndash; open to review and resubmit.
-                            </p>
-                          )}
-                        </div>
-                        <StatusBadge status={report.status} />
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a' }}>{r.title || 'Expense Report'}</p>
+                        <p style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
+                          {formatCurrencyLocal(r.total_amount)} &middot; {r.period_month ? formatDate(r.period_month) : formatDate(r.created_at)}
+                        </p>
                       </div>
+                      <StatusBadge status={r.status} />
                     </div>
                   ))}
                 </div>
@@ -765,12 +667,7 @@ export default function EmployeeDashboard() {
         </div>
       </div>
 
-      <TimesheetModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        timesheet={selectedTimesheet}
-        isEmployeeView={true}
-      />
+      <TimesheetModal isOpen={isModalOpen} onClose={handleCloseModal} timesheet={selectedTimesheet} isEmployeeView={true} />
     </AppShell>
   );
 }

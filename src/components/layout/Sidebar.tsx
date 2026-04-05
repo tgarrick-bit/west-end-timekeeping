@@ -5,32 +5,16 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard,
-  Clock,
-  Receipt,
-  Users,
-  Building2,
-  FolderKanban,
-  Wallet,
-  FileText,
-  BarChart3,
-  Settings,
-  CheckSquare,
-  UserCheck,
-  LogOut,
-  X,
-  type LucideIcon,
+  LayoutDashboard, Clock, Receipt, Users, Building2, FolderKanban,
+  Wallet, FileText, BarChart3, Settings, CheckSquare, UserCheck,
+  LogOut, Menu, X, type LucideIcon,
 } from 'lucide-react';
 
 export type UserRole = 'admin' | 'manager' | 'employee';
 
-interface NavItem {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-}
+interface NavItem { label: string; href: string; icon: LucideIcon; }
 
-const NAV_ITEMS: Record<UserRole, NavItem[]> = {
+const NAV: Record<UserRole, NavItem[]> = {
   employee: [
     { label: 'Dashboard', href: '/employee', icon: LayoutDashboard },
     { label: 'Timesheet', href: '/timesheet/entry', icon: Clock },
@@ -67,195 +51,150 @@ interface SidebarProps {
 
 export function Sidebar({ role, userName, userEmail, onSignOut }: SidebarProps) {
   const pathname = usePathname();
-  const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const items = NAV[role];
+  const firstName = userName?.split(' ')[0] || 'User';
 
-  const firstName = userName?.split(' ')[0] ?? 'User';
-  const items = NAV_ITEMS[role] ?? NAV_ITEMS.employee;
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-
-  // Listen for open trigger
-  useEffect(() => {
-    const handler = () => setMobileOpen(true);
-    document.addEventListener('we:open-sidebar', handler);
-    return () => document.removeEventListener('we:open-sidebar', handler);
-  }, []);
-
-  // Close on route change
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
-
-  // Lock body scroll
-  useEffect(() => {
-    if (isMobile && mobileOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [isMobile, mobileOpen]);
+  const portalLabel = role === 'admin' ? 'ADMIN PORTAL' : role === 'manager' ? 'MANAGER PORTAL' : 'EMPLOYEE PORTAL';
 
   const isActive = (href: string) => {
-    if (href === '/employee' || href === '/manager' || href === '/admin') {
-      return pathname === href;
-    }
+    if (href === '/employee' || href === '/manager' || href === '/admin') return pathname === href;
     return pathname.startsWith(href);
   };
 
-  const mobileStyle = isMobile
-    ? {
-        position: 'fixed' as const,
-        top: 0,
-        left: 0,
-        height: '100dvh',
-        zIndex: 50,
-        transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
-        transition: 'transform 260ms cubic-bezier(0.4, 0, 0.2, 1)',
-      }
-    : {};
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
+  useEffect(() => {
+    const h = () => setMobileOpen(true);
+    document.addEventListener('we:open-sidebar', h);
+    return () => document.removeEventListener('we:open-sidebar', h);
+  }, []);
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
+  const nav = (
+    <aside
+      className="flex flex-col h-screen shrink-0"
+      style={{
+        width: 'var(--sidebar-w)',
+        background: '#FFFFFF',
+        borderRight: '0.5px solid var(--border)',
+      }}
+    >
+      {/* Logo + portal label */}
+      <div className="px-5 pt-6 pb-1">
+        <div className="flex items-center gap-2.5">
+          <Image
+            src="/WE logo FC Mar2024.png"
+            alt="WE"
+            width={34}
+            height={34}
+            className="h-[34px] w-auto"
+            priority
+          />
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
+            Timekeeping
+          </span>
+        </div>
+        <p style={{ fontSize: 9, fontWeight: 500, letterSpacing: 2, color: '#c4a96a', marginTop: 6 }}>
+          {portalLabel}
+        </p>
+      </div>
+
+      {/* Divider */}
+      <div className="mx-5 mt-4 mb-3" style={{ height: '0.5px', background: 'var(--border)' }} />
+
+      {/* Nav */}
+      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
+        {items.map(({ label, href, icon: Icon }) => {
+          const active = isActive(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className="flex items-center gap-2.5 px-3 py-[9px] rounded-md relative transition-colors duration-150"
+              style={{
+                fontSize: 12.5,
+                fontWeight: active ? 600 : 400,
+                color: active ? '#1a1a1a' : '#999',
+                background: active ? '#FAFAF8' : 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                if (!active) { e.currentTarget.style.color = '#555'; e.currentTarget.style.background = '#FAFAF8'; }
+              }}
+              onMouseLeave={(e) => {
+                if (!active) { e.currentTarget.style.color = '#999'; e.currentTarget.style.background = 'transparent'; }
+              }}
+            >
+              {active && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2" style={{
+                  width: 2.5, height: 16, background: '#e31c79', borderRadius: 2,
+                }} />
+              )}
+              <Icon size={15} strokeWidth={1.5} />
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* User */}
+      <div className="mx-3 mb-4 mt-3 pt-3" style={{ borderTop: '0.5px solid var(--border)' }}>
+        <div className="flex items-center gap-2.5 px-3 py-2">
+          <div
+            className="shrink-0 flex items-center justify-center rounded-full"
+            style={{ width: 30, height: 30, background: '#f0ebe5', fontSize: 10, fontWeight: 600, color: '#999' }}
+          >
+            {firstName[0]?.toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p style={{ fontSize: 12, fontWeight: 500, color: '#1a1a1a' }} className="truncate">{firstName}</p>
+            {userEmail && <p style={{ fontSize: 10, color: '#bbb' }} className="truncate">{userEmail}</p>}
+          </div>
+        </div>
+        {onSignOut && (
+          <button
+            onClick={onSignOut}
+            className="flex items-center gap-1.5 px-3 py-1.5 mt-0.5 transition-colors duration-150"
+            style={{ fontSize: 10, color: '#ccc' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#e31c79')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#ccc')}
+          >
+            <LogOut size={12} strokeWidth={1.5} />
+            Sign out
+          </button>
+        )}
+      </div>
+    </aside>
+  );
 
   return (
     <>
-      {/* Mobile backdrop */}
-      {isMobile && mobileOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          style={{ background: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(2px)' }}
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
+      {/* Desktop */}
+      <div className="hidden lg:block">{nav}</div>
 
-      <aside
-        className="flex flex-col h-screen shrink-0"
-        style={{
-          width: 'var(--we-sidebar-width)',
-          background: 'var(--we-navy)',
-          ...mobileStyle,
-        }}
-      >
-        {/* Logo */}
-        <div className="px-5 pt-6 pb-4 flex items-center justify-between">
-          <Image
-            src="/WE-logo-SEPT2024v3-WHT.png"
-            alt="West End Workforce"
-            width={160}
-            height={40}
-            className="h-8 w-auto"
-            priority
-          />
-          {isMobile && (
-            <button
-              onClick={() => setMobileOpen(false)}
-              className="p-1.5 rounded-lg transition-colors"
-              style={{ color: 'rgba(255,255,255,0.5)' }}
-              aria-label="Close menu"
-            >
-              <X size={18} />
+      {/* Mobile trigger */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 flex items-center px-4 h-12" style={{ background: '#FFFFFF', borderBottom: '0.5px solid var(--border)' }}>
+        <button onClick={() => setMobileOpen(true)} style={{ color: '#999' }}><Menu size={18} strokeWidth={1.5} /></button>
+        <div className="flex items-center gap-2 ml-3">
+          <Image src="/WE logo FC Mar2024.png" alt="WE" width={24} height={24} className="h-6 w-auto" />
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>Timekeeping</span>
+        </div>
+      </div>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="lg:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setMobileOpen(false)} />
+          <div className="relative h-full" style={{ width: 'var(--sidebar-w)' }}>
+            {nav}
+            <button onClick={() => setMobileOpen(false)} className="absolute top-5 right-3" style={{ color: '#ccc' }}>
+              <X size={16} strokeWidth={1.5} />
             </button>
-          )}
-        </div>
-
-        {/* Role label */}
-        <div className="px-5 mb-4">
-          <span
-            className="text-[10px] font-semibold uppercase tracking-[0.15em]"
-            style={{ color: 'rgba(255, 255, 255, 0.3)' }}
-          >
-            {role === 'admin' ? 'Admin Portal' : role === 'manager' ? 'Manager Portal' : 'Employee Portal'}
-          </span>
-        </div>
-
-        {/* Divider */}
-        <div className="mx-5 mb-3" style={{ height: '0.5px', background: 'rgba(255, 255, 255, 0.08)' }} />
-
-        {/* Navigation */}
-        <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
-          {items.map(({ label, href, icon: Icon }) => {
-            const active = isActive(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-150 relative"
-                style={{
-                  color: active ? '#ffffff' : 'rgba(255, 255, 255, 0.5)',
-                  background: active ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                }}
-                onMouseEnter={(e) => {
-                  if (!active) {
-                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!active) {
-                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
-                    e.currentTarget.style.background = 'transparent';
-                  }
-                }}
-              >
-                {active && (
-                  <span
-                    className="absolute left-0 top-1/2 -translate-y-1/2 rounded-full"
-                    style={{ width: '2px', height: '16px', background: 'var(--we-pink)' }}
-                  />
-                )}
-                <Icon size={16} style={{ opacity: active ? 1 : 0.7 }} />
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Bottom: user + sign out */}
-        <div
-          className="mx-3 mb-4 mt-4 pt-4"
-          style={{ borderTop: '0.5px solid rgba(255, 255, 255, 0.08)' }}
-        >
-          <div className="flex items-center gap-3 px-3 py-2">
-            <div
-              className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center text-[11px] font-bold"
-              style={{
-                background: 'rgba(227, 28, 121, 0.15)',
-                color: '#e31c79',
-                border: '0.5px solid rgba(227, 28, 121, 0.2)',
-              }}
-            >
-              {firstName[0]?.toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-semibold truncate" style={{ color: '#ffffff' }}>
-                {firstName}
-              </p>
-              {userEmail && (
-                <p className="text-[10px] truncate" style={{ color: 'rgba(255, 255, 255, 0.35)' }}>
-                  {userEmail}
-                </p>
-              )}
-            </div>
           </div>
-
-          {onSignOut && (
-            <button
-              onClick={onSignOut}
-              className="w-full flex items-center gap-2 px-3 py-2 text-[12px] rounded-lg transition-colors duration-150 mt-0.5"
-              style={{ color: 'rgba(255, 255, 255, 0.4)' }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255, 255, 255, 0.4)')}
-            >
-              <LogOut size={14} />
-              Sign out
-            </button>
-          )}
         </div>
-      </aside>
+      )}
     </>
   );
 }
