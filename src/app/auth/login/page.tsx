@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const router = useRouter();
   const supabase = createSupabaseClient();
 
@@ -61,7 +62,8 @@ export default function LoginPage() {
       if (!emp) { setError('Employee profile not found'); await supabase.auth.signOut(); setLoading(false); return; }
       if (!emp.is_active) { setError('Account deactivated'); await supabase.auth.signOut(); setLoading(false); return; }
 
-      localStorage.setItem('rememberEmail', email);
+      if (rememberMe) localStorage.setItem('rememberEmail', email);
+      else localStorage.removeItem('rememberEmail');
       localStorage.setItem('userRole', emp.role);
       const r = emp.role?.toLowerCase();
       router.push(r === 'admin' ? '/admin' : r === 'manager' ? '/manager' : '/employee');
@@ -101,9 +103,8 @@ export default function LoginPage() {
         </div>
 
         {/* Title */}
-        <div className="text-[22px] mb-1" style={{ color: '#e8e8e8', letterSpacing: '-0.3px' }}>
-          <span className="font-light">W</span><span className="font-semibold" style={{ color: '#e31c79' }}>|</span><span className="font-light">E </span>
-          <span className="font-semibold">Timekeeping</span>
+        <div className="text-[17px] mb-1" style={{ color: '#e8e8e8', fontFamily: 'Montserrat, sans-serif', fontWeight: 700, letterSpacing: '0.2px' }}>
+          W<span style={{ color: '#e31c79' }}>|</span>E Timekeeping
         </div>
         <p className="text-[12px] mb-7" style={{ color: 'rgba(232,232,232,0.35)', letterSpacing: '0.2px' }}>
           Sign in to your account
@@ -126,7 +127,7 @@ export default function LoginPage() {
               color: '#e8e8e8',
               fontSize: 12,
             }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(227,28,120,0.40)'; }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
             onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
           />
 
@@ -145,9 +146,17 @@ export default function LoginPage() {
               color: '#e8e8e8',
               fontSize: 12,
             }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(227,28,120,0.40)'; }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
             onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
           />
+
+          {/* Remember me */}
+          <label className="flex items-center gap-2 mb-2.5 cursor-pointer" style={{ justifyContent: 'flex-start' }}>
+            <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}
+              className="w-3 h-3 rounded accent-[#e31c79]"
+              style={{ background: 'transparent', border: '0.5px solid rgba(255,255,255,0.12)' }} />
+            <span className="text-[11px]" style={{ color: 'rgba(232,232,232,0.3)' }}>Remember me</span>
+          </label>
 
           {error && (
             <div className="flex items-center gap-2 mb-2.5 px-3 py-2 text-[12px]" style={{
