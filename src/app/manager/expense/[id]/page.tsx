@@ -11,7 +11,6 @@ import {
   AlertCircle,
   CheckCircle2,
   XCircle,
-  RotateCw,
   User,
 } from 'lucide-react';
 
@@ -96,34 +95,22 @@ const formatCurrency = (amount: number | null | undefined) => {
   }).format(amount);
 };
 
-const reportStatusBadge = (status: ExpenseReport['status']) => {
-  const base =
-    'inline-flex px-2 py-1 rounded-full text-xs font-medium border';
-  switch (status) {
-    case 'submitted':
-      return `${base} bg-amber-50 text-amber-700 border-amber-200`;
-    case 'approved':
-      return `${base} bg-emerald-50 text-emerald-700 border-emerald-200`;
-    case 'rejected':
-      return `${base} bg-red-50 text-red-700 border-red-200`;
-    default:
-      return `${base} bg-gray-100 text-gray-700 border-gray-200`;
-  }
-};
-
-const lineStatusChip = (status: ExpenseLine['status']) => {
-  const base =
-    'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border';
-  switch (status) {
-    case 'submitted':
-      return `${base} bg-amber-50 text-amber-700 border-amber-200`;
-    case 'approved':
-      return `${base} bg-emerald-50 text-emerald-700 border-emerald-200`;
-    case 'rejected':
-      return `${base} bg-red-50 text-red-700 border-red-200`;
-    default:
-      return `${base} bg-gray-100 text-gray-700 border-gray-200`;
-  }
+const StatusBadge = ({ status }: { status: string }) => {
+  const colors: Record<string, string> = {
+    submitted: 'bg-amber-50 text-amber-700 border-amber-200',
+    approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    rejected: 'bg-red-50 text-red-700 border-red-200',
+    draft: 'bg-gray-50 text-gray-600 border-gray-200',
+  };
+  const cls = colors[status] || 'bg-gray-50 text-gray-600 border-gray-200';
+  return (
+    <span
+      className={`inline-flex items-center px-2 py-0.5 border font-medium ${cls}`}
+      style={{ fontSize: 9, borderRadius: 3 }}
+    >
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  );
 };
 
 export default function ManagerExpenseReportPage() {
@@ -171,7 +158,6 @@ export default function ManagerExpenseReportPage() {
         return;
       }
 
-      // Load report + basic employee info
       const { data: reportData, error: reportError } = await supabase
         .from('expense_reports')
         .select(
@@ -206,7 +192,6 @@ export default function ManagerExpenseReportPage() {
         created_at: reportData.created_at,
       };
 
-      // Load lines
       const { data: lineData, error: lineError } = await supabase
         .from('expenses')
         .select('*')
@@ -221,7 +206,6 @@ export default function ManagerExpenseReportPage() {
 
       const baseLines = (lineData || []) as ExpenseLine[];
 
-      // 🔧 Derive report status from line statuses with correct rules
       const lineStatuses = baseLines.map((l) => l.status);
       let derivedStatus: ExpenseReport['status'] = cleanReport.status;
 
@@ -236,10 +220,8 @@ export default function ManagerExpenseReportPage() {
         } else if (allApproved) {
           derivedStatus = 'approved';
         } else if (hasSubmitted) {
-          // While anything is still being reviewed, show "submitted"
           derivedStatus = 'submitted';
         } else if (hasRejected) {
-          // Only once there are no submitted lines left and at least one rejected
           derivedStatus = 'rejected';
         } else {
           derivedStatus = cleanReport.status;
@@ -251,7 +233,6 @@ export default function ManagerExpenseReportPage() {
         status: derivedStatus,
       });
 
-      // Load any projects referenced (for display only)
       const projectIds = [
         ...new Set(
           baseLines
@@ -304,7 +285,7 @@ export default function ManagerExpenseReportPage() {
 
   const approveReport = async () => {
     if (!report) return;
-  
+
     if (
       !window.confirm(
         'Approve this entire expense report? This will finalize all approved/submitted lines.'
@@ -312,20 +293,20 @@ export default function ManagerExpenseReportPage() {
     ) {
       return;
     }
-  
+
     try {
       setIsWorking(true);
       setActionError(null);
       setActionMessage(null);
-  
+
       const res = await fetch(`/api/expense-reports/${report.id}/finalize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'approve' }),
       });
-  
+
       const data = await res.json().catch(() => ({}));
-  
+
       if (!res.ok) {
         console.error('Approve report error:', data);
         setActionError(
@@ -334,11 +315,7 @@ export default function ManagerExpenseReportPage() {
         );
         return;
       }
-  
-      // optional toast/banner if you want
-      // setActionMessage('Expense report approved.');
-  
-      // 🔁 redirect back to manager dashboard after final approval
+
       router.push('/manager');
     } catch (err) {
       console.error('Approve report network error:', err);
@@ -346,10 +323,6 @@ export default function ManagerExpenseReportPage() {
     } finally {
       setIsWorking(false);
     }
-  };   
-
-  const handleRefresh = () => {
-    loadReport();
   };
 
   const approveLine = async (line: ExpenseLine) => {
@@ -477,10 +450,10 @@ export default function ManagerExpenseReportPage() {
   const hasRejected = totalRejected > 0;
 
   const canFinalApprove =
-  totalSubmitted === 0 &&
-  totalRejected === 0 &&
-  lines.length > 0 &&
-  totalApproved === lines.length;
+    totalSubmitted === 0 &&
+    totalRejected === 0 &&
+    lines.length > 0 &&
+    totalApproved === lines.length;
 
   const computedTotal = lines.reduce((sum, line) => {
     const value = Number.isFinite(line.amount) ? line.amount : 0;
@@ -493,6 +466,22 @@ export default function ManagerExpenseReportPage() {
     acc[line.category] = (acc[line.category] || 0) + (value || 0);
     return acc;
   }, {});
+
+  const sectionHeaderStyle: React.CSSProperties = {
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: 1,
+    color: '#c0bab2',
+    textTransform: 'uppercase',
+    marginBottom: 12,
+  };
+
+  const cardStyle: React.CSSProperties = {
+    background: '#fff',
+    border: '0.5px solid #e8e4df',
+    borderRadius: 10,
+    padding: 20,
+  };
 
   if (isLoading) {
     return (
@@ -510,397 +499,503 @@ export default function ManagerExpenseReportPage() {
 
   if (loadErrorMessage && !report) {
     return (
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-2">
-          <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-          <span className="text-red-700 text-sm">{loadErrorMessage}</span>
+      <div style={{ padding: '36px 40px', maxWidth: 800 }}>
+        <div style={{ ...cardStyle, display: 'flex', gap: 10, alignItems: 'flex-start', borderColor: '#f5d0d0' }}>
+          <AlertCircle className="h-5 w-5" style={{ color: '#e05252', flexShrink: 0, marginTop: 1 }} />
+          <span style={{ fontSize: 12.5, color: '#c44' }}>{loadErrorMessage}</span>
         </div>
-      </main>
+      </div>
     );
   }
 
   if (!report) return null;
 
   return (
-    <>
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-          {/* header */}
-          <div className="bg-[#1a1a1a] text.white px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 text-xs mb-1">
-                <span className={reportStatusBadge(report.status)}>
-                  {report.status.charAt(0).toUpperCase() +
-                    report.status.slice(1)}
-                </span>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-white/10 border border.white/30 text-white">
-                  Manager View
-                </span>
-              </div>
-              <h1 className="text-base sm:text-lg font-semibold">
-                Expense Report Details
-              </h1>
-              <p className="mt-1 text-xs text-gray-200 flex items-center gap-2">
-                {employeeName && (
-                  <>
-                    <User className="h-3 w-3 text-gray-300" />
-                    <span>{employeeName}</span>
-                    <span className="opacity-40">•</span>
-                  </>
-                )}
-                <Calendar className="h-3 w-3 text-gray-300" />
-                <span>
-                  Period:{' '}
-                  {report.period_month
-                    ? formatDate(report.period_month)
-                    : formatDate(report.created_at)}
-                </span>
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-[11px] uppercase tracking-wide text-gray-300">
-                Total Submitted
-              </p>
-              <p className="text-xl font-bold text-white">
-                {formatCurrency(computedTotal)}
-              </p>
-              <p className="mt-1 text-[11px] text-gray-200">
-                {totalSubmitted} submitted • {totalApproved} approved •{' '}
-                {totalRejected} rejected
-              </p>
-            </div>
-          </div>
+    <div style={{ padding: '36px 40px' }}>
+      {/* Back link */}
+      <button
+        onClick={() => router.push('/manager/expenses')}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          background: 'none',
+          border: 'none',
+          color: '#e31c79',
+          fontSize: 12,
+          cursor: 'pointer',
+          padding: 0,
+          marginBottom: 24,
+        }}
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        Back to Expenses
+      </button>
 
-          {/* body */}
-          <div className="px-6 py-6 space-y-6 bg-gray-50">
-            {hasRejected && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-2">
-                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-                <div className="text-sm text-red-800">
-                  <p className="font-semibold">
-                    This report has rejected entries.
-                  </p>
-                  <p className="mt-1">
-                    The employee will see these lines highlighted in red with
-                    your rejection reason.
-                  </p>
-                </div>
-              </div>
-            )}
+      {/* Page title */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
+            Expense Report Details
+          </h1>
+          <StatusBadge status={report.status} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: '#bbb' }}>
+          {employeeName && (
+            <>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <User className="h-3 w-3" style={{ color: '#ccc' }} />
+                {employeeName}
+              </span>
+              <span style={{ opacity: 0.4 }}>&bull;</span>
+            </>
+          )}
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Calendar className="h-3 w-3" style={{ color: '#ccc' }} />
+            Period: {report.period_month ? formatDate(report.period_month) : formatDate(report.created_at)}
+          </span>
+          <span style={{ opacity: 0.4 }}>&bull;</span>
+          <span style={{ fontWeight: 600, color: '#1a1a1a' }}>
+            {formatCurrency(computedTotal)}
+          </span>
+        </div>
+      </div>
 
-            {actionError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" />
-                <span>{actionError}</span>
-              </div>
-            )}
-            {actionMessage && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-700 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" />
-                <span>{actionMessage}</span>
-              </div>
-            )}
-
-            {/* title / period card */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
-              <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">
-                    Report Title
-                  </label>
-                  <input
-                    type="text"
-                    value={report.title}
-                    disabled
-                    className="w-full rounded-md border border-gray-200 bg-gray-50 text-sm px-3 py-2 text-gray-700"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">
-                    Expense Period
-                  </label>
-                  <input
-                    type="text"
-                    value={
-                      report.period_month
-                        ? formatDate(report.period_month)
-                        : formatDate(report.created_at)
-                    }
-                    disabled
-                    className="w-full rounded-md border border-gray-200 bg-gray-50 text-sm px-3 py-2 text-gray-700"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* category summary */}
-            {Object.keys(categoryTotals).length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
-                <h2 className="text-xs font-semibold text-gray-700 mb-3">
-                  Category Summary
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {Object.entries(categoryTotals).map(([category, total]) => (
-                    <div
-                      key={category}
-                      className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 border border-gray-100"
-                    >
-                      <span className="text-xs text-gray-700">
-                        {getCategoryLabel(category)}
-                      </span>
-                      <span className="text-xs font-semibold text-gray-900">
-                        {formatCurrency(total)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* expense entry section */}
-            <div className="rounded-xl overflow-hidden border border-gray-200 bg-white">
-  <div className="bg-[#1a1a1a] text-white px-4 py-2 flex items-center">
-    <div className="flex items-center gap-2">
-      <FileText className="h-4 w-4 text-gray-100" />
-      <span className="text-xs font-semibold tracking-wide">
-        Expense Entries
-      </span>
-    </div>
-  </div>
-              <div className="p-4 sm:p-5 space-y-4">
-                {lines.length === 0 ? (
-                  <p className="text-sm text-gray-500">
-                    No expense entries are attached to this report.
-                  </p>
-                ) : (
-                  <div className="space-y-4">
-                    {lines.map((line, idx) => {
-                      const isRejectedLine = line.status === 'rejected';
-                      const entryBg = isRejectedLine
-                        ? 'bg-red-50 border-red-300'
-                        : 'bg-gray-50 border-gray-200';
-
-                      return (
-                        <div
-                          key={line.id}
-                          className={`rounded-xl border ${entryBg} px-4 py-4 sm:px-5 sm:py-5`}
-                        >
-                          {/* line header */}
-                          <div className="flex items.center justify-between gap-3 mb-3">
-                            <div className="flex items-center gap-2">
-                              <div className="h-6 w-6 rounded-full bg-[#ff3b96] text-white text-xs font-semibold flex items-center justify-center">
-                                {idx + 1}
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-800">
-                                  Entry #{idx + 1}
-                                </span>
-                                <span className="text-[11px] text-gray-500">
-                                  Submitted on{' '}
-                                  {formatDate(line.expense_date)}
-                                </span>
-                                {isRejectedLine && (
-                                  <span className="mt-1 text-[11px] text-red-700">
-                                    Rejection reason:{' '}
-                                    {line.rejection_reason ||
-                                      'No reason was provided.'}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                              <span className={lineStatusChip(line.status)}>
-                                {line.status.charAt(0).toUpperCase() +
-                                  line.status.slice(1)}
-                              </span>
-                              <div className="flex gap-1 mt-1">
-                                <button
-                                  type="button"
-                                  disabled={
-                                    isWorking ||
-                                    line.status === 'approved'
-                                  }
-                                  onClick={() => approveLine(line)}
-                                  className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-40"
-                                >
-                                  <CheckCircle2 className="h-3 w-3" />
-                                  Approve
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={
-                                    isWorking ||
-                                    (line.status !== 'submitted' &&
-                                      line.status !== 'rejected')
-                                  }
-                                  onClick={() => rejectLine(line)}
-                                  className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-40"
-                                >
-                                  <XCircle className="h-3 w-3" />
-                                  Reject
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* line details */}
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
-                            <div>
-                              <p className="font-semibold text-gray-600">
-                                Date
-                              </p>
-                              <p className="text-gray-900">
-                                {formatDate(line.expense_date)}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="font-semibold text-gray-600">
-                                Project
-                              </p>
-                              <p className="text-gray-900">
-                                {line.project_name
-                                  ? `${line.project_name}${
-                                      line.project_code
-                                        ? ` (${line.project_code})`
-                                        : ''
-                                    }`
-                                  : '—'}
-                              </p>
-                              {line.client_name && (
-                                <p className="text-[11px] text-gray-500">
-                                  {line.client_name}
-                                </p>
-                              )}
-                            </div>
-                            <div>
-                              <p className="font-semibold text-gray-600">
-                                Category
-                              </p>
-                              <p className="text-gray-900">
-                                {getCategoryLabel(line.category)}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="font-semibold text-gray-600">
-                                Amount
-                              </p>
-                              <p className="text-gray-900">
-                                {formatCurrency(line.amount)}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                            <div>
-                              <p className="font-semibold text-gray-600">
-                                Vendor / Description
-                              </p>
-                              <p className="text-gray-900">
-                                {line.vendor || '—'}
-                              </p>
-                              {line.description && (
-                                <p className="text-[11px] text-gray-600 mt-1">
-                                  {line.description}
-                                </p>
-                              )}
-                            </div>
-                            <div>
-                              <p className="font-semibold text-gray-600">
-                                Receipt
-                              </p>
-                              {line.receipt_url ? (
-                                <div>
-                                  {/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(line.receipt_url) ? (
-                                    <a href={line.receipt_url} target="_blank" rel="noreferrer">
-                                      <img
-                                        src={line.receipt_url}
-                                        alt="Receipt"
-                                        className="mt-2 max-w-[200px] max-h-[200px] rounded-lg border border-gray-200 object-cover hover:opacity-80 transition-opacity cursor-zoom-in"
-                                      />
-                                    </a>
-                                  ) : (
-                                    <a
-                                      href={line.receipt_url}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="inline-flex items-center gap-1 text-[#e31c79] hover:underline mt-1"
-                                    >
-                                      <Receipt className="h-3 w-3" />
-                                      <span>View receipt</span>
-                                    </a>
-                                  )}
-                                </div>
-                              ) : (
-                                <p className="text-gray-500">
-                                  No receipt attached.
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* footer */}
-                <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-dashed border-gray-200">
-  <div className="flex items-center gap-6">
-    <div>
-      <p className="text-xs font-semibold text-gray-600">
-        Total Expenses
-      </p>
-      <p className="text-base font-bold text-[#e31c79]">
-        {formatCurrency(computedTotal)}
-      </p>
-    </div>
-    <div>
-      <p className="text-xs font-semibold text-gray-600">
-        Entries
-      </p>
-      <p className="text-sm text-gray-800">
-        {lines.length} of {lines.length}
-      </p>
-    </div>
-  </div>
-
-  <div className="flex justify-end w-full gap-2">
-    {/* Final Approve Report – hook this into your existing handler */}
-    <button
-  type="button"
-  onClick={approveReport}
-  disabled={!canFinalApprove || isWorking}
-  title={
-    !canFinalApprove
-      ? 'All entries must be approved before finalizing'
-      : 'Approve the full expense report'
-  }
-  className={`
-    px-4 py-2 text-xs font-semibold rounded-md 
-    transition-colors
-    ${canFinalApprove 
-      ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
-      : 'bg-gray-300 text-gray-500 cursor-not-allowed'}
-  `}
->
-  Final Approve Report
-</button>
-
-    {/* Back to dashboard – now dark blue with white text */}
-    <button
-      type="button"
-      onClick={() => router.push('/manager')}
-      className="px-4 py-2 text-xs font-semibold rounded-md bg-[#1a1a1a] text-white hover:bg-[#1a1a1a] transition-colors"
-    >
-      Back to Manager Dashboard
-    </button>
-  </div>
-</div>
-              </div>
-            </div>
+      {/* Alerts */}
+      {hasRejected && (
+        <div
+          style={{
+            ...cardStyle,
+            display: 'flex',
+            gap: 10,
+            alignItems: 'flex-start',
+            borderColor: '#f5d0d0',
+            marginBottom: 16,
+            background: '#fef8f8',
+          }}
+        >
+          <AlertCircle className="h-4 w-4" style={{ color: '#e05252', flexShrink: 0, marginTop: 2 }} />
+          <div style={{ fontSize: 12, color: '#a33' }}>
+            <p style={{ fontWeight: 600, margin: 0 }}>This report has rejected entries.</p>
+            <p style={{ marginTop: 4, margin: 0 }}>
+              The employee will see these lines highlighted with your rejection reason.
+            </p>
           </div>
         </div>
-      </main>
-    </>
+      )}
+
+      {actionError && (
+        <div
+          style={{
+            ...cardStyle,
+            display: 'flex',
+            gap: 8,
+            alignItems: 'center',
+            borderColor: '#f5d0d0',
+            marginBottom: 16,
+            background: '#fef8f8',
+            padding: 12,
+          }}
+        >
+          <AlertCircle className="h-3.5 w-3.5" style={{ color: '#e05252' }} />
+          <span style={{ fontSize: 12, color: '#c44' }}>{actionError}</span>
+        </div>
+      )}
+      {actionMessage && (
+        <div
+          style={{
+            ...cardStyle,
+            display: 'flex',
+            gap: 8,
+            alignItems: 'center',
+            borderColor: '#c3e6cb',
+            marginBottom: 16,
+            background: '#f4faf5',
+            padding: 12,
+          }}
+        >
+          <CheckCircle2 className="h-3.5 w-3.5" style={{ color: '#4aba70' }} />
+          <span style={{ fontSize: 12, color: '#2d7a3f' }}>{actionMessage}</span>
+        </div>
+      )}
+
+      {/* Report Title / Period card */}
+      <div style={{ ...cardStyle, marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#c0bab2', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>
+              Report Title
+            </label>
+            <input
+              type="text"
+              value={report.title}
+              disabled
+              style={{
+                width: '100%',
+                border: '0.5px solid #e8e4df',
+                borderRadius: 7,
+                fontSize: 12,
+                padding: '8px 12px',
+                color: '#555',
+                background: '#FDFCFB',
+              }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#c0bab2', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>
+              Expense Period
+            </label>
+            <input
+              type="text"
+              value={
+                report.period_month
+                  ? formatDate(report.period_month)
+                  : formatDate(report.created_at)
+              }
+              disabled
+              style={{
+                width: '100%',
+                border: '0.5px solid #e8e4df',
+                borderRadius: 7,
+                fontSize: 12,
+                padding: '8px 12px',
+                color: '#555',
+                background: '#FDFCFB',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Category summary */}
+      {Object.keys(categoryTotals).length > 0 && (
+        <div style={{ ...cardStyle, marginBottom: 16 }}>
+          <h2 style={sectionHeaderStyle}>Category Summary</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+            {Object.entries(categoryTotals).map(([category, total]) => (
+              <div
+                key={category}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  background: '#FDFCFB',
+                  borderRadius: 7,
+                  border: '0.5px solid #f5f2ee',
+                }}
+              >
+                <span style={{ fontSize: 11, color: '#777' }}>
+                  {getCategoryLabel(category)}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#1a1a1a' }}>
+                  {formatCurrency(total)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Expense entries */}
+      <div style={{ ...cardStyle, padding: 0, marginBottom: 16 }}>
+        <div
+          style={{
+            padding: '10px 20px',
+            borderBottom: '0.5px solid #f5f2ee',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <FileText className="h-3.5 w-3.5" style={{ color: '#ccc' }} />
+            <span style={sectionHeaderStyle as any}>Expense Entries</span>
+          </div>
+          {totalSubmitted > 0 && (
+            <button
+              type="button"
+              disabled={isWorking}
+              onClick={approveAllSubmitted}
+              style={{
+                background: '#e31c79',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                padding: '6px 14px',
+                fontSize: 11,
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            >
+              Approve All Submitted ({totalSubmitted})
+            </button>
+          )}
+        </div>
+
+        <div style={{ padding: 20 }}>
+          {lines.length === 0 ? (
+            <p style={{ fontSize: 12.5, color: '#999', textAlign: 'center', padding: '20px 0' }}>
+              No expense entries are attached to this report.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {lines.map((line, idx) => {
+                const isRejectedLine = line.status === 'rejected';
+
+                return (
+                  <div
+                    key={line.id}
+                    style={{
+                      border: isRejectedLine ? '0.5px solid #f5d0d0' : '0.5px solid #f5f2ee',
+                      borderRadius: 8,
+                      padding: 16,
+                      background: isRejectedLine ? '#fef8f8' : '#FDFCFB',
+                    }}
+                  >
+                    {/* line header */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: '50%',
+                            background: '#e31c79',
+                            color: '#fff',
+                            fontSize: 10,
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {idx + 1}
+                        </div>
+                        <div>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#555' }}>
+                            Entry #{idx + 1}
+                          </span>
+                          <span style={{ fontSize: 11, color: '#bbb', marginLeft: 8 }}>
+                            {formatDate(line.expense_date)}
+                          </span>
+                          {isRejectedLine && (
+                            <p style={{ fontSize: 11, color: '#c44', marginTop: 2, margin: 0 }}>
+                              Rejection: {line.rejection_reason || 'No reason provided.'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <StatusBadge status={line.status} />
+                        <button
+                          type="button"
+                          disabled={isWorking || line.status === 'approved'}
+                          onClick={() => approveLine(line)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            padding: '4px 10px',
+                            fontSize: 10,
+                            borderRadius: 4,
+                            border: '0.5px solid #c3e6cb',
+                            background: '#f4faf5',
+                            color: '#2d7a3f',
+                            cursor: 'pointer',
+                            opacity: isWorking || line.status === 'approved' ? 0.4 : 1,
+                          }}
+                        >
+                          <CheckCircle2 className="h-3 w-3" />
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          disabled={
+                            isWorking ||
+                            (line.status !== 'submitted' && line.status !== 'rejected')
+                          }
+                          onClick={() => rejectLine(line)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            padding: '4px 10px',
+                            fontSize: 10,
+                            borderRadius: 4,
+                            border: '0.5px solid #f5d0d0',
+                            background: '#fef8f8',
+                            color: '#c44',
+                            cursor: 'pointer',
+                            opacity:
+                              isWorking || (line.status !== 'submitted' && line.status !== 'rejected')
+                                ? 0.4
+                                : 1,
+                          }}
+                        >
+                          <XCircle className="h-3 w-3" />
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* line details */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 600, color: '#c0bab2', textTransform: 'uppercase' as const, letterSpacing: 1, margin: 0 }}>Date</p>
+                        <p style={{ fontSize: 12, color: '#555', marginTop: 2 }}>{formatDate(line.expense_date)}</p>
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 600, color: '#c0bab2', textTransform: 'uppercase' as const, letterSpacing: 1, margin: 0 }}>Project</p>
+                        <p style={{ fontSize: 12, color: '#555', marginTop: 2 }}>
+                          {line.project_name
+                            ? `${line.project_name}${line.project_code ? ` (${line.project_code})` : ''}`
+                            : '\u2014'}
+                        </p>
+                        {line.client_name && (
+                          <p style={{ fontSize: 10, color: '#bbb', marginTop: 1 }}>{line.client_name}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 600, color: '#c0bab2', textTransform: 'uppercase' as const, letterSpacing: 1, margin: 0 }}>Category</p>
+                        <p style={{ fontSize: 12, color: '#555', marginTop: 2 }}>{getCategoryLabel(line.category)}</p>
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 600, color: '#c0bab2', textTransform: 'uppercase' as const, letterSpacing: 1, margin: 0 }}>Amount</p>
+                        <p style={{ fontSize: 12, color: '#555', marginTop: 2 }}>{formatCurrency(line.amount)}</p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 12 }}>
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 600, color: '#c0bab2', textTransform: 'uppercase' as const, letterSpacing: 1, margin: 0 }}>Vendor / Description</p>
+                        <p style={{ fontSize: 12, color: '#555', marginTop: 2 }}>{line.vendor || '\u2014'}</p>
+                        {line.description && (
+                          <p style={{ fontSize: 11, color: '#999', marginTop: 2 }}>{line.description}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 600, color: '#c0bab2', textTransform: 'uppercase' as const, letterSpacing: 1, margin: 0 }}>Receipt</p>
+                        {line.receipt_url ? (
+                          <div>
+                            {/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(line.receipt_url) ? (
+                              <a href={line.receipt_url} target="_blank" rel="noreferrer">
+                                <img
+                                  src={line.receipt_url}
+                                  alt="Receipt"
+                                  style={{
+                                    marginTop: 6,
+                                    maxWidth: 180,
+                                    maxHeight: 180,
+                                    borderRadius: 7,
+                                    border: '0.5px solid #e8e4df',
+                                    objectFit: 'cover',
+                                    cursor: 'zoom-in',
+                                  }}
+                                />
+                              </a>
+                            ) : (
+                              <a
+                                href={line.receipt_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  color: '#e31c79',
+                                  fontSize: 12,
+                                  marginTop: 4,
+                                }}
+                              >
+                                <Receipt className="h-3 w-3" />
+                                <span>View receipt</span>
+                              </a>
+                            )}
+                          </div>
+                        ) : (
+                          <p style={{ fontSize: 12, color: '#bbb', marginTop: 2 }}>No receipt attached.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div
+          style={{
+            padding: '16px 20px',
+            borderTop: '0.5px solid #f5f2ee',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div style={{ display: 'flex', gap: 24 }}>
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 600, color: '#c0bab2', textTransform: 'uppercase' as const, letterSpacing: 1, margin: 0 }}>
+                Total Expenses
+              </p>
+              <p style={{ fontSize: 16, fontWeight: 700, color: '#e31c79', marginTop: 2 }}>
+                {formatCurrency(computedTotal)}
+              </p>
+            </div>
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 600, color: '#c0bab2', textTransform: 'uppercase' as const, letterSpacing: 1, margin: 0 }}>
+                Entries
+              </p>
+              <p style={{ fontSize: 13, color: '#555', marginTop: 2 }}>
+                {totalSubmitted} submitted / {totalApproved} approved / {totalRejected} rejected
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              onClick={approveReport}
+              disabled={!canFinalApprove || isWorking}
+              title={
+                !canFinalApprove
+                  ? 'All entries must be approved before finalizing'
+                  : 'Approve the full expense report'
+              }
+              style={{
+                padding: '8px 20px',
+                fontSize: 12,
+                fontWeight: 500,
+                borderRadius: 6,
+                border: 'none',
+                cursor: canFinalApprove ? 'pointer' : 'not-allowed',
+                background: canFinalApprove ? '#e31c79' : '#eee',
+                color: canFinalApprove ? '#fff' : '#bbb',
+              }}
+            >
+              Final Approve Report
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push('/manager')}
+              style={{
+                padding: '8px 20px',
+                fontSize: 12,
+                fontWeight: 500,
+                borderRadius: 6,
+                background: 'white',
+                border: '0.5px solid #e0dcd7',
+                color: '#777',
+                cursor: 'pointer',
+              }}
+            >
+              Back to Manager Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -3,21 +3,16 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Download, 
+import {
+  BarChart3,
+  Download,
   Calendar,
   DollarSign,
   Clock,
   Users,
-  FileText,
   Receipt,
   PieChart,
-  Activity,
   ArrowRight,
-  Filter,
-  Search
 } from 'lucide-react'
 
 interface ReportData {
@@ -59,12 +54,31 @@ interface ReportData {
   }>
 }
 
+const StatusBadge = ({ status }: { status: string }) => {
+  const colors: Record<string, string> = {
+    active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    completed: 'bg-blue-50 text-blue-700 border-blue-200',
+    'on-hold': 'bg-amber-50 text-amber-700 border-amber-200',
+    approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    pending: 'bg-amber-50 text-amber-700 border-amber-200',
+    rejected: 'bg-red-50 text-red-700 border-red-200',
+  }
+  const cls = colors[status] || 'bg-gray-50 text-gray-600 border-gray-200'
+  return (
+    <span
+      className={`inline-flex items-center px-2 py-0.5 border font-medium ${cls}`}
+      style={{ fontSize: 9, borderRadius: 3 }}
+    >
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  )
+}
+
 export default function ReportsPage() {
   const router = useRouter()
   const { user, employee } = useAuth()
   const [reportData, setReportData] = useState<ReportData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedReport, setSelectedReport] = useState<string>('overview')
   const [dateRange, setDateRange] = useState('current-week')
   const [exportFormat, setExportFormat] = useState('pdf')
 
@@ -86,130 +100,29 @@ export default function ReportsPage() {
           employeeCount: 6
         },
         projectBreakdown: [
-          {
-            name: 'ABC Corp - Software Development',
-            hours: 75.5,
-            expenses: 456.80,
-            totalCost: 8750.30,
-            status: 'active'
-          },
-          {
-            name: 'ABC Corp - Tech Infrastructure',
-            hours: 45.0,
-            expenses: 234.50,
-            totalCost: 4509.50,
-            status: 'active'
-          },
-          {
-            name: 'ABC Corp - Data Analysis',
-            hours: 22.0,
-            expenses: 156.30,
-            totalCost: 2026.30,
-            status: 'active'
-          },
-          {
-            name: 'ABC Corp - Project Management',
-            hours: 14.0,
-            expenses: 400.70,
-            totalCost: 2080.70,
-            status: 'completed'
-          }
+          { name: 'ABC Corp - Software Development', hours: 75.5, expenses: 456.80, totalCost: 8750.30, status: 'active' },
+          { name: 'ABC Corp - Tech Infrastructure', hours: 45.0, expenses: 234.50, totalCost: 4509.50, status: 'active' },
+          { name: 'ABC Corp - Data Analysis', hours: 22.0, expenses: 156.30, totalCost: 2026.30, status: 'active' },
+          { name: 'ABC Corp - Project Management', hours: 14.0, expenses: 400.70, totalCost: 2080.70, status: 'completed' }
         ],
         employeePerformance: [
-          {
-            name: 'Mike Chen',
-            employeeId: 'emp1',
-            hours: 26.0,
-            expenses: 0,
-            efficiency: 95,
-            status: 'pending'
-          },
-          {
-            name: 'Sarah Johnson',
-            employeeId: 'emp2',
-            hours: 37.5,
-            expenses: 245.80,
-            efficiency: 98,
-            status: 'pending'
-          },
-          {
-            name: 'David Kim',
-            employeeId: 'emp3',
-            hours: 22.0,
-            expenses: 156.30,
-            efficiency: 92,
-            status: 'pending'
-          },
-          {
-            name: 'Lisa Wang',
-            employeeId: 'emp4',
-            hours: 40.0,
-            expenses: 0,
-            efficiency: 96,
-            status: 'approved'
-          },
-          {
-            name: 'Alex Rodriguez',
-            employeeId: 'emp5',
-            hours: 38.0,
-            expenses: 0,
-            efficiency: 89,
-            status: 'pending'
-          },
-          {
-            name: 'Emily Chen',
-            employeeId: 'emp6',
-            hours: 36.5,
-            expenses: 89.99,
-            efficiency: 94,
-            status: 'pending'
-          }
+          { name: 'Mike Chen', employeeId: 'emp1', hours: 26.0, expenses: 0, efficiency: 95, status: 'pending' },
+          { name: 'Sarah Johnson', employeeId: 'emp2', hours: 37.5, expenses: 245.80, efficiency: 98, status: 'pending' },
+          { name: 'David Kim', employeeId: 'emp3', hours: 22.0, expenses: 156.30, efficiency: 92, status: 'pending' },
+          { name: 'Lisa Wang', employeeId: 'emp4', hours: 40.0, expenses: 0, efficiency: 96, status: 'approved' },
+          { name: 'Alex Rodriguez', employeeId: 'emp5', hours: 38.0, expenses: 0, efficiency: 89, status: 'pending' },
+          { name: 'Emily Chen', employeeId: 'emp6', hours: 36.5, expenses: 89.99, efficiency: 94, status: 'pending' }
         ],
         expenseCategories: [
-          {
-            category: 'Software & Tools',
-            amount: 456.80,
-            count: 3,
-            percentage: 36.6
-          },
-          {
-            category: 'Meals & Entertainment',
-            amount: 245.80,
-            count: 2,
-            percentage: 19.7
-          },
-          {
-            category: 'Travel & Transportation',
-            amount: 234.50,
-            count: 2,
-            percentage: 18.8
-          },
-          {
-            category: 'Office Supplies',
-            amount: 156.30,
-            count: 1,
-            percentage: 12.5
-          },
-          {
-            category: 'Other',
-            amount: 153.90,
-            count: 2,
-            percentage: 12.4
-          }
+          { category: 'Software & Tools', amount: 456.80, count: 3, percentage: 36.6 },
+          { category: 'Meals & Entertainment', amount: 245.80, count: 2, percentage: 19.7 },
+          { category: 'Travel & Transportation', amount: 234.50, count: 2, percentage: 18.8 },
+          { category: 'Office Supplies', amount: 156.30, count: 1, percentage: 12.5 },
+          { category: 'Other', amount: 153.90, count: 2, percentage: 12.4 }
         ],
         timeTrends: [
-          {
-            week: 'Jan 6-12',
-            hours: 142.0,
-            expenses: 890.50,
-            employees: 5
-          },
-          {
-            week: 'Jan 13-19',
-            hours: 156.5,
-            expenses: 1247.30,
-            employees: 6
-          }
+          { week: 'Jan 6-12', hours: 142.0, expenses: 890.50, employees: 5 },
+          { week: 'Jan 13-19', hours: 156.5, expenses: 1247.30, employees: 6 }
         ]
       }
 
@@ -222,31 +135,37 @@ export default function ReportsPage() {
     // In real app, this would generate and download the report
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800'
-      case 'completed':
-        return 'bg-blue-100 text-blue-800'
-      case 'on-hold':
-        return 'bg-yellow-100 text-yellow-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
+  const getEfficiencyColor = (efficiency: number) => {
+    if (efficiency >= 95) return '#4aba70'
+    if (efficiency >= 90) return '#d4a017'
+    return '#e05252'
   }
 
-  const getEfficiencyColor = (efficiency: number) => {
-    if (efficiency >= 95) return 'text-green-600'
-    if (efficiency >= 90) return 'text-yellow-600'
-    return 'text-red-600'
+  const sectionHeaderStyle: React.CSSProperties = {
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: 1,
+    color: '#c0bab2',
+    textTransform: 'uppercase',
+    marginBottom: 16,
+  }
+
+  const cardStyle: React.CSSProperties = {
+    background: '#fff',
+    border: '0.5px solid #e8e4df',
+    borderRadius: 10,
+    padding: 20,
   }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#e31c79] mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading Reports...</p>
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-4">
+          <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
+            <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <p className="text-[13px]" style={{ color: '#bbb' }}>Loading...</p>
         </div>
       </div>
     )
@@ -255,338 +174,429 @@ export default function ReportsPage() {
   if (!reportData) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600">No report data available</p>
+        <p style={{ fontSize: 13, color: '#999' }}>No report data available</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header - EXACTLY matching Admin Dashboard */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Manager Reports & Analytics
-            </h1>
-            <p className="text-gray-600 mt-1">
-              ABC Corporation - External Approver
-            </p>
-            <p className="text-sm text-gray-500 mt-1">
-              Comprehensive insights and export capabilities
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-sm text-gray-500">Manager ID</p>
-            <p className="font-mono text-gray-900">{employee?.id}</p>
-          </div>
-        </div>
+    <div style={{ padding: '36px 40px' }}>
+      {/* Page title */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
+          Reports & Analytics
+        </h1>
+        <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb', marginTop: 4 }}>
+          Comprehensive insights and export capabilities
+        </p>
       </div>
 
       {/* Report Controls */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Calendar className="w-4 h-4 text-gray-400" />
-              <select
-                value={dateRange}
-                onChange={(e) => setDateRange(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-transparent"
-              >
-                <option value="current-week">Current Week</option>
-                <option value="last-week">Last Week</option>
-                <option value="current-month">Current Month</option>
-                <option value="last-month">Last Month</option>
-                <option value="custom">Custom Range</option>
-              </select>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Download className="w-4 h-4 text-gray-400" />
-              <select
-                value={exportFormat}
-                onChange={(e) => setExportFormat(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-transparent"
-              >
-                <option value="pdf">PDF</option>
-                <option value="excel">Excel</option>
-                <option value="csv">CSV</option>
-              </select>
-            </div>
+      <div style={{ ...cardStyle, marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Calendar className="w-3.5 h-3.5" style={{ color: '#ccc' }} />
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              style={{
+                padding: '6px 10px',
+                border: '0.5px solid #e8e4df',
+                borderRadius: 7,
+                fontSize: 12,
+                color: '#555',
+                outline: 'none',
+              }}
+            >
+              <option value="current-week">Current Week</option>
+              <option value="last-week">Last Week</option>
+              <option value="current-month">Current Month</option>
+              <option value="last-month">Last Month</option>
+              <option value="custom">Custom Range</option>
+            </select>
           </div>
 
-          <div className="flex space-x-2">
-            <button 
-              onClick={() => handleExport('weekly-summary')}
-              className="bg-[#e31c79] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#c91865] transition-colors flex items-center"
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Download className="w-3.5 h-3.5" style={{ color: '#ccc' }} />
+            <select
+              value={exportFormat}
+              onChange={(e) => setExportFormat(e.target.value)}
+              style={{
+                padding: '6px 10px',
+                border: '0.5px solid #e8e4df',
+                borderRadius: 7,
+                fontSize: 12,
+                color: '#555',
+                outline: 'none',
+              }}
             >
-              <Download className="w-4 h-4 mr-2" />
-              Export Weekly Summary
-            </button>
-            <button 
-              onClick={() => handleExport('full-report')}
-              className="bg-[#1a1a1a] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#0a2f3f] transition-colors flex items-center"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Export Full Report
-            </button>
+              <option value="pdf">PDF</option>
+              <option value="excel">Excel</option>
+              <option value="csv">CSV</option>
+            </select>
           </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => handleExport('weekly-summary')}
+            style={{
+              background: '#e31c79',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              padding: '8px 16px',
+              fontSize: 12,
+              fontWeight: 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <Download className="w-3.5 h-3.5" />
+            Export Weekly Summary
+          </button>
+          <button
+            onClick={() => handleExport('full-report')}
+            style={{
+              background: 'white',
+              color: '#777',
+              border: '0.5px solid #e0dcd7',
+              borderRadius: 6,
+              padding: '8px 16px',
+              fontSize: 12,
+              fontWeight: 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <Download className="w-3.5 h-3.5" />
+            Export Full Report
+          </button>
         </div>
       </div>
 
-      {/* Weekly Summary Cards - EXACTLY matching Admin Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="p-6 rounded-lg border bg-pink-50 text-pink-700 border-pink-200">
-          <h3 className="text-sm font-medium opacity-75">Total Hours</h3>
-          <p className="text-2xl font-bold mt-1">{reportData.weeklySummary.totalHours}</p>
-          <p className="text-sm opacity-75 mt-1">This week</p>
-        </div>
-
-        <div className="p-6 rounded-lg border bg-[#1a1a1a]/10 text-[#1a1814] border-[#33393c]/20">
-          <h3 className="text-sm font-medium opacity-75">Total Expenses</h3>
-          <p className="text-2xl font-bold mt-1">${reportData.weeklySummary.totalExpenses.toLocaleString()}</p>
-          <p className="text-sm opacity-75 mt-1">This week</p>
-        </div>
-
-        <div className="p-6 rounded-lg border bg-[#E5DDD8]/50 text-[#1a1814] border-[#E5DDD8]">
-          <h3 className="text-sm font-medium opacity-75">Pending Items</h3>
-          <p className="text-2xl font-bold mt-1">{reportData.weeklySummary.pendingHours + reportData.weeklySummary.pendingExpenses}</p>
-          <p className="text-sm opacity-75 mt-1">Awaiting approval</p>
-        </div>
-
-        <div className="p-6 rounded-lg border bg-green-50 text-green-700 border-green-200">
-          <h3 className="text-sm font-medium opacity-75">Active Employees</h3>
-          <p className="text-2xl font-bold mt-1">{reportData.weeklySummary.employeeCount}</p>
-          <p className="text-sm opacity-75 mt-1">This week</p>
-        </div>
+      {/* Summary stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 20 }}>
+        {[
+          { label: 'Total Hours', value: reportData.weeklySummary.totalHours.toString(), sub: 'This week' },
+          { label: 'Total Expenses', value: `$${reportData.weeklySummary.totalExpenses.toLocaleString()}`, sub: 'This week' },
+          { label: 'Pending Items', value: (reportData.weeklySummary.pendingHours + reportData.weeklySummary.pendingExpenses).toString(), sub: 'Awaiting approval' },
+          { label: 'Active Employees', value: reportData.weeklySummary.employeeCount.toString(), sub: 'This week' },
+        ].map((stat) => (
+          <div key={stat.label} style={cardStyle}>
+            <p style={{ fontSize: 11, fontWeight: 500, color: '#999', margin: 0 }}>{stat.label}</p>
+            <p style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginTop: 4 }}>{stat.value}</p>
+            <p style={{ fontSize: 11, color: '#ccc', marginTop: 2 }}>{stat.sub}</p>
+          </div>
+        ))}
       </div>
 
       {/* Project Breakdown */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-            <BarChart3 className="w-5 h-5 mr-2 text-[#e31c79]" />
-            Project Breakdown
-          </h2>
-          <button 
+      <div style={{ ...cardStyle, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <h2 style={sectionHeaderStyle}>Project Breakdown</h2>
+          <button
             onClick={() => handleExport('project-breakdown')}
-            className="bg-[#e31c79] text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-[#c91865] transition-colors flex items-center"
+            style={{
+              background: '#e31c79',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 14px',
+              fontSize: 11,
+              fontWeight: 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
           >
-            <Download className="w-4 h-4 mr-2" />
+            <Download className="w-3 h-3" />
             Export
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-medium text-gray-700">Project</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-700">Hours</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-700">Expenses</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-700">Total Cost</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-700">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reportData.projectBreakdown.map((project, index) => (
-                <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3 px-4">
-                    <div>
-                      <p className="font-medium text-gray-900">{project.name.split(' - ')[1]}</p>
-                      <p className="text-sm text-gray-500">{project.name.split(' - ')[0]}</p>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className="font-medium text-[#e31c79]">{project.hours} hrs</span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className="font-medium text-blue-600">${project.expenses.toFixed(2)}</span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className="font-semibold text-gray-900">${project.totalCost.toFixed(2)}</span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
-                      {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
-                    </span>
-                  </td>
-                </tr>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              {['Project', 'Hours', 'Expenses', 'Total Cost', 'Status'].map((h) => (
+                <th
+                  key={h}
+                  style={{
+                    textAlign: h === 'Project' ? 'left' : 'center',
+                    padding: '10px 16px',
+                    fontSize: 9,
+                    fontWeight: 500,
+                    letterSpacing: 1,
+                    color: '#ccc',
+                    textTransform: 'uppercase',
+                    borderBottom: '0.5px solid #f5f2ee',
+                    background: 'transparent',
+                  }}
+                >
+                  {h}
+                </th>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </tr>
+          </thead>
+          <tbody>
+            {reportData.projectBreakdown.map((project, index) => (
+              <tr
+                key={index}
+                style={{ borderBottom: '0.5px solid #f5f2ee' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#FDFCFB')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <td style={{ padding: '12px 16px' }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 400, color: '#555' }}>
+                    {project.name.split(' - ')[1]}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#bbb', marginTop: 1 }}>
+                    {project.name.split(' - ')[0]}
+                  </div>
+                </td>
+                <td style={{ padding: '12px 16px', textAlign: 'center', fontSize: 12.5, color: '#555' }}>
+                  {project.hours} hrs
+                </td>
+                <td style={{ padding: '12px 16px', textAlign: 'center', fontSize: 12.5, color: '#555' }}>
+                  ${project.expenses.toFixed(2)}
+                </td>
+                <td style={{ padding: '12px 16px', textAlign: 'center', fontSize: 12.5, fontWeight: 500, color: '#555' }}>
+                  ${project.totalCost.toFixed(2)}
+                </td>
+                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                  <StatusBadge status={project.status} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* Employee Performance */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-            <Users className="w-5 h-5 mr-2 text-[#1a1814]" />
-            Employee Performance
-          </h2>
-          <button 
+      <div style={{ ...cardStyle, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <h2 style={sectionHeaderStyle}>Employee Performance</h2>
+          <button
             onClick={() => handleExport('employee-performance')}
-            className="bg-[#1a1a1a] text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-[#0a2f3f] transition-colors flex items-center"
+            style={{
+              background: 'white',
+              color: '#777',
+              border: '0.5px solid #e0dcd7',
+              borderRadius: 6,
+              padding: '6px 14px',
+              fontSize: 11,
+              fontWeight: 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
           >
-            <Download className="w-4 h-4 mr-2" />
+            <Download className="w-3 h-3" />
             Export
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-medium text-gray-700">Employee</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-700">Hours</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-700">Expenses</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-700">Efficiency</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-700">Status</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reportData.employeePerformance.map((employee, index) => (
-                <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3 px-4">
-                    <div>
-                      <p className="font-medium text-gray-900">{employee.name}</p>
-                      <p className="text-sm text-gray-500">ID: {employee.employeeId}</p>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className="font-medium text-[#e31c79]">{employee.hours} hrs</span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className="font-medium text-blue-600">${employee.expenses.toFixed(2)}</span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className={`font-semibold ${getEfficiencyColor(employee.efficiency)}`}>
-                      {employee.efficiency}%
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      employee.status === 'approved' ? 'bg-green-100 text-green-800' :
-                      employee.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <button 
-                      onClick={() => router.push(`/manager/approvals?employee=${employee.employeeId}&type=both`)}
-                      className="text-[#e31c79] hover:text-[#c41a6b] transition-colors"
-                    >
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              {['Employee', 'Hours', 'Expenses', 'Efficiency', 'Status', 'Actions'].map((h) => (
+                <th
+                  key={h}
+                  style={{
+                    textAlign: h === 'Employee' ? 'left' : 'center',
+                    padding: '10px 16px',
+                    fontSize: 9,
+                    fontWeight: 500,
+                    letterSpacing: 1,
+                    color: '#ccc',
+                    textTransform: 'uppercase',
+                    borderBottom: '0.5px solid #f5f2ee',
+                    background: 'transparent',
+                  }}
+                >
+                  {h}
+                </th>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </tr>
+          </thead>
+          <tbody>
+            {reportData.employeePerformance.map((emp, index) => (
+              <tr
+                key={index}
+                style={{ borderBottom: '0.5px solid #f5f2ee' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#FDFCFB')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <td style={{ padding: '12px 16px' }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 400, color: '#555' }}>{emp.name}</div>
+                  <div style={{ fontSize: 11, color: '#bbb', marginTop: 1 }}>ID: {emp.employeeId}</div>
+                </td>
+                <td style={{ padding: '12px 16px', textAlign: 'center', fontSize: 12.5, color: '#555' }}>
+                  {emp.hours} hrs
+                </td>
+                <td style={{ padding: '12px 16px', textAlign: 'center', fontSize: 12.5, color: '#555' }}>
+                  ${emp.expenses.toFixed(2)}
+                </td>
+                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: getEfficiencyColor(emp.efficiency) }}>
+                    {emp.efficiency}%
+                  </span>
+                </td>
+                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                  <StatusBadge status={emp.status} />
+                </td>
+                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                  <button
+                    onClick={() => router.push(`/manager/approvals?employee=${emp.employeeId}&type=both`)}
+                    style={{ background: 'none', border: 'none', color: '#e31c79', cursor: 'pointer', padding: 4 }}
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* Expense Categories */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-            <Receipt className="w-5 h-5 mr-2 text-blue-600" />
-            Expense Categories
-          </h2>
-          <button 
+      <div style={{ ...cardStyle, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <h2 style={sectionHeaderStyle}>Expense Categories</h2>
+          <button
             onClick={() => handleExport('expense-categories')}
-            className="bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center"
+            style={{
+              background: '#e31c79',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              padding: '6px 14px',
+              fontSize: 11,
+              fontWeight: 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
           >
-            <Download className="w-4 h-4 mr-2" />
+            <Download className="w-3 h-3" />
             Export
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <div className="space-y-3">
-              {reportData.expenseCategories.map((category, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 rounded-full" style={{
-                      backgroundColor: `hsl(${index * 60}, 70%, 60%)`
-                    }}></div>
-                    <div>
-                      <p className="font-medium text-gray-900">{category.category}</p>
-                      <p className="text-sm text-gray-500">{category.count} items</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-gray-900">${category.amount.toFixed(2)}</p>
-                    <p className="text-sm text-gray-500">{category.percentage}%</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {reportData.expenseCategories.map((category, index) => (
+              <div
+                key={index}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  background: '#FDFCFB',
+                  borderRadius: 7,
+                  border: '0.5px solid #f5f2ee',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 2,
+                      backgroundColor: `hsl(${index * 60}, 50%, 55%)`,
+                    }}
+                  />
+                  <div>
+                    <p style={{ fontSize: 12, fontWeight: 400, color: '#555', margin: 0 }}>
+                      {category.category}
+                    </p>
+                    <p style={{ fontSize: 10, color: '#bbb', margin: 0, marginTop: 1 }}>
+                      {category.count} items
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
+                    ${category.amount.toFixed(2)}
+                  </p>
+                  <p style={{ fontSize: 10, color: '#bbb', margin: 0, marginTop: 1 }}>
+                    {category.percentage}%
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
-          
-          <div className="flex items-center justify-center">
-            <div className="w-48 h-48 bg-gray-100 rounded-full flex items-center justify-center">
-              <PieChart className="w-16 h-16 text-gray-400" />
-              <p className="text-gray-500 ml-2">Chart</p>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div
+              style={{
+                width: 160,
+                height: 160,
+                background: '#FDFCFB',
+                borderRadius: '50%',
+                border: '0.5px solid #f5f2ee',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <PieChart className="w-10 h-10" style={{ color: '#ddd' }} />
             </div>
           </div>
         </div>
       </div>
 
       {/* Quick Export Options */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Export Options</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button 
-            onClick={() => handleExport('timesheet-summary')}
-            className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow text-left"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-pink-100 rounded-lg">
-                <Clock className="w-5 h-5 text-[#e31c79]" />
+      <div style={cardStyle}>
+        <h2 style={sectionHeaderStyle}>Quick Export Options</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          {[
+            { icon: Clock, label: 'Timesheet Summary', sub: 'All approved hours', type: 'timesheet-summary' },
+            { icon: Receipt, label: 'Expense Summary', sub: 'All approved expenses', type: 'expense-summary' },
+            { icon: DollarSign, label: 'Billing Report', sub: 'Ready for invoicing', type: 'billing-report' },
+          ].map((item) => (
+            <button
+              key={item.type}
+              onClick={() => handleExport(item.type)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: 16,
+                border: '0.5px solid #e8e4df',
+                borderRadius: 10,
+                background: '#fff',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 7,
+                  background: 'rgba(227,28,121,0.06)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <item.icon className="w-4 h-4" style={{ color: '#e31c79' }} />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900">Timesheet Summary</h3>
-                <p className="text-sm text-gray-500">All approved hours</p>
+                <p style={{ fontSize: 12, fontWeight: 500, color: '#555', margin: 0 }}>{item.label}</p>
+                <p style={{ fontSize: 11, color: '#bbb', margin: 0, marginTop: 2 }}>{item.sub}</p>
               </div>
-            </div>
-          </button>
-
-          <button 
-            onClick={() => handleExport('expense-summary')}
-            className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow text-left"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Receipt className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900">Expense Summary</h3>
-                <p className="text-sm text-gray-500">All approved expenses</p>
-              </div>
-            </div>
-          </button>
-
-          <button 
-            onClick={() => handleExport('billing-report')}
-            className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow text-left"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <DollarSign className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900">Billing Report</h3>
-                <p className="text-sm text-gray-500">Ready for invoicing</p>
-              </div>
-            </div>
-          </button>
+            </button>
+          ))}
         </div>
       </div>
     </div>
