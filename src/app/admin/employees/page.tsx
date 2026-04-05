@@ -475,24 +475,60 @@ export default function EmployeeManagement() {
     return formatName(manager.first_name, manager.middle_name, manager.last_name);
   };
 
+  // Skeleton loading state — premium shimmer instead of spinner
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-4 h-4 border-2 border-[#e8e4df] border-t-[#e31c79] rounded-full animate-spin" />
-          <p className="text-[13px]" style={{ color: '#bbb' }}>Loading...</p>
+      <div style={{ padding: '36px 40px' }}>
+        {/* Title skeleton */}
+        <div style={{ marginBottom: 28 }}>
+          <div className="anim-shimmer" style={{ width: 140, height: 20, borderRadius: 4, marginBottom: 8 }} />
+          <div className="anim-shimmer" style={{ width: 260, height: 12, borderRadius: 3 }} />
+        </div>
+        {/* Stat cards skeleton */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
+          {[0,1,2,3].map((i) => (
+            <div key={i} className={`anim-slide-up stagger-${i+1}`} style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px' }}>
+              <div className="anim-shimmer" style={{ width: 60, height: 8, borderRadius: 3, marginBottom: 14 }} />
+              <div className="anim-shimmer" style={{ width: 48, height: 24, borderRadius: 4 }} />
+            </div>
+          ))}
+        </div>
+        {/* Search bar skeleton */}
+        <div style={{ marginBottom: 16 }}>
+          <div className="anim-shimmer" style={{ width: 120, height: 8, borderRadius: 3, marginBottom: 14 }} />
+          <div className="anim-shimmer" style={{ width: '100%', height: 36, borderRadius: 7 }} />
+        </div>
+        {/* Table skeleton */}
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
+          {[0,1,2,3,4,5].map((i) => (
+            <div key={i} className="flex items-center gap-4" style={{ padding: '14px 20px', borderBottom: i < 5 ? '0.5px solid #f5f2ee' : 'none' }}>
+              <div className="anim-shimmer" style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0 }} />
+              <div className="flex-1">
+                <div className="anim-shimmer" style={{ width: '30%', height: 10, borderRadius: 3, marginBottom: 6 }} />
+                <div className="anim-shimmer" style={{ width: '50%', height: 8, borderRadius: 3 }} />
+              </div>
+              <div className="anim-shimmer" style={{ width: 50, height: 18, borderRadius: 3 }} />
+            </div>
+          ))}
         </div>
       </div>
     );
   }
+
+  const stats = [
+    { label: 'Total Employees', value: employees.length, accent: true },
+    { label: 'Active', value: employees.filter((e) => e.is_active).length },
+    { label: 'Managers', value: employees.filter((e) => e.role === 'manager').length },
+    { label: 'Admins', value: employees.filter((e) => e.role === 'admin').length },
+  ];
 
   return (
     <>
       {/* Page content */}
       <div style={{ padding: '36px 40px' }}>
         {/* Page title */}
-        <div style={{ marginBottom: 28 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
+        <div className="anim-slide-up stagger-1" style={{ marginBottom: 28 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0, letterSpacing: -0.3 }}>
             Employees
           </h1>
           <p style={{ fontSize: 13, fontWeight: 400, color: '#999', margin: '4px 0 0' }}>
@@ -500,49 +536,59 @@ export default function EmployeeManagement() {
           </p>
         </div>
 
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2', margin: 0 }}>Total</p>
-            <p style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', margin: '4px 0 0' }}>{employees.length}</p>
-          </div>
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2', margin: 0 }}>Active</p>
-            <p style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', margin: '4px 0 0' }}>{employees.filter((e) => e.is_active).length}</p>
-          </div>
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2', margin: 0 }}>Managers</p>
-            <p style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', margin: '4px 0 0' }}>{employees.filter((e) => e.role === 'manager').length}</p>
-          </div>
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2', margin: 0 }}>Admins</p>
-            <p style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', margin: '4px 0 0' }}>{employees.filter((e) => e.role === 'admin').length}</p>
-          </div>
+        {/* Stats — staggered entrance */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
+          {stats.map((stat, i) => (
+            <div
+              key={stat.label}
+              className={`anim-slide-up stagger-${i + 1}`}
+              style={{
+                background: '#fff',
+                border: '0.5px solid #e8e4df',
+                borderRadius: 10,
+                padding: '22px 24px',
+                transition: 'border-color 0.2s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = stat.accent ? '#e31c79' : '#d3ad6b')}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#e8e4df')}
+            >
+              <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1.2, color: '#c0bab2', margin: 0 }}>
+                {stat.label}
+              </p>
+              <p style={{ fontSize: 28, fontWeight: 700, color: stat.accent ? '#e31c79' : '#1a1a1a', margin: '6px 0 0', lineHeight: 1, letterSpacing: -0.5 }}>
+                {stat.value}
+              </p>
+            </div>
+          ))}
         </div>
 
         {/* Section header + search/actions */}
-        <div style={{ marginBottom: 12 }}>
+        <div className="anim-slide-up stagger-3" style={{ marginBottom: 14 }}>
           <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', margin: '0 0 12px' }}>
             Employee Directory
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
               <div className="relative" style={{ flex: 1, maxWidth: 320 }}>
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#bbb]" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: '#c0bab2' }} />
                 <input
                   type="text"
-                  placeholder="Search employees..."
+                  placeholder="Search by name, email, or ID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{ width: '100%', padding: '7px 12px 7px 36px', fontSize: 12, border: '0.5px solid #e8e4df', borderRadius: 7, outline: 'none' }}
-                  onFocus={(e) => (e.target.style.borderColor = '#d3ad6b')}
-                  onBlur={(e) => (e.target.style.borderColor = '#e8e4df')}
+                  style={{
+                    width: '100%', padding: '8px 12px 8px 36px', fontSize: 12,
+                    border: '0.5px solid #e8e4df', borderRadius: 7, outline: 'none',
+                    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                  }}
+                  onFocus={(e) => { e.target.style.borderColor = '#d3ad6b'; e.target.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)'; }}
+                  onBlur={(e) => { e.target.style.borderColor = '#e8e4df'; e.target.style.boxShadow = 'none'; }}
                 />
               </div>
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value as RoleFilter)}
-                style={{ fontSize: 12, padding: '7px 10px', border: '0.5px solid #e8e4df', borderRadius: 7, background: '#fff', color: '#777', outline: 'none' }}
+                style={{ fontSize: 12, padding: '8px 10px', border: '0.5px solid #e8e4df', borderRadius: 7, background: '#fff', color: '#777', outline: 'none', cursor: 'pointer' }}
               >
                 <option value="all">All roles</option>
                 <option value="employee">Employees</option>
@@ -552,7 +598,7 @@ export default function EmployeeManagement() {
               <select
                 value={managerFilter}
                 onChange={(e) => setManagerFilter(e.target.value)}
-                style={{ fontSize: 12, padding: '7px 10px', border: '0.5px solid #e8e4df', borderRadius: 7, background: '#fff', color: '#777', outline: 'none' }}
+                style={{ fontSize: 12, padding: '8px 10px', border: '0.5px solid #e8e4df', borderRadius: 7, background: '#fff', color: '#777', outline: 'none', cursor: 'pointer' }}
               >
                 <option value="all">All managers</option>
                 {managers.map((m) => (
@@ -562,15 +608,22 @@ export default function EmployeeManagement() {
                 ))}
               </select>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 12, color: '#999' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 11, color: '#c0bab2', fontWeight: 500 }}>
                 {filteredEmployees.length} of {employees.length}
               </span>
               <button
                 onClick={() => setShowAddModal(true)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 16px', fontSize: 12, fontWeight: 500, background: '#e31c79', color: '#fff', border: 'none', borderRadius: 7, cursor: 'pointer' }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#cc1069')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = '#e31c79')}
+                className="transition-all duration-150"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '8px 18px', fontSize: 12, fontWeight: 600,
+                  background: '#e31c79', color: '#fff',
+                  border: 'none', borderRadius: 7, cursor: 'pointer',
+                  letterSpacing: 0.2,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#cc1069'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#e31c79'; e.currentTarget.style.transform = 'translateY(0)'; }}
               >
                 <Plus className="h-3.5 w-3.5" />
                 Add Employee
@@ -580,28 +633,19 @@ export default function EmployeeManagement() {
         </div>
 
         {/* Employee Table */}
-        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
+        <div className="anim-slide-up stagger-4" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7' }}>
-                  Employee
-                </th>
-                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7' }}>
-                  Contact
-                </th>
-                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7' }}>
-                  Role
-                </th>
-                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7' }}>
-                  Manager
-                </th>
-                <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7' }}>
-                  Status
-                </th>
-                <th style={{ padding: '10px 16px', textAlign: 'right', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7' }}>
-                  Actions
-                </th>
+                {['Employee', 'Contact', 'Role', 'Manager', 'Status', ''].map((h, i) => (
+                  <th key={h || 'actions'} style={{
+                    padding: '11px 20px', textAlign: i === 5 ? 'right' as const : 'left' as const,
+                    fontSize: 9, fontWeight: 500, letterSpacing: 1.2, color: '#c0bab2',
+                    textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7',
+                  }}>
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
 
@@ -609,99 +653,126 @@ export default function EmployeeManagement() {
               {filteredEmployees.map((employee) => (
                 <tr
                   key={employee.id}
-                  style={{ borderBottom: '0.5px solid #f5f2ee', cursor: 'pointer' }}
+                  className="group"
+                  style={{
+                    borderBottom: '0.5px solid #f5f2ee', cursor: 'pointer',
+                    transition: 'background 0.15s ease',
+                  }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = '#FDFCFB')}
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   onClick={() => openEditModal(employee)}
                 >
-                  <td style={{ padding: '10px 16px' }}>
-                    <div>
-                      <div style={{ fontSize: 12.5, fontWeight: 500, color: '#333' }}>
-                        {formatName(
-                          employee.first_name,
-                          employee.middle_name,
-                          employee.last_name
-                        )}
+                  {/* Employee name + avatar initial */}
+                  <td style={{ padding: '12px 20px' }}>
+                    <div className="flex items-center gap-3">
+                      <div style={{
+                        width: 30, height: 30, borderRadius: '50%', background: '#f5f2ee',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 10, fontWeight: 600, color: '#c0bab2', flexShrink: 0,
+                      }}>
+                        {(employee.first_name?.[0] || '').toUpperCase()}
                       </div>
-                      <div style={{ fontSize: 11, color: '#aaa', marginTop: 1 }}>
-                        {employee.mybase_payroll_id ||
-                          employee.employee_id ||
-                          'No ID'}
+                      <div>
+                        <div style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
+                          {formatName(employee.first_name, employee.middle_name, employee.last_name)}
+                        </div>
+                        <div style={{ fontSize: 10.5, color: '#c0bab2', marginTop: 1 }}>
+                          {employee.mybase_payroll_id || employee.employee_id || 'No ID'}
+                        </div>
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: '10px 16px' }}>
-                    <div style={{ fontSize: 12.5, color: '#555' }}>
-                      {employee.email}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#aaa', marginTop: 1 }}>
-                      {employee.phone || 'No phone'}
+                  {/* Contact */}
+                  <td style={{ padding: '12px 20px' }}>
+                    <div style={{ fontSize: 12.5, color: '#555' }}>{employee.email}</div>
+                    <div style={{ fontSize: 10.5, color: '#c0bab2', marginTop: 1 }}>
+                      {employee.phone || '—'}
                     </div>
                   </td>
-                  <td style={{ padding: '10px 16px' }}>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        padding: '2px 8px',
-                        fontSize: 9,
-                        fontWeight: 500,
-                        borderRadius: 3,
-                        ...(employee.role === 'admin'
-                          ? { background: '#f3f0ff', color: '#7c5cbf' }
-                          : employee.role === 'manager'
-                          ? { background: '#eef6ff', color: '#4a8fd4' }
-                          : employee.role === 'time_approver'
-                          ? { background: '#fff8ee', color: '#c08830' }
-                          : { background: '#f5f5f3', color: '#888' }),
-                      }}
-                    >
-                      {employee.role}
+                  {/* Role badge */}
+                  <td style={{ padding: '12px 20px' }}>
+                    <span style={{
+                      display: 'inline-block', padding: '2px 8px', fontSize: 9, fontWeight: 500, borderRadius: 3,
+                      ...(employee.role === 'admin'
+                        ? { background: '#f3f0ff', color: '#7c5cbf' }
+                        : employee.role === 'manager'
+                        ? { background: '#eef6ff', color: '#4a8fd4' }
+                        : employee.role === 'time_approver'
+                        ? { background: '#fff8ee', color: '#c08830' }
+                        : { background: '#f5f5f3', color: '#999' }),
+                    }}>
+                      {employee.role === 'time_approver' ? 'approver' : employee.role}
                     </span>
                   </td>
-                  <td style={{ padding: '10px 16px', fontSize: 12.5, color: '#555' }}>
+                  {/* Manager */}
+                  <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#777' }}>
                     {getManagerName(employee)}
                   </td>
-                  <td style={{ padding: '10px 16px' }}>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        padding: '2px 8px',
-                        fontSize: 9,
-                        fontWeight: 500,
-                        borderRadius: 3,
-                        ...(employee.is_active
-                          ? { background: '#eefbee', color: '#3d8c40' }
-                          : { background: '#fdf2f2', color: '#c44' }),
-                      }}
-                    >
+                  {/* Status */}
+                  <td style={{ padding: '12px 20px' }}>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      padding: '2px 8px', fontSize: 9, fontWeight: 500, borderRadius: 3,
+                      ...(employee.is_active
+                        ? { background: '#ecfdf5', color: '#2d9b6e' }
+                        : { background: '#fef2f2', color: '#b91c1c' }),
+                    }}>
+                      <span style={{
+                        width: 5, height: 5, borderRadius: '50%',
+                        background: employee.is_active ? '#2d9b6e' : '#b91c1c',
+                      }} />
                       {employee.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td style={{ padding: '10px 16px', textAlign: 'right' }}>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); openEditModal(employee); }}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e31c79', padding: 4, marginRight: 4 }}
-                    >
-                      <Edit className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDeactivateEmployee(employee.id); }}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: 4 }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                  {/* Actions */}
+                  <td style={{ padding: '12px 20px', textAlign: 'right' }}>
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openEditModal(employee); }}
+                        className="transition-colors duration-150"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: 6, borderRadius: 4 }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = '#e31c79'; e.currentTarget.style.background = '#fdf2f8'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = '#ccc'; e.currentTarget.style.background = 'none'; }}
+                      >
+                        <Edit size={13} strokeWidth={1.5} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeactivateEmployee(employee.id); }}
+                        className="transition-colors duration-150"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: 6, borderRadius: 4 }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = '#b91c1c'; e.currentTarget.style.background = '#fef2f2'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = '#ccc'; e.currentTarget.style.background = 'none'; }}
+                      >
+                        <Trash2 size={13} strokeWidth={1.5} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
+
+              {/* Empty state */}
+              {filteredEmployees.length === 0 && (
+                <tr>
+                  <td colSpan={6}>
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <div style={{ width: 44, height: 44, borderRadius: '50%', border: '0.5px solid #e8e4df', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+                        <Search size={18} strokeWidth={1.5} style={{ color: '#d0cbc4' }} />
+                      </div>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: '#999', margin: 0 }}>No employees found</p>
+                      <p style={{ fontSize: 11, color: '#ccc', margin: '4px 0 0' }}>Try adjusting your search or filters</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Add/Edit Modal — with backdrop blur + scale entrance */}
       {(showAddModal || showEditModal) && (
-        <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{ background: 'rgba(0,0,0,0.35)' }}>
-          <div style={{ background: '#fff', borderRadius: 10, border: '0.5px solid #e8e4df', maxWidth: 640, width: '100%', maxHeight: '90vh', overflow: 'auto' }}>
+        <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }}>
+          <div className="anim-scale-in" style={{ background: '#fff', borderRadius: 12, border: '0.5px solid #e8e4df', maxWidth: 640, width: '100%', maxHeight: '90vh', overflow: 'auto' }}>
             <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <h2 style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
                 {showAddModal ? 'Add New Employee' : 'Edit Employee'}
