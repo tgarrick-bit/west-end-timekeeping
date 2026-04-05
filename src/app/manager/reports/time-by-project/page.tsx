@@ -177,34 +177,8 @@ export default function TimeByProjectReport() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       {/* Header */}
-      <header className="bg-gray-900 shadow-lg">
-        <div className="max-w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <div className="bg-white/10 p-2 rounded-lg">
-                <Clock className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold text-white">West End Workforce</h1>
-                <span className="text-xs text-gray-300">Reports</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-200">{user?.email}</span>
-              <button
-                onClick={async () => { await supabase.auth.signOut(); router.push('/auth/login'); }}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-200 hover:text-white"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Navigation */}
       <div className="bg-gray-100 border-b">
         <div className="max-w-full px-4 sm:px-6 lg:px-8">
@@ -410,7 +384,7 @@ export default function TimeByProjectReport() {
                 {reportData.length > 0 && (
                   <button 
                     onClick={handleExportToExcel}
-                    className="px-6 py-2 bg-[#33393c] text-white rounded-md hover:bg-gray-800 font-medium flex items-center"
+                    className="px-6 py-2 bg-[#05202E] text-white rounded-md hover:bg-gray-800 font-medium flex items-center"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Export to Excel
@@ -441,6 +415,7 @@ export default function TimeByProjectReport() {
           </div>
         </div>
       </div>
-    </div>
+
+    </>
   )
 }

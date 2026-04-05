@@ -967,48 +967,48 @@ export default function AdminPage() {
           <div className="flex space-x-6">
             <button 
               onClick={() => router.push('/admin')}
-              className="py-3 text-sm font-medium text-[#33393c] border-b-2 border-[#e31c79] whitespace-nowrap"
+              className="py-3 text-sm font-medium text-[#1a1814] border-b-2 border-[#e31c79] whitespace-nowrap"
             >
               Review & Approve
             </button>
             
             <button 
               onClick={() => router.push('/admin/employees')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#33393c] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
+              className="py-3 text-sm font-medium text-gray-500 hover:text-[#1a1814] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
             >
               Employees
             </button>
             
             <button 
               onClick={() => router.push('/admin/clients')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#33393c] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
+              className="py-3 text-sm font-medium text-gray-500 hover:text-[#1a1814] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
             >
               Clients
             </button>
             
             <button 
               onClick={() => router.push('/admin/projects')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#33393c] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
+              className="py-3 text-sm font-medium text-gray-500 hover:text-[#1a1814] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
             >
               Projects
             </button>
 
             <button
               onClick={() => router.push('/admin/billing')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#33393c] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
+              className="py-3 text-sm font-medium text-gray-500 hover:text-[#1a1814] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
             >
               Billing
             </button>
 
             <button
               onClick={() => router.push('/admin/payroll')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#33393c] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
+              className="py-3 text-sm font-medium text-gray-500 hover:text-[#1a1814] border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap"
             >
               Payroll
             </button>
 
             <div className="relative group">
-              <button className="py-3 text-sm font-medium text-gray-500 hover:text-[#33393c] flex items-center gap-1 border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap">
+              <button className="py-3 text-sm font-medium text-gray-500 hover:text-[#1a1814] flex items-center gap-1 border-b-2 border-transparent hover:border-gray-200 whitespace-nowrap">
                 Reports
                 <ChevronDown className="h-4 w-4" />
               </button>
@@ -1051,7 +1051,7 @@ export default function AdminPage() {
 
             <button 
               onClick={() => router.push('/admin/settings')}
-              className="py-3 text-sm font-medium text-gray-500 hover:text-[#33393c] border-b-2 border-transparent hover:border-gray-200 flex items-center gap-2 whitespace-nowrap"
+              className="py-3 text-sm font-medium text-gray-500 hover:text-[#1a1814] border-b-2 border-transparent hover:border-gray-200 flex items-center gap-2 whitespace-nowrap"
             >
               <Settings className="h-4 w-4" />
               Settings
@@ -1218,7 +1218,7 @@ export default function AdminPage() {
       {/* Analytics Charts */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h3 className="text-lg font-semibold text-[#33393c] mb-4 flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-[#1a1814] mb-4 flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-[#e31c79]" />
             Analytics
           </h3>
@@ -1287,7 +1287,7 @@ export default function AdminPage() {
       {/* Monitoring Dashboard */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h3 className="text-lg font-semibold text-[#33393c] mb-4 flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-[#1a1814] mb-4 flex items-center gap-2">
             <Bell className="h-5 w-5 text-[#e31c79]" />
             Monitoring dashboard
           </h3>
@@ -1306,7 +1306,7 @@ export default function AdminPage() {
                   className={`px-3 py-1 text-xs sm:text-sm rounded-full ${
                     draftTimesheetCount === 0
                       ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-[#e31c79] text-white hover:bg-[#c71865]'
+                      : 'bg-[#e31c79] text-white hover:bg-[#c91865]'
                   }`}
                 >
                   Send all reminders
@@ -1408,7 +1408,7 @@ export default function AdminPage() {
                               {managerId !== 'unassigned' && (
                                 <button
                                   onClick={() => handleSendApprovalReminder(managerId, data.managerName, data.submissions)}
-                                  className="px-2 py-1 text-xs bg-[#e31c79] text-white rounded-full hover:bg-[#c71865] flex items-center gap-1"
+                                  className="px-2 py-1 text-xs bg-[#e31c79] text-white rounded-full hover:bg-[#c91865] flex items-center gap-1"
                                 >
                                   <Send className="h-3 w-3" />
                                   Remind
@@ -1494,7 +1494,7 @@ export default function AdminPage() {
   <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
     {/* TIMESHEETS CARD */}
     <div className="border-b border-gray-100 rounded-t-2xl overflow-hidden">
-      <div className="bg-[#33393c] px-4 py-3 flex justify-between items-center">
+      <div className="bg-[#05202E] px-4 py-3 flex justify-between items-center">
               <h3 className="text-sm font-semibold text-white">Timesheets</h3>
               <div className="flex items-center space-x-2 text-xs text-gray-300">
                 <span>

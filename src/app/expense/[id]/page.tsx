@@ -4,15 +4,12 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
 import {
-  ArrowLeft,
   Calendar,
   FileText,
   Receipt,
   AlertCircle,
   Plus,
   Trash2,
-  RotateCw,
-  LogOut,
   User,
 } from 'lucide-react';
 
@@ -748,69 +745,16 @@ if (mode === 'submitted') {
     );
   }
 
-  const EmployeeHeader = () => (
-    <header className="bg-[#022234] text-white shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-14 items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push('/employee')}
-              className="mr-1 p-2 hover:bg-white/10 rounded-full transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-            <div className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/WE-logo-SEPT2024v3-WHT.png"
-                alt="West End Workforce"
-                className="h-9 w-9 object-contain"
-              />
-              <span className="h-6 w-px bg-white/30" />
-              <span className="text-sm tracking-wide">Employee Portal</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-5 text-sm">
-            <button
-              type="button"
-              onClick={handleRefresh}
-              className="inline-flex items-center gap-1 text-gray-200 hover:text-gray-100"
-            >
-              <RotateCw className="h-4 w-4" />
-              <span className="font-normal">Refresh</span>
-            </button>
-            <div className="hidden sm:flex items-center gap-2 text-gray-200">
-              <User className="h-4 w-4 opacity-80" />
-              <span className="font-normal">
-                Good day,{' '}
-                {employeeName ? employeeName.split(' ')[0] : 'Employee'}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="inline-flex items-center gap-1 text-gray-200 hover:text-gray-100"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="font-normal">Sign Out</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-
   if (loadErrorMessage && !report) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <EmployeeHeader />
+      <>
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-2">
             <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
             <span className="text-red-700 text-sm">{loadErrorMessage}</span>
           </div>
         </main>
-      </div>
+      </>
     );
   }
 
@@ -821,13 +765,11 @@ if (mode === 'submitted') {
     : 'bg-gray-50 border-gray-200';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <EmployeeHeader />
-
+    <>
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
           {/* header */}
-          <div className="bg-[#022234] text-white px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="bg-[#05202E] text-white px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 text-xs mb-1">
                 <span className={statusBadge(report.status)}>
@@ -966,7 +908,7 @@ if (mode === 'submitted') {
 
             {/* expense entry section */}
             <div className="rounded-xl overflow-hidden border border-gray-200 bg-white">
-              <div className="bg-[#022234] text-white px-4 py-2 flex items-center justify-between">
+              <div className="bg-[#05202E] text-white px-4 py-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4 text-gray-100" />
                   <span className="text-xs font-semibold tracking-wide">
@@ -977,7 +919,7 @@ if (mode === 'submitted') {
                   <button
                     type="button"
                     onClick={handleAddLine}
-                    className="inline-flex items-center gap-1 px-4 py-2 text-xs font-semibold rounded-md bg-[#e31c79] text-white hover:bg-[#c01666] transition-colors"
+                    className="inline-flex items-center gap-1 px-4 py-2 text-xs font-semibold rounded-md bg-[#e31c79] text-white hover:bg-[#c91865] transition-colors"
                   >
                     <Plus className="h-3 w-3" />
                     Add Another Expense
@@ -1558,6 +1500,6 @@ if (mode === 'submitted') {
           </div>
         </div>
       </main>
-    </div>
+    </>
   );
 }

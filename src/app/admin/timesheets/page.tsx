@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import TimesheetModal from '@/components/TimesheetModal';
 import { 
   Clock,
-  ChevronLeft,
   Calendar,
   Check,
   X,
@@ -371,38 +370,7 @@ export default function AdminTimesheets() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-gray-900 text-white">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push('/admin')}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold">All Timesheets</h1>
-                <p className="text-sm text-gray-300">
-                  Complete timesheet history - {allTimesheets.length} records
-                </p>
-              </div>
-            </div>
-            <button 
-              onClick={async () => {
-                await supabase.auth.signOut();
-                router.push('/auth/login');
-              }}
-              className="flex items-center gap-2 px-4 py-2 hover:bg-white/10 rounded transition-colors"
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
-      </header>
-
+    <>
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Controls Bar with All Filters */}
@@ -658,6 +626,6 @@ export default function AdminTimesheets() {
           }}
         />
       )}
-    </div>
+    </>
   );
 }

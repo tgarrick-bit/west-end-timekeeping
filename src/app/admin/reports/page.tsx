@@ -5,11 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import { 
-  Clock, 
+  Clock,
   FileText,
   CheckCircle,
   XCircle,
-  LogOut,
   AlertCircle,
   ChevronDown,
   Settings,
@@ -291,34 +290,7 @@ export default function ManagerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-gray-900 shadow-lg">
-        <div className="max-w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <div className="bg-white/10 p-2 rounded-lg">
-                <Clock className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold text-white">West End Workforce</h1>
-                <span className="text-xs text-gray-300">Approval Management</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-200">{user?.email}</span>
-              <button
-                onClick={async () => { await supabase.auth.signOut(); router.push('/auth/login'); }}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-200 hover:text-white"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <>
       {/* Page Title */}
       <div className="bg-white border-b">
         <div className="max-w-full px-4 sm:px-6 lg:px-8">
@@ -516,7 +488,7 @@ export default function ManagerPage() {
 
               {/* Timecards Section */}
               <div className="border-b">
-                <div className="bg-[#33393c] px-4 py-2 flex justify-between items-center">
+                <div className="bg-[#05202E] px-4 py-2 flex justify-between items-center">
                   <h3 className="text-sm font-semibold text-white">Timecards</h3>
                   <div className="flex items-center space-x-2 text-xs text-gray-300">
                     <span>1 - {filteredSubmissions.filter(s => s.type === 'timesheet').length} of {filteredSubmissions.filter(s => s.type === 'timesheet').length}</span>
@@ -600,7 +572,7 @@ export default function ManagerPage() {
 
               {/* Timecards Section */}
               <div className="border-b">
-                <div className="bg-[#33393c] px-4 py-2">
+                <div className="bg-[#05202E] px-4 py-2">
                   <h3 className="text-sm font-semibold text-white">Timecards</h3>
                 </div>
                 
@@ -714,7 +686,7 @@ export default function ManagerPage() {
 
               {/* Timecards Section */}
               <div className="border-b">
-                <div className="bg-[#33393c] px-4 py-2 flex justify-between items-center">
+                <div className="bg-[#05202E] px-4 py-2 flex justify-between items-center">
                   <h3 className="text-sm font-semibold text-white">Timecards</h3>
                   <div className="flex items-center space-x-2 text-xs text-gray-300">
                     <span>1 - {timesheetPendingCount} of {timesheetPendingCount}</span>
@@ -860,6 +832,6 @@ export default function ManagerPage() {
           )}
         </div>
       </div>
-    </div>
+    </>
   )
 }

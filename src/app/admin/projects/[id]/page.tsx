@@ -439,7 +439,7 @@ export default function ProjectEditPage() {
               <span className="text-gray-400">/</span>
               <span>{pageName}</span>
             </div>
-            <h1 className="text-xl font-semibold text-[#33393c]">
+            <h1 className="text-xl font-semibold text-[#1a1814]">
               {pageName}
             </h1>
             <p className="mt-1 text-xs text-gray-500">
@@ -981,7 +981,7 @@ export default function ProjectEditPage() {
                   <button
                     onClick={handleAddEmployee}
                     disabled={saving}
-                    className="inline-flex w-full items-center justify-center rounded-full bg-[#33393c] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
+                    className="inline-flex w-full items-center justify-center rounded-full bg-[#05202E] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
                   >
                     Add person
                   </button>
@@ -1093,7 +1093,7 @@ export default function ProjectEditPage() {
                   <button
                     onClick={handleAddApprover}
                     disabled={saving}
-                    className="inline-flex w-full items-center justify-center rounded-full bg-[#33393c] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
+                    className="inline-flex w-full items-center justify-center rounded-full bg-[#05202E] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
                   >
                     Add approver
                   </button>
@@ -1336,7 +1336,7 @@ export default function ProjectEditPage() {
               <button
                 onClick={handleSaveAndNext}
                 disabled={saving}
-                className="rounded-full bg-[#33393c] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
+                className="rounded-full bg-[#05202E] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
               >
                 {saving ? 'Saving…' : `Save & ${nextTabLabel}`}
               </button>
@@ -1344,7 +1344,7 @@ export default function ProjectEditPage() {
             <button
               onClick={handleSaveAndExit}
               disabled={saving}
-              className="rounded-full bg-[#e31c79] px-4 py-2 text-xs font-semibold text-white hover:bg-[#c71865] disabled:opacity-60"
+              className="rounded-full bg-[#e31c79] px-4 py-2 text-xs font-semibold text-white hover:bg-[#c91865] disabled:opacity-60"
             >
               {saving ? 'Saving…' : 'Save & exit'}
             </button>

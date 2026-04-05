@@ -775,7 +775,7 @@ export default function TimesheetEntry() {
             return (
               <div key={dateStr} className={`bg-white rounded-lg shadow-sm border ${isToday ? 'border-[#e31c79] ring-1 ring-[#e31c79]/20' : 'border-gray-200'}`}>
                 <div className={`px-4 py-2 flex justify-between items-center ${isToday ? 'bg-[#e31c79]/5' : 'bg-gray-50'} rounded-t-lg`}>
-                  <span className={`text-sm font-semibold ${isToday ? 'text-[#e31c79]' : 'text-[#33393c]'}`}>
+                  <span className={`text-sm font-semibold ${isToday ? 'text-[#e31c79]' : 'text-[#1a1814]'}`}>
                     {dayLabel} {isToday && '(Today)'}
                   </span>
                   <span className={`text-sm font-bold ${dayTotal > 0 ? 'text-[#e31c79]' : 'text-gray-400'}`}>
@@ -897,7 +897,7 @@ export default function TimesheetEntry() {
                           </td>
                         );
                       })}
-                      <td className="px-4 py-3 text-center font-medium text-[#33393c]">
+                      <td className="px-4 py-3 text-center font-medium text-[#1a1814]">
                         {rowTotal.toFixed(1)}
                       </td>
                       <td className="px-2 py-3 flex items-center gap-1">
@@ -927,11 +927,11 @@ export default function TimesheetEntry() {
               </tbody>
               <tfoot>
                 <tr className="bg-gray-50 font-medium">
-                  <td className="px-4 py-3 text-[#33393c]">Daily Totals:</td>
+                  <td className="px-4 py-3 text-[#1a1814]">Daily Totals:</td>
                   {getWeekDates().map((date) => {
                     const dateStr = formatDate(date);
                     return (
-                      <td key={dateStr} className="px-2 py-3 text-center text-[#33393c]">
+                      <td key={dateStr} className="px-2 py-3 text-center text-[#1a1814]">
                         {dailyTotals[dateStr]?.toFixed(1) || '0.0'}
                       </td>
                     );
@@ -950,7 +950,7 @@ export default function TimesheetEntry() {
             <button
               onClick={addRow}
               disabled={isLocked}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-[#33393c] hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-[#1a1814] hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="h-4 w-4" />
               Add Row

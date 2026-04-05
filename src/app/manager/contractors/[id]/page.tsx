@@ -109,7 +109,7 @@ export default function ContractorDetailPage() {
           <p className="text-gray-600">Contractor not found</p>
           <button
             onClick={() => router.back()}
-            className="mt-4 bg-[#e31c79] text-white px-4 py-2 rounded-lg hover:bg-[#c41a6b] transition-colors"
+            className="mt-4 bg-[#e31c79] text-white px-4 py-2 rounded-lg hover:bg-[#c91865] transition-colors"
           >
             Go Back
           </button>
@@ -144,7 +144,7 @@ export default function ContractorDetailPage() {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleContact('email')}
-                    className="bg-[#e31c79] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#c41a6b] transition-colors flex items-center space-x-2"
+                    className="bg-[#e31c79] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#c91865] transition-colors flex items-center space-x-2"
                   >
                     <Mail className="h-4 w-4" />
                     <span>Email</span>
@@ -152,7 +152,7 @@ export default function ContractorDetailPage() {
                   {contractor.phone && (
                     <button
                       onClick={() => handleContact('phone')}
-                      className="bg-[#33393c] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center space-x-2"
+                      className="bg-[#05202E] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center space-x-2"
                     >
                       <Phone className="h-4 w-4" />
                       <span>Call</span>
@@ -221,14 +221,14 @@ export default function ContractorDetailPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
                   onClick={handleViewTimesheets}
-                  className="bg-[#e31c79] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#c41a6b] transition-colors flex items-center justify-center space-x-2"
+                  className="bg-[#e31c79] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#c91865] transition-colors flex items-center justify-center space-x-2"
                 >
                   <Clock className="h-5 w-5" />
                   <span>Review Timesheets</span>
                 </button>
                 <button
                   onClick={handleViewExpenses}
-                  className="bg-[#33393c] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center justify-center space-x-2"
+                  className="bg-[#05202E] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#0a2f3f] transition-colors flex items-center justify-center space-x-2"
                 >
                   <DollarSign className="h-5 w-5" />
                   <span>Review Expenses</span>

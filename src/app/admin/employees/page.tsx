@@ -575,7 +575,7 @@ export default function EmployeeManagement() {
           <table className="min-w-full">
             <thead>
               {/* Main header row */}
-              <tr className="bg-[#33393c] text-white">
+              <tr className="bg-[#05202E] text-white">
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Employee
                 </th>

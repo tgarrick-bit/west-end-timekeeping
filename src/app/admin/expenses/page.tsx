@@ -765,7 +765,7 @@ export default function AdminExpenses() {
                               e.stopPropagation();
                               handleBulkApprove(group.client_id);
                             }}
-                            className="px-3 py-1 text-xs text-white bg-[#e31c79] rounded hover:bg-[#c71865]"
+                            className="px-3 py-1 text-xs text-white bg-[#e31c79] rounded hover:bg-[#c91865]"
                           >
                             Approve All
                           </button>

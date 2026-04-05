@@ -126,14 +126,14 @@ export default function AdminProjectsPage() {
               <span className="text-gray-400">/</span>
               <span>Projects</span>
             </div>
-            <h1 className="text-xl font-semibold text-[#33393c]">Projects</h1>
+            <h1 className="text-xl font-semibold text-[#1a1814]">Projects</h1>
             <p className="mt-1 text-xs text-gray-500">
               Manage client-scoped projects that employees can bill time and expenses to.
             </p>
           </div>
           <button
             onClick={handleNew}
-            className="inline-flex items-center gap-2 rounded-full bg-[#e31c79] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#c71865]"
+            className="inline-flex items-center gap-2 rounded-full bg-[#e31c79] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#c91865]"
           >
             <Plus className="h-4 w-4" />
             New project
@@ -161,7 +161,7 @@ export default function AdminProjectsPage() {
               onClick={() => setShowActiveOnly((prev) => !prev)}
               className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                 showActiveOnly
-                  ? 'border-[#33393c] bg-[#33393c] text-white'
+                  ? 'border-[#33393c] bg-[#05202E] text-white'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-[#e31c79] hover:text-[#e31c79]'
               }`}
             >
@@ -198,7 +198,7 @@ export default function AdminProjectsPage() {
             </p>
             <button
               onClick={handleNew}
-              className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#e31c79] px-4 py-2 text-sm font-medium text-white hover:bg-[#c71865]"
+              className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#e31c79] px-4 py-2 text-sm font-medium text-white hover:bg-[#c91865]"
             >
               <Plus className="h-4 w-4" />
               New project

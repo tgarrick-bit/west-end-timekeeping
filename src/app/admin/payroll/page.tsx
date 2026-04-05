@@ -431,7 +431,7 @@ export default function PayrollPage() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
             <div className="text-sm text-gray-600">Total</div>
-            <div className="text-2xl font-bold text-[#33393c]">{timesheets.length}</div>
+            <div className="text-2xl font-bold text-[#1a1814]">{timesheets.length}</div>
             <div className="text-xs text-gray-500">{totalHours.toFixed(1)} hrs</div>
           </div>
           <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-green-500">
@@ -467,7 +467,7 @@ export default function PayrollPage() {
           <button
             onClick={handleExport}
             disabled={finalized.length === 0 && approved.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-[#33393c] text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-[#05202E] text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
           >
             <Download className="h-4 w-4" />
             Export Summary
@@ -475,7 +475,7 @@ export default function PayrollPage() {
           <button
             onClick={handleDetailedExport}
             disabled={finalized.length === 0 && approved.length === 0}
-            className="flex items-center gap-2 px-4 py-2 border border-[#33393c] text-[#33393c] rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 border border-[#33393c] text-[#1a1814] rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
           >
             <Download className="h-4 w-4" />
             Export Detailed (by entry)
@@ -484,7 +484,7 @@ export default function PayrollPage() {
 
         {/* Timesheets Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-[#33393c] px-4 py-3">
+          <div className="bg-[#05202E] px-4 py-3">
             <h3 className="text-sm font-semibold text-white">
               Timesheets for {selectedPeriod ? getPeriodLabel(selectedPeriod as PayPeriod) : '—'}
             </h3>

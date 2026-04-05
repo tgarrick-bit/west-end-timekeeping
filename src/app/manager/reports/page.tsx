@@ -319,14 +319,14 @@ export default function ReportsPage() {
           <div className="flex space-x-2">
             <button 
               onClick={() => handleExport('weekly-summary')}
-              className="bg-[#e31c79] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#c41a6b] transition-colors flex items-center"
+              className="bg-[#e31c79] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#c91865] transition-colors flex items-center"
             >
               <Download className="w-4 h-4 mr-2" />
               Export Weekly Summary
             </button>
             <button 
               onClick={() => handleExport('full-report')}
-              className="bg-[#33393c] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#0a2f3f] transition-colors flex items-center"
+              className="bg-[#05202E] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-[#0a2f3f] transition-colors flex items-center"
             >
               <Download className="w-4 h-4 mr-2" />
               Export Full Report
@@ -343,13 +343,13 @@ export default function ReportsPage() {
           <p className="text-sm opacity-75 mt-1">This week</p>
         </div>
 
-        <div className="p-6 rounded-lg border bg-[#33393c]/10 text-[#33393c] border-[#33393c]/20">
+        <div className="p-6 rounded-lg border bg-[#05202E]/10 text-[#1a1814] border-[#33393c]/20">
           <h3 className="text-sm font-medium opacity-75">Total Expenses</h3>
           <p className="text-2xl font-bold mt-1">${reportData.weeklySummary.totalExpenses.toLocaleString()}</p>
           <p className="text-sm opacity-75 mt-1">This week</p>
         </div>
 
-        <div className="p-6 rounded-lg border bg-[#E5DDD8]/50 text-[#33393c] border-[#E5DDD8]">
+        <div className="p-6 rounded-lg border bg-[#E5DDD8]/50 text-[#1a1814] border-[#E5DDD8]">
           <h3 className="text-sm font-medium opacity-75">Pending Items</h3>
           <p className="text-2xl font-bold mt-1">{reportData.weeklySummary.pendingHours + reportData.weeklySummary.pendingExpenses}</p>
           <p className="text-sm opacity-75 mt-1">Awaiting approval</p>
@@ -371,7 +371,7 @@ export default function ReportsPage() {
           </h2>
           <button 
             onClick={() => handleExport('project-breakdown')}
-            className="bg-[#e31c79] text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-[#c41a6b] transition-colors flex items-center"
+            className="bg-[#e31c79] text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-[#c91865] transition-colors flex items-center"
           >
             <Download className="w-4 h-4 mr-2" />
             Export
@@ -423,12 +423,12 @@ export default function ReportsPage() {
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-            <Users className="w-5 h-5 mr-2 text-[#33393c]" />
+            <Users className="w-5 h-5 mr-2 text-[#1a1814]" />
             Employee Performance
           </h2>
           <button 
             onClick={() => handleExport('employee-performance')}
-            className="bg-[#33393c] text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-[#0a2f3f] transition-colors flex items-center"
+            className="bg-[#05202E] text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-[#0a2f3f] transition-colors flex items-center"
           >
             <Download className="w-4 h-4 mr-2" />
             Export

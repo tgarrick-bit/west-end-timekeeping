@@ -205,7 +205,7 @@ ${timesheet.rejection_reason ? `Rejection Reason: ${timesheet.rejection_reason}`
     <>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#33393c]">Timesheet Management</h1>
+          <h1 className="text-3xl font-bold text-[#1a1814]">Timesheet Management</h1>
           <p className="text-gray-600 mt-2">Review and approve employee timesheets</p>
         </div>
 

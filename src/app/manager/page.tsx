@@ -925,13 +925,13 @@ export default function ManagerPage() {
           <div className="flex space-x-8">
             <button
               onClick={() => router.push('/manager')}
-              className="py-3 text-sm font-medium text-[#33393c] border-b-2 border-[#e31c79]"
+              className="py-3 text-sm font-medium text-[#1a1814] border-b-2 border-[#e31c79]"
             >
               Review
             </button>
 
             <div className="relative group">
-              <button className="py-3 text-sm font-medium text-gray-500 hover:text-[#33393c] flex items-center gap-1">
+              <button className="py-3 text-sm font-medium text-gray-500 hover:text-[#1a1814] flex items-center gap-1">
                 Reports
                 <ChevronDown className="h-4 w-4" />
               </button>
@@ -1005,38 +1005,38 @@ export default function ManagerPage() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-[#F7F8FC] border border-gray-200 rounded-xl p-4">
+            <div className="bg-[#f8f9fa] border border-gray-200 rounded-xl p-4">
               <p className="text-xs uppercase font-semibold text-gray-500 mb-1">
                 Timesheets Approved
               </p>
-              <p className="text-2xl font-bold text-[#33393c]">
+              <p className="text-2xl font-bold text-[#1a1814]">
                 {approvedTimesheetCount}
               </p>
               <p className="text-xs text-gray-500 mt-1">Completed</p>
             </div>
-            <div className="bg-[#F7F8FC] border border-gray-200 rounded-xl p-4">
+            <div className="bg-[#f8f9fa] border border-gray-200 rounded-xl p-4">
               <p className="text-xs uppercase font-semibold text-gray-500 mb-1">
                 Timesheets Pending
               </p>
-              <p className="text-2xl font-bold text-[#33393c]">
+              <p className="text-2xl font-bold text-[#1a1814]">
                 {timesheetPendingCount}
               </p>
               <p className="text-xs text-gray-500 mt-1">Awaiting review</p>
             </div>
-            <div className="bg-[#F7F8FC] border border-gray-200 rounded-xl p-4">
+            <div className="bg-[#f8f9fa] border border-gray-200 rounded-xl p-4">
               <p className="text-xs uppercase font-semibold text-gray-500 mb-1">
                 Expenses Approved
               </p>
-              <p className="text-2xl font-bold text-[#33393c]">
+              <p className="text-2xl font-bold text-[#1a1814]">
                 {approvedExpenseCount}
               </p>
               <p className="text-xs text-gray-500 mt-1">Ready for payroll</p>
             </div>
-            <div className="bg-[#F7F8FC] border border-gray-200 rounded-xl p-4">
+            <div className="bg-[#f8f9fa] border border-gray-200 rounded-xl p-4">
               <p className="text-xs uppercase font-semibold text-gray-500 mb-1">
                 Expenses Pending
               </p>
-              <p className="text-2xl font-bold text-[#33393c]">
+              <p className="text-2xl font-bold text-[#1a1814]">
                 {expensePendingCount}
               </p>
               <p className="text-xs text-gray-500 mt-1">Needs your approval</p>
@@ -1064,7 +1064,7 @@ export default function ManagerPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
           {/* TIMESHEETS SECTION */}
           <div className="border-b border-gray-100 rounded-t-2xl overflow-hidden">
-            <div className="bg-[#33393c] px-4 py-3 flex justify-between items-center">
+            <div className="bg-[#05202E] px-4 py-3 flex justify-between items-center">
               <h3 className="text-sm font-semibold text-white">Timesheets</h3>
               <div className="flex items-center space-x-2 text-xs text-gray-300">
                 <span>
@@ -1362,7 +1362,7 @@ export default function ManagerPage() {
                           e.stopPropagation();
                           router.push(`/manager/expense/${report.id}`);
                         }}
-                        className="font-medium text-[#33393c] hover:underline"
+                        className="font-medium text-[#1a1814] hover:underline"
                       >
                         {formatName(
                           report.employee?.first_name,

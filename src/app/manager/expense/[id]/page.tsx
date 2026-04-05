@@ -526,7 +526,7 @@ export default function ManagerExpenseReportPage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
           {/* header */}
-          <div className="bg-[#022234] text.white px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="bg-[#05202E] text.white px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 text-xs mb-1">
                 <span className={reportStatusBadge(report.status)}>
@@ -659,7 +659,7 @@ export default function ManagerExpenseReportPage() {
 
             {/* expense entry section */}
             <div className="rounded-xl overflow-hidden border border-gray-200 bg-white">
-  <div className="bg-[#022234] text-white px-4 py-2 flex items-center">
+  <div className="bg-[#05202E] text-white px-4 py-2 flex items-center">
     <div className="flex items-center gap-2">
       <FileText className="h-4 w-4 text-gray-100" />
       <span className="text-xs font-semibold tracking-wide">
@@ -890,7 +890,7 @@ export default function ManagerExpenseReportPage() {
     <button
       type="button"
       onClick={() => router.push('/manager')}
-      className="px-4 py-2 text-xs font-semibold rounded-md bg-[#33393c] text-white hover:bg-[#03141f] transition-colors"
+      className="px-4 py-2 text-xs font-semibold rounded-md bg-[#05202E] text-white hover:bg-[#05202E] transition-colors"
     >
       Back to Manager Dashboard
     </button>
