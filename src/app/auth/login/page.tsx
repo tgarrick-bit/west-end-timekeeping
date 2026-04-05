@@ -46,6 +46,7 @@ export default function LoginPage() {
     setLoading(true); setError('');
 
     try {
+      // Try direct Supabase auth first
       const { data, error: authErr } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(), password,
       });
@@ -66,12 +67,41 @@ export default function LoginPage() {
       else localStorage.removeItem('rememberEmail');
       localStorage.setItem('userRole', emp.role);
       const r = emp.role?.toLowerCase();
-      router.push(r === 'admin' ? '/admin' : r === 'manager' ? '/manager' : '/employee');
-    } catch (err: any) {
-      const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'NOT SET';
-      const hasKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'YES' : 'NO';
-      setError(`${err?.message || 'Unknown error'} | URL: ${supaUrl.substring(0, 30)}... | Key: ${hasKey}`);
-      setLoading(false);
+      router.push(r === 'admin' ? '/admin' : r === 'manager' ? '/manager/pending' : r === 'client_approver' ? '/client' : '/employee');
+    } catch {
+      // Direct Supabase call failed (common on mobile) — use server-side API fallback
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+        });
+        const result = await res.json();
+
+        if (!res.ok) {
+          setError(result.error || 'Login failed');
+          setLoading(false); return;
+        }
+
+        // Set the session from server response
+        const { error: setErr } = await supabase.auth.setSession({
+          access_token: result.access_token,
+          refresh_token: result.refresh_token,
+        });
+        if (setErr) {
+          // Even if setSession fails, we can still navigate with the role
+          console.warn('setSession failed:', setErr.message);
+        }
+
+        if (rememberMe) localStorage.setItem('rememberEmail', email);
+        else localStorage.removeItem('rememberEmail');
+        localStorage.setItem('userRole', result.role);
+        const r = result.role?.toLowerCase();
+        router.push(r === 'admin' ? '/admin' : r === 'manager' ? '/manager/pending' : r === 'client_approver' ? '/client' : '/employee');
+      } catch (fallbackErr: any) {
+        setError(`Unable to connect. Please check your internet connection.`);
+        setLoading(false);
+      }
     }
   };
 
