@@ -32,16 +32,25 @@ interface ContractorDetail {
 }
 
 const StatusBadge = ({ status }: { status: string }) => {
-  const colors: Record<string, string> = {
-    active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    inactive: 'bg-[#FAFAF8] text-[#777] border-[#e8e4df]',
-    pending: 'bg-amber-50 text-amber-700 border-amber-200',
+  const colorMap: Record<string, { bg: string; color: string; border: string }> = {
+    active: { bg: '#ecfdf5', color: '#2d9b6e', border: '#2d9b6e' },
+    inactive: { bg: '#FAFAF8', color: '#777', border: '#e8e4df' },
+    pending: { bg: '#FFF8E1', color: '#c4983a', border: '#c4983a' },
   }
-  const cls = colors[status] || 'bg-[#FAFAF8] text-[#777] border-[#e8e4df]'
+  const c = colorMap[status] || { bg: '#FAFAF8', color: '#777', border: '#e8e4df' }
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 border font-medium ${cls}`}
-      style={{ fontSize: 9, borderRadius: 3 }}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '2px 8px',
+        fontSize: 9,
+        fontWeight: 500,
+        borderRadius: 3,
+        background: c.bg,
+        color: c.color,
+        border: `0.5px solid ${c.border}`,
+      }}
     >
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
@@ -106,15 +115,34 @@ export default function ContractorDetailPage() {
   }
 
   if (isLoading) {
+    const shimmer: React.CSSProperties = {
+      background: 'linear-gradient(90deg, #f5f2ee 25%, #ece8e3 50%, #f5f2ee 75%)',
+      backgroundSize: '200% 100%',
+      animation: 'shimmer 1.5s infinite',
+      borderRadius: 4,
+    }
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="flex flex-col items-center gap-4">
-          <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
-            <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          <p className="text-[13px]" style={{ color: '#bbb' }}>Loading...</p>
+      <div style={{ padding: '36px 40px' }}>
+        <style dangerouslySetInnerHTML={{ __html: '@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }' }} />
+        <div style={{ ...shimmer, width: 120, height: 14, marginBottom: 24 }} />
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 24, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ ...shimmer, width: 52, height: 52, borderRadius: '50%' }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ ...shimmer, width: 200, height: 24 }} />
+            <div style={{ ...shimmer, width: 160, height: 13, marginTop: 8 }} />
+          </div>
         </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 20 }}>
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 24 }}>
+              <div style={{ ...shimmer, width: 80, height: 11, animationDelay: `${i * 0.1}s` }} />
+              <div style={{ ...shimmer, width: 60, height: 20, marginTop: 8, animationDelay: `${i * 0.1}s` }} />
+            </div>
+          ))}
+        </div>
+        {[0, 1].map(i => (
+          <div key={i} style={{ ...shimmer, width: '100%', height: 120, borderRadius: 10, marginBottom: 16, animationDelay: `${i * 0.15}s` }} />
+        ))}
       </div>
     )
   }
@@ -162,9 +190,11 @@ export default function ContractorDetailPage() {
   }
 
   const labelStyle: React.CSSProperties = {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 500,
-    color: '#999',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    color: '#c0bab2',
   }
 
   const valueStyle: React.CSSProperties = {
@@ -216,7 +246,7 @@ export default function ContractorDetailPage() {
             <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
               {contractor.name}
             </h1>
-            <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb', marginTop: 2 }}>
+            <p style={{ fontSize: 13, fontWeight: 400, color: '#999', marginTop: 2 }}>
               {contractor.role}
             </p>
             <p style={{ fontSize: 11, color: '#ccc', marginTop: 2 }}>
@@ -278,7 +308,7 @@ export default function ContractorDetailPage() {
         ].map((stat) => (
           <div key={stat.label} style={cardStyle}>
             <p style={labelStyle}>{stat.label}</p>
-            <p style={{ fontSize: 20, fontWeight: 600, color: '#1a1a1a', marginTop: 4 }}>
+            <p style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', marginTop: 4 }}>
               {stat.value}
             </p>
           </div>

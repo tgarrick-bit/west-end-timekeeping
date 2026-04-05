@@ -592,43 +592,39 @@ export default function ExpenseEntryPage() {
   };
 
   return (
-    <div style={{ background: '#FAFAF8', minHeight: '100vh' }}>
+    <div style={{ padding: '36px 40px' }}>
       {/* Page Header */}
-      <div style={{ background: '#fff', borderBottom: '0.5px solid #e8e4df' }}>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push('/employee')}
-              className="p-2 rounded-md transition-colors duration-150"
-              style={{ color: '#999', border: '0.5px solid #e0dcd7' }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#555'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#999'; }}
-            >
-              <ArrowLeft size={15} strokeWidth={1.5} />
-            </button>
-            <div>
-              <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1a1a1a' }}>Expense Submission</h1>
-              <p style={{ fontSize: 12, color: '#bbb' }}>Create and submit expense reports</p>
-            </div>
-          </div>
+      <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
+        <button
+          onClick={() => router.push('/employee')}
+          className="transition-colors duration-150"
+          style={{ padding: 8, color: '#999', border: '0.5px solid #e0dcd7', borderRadius: 7, background: '#fff' }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#555'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#999'; }}
+        >
+          <ArrowLeft size={15} strokeWidth={1.5} />
+        </button>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', letterSpacing: -0.3 }}>Expense Submission</h1>
+          <p style={{ fontSize: 13, fontWeight: 400, color: '#999' }}>Create and submit expense reports</p>
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div>
         {/* Report Title + Expense Report Date */}
-        <div className="bg-white rounded-lg  p-6 mb-6">
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px', marginBottom: 16 }}>
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             {/* Report Title */}
             <div className="w-full md:w-[60%]">
-              <label className="block text-sm font-medium text-[#555] mb-1">
-                Report Title <span className="text-red-500">*</span>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 6 }}>
+                Report Title <span style={{ color: '#b91c1c' }}>*</span>
               </label>
               <input
                 type="text"
                 value={reportTitle}
                 onChange={(e) => setReportTitle(e.target.value)}
-                className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                 placeholder='e.g., "Trip to HQ" or "November Client Visits"'
               />
               <p className="mt-2 text-sm text-[#999]">
@@ -639,23 +635,23 @@ export default function ExpenseEntryPage() {
 
             {/* Expense Report Date */}
             <div className="w-full md:w-[32%]">
-              <label className="block text-sm font-medium text-[#555] mb-1">
+              <label className="block text-[10px] font-medium tracking-[1px] text-[#c0bab2] uppercase mb-1">
                 Expense Report Date
               </label>
               <input
                 type="date"
                 value={expensePeriod}
                 onChange={(e) => setExpensePeriod(e.target.value)}
-                className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
               />
             </div>
           </div>
         </div>
 
         {/* Expense Entries */}
-        <div className="bg-white rounded-lg  overflow-hidden mb-6">
-          <div className="bg-white text-[#1a1a1a] px-4 py-3">
-            <h2 className="text-sm font-medium">EXPENSE ENTRY</h2>
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
+          <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7' }}>
+            <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Expense Entry</h2>
           </div>
           <div className="p-6">
             {entries.map((entry, index) => {
@@ -675,16 +671,14 @@ export default function ExpenseEntryPage() {
                 >
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="bg-[#e31c79]/10 px-3 py-2 rounded-lg">
-                        <span className="text-[#e31c79] font-semibold">
-                          {index + 1}
-                        </span>
+                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#e31c79', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600 }}>
+                        {index + 1}
                       </div>
                       <div>
-                        <h3 className="text-lg font-medium text-[#1a1a1a]">
+                        <h3 style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
                           Entry #{index + 1}
                         </h3>
-                        <p className="text-xs text-[#999]">
+                        <p style={{ fontSize: 11, color: '#c0bab2' }}>
                           Edit details for this expense line, then save or submit
                           your report.
                         </p>
@@ -693,7 +687,8 @@ export default function ExpenseEntryPage() {
                     {entries.length > 1 && (
                       <button
                         onClick={() => removeRow(entry.id)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 rounded-lg transition-colors"
+                        style={{ color: '#b91c1c' }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -702,9 +697,9 @@ export default function ExpenseEntryPage() {
 
                   {/* Inline GSA / IRS info – guideline only */}
                   {(isMileage || gsaMealLimit !== null) && (
-                    <div className="mb-4 flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2">
-                      <AlertCircle className="h-3.5 w-3.5 text-amber-700 mt-0.5" />
-                      <p className="text-[11px] text-amber-900">
+                    <div className="mb-4 flex items-start gap-2 rounded-md bg-white border border-[#e8e4df] px-3 py-2">
+                      <AlertCircle className="h-3.5 w-3.5 text-[#c4983a] mt-0.5" />
+                      <p className="text-[11px] text-[#c4983a]">
                         {isMileage ? (
                           <>
                             Mileage amounts are based on guideline IRS rates only.
@@ -747,8 +742,8 @@ export default function ExpenseEntryPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Date */}
                     <div>
-                      <label className="block text-sm font-medium text-[#555] mb-1">
-                        Date <span className="text-red-500">*</span>
+                      <label className="block text-[10px] font-medium tracking-[1px] text-[#c0bab2] uppercase mb-1">
+                        Date <span style={{ color: '#b91c1c' }}>*</span>
                       </label>
                       <input
                         type="date"
@@ -756,21 +751,21 @@ export default function ExpenseEntryPage() {
                         onChange={(e) =>
                           updateEntry(entry.id, 'date', e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                       />
                     </div>
 
                     {/* Project */}
                     <div>
-                      <label className="block text-sm font-medium text-[#555] mb-1">
-                        Project <span className="text-red-500">*</span>
+                      <label className="block text-[10px] font-medium tracking-[1px] text-[#c0bab2] uppercase mb-1">
+                        Project <span style={{ color: '#b91c1c' }}>*</span>
                       </label>
                       <select
                         value={entry.project_id}
                         onChange={(e) =>
                           updateEntry(entry.id, 'project_id', e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                       >
                         <option value="">Select a project...</option>
                         {projects.map((project) => (
@@ -783,15 +778,15 @@ export default function ExpenseEntryPage() {
 
                     {/* Category */}
                     <div>
-                      <label className="block text-sm font-medium text-[#555] mb-1">
-                        Category <span className="text-red-500">*</span>
+                      <label className="block text-[10px] font-medium tracking-[1px] text-[#c0bab2] uppercase mb-1">
+                        Category <span style={{ color: '#b91c1c' }}>*</span>
                       </label>
                       <select
                         value={entry.category}
                         onChange={(e) =>
                           updateEntry(entry.id, 'category', e.target.value)
                         }
-                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                       >
                         <option value="">Select category...</option>
                         {expenseCategories.map((cat) => (
@@ -804,9 +799,9 @@ export default function ExpenseEntryPage() {
 
                     {/* Amount / Mileage */}
                     <div>
-                      <label className="block text-sm font-medium text-[#555] mb-1">
+                      <label className="block text-[10px] font-medium tracking-[1px] text-[#c0bab2] uppercase mb-1">
                         {isMileage ? 'Mileage' : 'Amount'}{' '}
-                        <span className="text-red-500">*</span>
+                        <span style={{ color: '#b91c1c' }}>*</span>
                       </label>
 
                       {isMileage ? (
@@ -831,7 +826,7 @@ export default function ExpenseEntryPage() {
                                   : numeric * GSA_MILEAGE_RATE;
                                 updateEntry(entry.id, 'amount', amount);
                               }}
-                              className="w-full px-3 py-2 border border-[#e8e4df] rounded-md text-right focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                              className="w-full px-3 py-2 border border-[#e8e4df] rounded-md text-right focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                               placeholder="0.0"
                             />
                             <span className="text-xs text-[#777]">miles</span>
@@ -880,7 +875,7 @@ export default function ExpenseEntryPage() {
                               onChange={(e) =>
                                 updateEntry(entry.id, 'amount', e.target.value)
                               }
-                              className="w-full pl-10 pr-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79] text-right"
+                              className="w-full pl-10 pr-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b] text-right"
                               placeholder="0.00"
                             />
                           </div>
@@ -899,7 +894,7 @@ export default function ExpenseEntryPage() {
 
                     {/* Vendor / Trip Details */}
                     <div>
-                      <label className="block text-sm font-medium text-[#555] mb-1">
+                      <label className="block text-[10px] font-medium tracking-[1px] text-[#c0bab2] uppercase mb-1">
                         {isMileage ? 'Trip Details' : 'Vendor'}
                       </label>
                       {isMileage ? (
@@ -910,7 +905,7 @@ export default function ExpenseEntryPage() {
                             onChange={(e) =>
                               updateEntry(entry.id, 'vendor', e.target.value)
                             }
-                            className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                            className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                             placeholder="Start location (e.g., Calgary HQ)"
                           />
                           <input
@@ -919,7 +914,7 @@ export default function ExpenseEntryPage() {
                             onChange={(e) =>
                               updateEntry(entry.id, 'description', e.target.value)
                             }
-                            className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                            className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                             placeholder="End location (e.g., Client Site)"
                           />
                           {(entry.vendor || entry.description) && (
@@ -936,7 +931,7 @@ export default function ExpenseEntryPage() {
                           onChange={(e) =>
                             updateEntry(entry.id, 'vendor', e.target.value)
                           }
-                          className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79]"
+                          className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                           placeholder="e.g., Office Depot"
                         />
                       )}
@@ -944,7 +939,7 @@ export default function ExpenseEntryPage() {
 
                     {/* Receipt Upload */}
                     <div>
-                      <label className="block text-sm font-medium text-[#555] mb-1">
+                      <label className="block text-[10px] font-medium tracking-[1px] text-[#c0bab2] uppercase mb-1">
                         Receipt
                       </label>
                       <div className="flex items-center gap-3">
@@ -967,7 +962,8 @@ export default function ExpenseEntryPage() {
                             onClick={() =>
                               updateEntry(entry.id, 'receipt_file', null)
                             }
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-2 rounded-lg transition-colors"
+                            style={{ color: '#b91c1c' }}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -981,7 +977,7 @@ export default function ExpenseEntryPage() {
                     {/* Description (non-mileage) */}
                     {!isMileage && (
                       <div className="lg:col-span-3">
-                        <label className="block text-sm font-medium text-[#555] mb-1">
+                        <label className="block text-[10px] font-medium tracking-[1px] text-[#c0bab2] uppercase mb-1">
                           Description
                         </label>
                         <textarea
@@ -990,7 +986,7 @@ export default function ExpenseEntryPage() {
                             updateEntry(entry.id, 'description', e.target.value)
                           }
                           placeholder="Provide details about this expense..."
-                          className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-2 focus:ring-[#e31c79] focus:border-[#e31c79] resize-none"
+                          className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b] resize-none"
                           rows={2}
                         />
                       </div>
@@ -1005,28 +1001,29 @@ export default function ExpenseEntryPage() {
         {/* Add Button */}
         <button
           onClick={addRow}
-          className="w-full mb-6 py-3 border-2 border-dashed border-[#e8e4df] rounded-lg hover:border-[#e31c79] hover:bg-[#FAFAF8] transition-colors group"
+          className="w-full transition-colors group"
+          style={{ marginBottom: 16, padding: 14, border: '1px dashed #e8e4df', borderRadius: 10, background: '#fff' }}
         >
-          <div className="flex items-center justify-center gap-2">
-            <Plus className="h-5 w-5 text-[#bbb] group-hover:text-[#e31c79]" />
-            <span className="text-[#777] group-hover:text-[#e31c79] font-medium">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <Plus style={{ width: 16, height: 16, color: '#c0bab2' }} />
+            <span style={{ fontSize: 12, fontWeight: 500, color: '#999' }}>
               Add Another Expense
             </span>
           </div>
         </button>
 
         {/* Total Summary */}
-        <div className="bg-white rounded-lg  p-6 mb-6">
-          <div className="flex justify-between items-center">
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div className="text-sm text-[#777] mb-1">Total Expenses</div>
-              <div className="text-[24px] font-bold text-[#e31c79]">
+              <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 4 }}>Total Expenses</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>
                 ${total.toFixed(2)}
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-sm text-[#777] mb-1">Entries</div>
-              <div className="text-[20px] font-bold text-[#1a1a1a]">
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 4 }}>Entries</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>
                 {validEntries.length} of {entries.length}
               </div>
             </div>
@@ -1036,11 +1033,11 @@ export default function ExpenseEntryPage() {
         {/* Warning Message */}
         {(!reportTitle.trim() ||
           entries.some((e) => !e.project_id || !e.category || e.amount <= 0)) && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <AlertCircle style={{ width: 16, height: 16, color: '#c4983a', flexShrink: 0, marginTop: 2 }} />
               <div>
-                <p className="text-sm text-yellow-800">
+                <p style={{ fontSize: 12.5, fontWeight: 500, color: '#c4983a' }}>
                   Please provide a report title and complete all required fields
                   (Project, Category, and Amount) for each expense entry before
                   submitting.
@@ -1054,7 +1051,8 @@ export default function ExpenseEntryPage() {
         <div className="flex justify-between items-center">
           <button
             onClick={() => router.push('/employee')}
-            className="px-5 py-2.5 text-[#555] bg-white border border-[#e8e4df] rounded-lg hover:bg-[#FAFAF8] transition-colors"
+            className="transition-colors duration-150"
+            style={{ padding: '9px 20px', fontSize: 12, fontWeight: 500, color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 7 }}
           >
             Cancel
           </button>
@@ -1065,7 +1063,8 @@ export default function ExpenseEntryPage() {
               disabled={
                 isLoading || validEntries.length === 0 || !reportTitle.trim()
               }
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#FAFAF8] rounded-lg hover:bg-[#f5f2ee] transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 transition-colors disabled:opacity-50"
+              style={{ padding: '9px 20px', fontSize: 12, fontWeight: 500, color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 7 }}
             >
               <Save className="h-4 w-4" />
               Save as Draft
@@ -1075,14 +1074,17 @@ export default function ExpenseEntryPage() {
               disabled={
                 isLoading || validEntries.length === 0 || !reportTitle.trim()
               }
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#e31c79] text-white rounded-lg hover:bg-[#c91865] transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 transition-colors disabled:opacity-50"
+              style={{ padding: '9px 20px', fontSize: 12, fontWeight: 600, color: '#fff', background: '#e31c79', border: 'none', borderRadius: 7 }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = '#cc1069')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = '#e31c79')}
             >
               <Send className="h-4 w-4" />
               Submit for Approval
             </button>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

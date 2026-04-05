@@ -5,15 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
-import { 
-  Clock, 
-  LogOut,
-  Calendar,
-  ChevronRight,
-  FileText,
-  Download,
-  AlertCircle
-} from 'lucide-react'
+import { Download } from 'lucide-react'
 
 interface Employee {
   id: string
@@ -34,11 +26,19 @@ interface MissingTimeData {
   assigned_projects?: string[]
 }
 
+const inputStyle = { padding: '8px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12.5, color: '#1a1a1a', outline: 'none' } as const
+const selectStyle = { ...inputStyle, width: '100%', background: 'white' } as const
+const labelStyle = { display: 'block' as const, fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 6 }
+const sectionLabel = { fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 12 }
+
+function focusIn(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 2px rgba(211,173,107,0.15)' }
+function focusOut(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }
+
 export default function TimeMissingReport() {
   const router = useRouter()
   const { user } = useAuth()
   const supabase = createClient()
-  
+
   const [startDate, setStartDate] = useState('2025-09-07')
   const [endDate, setEndDate] = useState('')
   const [selectedUser, setSelectedUser] = useState('-All-')
@@ -48,44 +48,22 @@ export default function TimeMissingReport() {
   const [byDay, setByDay] = useState(false)
   const [reportData, setReportData] = useState<MissingTimeData[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
 
-  const employeeTypes = [
-    '-All-',
-    'Internal',
-    'Hourly',
-    '1099',
-    'Corp2Corp',
-    'Salary',
-    'External'
-  ]
+  const employeeTypes = ['-All-', 'Internal', 'Hourly', '1099', 'Corp2Corp', 'Salary', 'External']
+
+  useEffect(() => { const t = setTimeout(() => setPageLoading(false), 400); return () => clearTimeout(t) }, [])
 
   const handleRunReport = async () => {
     setIsLoading(true)
-    
     try {
-      // First, fetch all employees based on employee type filter
-      let employeeQuery = supabase
-        .from('employees')
-        .select('*')
-        .eq('status', 'active')
-
-      if (selectedEmployeeType !== '-All-') {
-        employeeQuery = employeeQuery.eq('employee_type', selectedEmployeeType)
-      }
-
+      let employeeQuery = supabase.from('employees').select('*').eq('status', 'active')
+      if (selectedEmployeeType !== '-All-') { employeeQuery = employeeQuery.eq('employee_type', selectedEmployeeType) }
       const { data: employees, error: empError } = await employeeQuery
+      if (empError) { console.error('Error fetching employees:', empError); setIsLoading(false); return }
 
-      if (empError) {
-        console.error('Error fetching employees:', empError)
-        setIsLoading(false)
-        return
-      }
-
-      // For each employee, check if they have submitted timesheets in the date range
       const missingTimeData: MissingTimeData[] = []
-      
       for (const employee of employees || []) {
-        // Check for submitted timesheets
         const { data: timesheets } = await supabase
           .from('timesheets')
           .select('week_ending')
@@ -93,13 +71,11 @@ export default function TimeMissingReport() {
           .gte('week_ending', startDate)
           .lte('week_ending', endDate || startDate)
 
-        // Calculate missing weeks
         const submittedWeeks = timesheets?.map(t => t.week_ending) || []
         const allWeeks = getAllWeeksInRange(startDate, endDate || startDate)
         const missingWeeks = allWeeks.filter(week => !submittedWeeks.includes(week))
 
         if (missingWeeks.length > 0) {
-          // Get last submission date
           const { data: lastTimesheet } = await supabase
             .from('timesheets')
             .select('week_ending')
@@ -117,47 +93,29 @@ export default function TimeMissingReport() {
           })
         }
       }
-
       setReportData(missingTimeData)
-    } catch (error) {
-      console.error('Error generating report:', error)
-    } finally {
-      setIsLoading(false)
-    }
+    } catch (error) { console.error('Error generating report:', error) }
+    finally { setIsLoading(false) }
   }
 
   const getAllWeeksInRange = (start: string, end: string): string[] => {
     const weeks: string[] = []
     const startDate = new Date(start)
     const endDate = new Date(end)
-    
-    // Adjust to nearest Sunday
     startDate.setDate(startDate.getDate() - startDate.getDay())
-    
     while (startDate <= endDate) {
-      // Add the Saturday (end of week) date
       const weekEnd = new Date(startDate)
       weekEnd.setDate(weekEnd.getDate() + 6)
       weeks.push(weekEnd.toISOString().split('T')[0])
-      
-      // Move to next week
       startDate.setDate(startDate.getDate() + 7)
     }
-    
     return weeks
   }
 
   const handleExportToExcel = () => {
-    if (reportData.length === 0) {
-      alert('No data to export. Please run the report first.')
-      return
-    }
-
-    // Format data for Excel
+    if (reportData.length === 0) { alert('No data to export. Please run the report first.'); return }
     let exportData: any[] = []
-    
     if (byDay) {
-      // Create a row for each missing date
       reportData.forEach(row => {
         row.missing_dates.forEach(date => {
           exportData.push({
@@ -172,7 +130,6 @@ export default function TimeMissingReport() {
         })
       })
     } else {
-      // Single row per employee
       reportData.forEach(row => {
         exportData.push({
           'Employee': `${row.employee.first_name} ${row.employee.last_name}`,
@@ -185,333 +142,181 @@ export default function TimeMissingReport() {
         })
       })
     }
-
-    // Create workbook
     const wb = XLSX.utils.book_new()
     const ws = XLSX.utils.json_to_sheet(exportData)
-    
-    // Auto-size columns
     if (exportData.length > 0) {
       const colWidths = Object.keys(exportData[0]).map(key => {
-        const maxLength = Math.max(
-          key.length,
-          ...exportData.map((row) => {
-            const value = row[key]
-            return value ? String(value).length : 0
-          })
-        )
+        const maxLength = Math.max(key.length, ...exportData.map((row) => { const v = row[key]; return v ? String(v).length : 0 }))
         return { wch: Math.min(maxLength + 2, 30) }
       })
       ws['!cols'] = colWidths
     }
-    
-    // Add worksheet to workbook
     XLSX.utils.book_append_sheet(wb, ws, 'Time Missing')
-    
-    // Generate filename with date range
-    const fileName = `time_missing_${startDate}_to_${endDate || startDate}.xlsx`
-    
-    // Write the file
-    XLSX.writeFile(wb, fileName)
+    XLSX.writeFile(wb, `time_missing_${startDate}_to_${endDate || startDate}.xlsx`)
+  }
+
+  if (pageLoading) {
+    return (
+      <div style={{ padding: '36px 40px' }}>
+        <div style={{ height: 24, width: 180, background: '#f5f2ee', borderRadius: 6, marginBottom: 8 }} className="anim-shimmer" />
+        <div style={{ height: 13, width: 320, background: '#f5f2ee', borderRadius: 6, marginBottom: 32 }} className="anim-shimmer" />
+        <div style={{ background: '#FFFFFF', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px' }}>
+          {[0,1,2,3,4].map(i => (<div key={i} style={{ height: 38, background: '#f5f2ee', borderRadius: 7, marginBottom: 16 }} className="anim-shimmer" />))}
+        </div>
+      </div>
+    )
   }
 
   return (
-    <>
-      {/* Header */}
-      {/* Navigation */}
-      <div className="bg-[#FAFAF8] border-b">
-        <div className="max-w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
-            <button 
-              onClick={() => router.push('/manager')}
-              className="py-3 text-sm font-medium text-[#777] hover:text-[#1a1a1a]"
-            >
-              Review
-            </button>
-            <button className="py-3 text-sm font-medium text-[#1a1a1a] border-b-2 border-[#e31c79]">
-              Reports
-            </button>
+    <div style={{ padding: '36px 40px' }}>
+      <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', letterSpacing: -0.3, margin: 0 }}>Time Missing</h1>
+      <p style={{ fontSize: 13, fontWeight: 400, color: '#999', marginTop: 4, marginBottom: 28 }}>Identify employees with missing timesheet submissions</p>
+
+      <div style={{ background: '#FFFFFF', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '28px 28px' }}>
+        <div style={sectionLabel}>Report Parameters</div>
+
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 24 }}>
+          <div>
+            <label style={labelStyle}>Date Start</label>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inputStyle} onFocus={focusIn} onBlur={focusOut} />
           </div>
+          <div>
+            <label style={labelStyle}>Date Stop</label>
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={inputStyle} onFocus={focusIn} onBlur={focusOut} placeholder=" " />
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16, marginBottom: 24 }}>
+          <div>
+            <label style={labelStyle}>User</label>
+            <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}><option>-All-</option></select>
+          </div>
+          <div>
+            <label style={labelStyle}>Employee Type</label>
+            <select value={selectedEmployeeType} onChange={(e) => setSelectedEmployeeType(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}>
+              {employeeTypes.map(type => (<option key={type} value={type}>{type}</option>))}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Project</label>
+            <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}><option>-All-</option></select>
+          </div>
+        </div>
+
+        <div style={sectionLabel}>Options</div>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, marginBottom: 24 }}>
+          {[
+            { label: 'By Project', checked: byProject, onChange: setByProject },
+            { label: 'By Day', checked: byDay, onChange: setByDay },
+          ].map(opt => (
+            <label key={opt.label} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input type="checkbox" checked={opt.checked} onChange={(e) => opt.onChange(e.target.checked)} style={{ accentColor: '#e31c79' }} />
+              <span style={{ fontSize: 12.5, color: '#1a1a1a' }}>{opt.label}</span>
+            </label>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+          {reportData.length > 0 && (
+            <button onClick={handleExportToExcel} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, fontWeight: 500, color: '#1a1a1a', background: 'white', cursor: 'pointer' }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#e31c79' }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e8e4df' }}>
+              <Download style={{ width: 14, height: 14 }} /> Export to Excel
+            </button>
+          )}
+          <button onClick={handleRunReport} disabled={isLoading}
+            style={{ padding: '8px 24px', borderRadius: 7, fontSize: 12, fontWeight: 600, border: 'none', color: isLoading ? '#999' : 'white', background: isLoading ? '#f5f2ee' : '#e31c79', cursor: isLoading ? 'not-allowed' : 'pointer' }}
+            onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.background = '#cc1069' }} onMouseLeave={(e) => { if (!isLoading) e.currentTarget.style.background = '#e31c79' }}>
+            {isLoading ? 'Running...' : 'Run Report'}
+          </button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex gap-6">
-          {/* Left Sidebar */}
-          <div className="w-64 bg-white rounded-lg p-4">
-            <h3 className="font-semibold text-[#1a1a1a] mb-4">Time Reports</h3>
-            <div className="space-y-1">
-              <a href="/admin/reports/time-by-project" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Project
-              </a>
-              <a href="/admin/reports/time-by-employee" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Employee
-              </a>
-              <a href="/admin/reports/time-by-class" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Class
-              </a>
-              <a href="/admin/reports/time-by-approver" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Approver
-              </a>
-              <a href="/admin/reports/time-missing" className="flex items-center justify-between px-3 py-2 text-sm bg-[#FAFAF8] text-[#1a1a1a] rounded">
-                Time Missing
-                <ChevronRight className="h-4 w-4" />
-              </a>
-            </div>
-
-            <h3 className="font-semibold text-[#1a1a1a] mt-6 mb-4">Expense Reports</h3>
-            <div className="space-y-1">
-              <a href="/admin/reports/expenses-by-employee" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Expenses by Employee
-              </a>
-              <a href="/admin/reports/expenses-by-project" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Expenses by Project
-              </a>
-              <a href="/admin/reports/expenses-by-approver" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Expenses by Approver
-              </a>
+      {/* Results */}
+      {reportData.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          {/* Warning card */}
+          <div style={{ background: '#FFFFFF', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '16px 20px', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#c4983a', flexShrink: 0 }} />
+              <div>
+                <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1a1a1a' }}>{reportData.length} employees with missing timesheets</span>
+                <span style={{ fontSize: 12.5, color: '#999', marginLeft: 12 }}>
+                  {reportData.reduce((sum, d) => sum + d.weeks_missing, 0)} total weeks missing
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Report Configuration */}
-          <div className="flex-1 bg-white rounded-lg p-6">
-            <h2 className="text-[12px] font-semibold text-[#1a1a1a] mb-6">Report Details: Time Missing</h2>
-
-            <div className="space-y-6">
-              {/* Date Range */}
-              <div className="flex items-center gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Date Start</label>
-                  <div className="flex items-center">
-                    <input 
-                      type="date" 
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Date Stop</label>
-                  <div className="flex items-center">
-                    <input 
-                      type="date" 
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
-                      placeholder=" "
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Filters */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">User</label>
-                  <select 
-                    value={selectedUser}
-                    onChange={(e) => setSelectedUser(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    <option>-All-</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Employee Type</label>
-                  <select 
-                    value={selectedEmployeeType}
-                    onChange={(e) => setSelectedEmployeeType(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    {employeeTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Project</label>
-                  <select 
-                    value={selectedProject}
-                    onChange={(e) => setSelectedProject(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    <option>-All-</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Options */}
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={byProject}
-                    onChange={(e) => setByProject(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">By Project</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={byDay}
-                    onChange={(e) => setByDay(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">By Day</span>
-                </label>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-4">
-                {reportData.length > 0 && (
-                  <button 
-                    onClick={handleExportToExcel}
-                    className="px-6 py-2 bg-white text-[#1a1a1a] rounded-md hover:bg-[#FAFAF8] font-medium flex items-center"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export to Excel
-                  </button>
+          {/* Table */}
+          <div style={{ background: '#FFFFFF', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  {['Employee', 'Department', 'Employee Type',
+                    ...(!byDay ? ['Weeks Missing'] : []),
+                    byDay ? 'Missing Date' : 'Missing Dates',
+                    'Last Submission'
+                  ].map(h => (
+                    <th key={h} style={{ padding: '11px 20px', fontSize: 9, fontWeight: 500, letterSpacing: 1.2, color: '#c0bab2', textTransform: 'uppercase' as const, borderBottom: '0.5px solid #f0ece7', textAlign: h === 'Weeks Missing' ? 'center' : 'left' }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {byDay ? (
+                  reportData.flatMap(row =>
+                    row.missing_dates.map((date) => (
+                      <tr key={`${row.employee.id}-${date}`} style={{ borderBottom: '0.5px solid #f5f2ee' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#FDFCFB')} onMouseLeave={e => (e.currentTarget.style.background = 'white')}>
+                        <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }}>{row.employee.first_name} {row.employee.last_name}</td>
+                        <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }}>{row.employee.department || 'N/A'}</td>
+                        <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }}>{row.employee.employee_type || 'N/A'}</td>
+                        <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }}>{new Date(date).toLocaleDateString()}</td>
+                        <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }}>
+                          {row.last_submission ? new Date(row.last_submission).toLocaleDateString() : <span style={{ color: '#c0bab2' }}>Never</span>}
+                        </td>
+                      </tr>
+                    ))
+                  )
+                ) : (
+                  reportData.map((row) => (
+                    <tr key={row.employee.id} style={{ borderBottom: '0.5px solid #f5f2ee' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#FDFCFB')} onMouseLeave={e => (e.currentTarget.style.background = 'white')}>
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }}>{row.employee.first_name} {row.employee.last_name}</td>
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }}>{row.employee.department || 'N/A'}</td>
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }}>{row.employee.employee_type || 'N/A'}</td>
+                      <td style={{ padding: '12px 20px', textAlign: 'center' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 9, fontWeight: 500, borderRadius: 3, padding: '2px 8px', background: 'rgba(185,28,28,0.08)' }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#b91c1c', flexShrink: 0 }} />
+                          <span style={{ color: '#b91c1c' }}>{row.weeks_missing}</span>
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {row.missing_dates.map(d => new Date(d).toLocaleDateString()).join(', ')}
+                      </td>
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }}>
+                        {row.last_submission ? new Date(row.last_submission).toLocaleDateString() : <span style={{ color: '#c0bab2' }}>Never</span>}
+                      </td>
+                    </tr>
+                  ))
                 )}
-                <button 
-                  onClick={handleRunReport}
-                  disabled={isLoading}
-                  className={`px-6 py-2 rounded-md font-medium ${
-                    isLoading 
-                      ? 'bg-[#FAFAF8] text-[#999] cursor-not-allowed' 
-                      : 'bg-green-600 text-white hover:bg-green-700'
-                  }`}
-                >
-                  {isLoading ? 'Running...' : 'Run'}
-                </button>
-              </div>
-
-              {/* Results */}
-              {reportData.length > 0 && (
-                <div className="mt-6">
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded mb-4 flex items-start">
-                    <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-semibold text-yellow-800">
-                        {reportData.length} employees with missing timesheets
-                      </p>
-                      <p className="text-sm text-yellow-700 mt-1">
-                        Total of {reportData.reduce((sum, d) => sum + d.weeks_missing, 0)} weeks missing across all employees
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Results Table */}
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-[#FAFAF8]">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Employee
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Department
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Employee Type
-                          </th>
-                          {!byDay && (
-                            <th className="px-6 py-3 text-center text-xs font-medium text-[#999] uppercase tracking-wider">
-                              Weeks Missing
-                            </th>
-                          )}
-                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                            {byDay ? 'Missing Date' : 'Missing Dates'}
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Last Submission
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {byDay ? (
-                          // Show one row per missing date
-                          reportData.flatMap(row => 
-                            row.missing_dates.map((date, index) => (
-                              <tr key={`${row.employee.id}-${date}`} className="hover:bg-[#FAFAF8]">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                  {row.employee.first_name} {row.employee.last_name}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                  {row.employee.department || 'N/A'}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                  {row.employee.employee_type || 'N/A'}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                  {new Date(date).toLocaleDateString()}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                  {row.last_submission 
-                                    ? new Date(row.last_submission).toLocaleDateString()
-                                    : 'Never'}
-                                </td>
-                              </tr>
-                            ))
-                          )
-                        ) : (
-                          // Show one row per employee
-                          reportData.map((row) => (
-                            <tr key={row.employee.id} className="hover:bg-[#FAFAF8]">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                {row.employee.first_name} {row.employee.last_name}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                {row.employee.department || 'N/A'}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                {row.employee.employee_type || 'N/A'}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                                <span className="px-2 inline-flex leading-5 rounded bg-red-100 text-red-800">
-                                  {row.weeks_missing}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 text-sm text-[#1a1a1a]">
-                                <div className="max-w-xs overflow-hidden text-ellipsis">
-                                  {row.missing_dates.map(d => new Date(d).toLocaleDateString()).join(', ')}
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                {row.last_submission 
-                                  ? new Date(row.last_submission).toLocaleDateString()
-                                  : <span className="text-[#bbb]">Never</span>}
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* No Missing Time Found */}
-              {reportData.length === 0 && !isLoading && endDate && (
-                <div className="mt-6 p-6 bg-green-50 border border-green-200 rounded text-center">
-                  <AlertCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                  <p className="text-sm font-semibold text-green-800">
-                    All employees have submitted timesheets
-                  </p>
-                  <p className="text-sm text-green-700 mt-1">
-                    No missing time entries found for the selected period.
-                  </p>
-                </div>
-              )}
-            </div>
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
+      )}
 
-    </>
+      {/* No missing time */}
+      {reportData.length === 0 && !isLoading && endDate && (
+        <div style={{ marginTop: 24 }}>
+          <div style={{ background: '#FFFFFF', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '40px 28px', textAlign: 'center' }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2d9b6e', margin: '0 auto 12px' }} />
+            <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>All employees have submitted timesheets</p>
+            <p style={{ fontSize: 12.5, color: '#999', marginTop: 4 }}>No missing time entries found for the selected period.</p>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

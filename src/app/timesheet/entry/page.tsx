@@ -657,29 +657,25 @@ export default function TimesheetEntry() {
   const { dailyTotals, weekTotal, regularHours, overtimeHours, doubleTimeHours } = calculateTotals();
 
   return (
-    <div style={{ background: '#FAFAF8', minHeight: '100vh' }}>
+    <div style={{ padding: '36px 40px' }}>
       {/* Page Header */}
-      <div style={{ background: '#fff', borderBottom: '0.5px solid #e8e4df' }}>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push('/employee')}
-              className="p-2 rounded-md transition-colors duration-150"
-              style={{ color: '#999', border: '0.5px solid #e0dcd7' }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#555'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#999'; }}
-            >
-              <ArrowLeft size={15} strokeWidth={1.5} />
-            </button>
-            <div>
-              <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1a1a1a' }}>Timesheet Entry</h1>
-              <p style={{ fontSize: 12, color: '#bbb' }}>Enter your hours for the week</p>
-            </div>
-          </div>
+      <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
+        <button
+          onClick={() => router.push('/employee')}
+          className="transition-colors duration-150"
+          style={{ padding: 8, color: '#999', border: '0.5px solid #e0dcd7', borderRadius: 7, background: '#fff' }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#555'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#999'; }}
+        >
+          <ArrowLeft size={15} strokeWidth={1.5} />
+        </button>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', letterSpacing: -0.3 }}>Timesheet Entry</h1>
+          <p style={{ fontSize: 13, fontWeight: 400, color: '#999' }}>Enter your hours for the week</p>
         </div>
       </div>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div>
         {/* Week Selector + Timer */}
         <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px', marginBottom: 16 }}>
           <div className="flex items-center justify-between mb-4">
@@ -739,15 +735,15 @@ export default function TimesheetEntry() {
 
         {/* Messages */}
         {errorMessage && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <span className="text-red-700">{errorMessage}</span>
+          <div style={{ marginBottom: 16, padding: 16, background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <AlertCircle style={{ width: 16, height: 16, color: '#b91c1c', flexShrink: 0, marginTop: 2 }} />
+            <span style={{ fontSize: 12.5, fontWeight: 500, color: '#b91c1c' }}>{errorMessage}</span>
           </div>
         )}
 
         {successMessage && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <span className="text-green-700">{successMessage}</span>
+          <div style={{ marginBottom: 16, padding: 16, background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10 }}>
+            <span style={{ fontSize: 12.5, fontWeight: 500, color: '#2d9b6e' }}>{successMessage}</span>
           </div>
         )}
 
@@ -760,12 +756,12 @@ export default function TimesheetEntry() {
             const isToday = formatDate(new Date()) === dateStr;
 
             return (
-              <div key={dateStr} className={`bg-white rounded-lg border ${isToday ? 'border-[#e31c79] ring-1 ring-[#e31c79]/20' : 'border-[#e8e4df]'}`}>
-                <div className={`px-4 py-2 flex justify-between items-center ${isToday ? 'bg-[#e31c79]/5' : 'bg-[#FAFAF8]'} rounded-t-lg`}>
-                  <span className={`text-sm font-semibold ${isToday ? 'text-[#e31c79]' : 'text-[#1a1814]'}`}>
+              <div key={dateStr} style={{ background: '#fff', border: isToday ? '0.5px solid #e31c79' : '0.5px solid #e8e4df', borderRadius: 10 }}>
+                <div style={{ padding: '8px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: isToday ? 'rgba(227,28,121,0.03)' : '#FDFCFB', borderRadius: '10px 10px 0 0' }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: isToday ? '#e31c79' : '#1a1a1a' }}>
                     {dayLabel} {isToday && '(Today)'}
                   </span>
-                  <span className={`text-sm font-bold ${dayTotal > 0 ? 'text-[#e31c79]' : 'text-[#bbb]'}`}>
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: dayTotal > 0 ? '#e31c79' : '#c0bab2' }}>
                     {dayTotal.toFixed(1)} hrs
                   </span>
                 </div>
@@ -776,7 +772,7 @@ export default function TimesheetEntry() {
                         value={row.project_id}
                         onChange={(e) => updateRowProject(row.id, e.target.value)}
                         disabled={isLocked}
-                        className="flex-1 text-sm px-2 py-1.5 border border-[#e8e4df] rounded focus:ring-[#e31c79] focus:border-[#e31c79] disabled:bg-[#FAFAF8]"
+                        className="flex-1 text-sm px-2 py-1.5 border border-[#e8e4df] rounded focus:ring-[#d3ad6b] focus:border-[#d3ad6b] disabled:bg-[#FAFAF8]"
                       >
                         <option value="">Project...</option>
                         {projects.map((p) =>
@@ -796,7 +792,7 @@ export default function TimesheetEntry() {
                         onChange={(e) => updateRowHours(row.id, dateStr, parseFloat(e.target.value) || 0)}
                         disabled={isLocked}
                         placeholder="0"
-                        className="w-16 text-center text-sm px-2 py-1.5 border border-[#e8e4df] rounded focus:ring-[#e31c79] focus:border-[#e31c79] disabled:bg-[#FAFAF8]"
+                        className="w-16 text-center text-sm px-2 py-1.5 border border-[#e8e4df] rounded focus:ring-[#d3ad6b] focus:border-[#d3ad6b] disabled:bg-[#FAFAF8]"
                       />
                     </div>
                   ))}
@@ -819,34 +815,35 @@ export default function TimesheetEntry() {
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="text-left px-4 py-3" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc' }}>PROJECT</th>
+                  <th className="text-left px-4 py-3" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, background: 'transparent' }}>PROJECT</th>
                   {getWeekDates().map((date) => {
                     const header = formatDateHeader(date);
                     return (
                       <th
                         key={date.toISOString()}
-                        className="text-center px-2 py-3 font-medium min-w-[80px]"
+                        className="text-center px-2 py-3 min-w-[80px]"
+                        style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, background: 'transparent' }}
                       >
                         <div>{header.day}</div>
-                        <div className="text-xs opacity-75">{header.date}</div>
+                        <div style={{ fontSize: 10, color: '#c0bab2' }}>{header.date}</div>
                       </th>
                     );
                   })}
-                  <th className="text-center px-4 py-3 font-medium">TOTAL</th>
-                  <th className="px-2 py-3"></th>
+                  <th className="text-center px-4 py-3" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, background: 'transparent' }}>TOTAL</th>
+                  <th className="px-2 py-3" style={{ background: 'transparent' }}></th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => {
                   const rowTotal = Object.values(row.hours).reduce((sum, h) => sum + h, 0);
                   return (
-                    <tr key={row.id} className="border-b hover:bg-[#FAFAF8]">
+                    <tr key={row.id} className="border-b border-[#f5f2ee]">
                       <td className="px-4 py-3">
                         <select
                           value={row.project_id}
                           onChange={(e) => updateRowProject(row.id, e.target.value)}
                           disabled={isLocked}
-                          className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:ring-2 focus:ring-[#e31c79] focus:border-transparent disabled:bg-[#FAFAF8] disabled:text-[#999]"
+                          className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:ring-2 focus:ring-[#d3ad6b] focus:border-[#d3ad6b] disabled:bg-[#FAFAF8] disabled:text-[#999]"
                         >
                           <option value="">Select a project...</option>
                           {projects.map((project) =>
@@ -878,13 +875,13 @@ export default function TimesheetEntry() {
                                 )
                               }
                               disabled={isLocked}
-                              className="w-full px-2 py-1 text-center border border-[#e8e4df] rounded focus:ring-2 focus:ring-[#e31c79] focus:border-transparent disabled:bg-[#FAFAF8] disabled:text-[#999]"
+                              className="w-full px-2 py-1 text-center border border-[#e8e4df] rounded focus:ring-2 focus:ring-[#d3ad6b] focus:border-[#d3ad6b] disabled:bg-[#FAFAF8] disabled:text-[#999]"
                               placeholder="0"
                             />
                           </td>
                         );
                       })}
-                      <td className="px-4 py-3 text-center font-medium text-[#1a1814]">
+                      <td className="px-4 py-3 text-center" style={{ fontSize: 12.5, fontWeight: 600, color: '#1a1a1a' }}>
                         {rowTotal.toFixed(1)}
                       </td>
                       <td className="px-2 py-3 flex items-center gap-1">
@@ -894,15 +891,16 @@ export default function TimesheetEntry() {
                           title={(row.is_billable !== false) ? 'Billable (click to toggle)' : 'Non-billable (click to toggle)'}
                           className={`p-1 rounded text-xs font-bold transition-colors ${
                             (row.is_billable !== false)
-                              ? 'text-green-600 hover:bg-green-50'
-                              : 'text-[#bbb] hover:bg-[#FAFAF8]'
+                              ? 'text-[#2d9b6e] hover:bg-[#FDFCFB]'
+                              : 'text-[#c0bab2] hover:bg-[#FDFCFB]'
                           }`}
                         >
                           $
                         </button>
                         <button
                           onClick={() => removeRow(row.id)}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={{ color: '#b91c1c' }}
                           disabled={rows.length === 1 || isLocked}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -913,12 +911,12 @@ export default function TimesheetEntry() {
                 })}
               </tbody>
               <tfoot>
-                <tr className="bg-[#FAFAF8] font-medium">
-                  <td className="px-4 py-3 text-[#1a1814]">Daily Totals:</td>
+                <tr style={{ background: '#FDFCFB' }}>
+                  <td className="px-4 py-3" style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>Daily Totals:</td>
                   {getWeekDates().map((date) => {
                     const dateStr = formatDate(date);
                     return (
-                      <td key={dateStr} className="px-2 py-3 text-center text-[#1a1814]">
+                      <td key={dateStr} className="px-2 py-3 text-center" style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
                         {dailyTotals[dateStr]?.toFixed(1) || '0.0'}
                       </td>
                     );
@@ -937,7 +935,8 @@ export default function TimesheetEntry() {
             <button
               onClick={addRow}
               disabled={isLocked}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-[#1a1814] hover:bg-[#FAFAF8] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ padding: '8px 16px', fontSize: 12, fontWeight: 500, color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 7 }}
             >
               <Plus className="h-4 w-4" />
               Add Row
@@ -945,7 +944,8 @@ export default function TimesheetEntry() {
             <button
               onClick={copyPreviousWeek}
               disabled={isLocked}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-[#e31c79] hover:bg-pink-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-[#e31c79]/20"
+              className="flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ padding: '8px 16px', fontSize: 12, fontWeight: 500, color: '#e31c79', background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 7 }}
             >
               <Copy className="h-4 w-4" />
               Copy Previous Week
@@ -955,35 +955,36 @@ export default function TimesheetEntry() {
 
         {/* Summary */}
         <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px', marginBottom: 16 }}>
-          <div className="flex items-center justify-between text-[#555]">
-            <div className="flex items-center gap-8">
-              <div className="flex items-center gap-2">
-                <span className="text-sm">Regular Hours:</span>
-                <span className="font-bold text-lg">{regularHours.toFixed(1)}</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 500, color: '#999' }}>Regular Hours:</span>
+                <span style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a' }}>{regularHours.toFixed(1)}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm">Overtime:</span>
-                <span className="font-bold text-lg">{overtimeHours.toFixed(1)}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 500, color: '#999' }}>Overtime:</span>
+                <span style={{ fontSize: 18, fontWeight: 700, color: '#c4983a' }}>{overtimeHours.toFixed(1)}</span>
               </div>
               {doubleTimeHours > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">Double Time:</span>
-                  <span className="font-bold text-lg text-red-600">{doubleTimeHours.toFixed(1)}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 500, color: '#999' }}>Double Time:</span>
+                  <span style={{ fontSize: 18, fontWeight: 700, color: '#b91c1c' }}>{doubleTimeHours.toFixed(1)}</span>
                 </div>
               )}
-              <div className="flex items-center gap-2">
-                <span className="text-sm">Total Hours:</span>
-                <span className="font-bold text-lg text-[#e31c79]">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 500, color: '#999' }}>Total Hours:</span>
+                <span style={{ fontSize: 18, fontWeight: 700, color: '#e31c79' }}>
                   {weekTotal.toFixed(1)}
                 </span>
               </div>
             </div>
-            <div className="text-sm text-[#777]">
+            <div style={{ fontSize: 11, fontWeight: 500, color: '#c0bab2' }}>
               Status:{' '}
               {timesheetStatus
                 ? timesheetStatus.charAt(0).toUpperCase() + timesheetStatus.slice(1)
                 : 'Not submitted'}{' '}
-              • Non-Exempt Employee • State: TX
+              {!isExempt && <>&bull; Non-Exempt Employee</>}{' '}
+              {employeeState && <>&bull; State: {employeeState}</>}
             </div>
           </div>
         </div>
@@ -1032,7 +1033,7 @@ export default function TimesheetEntry() {
             Submit Timesheet
           </button>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -55,19 +55,28 @@ interface ReportData {
 }
 
 const StatusBadge = ({ status }: { status: string }) => {
-  const colors: Record<string, string> = {
-    active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    completed: 'bg-blue-50 text-blue-700 border-blue-200',
-    'on-hold': 'bg-amber-50 text-amber-700 border-amber-200',
-    approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    pending: 'bg-amber-50 text-amber-700 border-amber-200',
-    rejected: 'bg-red-50 text-red-700 border-red-200',
+  const colorMap: Record<string, { bg: string; color: string; border: string }> = {
+    active: { bg: '#ecfdf5', color: '#2d9b6e', border: '#2d9b6e' },
+    completed: { bg: '#FAFAF8', color: '#777', border: '#e8e4df' },
+    'on-hold': { bg: '#FFF8E1', color: '#c4983a', border: '#c4983a' },
+    approved: { bg: '#ecfdf5', color: '#2d9b6e', border: '#2d9b6e' },
+    pending: { bg: '#FFF8E1', color: '#c4983a', border: '#c4983a' },
+    rejected: { bg: '#fef2f2', color: '#b91c1c', border: '#b91c1c' },
   }
-  const cls = colors[status] || 'bg-[#FAFAF8] text-[#777] border-[#e8e4df]'
+  const c = colorMap[status] || { bg: '#FAFAF8', color: '#777', border: '#e8e4df' }
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 border font-medium ${cls}`}
-      style={{ fontSize: 9, borderRadius: 3 }}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '2px 8px',
+        fontSize: 9,
+        fontWeight: 500,
+        borderRadius: 3,
+        background: c.bg,
+        color: c.color,
+        border: `0.5px solid ${c.border}`,
+      }}
     >
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
@@ -136,9 +145,9 @@ export default function ReportsPage() {
   }
 
   const getEfficiencyColor = (efficiency: number) => {
-    if (efficiency >= 95) return '#4aba70'
-    if (efficiency >= 90) return '#d4a017'
-    return '#e05252'
+    if (efficiency >= 95) return '#2d9b6e'
+    if (efficiency >= 90) return '#c4983a'
+    return '#b91c1c'
   }
 
   const sectionHeaderStyle: React.CSSProperties = {
@@ -158,15 +167,29 @@ export default function ReportsPage() {
   }
 
   if (isLoading) {
+    const shimmer: React.CSSProperties = {
+      background: 'linear-gradient(90deg, #f5f2ee 25%, #ece8e3 50%, #f5f2ee 75%)',
+      backgroundSize: '200% 100%',
+      animation: 'shimmer 1.5s infinite',
+      borderRadius: 4,
+    }
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="flex flex-col items-center gap-4">
-          <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
-            <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          <p className="text-[13px]" style={{ color: '#bbb' }}>Loading...</p>
+      <div style={{ padding: '36px 40px' }}>
+        <style dangerouslySetInnerHTML={{ __html: '@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }' }} />
+        <div style={{ ...shimmer, width: 220, height: 24 }} />
+        <div style={{ ...shimmer, width: 280, height: 13, marginTop: 8 }} />
+        <div style={{ ...shimmer, width: '100%', height: 56, marginTop: 24, borderRadius: 10 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginTop: 20 }}>
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 20 }}>
+              <div style={{ ...shimmer, width: 80, height: 11, animationDelay: `${i * 0.1}s` }} />
+              <div style={{ ...shimmer, width: 60, height: 22, marginTop: 8, animationDelay: `${i * 0.1}s` }} />
+            </div>
+          ))}
         </div>
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{ ...shimmer, width: '100%', height: 160, borderRadius: 10, marginTop: 20, animationDelay: `${i * 0.15}s` }} />
+        ))}
       </div>
     )
   }
@@ -186,7 +209,7 @@ export default function ReportsPage() {
         <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
           Reports & Analytics
         </h1>
-        <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb', marginTop: 4 }}>
+        <p style={{ fontSize: 13, fontWeight: 400, color: '#999', marginTop: 4 }}>
           Comprehensive insights and export capabilities
         </p>
       </div>
@@ -355,7 +378,7 @@ export default function ReportsPage() {
                   <div style={{ fontSize: 12.5, fontWeight: 400, color: '#555' }}>
                     {project.name.split(' - ')[1]}
                   </div>
-                  <div style={{ fontSize: 11, color: '#bbb', marginTop: 1 }}>
+                  <div style={{ fontSize: 11, color: '#999', marginTop: 1 }}>
                     {project.name.split(' - ')[0]}
                   </div>
                 </td>
@@ -435,7 +458,7 @@ export default function ReportsPage() {
               >
                 <td style={{ padding: '12px 16px' }}>
                   <div style={{ fontSize: 12.5, fontWeight: 400, color: '#555' }}>{emp.name}</div>
-                  <div style={{ fontSize: 11, color: '#bbb', marginTop: 1 }}>ID: {emp.employeeId}</div>
+                  <div style={{ fontSize: 11, color: '#999', marginTop: 1 }}>ID: {emp.employeeId}</div>
                 </td>
                 <td style={{ padding: '12px 16px', textAlign: 'center', fontSize: 12.5, color: '#555' }}>
                   {emp.hours} hrs
@@ -518,7 +541,7 @@ export default function ReportsPage() {
                     <p style={{ fontSize: 12, fontWeight: 400, color: '#555', margin: 0 }}>
                       {category.category}
                     </p>
-                    <p style={{ fontSize: 10, color: '#bbb', margin: 0, marginTop: 1 }}>
+                    <p style={{ fontSize: 10, color: '#999', margin: 0, marginTop: 1 }}>
                       {category.count} items
                     </p>
                   </div>
@@ -527,7 +550,7 @@ export default function ReportsPage() {
                   <p style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
                     ${category.amount.toFixed(2)}
                   </p>
-                  <p style={{ fontSize: 10, color: '#bbb', margin: 0, marginTop: 1 }}>
+                  <p style={{ fontSize: 10, color: '#999', margin: 0, marginTop: 1 }}>
                     {category.percentage}%
                   </p>
                 </div>
@@ -593,7 +616,7 @@ export default function ReportsPage() {
               </div>
               <div>
                 <p style={{ fontSize: 12, fontWeight: 500, color: '#555', margin: 0 }}>{item.label}</p>
-                <p style={{ fontSize: 11, color: '#bbb', margin: 0, marginTop: 2 }}>{item.sub}</p>
+                <p style={{ fontSize: 11, color: '#999', margin: 0, marginTop: 2 }}>{item.sub}</p>
               </div>
             </button>
           ))}

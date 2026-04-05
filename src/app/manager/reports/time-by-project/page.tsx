@@ -176,246 +176,79 @@ export default function TimeByProjectReport() {
     XLSX.writeFile(wb, fileName)
   }
 
+  const labelSt: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 600, color: '#c0bab2', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }
+  const inputSt: React.CSSProperties = { padding: '8px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, color: '#555', outline: 'none' }
+  const selectSt: React.CSSProperties = { ...inputSt, width: '100%' }
+  const checkSt: React.CSSProperties = { accentColor: '#e31c79' }
+  const spanSt: React.CSSProperties = { marginLeft: 8, fontSize: 12, color: '#555' }
+
   return (
-    <>
-      {/* Header */}
-      {/* Navigation */}
-      <div className="bg-[#FAFAF8] border-b">
-        <div className="max-w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
-            <button 
-              onClick={() => router.push('/manager')}
-              className="py-3 text-sm font-medium text-[#777] hover:text-[#1a1a1a]"
-            >
-              Review
-            </button>
-            <button className="py-3 text-sm font-medium text-[#1a1a1a] border-b-2 border-[#e31c79]">
-              Reports
-            </button>
-          </div>
-        </div>
+    <div style={{ padding: '36px 40px' }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0, letterSpacing: -0.3 }}>Time by Project</h1>
+        <p style={{ fontSize: 13, fontWeight: 400, color: '#999', marginTop: 4 }}>Generate time reports grouped by project</p>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex gap-6">
-          {/* Left Sidebar */}
-          <div className="w-64 bg-white rounded-lg p-4">
-            <h3 className="font-semibold text-[#1a1a1a] mb-4">Time Reports</h3>
-            <div className="space-y-1">
-              <a href="/manager/reports/time-by-project" className="flex items-center justify-between px-3 py-2 text-sm bg-[#FAFAF8] text-[#1a1a1a] rounded">
-                Time by Project
-                <ChevronRight className="h-4 w-4" />
-              </a>
-              <a href="/manager/reports/time-by-employee" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Employee
-              </a>
-              <a href="/manager/reports/time-by-class" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Class
-              </a>
-              <a href="/manager/reports/time-by-approver" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Approver
-              </a>
-              <a href="/manager/reports/time-missing" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time Missing
-              </a>
-            </div>
+      <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 24 }}>
+        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', margin: '0 0 16px 0' }}>Report Details</p>
 
-            <h3 className="font-semibold text-[#1a1a1a] mt-6 mb-4">Expense Reports</h3>
-            <div className="space-y-1">
-              <a href="/manager/reports/expenses-by-employee" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Expenses by Employee
-              </a>
-              <a href="/manager/reports/expenses-by-project" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Expenses by Project
-              </a>
-              <a href="/manager/reports/expenses-by-approver" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Expenses by Approver
-              </a>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div>
+              <label style={labelSt}>Date Start</label>
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inputSt} />
+            </div>
+            <div>
+              <label style={labelSt}>Date Stop</label>
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={inputSt} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', marginTop: 24 }}>
+              <input type="checkbox" checked={forceCompleteWeeks} onChange={(e) => setForceCompleteWeeks(e.target.checked)} style={checkSt} />
+              <span style={spanSt}>Force Complete Weeks</span>
             </div>
           </div>
 
-          {/* Report Configuration */}
-          <div className="flex-1 bg-white rounded-lg p-6">
-            <h2 className="text-[12px] font-semibold text-[#1a1a1a] mb-6">Report Details: Time by Project</h2>
-
-            <div className="space-y-6">
-              {/* Date Range */}
-              <div className="flex items-center gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Date Start</label>
-                  <div className="flex items-center">
-                    <input 
-                      type="date" 
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Date Stop</label>
-                  <div className="flex items-center">
-                    <input 
-                      type="date" 
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center mt-6">
-                  <input 
-                    type="checkbox"
-                    checked={forceCompleteWeeks}
-                    onChange={(e) => setForceCompleteWeeks(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <label className="ml-2 text-sm text-[#555]">Force Complete Weeks</label>
-                </div>
-              </div>
-
-              {/* Filters */}
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Project</label>
-                  <select 
-                    value={selectedProject}
-                    onChange={(e) => setSelectedProject(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    <option>-All-</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">User</label>
-                  <select 
-                    value={selectedUser}
-                    onChange={(e) => setSelectedUser(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    <option>-All-</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Time Type</label>
-                  <select 
-                    value={selectedTimeType}
-                    onChange={(e) => setSelectedTimeType(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    {timeTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Class</label>
-                  <select 
-                    value={selectedClass}
-                    onChange={(e) => setSelectedClass(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    <option>-All-</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Options */}
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={includeUnapproved}
-                    onChange={(e) => setIncludeUnapproved(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Include Unapproved</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={includeBillRates}
-                    onChange={(e) => setIncludeBillRates(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Include Bill Rates</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={includePayRates}
-                    onChange={(e) => setIncludePayRates(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Include Pay Rates</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={includeDetails}
-                    onChange={(e) => setIncludeDetails(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Include Details</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={includeZeroHours}
-                    onChange={(e) => setIncludeZeroHours(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Include Zero Hours</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={summaryOnly}
-                    onChange={(e) => setSummaryOnly(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Summary Only</span>
-                </label>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-4">
-                {reportData.length > 0 && (
-                  <button 
-                    onClick={handleExportToExcel}
-                    className="px-6 py-2 bg-white text-[#1a1a1a] rounded-md hover:bg-[#FAFAF8] font-medium flex items-center"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export to Excel
-                  </button>
-                )}
-                <button 
-                  onClick={handleRunReport}
-                  disabled={isLoading}
-                  className={`px-6 py-2 rounded-md font-medium ${
-                    isLoading 
-                      ? 'bg-[#FAFAF8] text-[#999] cursor-not-allowed' 
-                      : 'bg-green-600 text-white hover:bg-green-700'
-                  }`}
-                >
-                  {isLoading ? 'Running...' : 'Run'}
-                </button>
-              </div>
-
-              {/* Results Summary */}
-              {reportData.length > 0 && (
-                <div className="mt-6 p-4 bg-[#FAFAF8] rounded">
-                  <p className="text-sm text-[#777]">
-                    Found {reportData.length} timesheet records for the selected period.
-                  </p>
-                </div>
-              )}
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+            <div><label style={labelSt}>Project</label><select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} style={selectSt}><option>-All-</option></select></div>
+            <div><label style={labelSt}>User</label><select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} style={selectSt}><option>-All-</option></select></div>
+            <div><label style={labelSt}>Time Type</label><select value={selectedTimeType} onChange={(e) => setSelectedTimeType(e.target.value)} style={selectSt}>{timeTypes.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
+            <div><label style={labelSt}>Class</label><select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} style={selectSt}><option>-All-</option></select></div>
           </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[
+              { label: 'Include Unapproved', checked: includeUnapproved, set: setIncludeUnapproved },
+              { label: 'Include Bill Rates', checked: includeBillRates, set: setIncludeBillRates },
+              { label: 'Include Pay Rates', checked: includePayRates, set: setIncludePayRates },
+              { label: 'Include Details', checked: includeDetails, set: setIncludeDetails },
+              { label: 'Include Zero Hours', checked: includeZeroHours, set: setIncludeZeroHours },
+              { label: 'Summary Only', checked: summaryOnly, set: setSummaryOnly },
+            ].map(opt => (
+              <label key={opt.label} style={{ display: 'flex', alignItems: 'center' }}>
+                <input type="checkbox" checked={opt.checked} onChange={(e) => opt.set(e.target.checked)} style={checkSt} />
+                <span style={spanSt}>{opt.label}</span>
+              </label>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+            {reportData.length > 0 && (
+              <button onClick={handleExportToExcel} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', background: '#fff', color: '#777', border: '0.5px solid #e0dcd7', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
+                <Download className="h-4 w-4" /> Export to Excel
+              </button>
+            )}
+            <button onClick={handleRunReport} disabled={isLoading} style={{ padding: '8px 24px', borderRadius: 6, fontSize: 12, fontWeight: 500, border: 'none', cursor: isLoading ? 'not-allowed' : 'pointer', background: isLoading ? '#f5f2ee' : '#e31c79', color: isLoading ? '#999' : '#fff' }}>
+              {isLoading ? 'Running...' : 'Run'}
+            </button>
+          </div>
+
+          {reportData.length > 0 && (
+            <div style={{ padding: 16, background: '#FDFCFB', borderRadius: 10, border: '0.5px solid #f5f2ee' }}>
+              <p style={{ fontSize: 12.5, color: '#555', margin: 0 }}>Found {reportData.length} timesheet records for the selected period.</p>
+            </div>
+          )}
         </div>
       </div>
-
-    </>
+    </div>
   )
 }

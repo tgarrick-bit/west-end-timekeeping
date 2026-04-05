@@ -98,6 +98,13 @@ interface EmployeeExpenses {
   pendingCount: number;
 }
 
+const statusConfig: Record<string, { dot: string; bg: string; text: string; label: string }> = {
+  submitted: { dot: '#c4983a', bg: 'rgba(196,152,58,0.08)', text: '#c4983a', label: 'Pending' },
+  approved: { dot: '#2d9b6e', bg: 'rgba(45,155,110,0.08)', text: '#2d9b6e', label: 'Approved' },
+  rejected: { dot: '#b91c1c', bg: 'rgba(185,28,28,0.08)', text: '#b91c1c', label: 'Rejected' },
+  draft: { dot: '#c0bab2', bg: 'rgba(192,186,178,0.08)', text: '#999', label: 'Draft' },
+};
+
 export default function AdminExpenses() {
   const [clientGroups, setClientGroups] = useState<ClientGroup[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
@@ -542,20 +549,7 @@ export default function AdminExpenses() {
       other: Receipt,
     };
     const Icon = icons[category.toLowerCase()] || Receipt;
-    return <Icon className="h-4 w-4" />;
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'submitted':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'approved':
-        return 'bg-green-100 text-green-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-[#FAFAF8] text-[#1a1a1a]';
-    }
+    return <Icon className="h-4 w-4" style={{ color: '#c0bab2' }} />;
   };
 
   // Get unique categories from all expenses
@@ -567,16 +561,60 @@ export default function AdminExpenses() {
     )
   );
 
+  // Skeleton loading
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="flex flex-col items-center gap-4">
-          <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
-            <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          <p className="text-[13px]" style={{ color: '#bbb' }}>Loading...</p>
+      <div style={{ padding: '36px 40px' }}>
+        <div className="mb-6">
+          <div className="anim-shimmer" style={{ width: 120, height: 24, borderRadius: 6, marginBottom: 8 }} />
+          <div className="anim-shimmer" style={{ width: 300, height: 14, borderRadius: 4 }} />
         </div>
+
+        {/* Tab skeleton */}
+        <div className="flex items-center gap-6 mb-6" style={{ borderBottom: '0.5px solid #f0ece7', paddingBottom: 10 }}>
+          {[30, 60, 70].map((w, i) => (
+            <div key={i} className="anim-shimmer" style={{ width: w, height: 12, borderRadius: 3 }} />
+          ))}
+        </div>
+
+        {/* Controls skeleton */}
+        <div className="anim-slide-up stagger-1" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '16px 22px', marginBottom: 24 }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="anim-shimmer" style={{ width: 24, height: 24, borderRadius: 4 }} />
+              <div className="anim-shimmer" style={{ width: 140, height: 18, borderRadius: 4 }} />
+              <div className="anim-shimmer" style={{ width: 24, height: 24, borderRadius: 4 }} />
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="anim-shimmer" style={{ width: 120, height: 28, borderRadius: 7 }} />
+              <div className="anim-shimmer" style={{ width: 80, height: 28, borderRadius: 7 }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Stats skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {[1, 2, 3, 4].map(n => (
+            <div key={n} className={`anim-slide-up stagger-${n}`} style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px' }}>
+              <div className="anim-shimmer" style={{ width: 80, height: 8, borderRadius: 3, marginBottom: 12 }} />
+              <div className="anim-shimmer" style={{ width: 60, height: 28, borderRadius: 4 }} />
+            </div>
+          ))}
+        </div>
+
+        {/* Client group skeletons */}
+        {[1, 2].map(n => (
+          <div key={n} className={`anim-slide-up stagger-${n + 4}`} style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '16px 22px', marginBottom: 16 }}>
+            <div className="flex items-center gap-3">
+              <div className="anim-shimmer" style={{ width: 20, height: 20, borderRadius: 4 }} />
+              <div className="anim-shimmer" style={{ width: 20, height: 20, borderRadius: 4 }} />
+              <div>
+                <div className="anim-shimmer" style={{ width: 140, height: 14, borderRadius: 4, marginBottom: 4 }} />
+                <div className="anim-shimmer" style={{ width: 80, height: 10, borderRadius: 3 }} />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -603,13 +641,13 @@ export default function AdminExpenses() {
       {/* Main Content */}
       <div style={{ padding: '36px 40px' }}>
         {/* Page Header */}
-        <div className="mb-6">
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>Expenses</h1>
-          <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb' }}>Review and approve employee expense reports</p>
+        <div className="mb-6 anim-slide-up stagger-1">
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', letterSpacing: -0.3 }}>Expenses</h1>
+          <p style={{ fontSize: 13, fontWeight: 400, color: '#999' }}>Review and approve employee expense reports</p>
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-6 mb-6" style={{ borderBottom: '0.5px solid #f0ece7' }}>
+        <div className="flex items-center gap-6 mb-6 anim-slide-up stagger-1" style={{ borderBottom: '0.5px solid #f0ece7' }}>
           {([
             { key: 'all', label: 'All' },
             { key: 'pending', label: 'Pending' },
@@ -624,6 +662,7 @@ export default function AdminExpenses() {
                 color: filterStatus === tab.key ? '#1a1a1a' : '#999',
                 borderBottom: filterStatus === tab.key ? '2px solid #e31c79' : '2px solid transparent',
                 paddingBottom: 10,
+                transition: 'color 0.15s ease',
               }}
             >
               {tab.label}
@@ -632,17 +671,17 @@ export default function AdminExpenses() {
         </div>
 
         {/* Controls Bar */}
-        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '16px 22px', marginBottom: 24 }}>
+        <div className="anim-slide-up stagger-2" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '16px 22px', marginBottom: 24 }}>
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => changeMonth('prev')}
-                className="p-2 hover:bg-[#FDFCFB] rounded-lg"
+                className="p-2 hover:bg-[#FDFCFB] rounded-lg transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" style={{ color: '#777' }} />
               </button>
               <div className="text-center">
-                <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Month</p>
+                <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1.2, color: '#c0bab2' }}>Month</p>
                 <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
                   {selectedMonth.toLocaleDateString('en-US', {
                     month: 'long',
@@ -652,7 +691,7 @@ export default function AdminExpenses() {
               </div>
               <button
                 onClick={() => changeMonth('next')}
-                className="p-2 hover:bg-[#FDFCFB] rounded-lg"
+                className="p-2 hover:bg-[#FDFCFB] rounded-lg transition-colors"
               >
                 <ChevronRight className="h-4 w-4" style={{ color: '#777' }} />
               </button>
@@ -663,7 +702,7 @@ export default function AdminExpenses() {
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 style={{ border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, padding: '6px 10px' }}
-                className="focus:outline-none focus:border-[#d3ad6b]"
+                className="focus:outline-none focus:border-[#d3ad6b] focus:shadow-[0_0_0_3px_rgba(211,173,107,0.08)]"
               >
                 <option value="all">All Categories</option>
                 {categories.map((cat) => (
@@ -674,8 +713,10 @@ export default function AdminExpenses() {
               </select>
               <button
                 onClick={exportToCSV}
-                className="flex items-center gap-2 hover:border-[#ccc] hover:text-[#555]"
-                style={{ padding: '6px 14px', background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 7, fontSize: 12, fontWeight: 500 }}
+                className="flex items-center gap-2 transition-colors"
+                style={{ padding: '8px 18px', background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 7, fontSize: 12, fontWeight: 600 }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#d3ad6b'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; }}
               >
                 <Download className="h-4 w-4" />
                 Export
@@ -686,46 +727,50 @@ export default function AdminExpenses() {
 
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Total Expenses</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>
-              {formatCurrency(totalAmount)}
+          {[
+            { label: 'Total Expenses', value: formatCurrency(totalAmount), accent: true },
+            { label: 'Pending Approval', value: totalPendingCount, sub: formatCurrency(totalPendingAmount), pink: true },
+            { label: 'Approved', value: totalApprovedCount },
+            { label: 'Clients', value: clientGroups.length },
+          ].map((stat, i) => (
+            <div
+              key={stat.label}
+              className={`anim-slide-up stagger-${i + 1}`}
+              style={{
+                background: '#fff',
+                border: '0.5px solid #e8e4df',
+                borderRadius: 10,
+                padding: '22px 24px',
+                transition: 'border-color 0.15s ease',
+                cursor: 'default',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = i === 0 ? '#e31c79' : '#d3ad6b' }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e8e4df' }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1.2, color: '#c0bab2' }}>{stat.label}</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: stat.pink ? '#e31c79' : '#1a1a1a' }}>
+                {stat.value}
+              </div>
+              {stat.sub && (
+                <div style={{ fontSize: 11, color: '#999' }}>
+                  {stat.sub}
+                </div>
+              )}
             </div>
-          </div>
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Pending Approval</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#e31c79' }}>
-              {totalPendingCount}
-            </div>
-            <div style={{ fontSize: 11, color: '#999' }}>
-              {formatCurrency(totalPendingAmount)}
-            </div>
-          </div>
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Approved</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>
-              {totalApprovedCount}
-            </div>
-          </div>
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Clients</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>
-              {clientGroups.length}
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* Client Groups */}
         <div className="space-y-4">
           {clientGroups.length === 0 ? (
-            <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 32, textAlign: 'center' }}>
+            <div className="anim-slide-up stagger-5" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 32, textAlign: 'center' }}>
               <p style={{ fontSize: 13, color: '#999' }}>No expenses found for this month.</p>
             </div>
           ) : (
-            clientGroups.map((group) => (
+            clientGroups.map((group, groupIdx) => (
               <div
                 key={group.client_id}
-                className="overflow-hidden"
+                className={`overflow-hidden anim-slide-up stagger-${Math.min(groupIdx + 5, 6)}`}
                 style={{
                   background: '#fff',
                   border: '0.5px solid #e8e4df',
@@ -734,22 +779,22 @@ export default function AdminExpenses() {
               >
                 {/* Client Header */}
                 <div
-                  className="p-4 cursor-pointer hover:bg-[#FAFAF8]"
+                  className="p-4 cursor-pointer hover:bg-[#FDFCFB] transition-colors"
                   onClick={() => toggleClientExpanded(group.client_id)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {group.expanded ? (
-                        <ChevronDown className="h-5 w-5 text-[#bbb]" />
+                        <ChevronDown className="h-5 w-5" style={{ color: '#c0bab2' }} />
                       ) : (
-                        <ChevronRight className="h-5 w-5 text-[#bbb]" />
+                        <ChevronRight className="h-5 w-5" style={{ color: '#c0bab2' }} />
                       )}
-                      <Building2 className="h-5 w-5 text-[#e31c79]" />
+                      <Building2 className="h-5 w-5" style={{ color: '#e31c79' }} />
                       <div>
                         <h3 style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
                           {group.client_name}
                         </h3>
-                        <p style={{ fontSize: 11, color: '#999' }}>
+                        <p style={{ fontSize: 10.5, color: '#c0bab2' }}>
                           {formatCurrency(group.totalAmount)} total
                         </p>
                       </div>
@@ -757,22 +802,45 @@ export default function AdminExpenses() {
                     <div className="flex items-center gap-4">
                       {group.totalPending > 0 && (
                         <>
-                          <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-[3px]" style={{ fontSize: 9, fontWeight: 500 }}>
-                            {group.totalPending} pending (
-                            {formatCurrency(group.pendingAmount)})
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            fontSize: 9,
+                            fontWeight: 500,
+                            borderRadius: 3,
+                            padding: '2px 8px',
+                            background: 'rgba(196,152,58,0.08)',
+                            color: '#c4983a',
+                          }}>
+                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#c4983a' }} />
+                            {group.totalPending} pending ({formatCurrency(group.pendingAmount)})
                           </span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleBulkApprove(group.client_id);
                             }}
-                            style={{ padding: '4px 12px', fontSize: 10, fontWeight: 500, background: '#e31c79', color: '#fff', borderRadius: 5 }}
+                            style={{ padding: '4px 12px', fontSize: 10, fontWeight: 600, background: '#e31c79', color: '#fff', borderRadius: 5 }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#cc1069'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = '#e31c79'; }}
                           >
                             Approve All
                           </button>
                         </>
                       )}
-                      <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded-[3px]" style={{ fontSize: 9, fontWeight: 500 }}>
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        fontSize: 9,
+                        fontWeight: 500,
+                        borderRadius: 3,
+                        padding: '2px 8px',
+                        background: 'rgba(45,155,110,0.08)',
+                        color: '#2d9b6e',
+                      }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#2d9b6e' }} />
                         {group.totalApproved} approved
                       </span>
                     </div>
@@ -785,76 +853,94 @@ export default function AdminExpenses() {
                     <table className="w-full">
                       <thead>
                         <tr>
-                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Employee</th>
-                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Department</th>
-                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Expenses</th>
-                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Total Amount</th>
-                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Actions</th>
+                          {['Employee', 'Department', 'Expenses', 'Total Amount', 'Actions'].map(h => (
+                            <th
+                              key={h}
+                              className="text-left"
+                              style={{ padding: '11px 20px', fontSize: 9, fontWeight: 500, letterSpacing: 1.2, color: '#c0bab2', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7' }}
+                            >
+                              {h}
+                            </th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
                         {group.expenses.map((employee) => (
-                          <tr key={employee.employee_id} className="hover:bg-[#FDFCFB]" style={{ borderBottom: '0.5px solid #f5f2ee' }}>
-                            <td className="px-6 py-3">
+                          <tr key={employee.employee_id} className="hover:bg-[#FDFCFB]" style={{ borderBottom: '0.5px solid #f5f2ee', transition: 'background 0.15s ease' }}>
+                            <td style={{ padding: '12px 20px' }}>
                               <div>
                                 <p style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
                                   {employee.employee_name}
                                 </p>
-                                <p style={{ fontSize: 11, color: '#999' }}>
+                                <p style={{ fontSize: 10.5, color: '#c0bab2' }}>
                                   {employee.employee_email}
                                 </p>
                               </div>
                             </td>
-                            <td className="px-6 py-3" style={{ fontSize: 12.5, color: '#555' }}>
+                            <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#555' }}>
                               {employee.department || '-'}
                             </td>
-                            <td className="px-6 py-4">
+                            <td style={{ padding: '12px 20px' }}>
                               <div className="space-y-1">
-                                {employee.expenses.slice(0, 3).map((exp) => (
-                                  <div
-                                    key={exp.id}
-                                    className="flex items-center gap-2"
-                                  >
-                                    {getCategoryIcon(exp.category)}
-                                    <span className="text-xs text-[#777]">
-                                      {formatDate(exp.expense_date)} -{' '}
-                                      {formatCurrency(exp.amount)}
-                                    </span>
-                                    <span
-                                      className={`px-1.5 py-0.5 rounded-[3px] ${getStatusColor(
-                                        exp.status
-                                      )}`}
-                                      style={{ fontSize: 9, fontWeight: 500 }}
+                                {employee.expenses.slice(0, 3).map((exp) => {
+                                  const badge = statusConfig[exp.status] || statusConfig.draft;
+                                  return (
+                                    <div
+                                      key={exp.id}
+                                      className="flex items-center gap-2"
                                     >
-                                      {exp.status}
-                                    </span>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        openExpenseDetail(exp, employee);
-                                      }}
-                                      className="ml-auto p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                    >
-                                      <Eye className="h-3 w-3" />
-                                    </button>
-                                  </div>
-                                ))}
+                                      {getCategoryIcon(exp.category)}
+                                      <span style={{ fontSize: 11, color: '#777' }}>
+                                        {formatDate(exp.expense_date)} -{' '}
+                                        {formatCurrency(exp.amount)}
+                                      </span>
+                                      <span
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: 4,
+                                          fontSize: 9,
+                                          fontWeight: 500,
+                                          borderRadius: 3,
+                                          padding: '2px 8px',
+                                          background: badge.bg,
+                                          color: badge.text,
+                                        }}
+                                      >
+                                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: badge.dot }} />
+                                        {badge.label}
+                                      </span>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openExpenseDetail(exp, employee);
+                                        }}
+                                        className="ml-auto p-1 rounded transition-colors"
+                                        style={{ color: '#777' }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.background = '#FDFCFB'; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                      >
+                                        <Eye className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
                                 {employee.expenses.length > 3 && (
-                                  <p className="text-xs text-[#999]">
+                                  <p style={{ fontSize: 10.5, color: '#c0bab2' }}>
                                     +{employee.expenses.length - 3} more
                                   </p>
                                 )}
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-sm font-medium text-[#1a1a1a]">
+                            <td style={{ padding: '12px 20px', fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
                               {formatCurrency(employee.totalAmount)}
                               {employee.pendingCount > 0 && (
-                                <span className="block text-xs text-yellow-600">
+                                <span style={{ display: 'block', fontSize: 10.5, color: '#c4983a' }}>
                                   {employee.pendingCount} pending
                                 </span>
                               )}
                             </td>
-                            <td className="px-6 py-4">
+                            <td style={{ padding: '12px 20px' }}>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -865,7 +951,9 @@ export default function AdminExpenses() {
                                     );
                                   }
                                 }}
-                                className="text-sm text-blue-600 hover:text-blue-800"
+                                style={{ fontSize: 12, fontWeight: 500, color: '#e31c79' }}
+                                onMouseEnter={(e) => { e.currentTarget.style.color = '#cc1069'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.color = '#e31c79'; }}
                               >
                                 View All
                               </button>

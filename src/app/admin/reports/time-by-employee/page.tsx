@@ -5,13 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
-import { 
-  Clock, 
-  LogOut,
-  Calendar,
-  ChevronRight,
-  Download
-} from 'lucide-react'
+import { Download } from 'lucide-react'
 
 interface ReportData {
   id: string
@@ -38,7 +32,7 @@ export default function TimeByEmployeeReport() {
   const router = useRouter()
   const { user } = useAuth()
   const supabase = createClient()
-  
+
   const [startDate, setStartDate] = useState('2025-09-07')
   const [endDate, setEndDate] = useState('2025-09-13')
   const [selectedUser, setSelectedUser] = useState('-All-')
@@ -55,33 +49,25 @@ export default function TimeByEmployeeReport() {
   const [summaryOnly, setSummaryOnly] = useState(false)
   const [reportData, setReportData] = useState<ReportData[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
 
   const timeTypes = [
-    '-All-',
-    'Regular',
-    'Overtime', 
-    'Doubletime',
-    'Sick',
-    'Vacation',
-    'Holiday',
-    'Non-billable',
-    'Overtime *',
-    'regular *'
+    '-All-', 'Regular', 'Overtime', 'Doubletime', 'Sick',
+    'Vacation', 'Holiday', 'Non-billable', 'Overtime *', 'regular *'
   ]
 
   const employeeTypes = [
-    '-All-',
-    'Internal',
-    'Hourly',
-    '1099',
-    'Corp2Corp',
-    'Salary',
-    'External'
+    '-All-', 'Internal', 'Hourly', '1099', 'Corp2Corp', 'Salary', 'External'
   ]
+
+  useEffect(() => {
+    const timer = setTimeout(() => setPageLoading(false), 400)
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleRunReport = async () => {
     setIsLoading(true)
-    
+
     try {
       let query = supabase
         .from('timesheets')
@@ -111,7 +97,6 @@ export default function TimeByEmployeeReport() {
       if (error) {
         console.error('Error fetching report data:', error)
       } else if (data) {
-        // Resolve approver names from approved_by IDs
         const approverIds = [...new Set(
           (data as any[]).map(r => r.approved_by).filter(Boolean)
         )]
@@ -159,7 +144,6 @@ export default function TimeByEmployeeReport() {
       const weekEndDate = new Date(row.week_ending + 'T00:00:00')
       const dayOfWeek = weekEndDate.toLocaleDateString('en-US', { weekday: 'long' })
       const monthName = weekEndDate.toLocaleDateString('en-US', { month: 'long' })
-      // ISO week number
       const startOfYear = new Date(weekEndDate.getFullYear(), 0, 1)
       const daysSinceStart = Math.floor((weekEndDate.getTime() - startOfYear.getTime()) / 86400000)
       const weekNumber = Math.ceil((daysSinceStart + startOfYear.getDay() + 1) / 7)
@@ -199,7 +183,7 @@ export default function TimeByEmployeeReport() {
 
     const wb = XLSX.utils.book_new()
     const ws = XLSX.utils.json_to_sheet(exportData)
-    
+
     const colWidths = Object.keys(exportData[0] || {}).map(key => {
       const maxLength = Math.max(
         key.length,
@@ -208,266 +192,161 @@ export default function TimeByEmployeeReport() {
       return { wch: Math.min(maxLength + 2, 30) }
     })
     ws['!cols'] = colWidths
-    
+
     XLSX.utils.book_append_sheet(wb, ws, 'Time by Employee')
-    
     const fileName = `time_by_employee_${startDate}_to_${endDate}.xlsx`
     XLSX.writeFile(wb, fileName)
   }
 
+  if (pageLoading) {
+    return (
+      <div style={{ padding: '36px 40px' }}>
+        <div style={{ height: 24, width: 220, background: '#f5f2ee', borderRadius: 6, marginBottom: 8 }} className="anim-shimmer" />
+        <div style={{ height: 13, width: 300, background: '#f5f2ee', borderRadius: 6, marginBottom: 32 }} className="anim-shimmer" />
+        <div style={{ background: '#FFFFFF', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px' }}>
+          <div style={{ height: 12, width: 180, background: '#f5f2ee', borderRadius: 6, marginBottom: 24 }} className="anim-shimmer" />
+          <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+            <div style={{ height: 38, width: 180, background: '#f5f2ee', borderRadius: 7 }} className="anim-shimmer" />
+            <div style={{ height: 38, width: 180, background: '#f5f2ee', borderRadius: 7 }} className="anim-shimmer" />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+            {[0,1,2,3,4].map(i => (
+              <div key={i} style={{ height: 38, background: '#f5f2ee', borderRadius: 7 }} className="anim-shimmer" />
+            ))}
+          </div>
+          {[0,1,2,3].map(i => (
+            <div key={i} style={{ height: 16, width: 160, background: '#f5f2ee', borderRadius: 6, marginBottom: 12 }} className="anim-shimmer" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const inputStyle = { padding: '8px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12.5, color: '#1a1a1a', outline: 'none' } as const
+  const selectStyle = { ...inputStyle, width: '100%', background: 'white' } as const
+  const labelStyle = { display: 'block', fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 6 } as const
+  const focusHandlers = {
+    onFocus: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 2px rgba(211,173,107,0.15)' },
+    onBlur: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' },
+  }
+
   return (
-    <>
-      {/* Header */}
-      {/* Navigation */}
-      <div className="bg-[#FAFAF8] border-b">
-        <div className="max-w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
-            <button 
-              onClick={() => router.push('/manager')}
-              className="py-3 text-sm font-medium text-[#777] hover:text-[#1a1a1a]"
+    <div style={{ padding: '36px 40px' }}>
+      <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', letterSpacing: -0.3, margin: 0 }}>Time by Employee</h1>
+      <p style={{ fontSize: 13, fontWeight: 400, color: '#999', marginTop: 4, marginBottom: 28 }}>Generate time reports grouped by employee</p>
+
+      <div style={{ background: '#FFFFFF', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '28px 28px' }}>
+        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 20 }}>Report Parameters</div>
+
+        {/* Date Range */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 24 }}>
+          <div>
+            <label style={labelStyle}>Date Start</label>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inputStyle} {...focusHandlers} />
+          </div>
+          <div>
+            <label style={labelStyle}>Date Stop</label>
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={inputStyle} {...focusHandlers} />
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', paddingBottom: 4 }}>
+            <input type="checkbox" checked={forceCompleteWeeks} onChange={(e) => setForceCompleteWeeks(e.target.checked)} style={{ accentColor: '#e31c79' }} />
+            <span style={{ fontSize: 12, color: '#1a1a1a' }}>Force Complete Weeks</span>
+          </label>
+        </div>
+
+        {/* Filters */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+          <div>
+            <label style={labelStyle}>User</label>
+            <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} style={selectStyle} {...focusHandlers}>
+              <option>-All-</option>
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Project</label>
+            <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} style={selectStyle} {...focusHandlers}>
+              <option>-All-</option>
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Employee Type</label>
+            <select value={selectedEmployeeType} onChange={(e) => setSelectedEmployeeType(e.target.value)} style={selectStyle} {...focusHandlers}>
+              {employeeTypes.map(type => (<option key={type} value={type}>{type}</option>))}
+            </select>
+          </div>
+          <div />
+          <div>
+            <label style={labelStyle}>Time Type</label>
+            <select value={selectedTimeType} onChange={(e) => setSelectedTimeType(e.target.value)} style={selectStyle} {...focusHandlers}>
+              {timeTypes.map(type => (<option key={type} value={type}>{type}</option>))}
+            </select>
+          </div>
+          <div>
+            <label style={labelStyle}>Class</label>
+            <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} style={selectStyle} {...focusHandlers}>
+              <option>-All-</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Options */}
+        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 12 }}>Options</div>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, marginBottom: 24 }}>
+          {[
+            { label: 'Include Unapproved', checked: includeUnapproved, onChange: setIncludeUnapproved },
+            { label: 'Include Bill Rates', checked: includeBillRates, onChange: setIncludeBillRates },
+            { label: 'Include Pay Rates', checked: includePayRates, onChange: setIncludePayRates },
+            { label: 'Include Details', checked: includeDetails, onChange: setIncludeDetails },
+            { label: 'Include Zero Hours', checked: includeZeroHours, onChange: setIncludeZeroHours },
+            { label: 'Summary Only', checked: summaryOnly, onChange: setSummaryOnly },
+          ].map(opt => (
+            <label key={opt.label} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input type="checkbox" checked={opt.checked} onChange={(e) => opt.onChange(e.target.checked)} style={{ accentColor: '#e31c79' }} />
+              <span style={{ fontSize: 12.5, color: '#1a1a1a' }}>{opt.label}</span>
+            </label>
+          ))}
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+          {reportData.length > 0 && (
+            <button
+              onClick={handleExportToExcel}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, fontWeight: 500, color: '#1a1a1a', background: 'white', cursor: 'pointer' }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#e31c79' }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e8e4df' }}
             >
-              Review
+              <Download style={{ width: 14, height: 14 }} />
+              Export to Excel
             </button>
-            <button className="py-3 text-sm font-medium text-[#1a1a1a] border-b-2 border-[#e31c79]">
-              Reports
-            </button>
-          </div>
+          )}
+          <button
+            onClick={handleRunReport}
+            disabled={isLoading}
+            style={{
+              padding: '8px 24px', borderRadius: 7, fontSize: 12, fontWeight: 600, border: 'none',
+              color: isLoading ? '#999' : 'white',
+              background: isLoading ? '#f5f2ee' : '#e31c79',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+            }}
+            onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.background = '#cc1069' }}
+            onMouseLeave={(e) => { if (!isLoading) e.currentTarget.style.background = '#e31c79' }}
+          >
+            {isLoading ? 'Running...' : 'Run Report'}
+          </button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex gap-6">
-          {/* Left Sidebar */}
-          <div className="w-64 bg-white rounded-lg p-4">
-            <h3 className="font-semibold text-[#1a1a1a] mb-4">Time Reports</h3>
-            <div className="space-y-1">
-              <a href="/admin/reports/time-by-project" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Project
-              </a>
-              <a href="/admin/reports/time-by-employee" className="flex items-center justify-between px-3 py-2 text-sm bg-[#FAFAF8] text-[#1a1a1a] rounded">
-                Time by Employee
-                <ChevronRight className="h-4 w-4" />
-              </a>
-              <a href="/admin/reports/time-by-class" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Class
-              </a>
-              <a href="/admin/reports/time-by-approver" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Approver
-              </a>
-              <a href="/admin/reports/time-missing" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time Missing
-              </a>
-            </div>
-
-            <h3 className="font-semibold text-[#1a1a1a] mt-6 mb-4">Expense Reports</h3>
-            <div className="space-y-1">
-              <a href="/admin/reports/expenses-by-employee" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Expenses by Employee
-              </a>
-              <a href="/admin/reports/expenses-by-project" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Expenses by Project
-              </a>
-              <a href="/admin/reports/expenses-by-approver" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Expenses by Approver
-              </a>
-            </div>
-          </div>
-
-          {/* Report Configuration */}
-          <div className="flex-1 bg-white rounded-lg p-6">
-            <h2 className="text-[12px] font-semibold text-[#1a1a1a] mb-6">Report Details: Time by Employee</h2>
-
-            <div className="space-y-6">
-              {/* Date Range */}
-              <div className="flex items-center gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Date Start</label>
-                  <div className="flex items-center">
-                    <input 
-                      type="date" 
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Date Stop</label>
-                  <div className="flex items-center">
-                    <input 
-                      type="date" 
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center mt-6">
-                  <input 
-                    type="checkbox"
-                    checked={forceCompleteWeeks}
-                    onChange={(e) => setForceCompleteWeeks(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <label className="ml-2 text-sm text-[#555]">Force Complete Weeks</label>
-                </div>
-              </div>
-
-              {/* Filters */}
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">User</label>
-                  <select 
-                    value={selectedUser}
-                    onChange={(e) => setSelectedUser(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    <option>-All-</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Project</label>
-                  <select 
-                    value={selectedProject}
-                    onChange={(e) => setSelectedProject(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    <option>-All-</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Employee Type</label>
-                  <select 
-                    value={selectedEmployeeType}
-                    onChange={(e) => setSelectedEmployeeType(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    {employeeTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-                <div></div>
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Time Type</label>
-                  <select 
-                    value={selectedTimeType}
-                    onChange={(e) => setSelectedTimeType(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    {timeTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Class</label>
-                  <select 
-                    value={selectedClass}
-                    onChange={(e) => setSelectedClass(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    <option>-All-</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Options */}
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={includeUnapproved}
-                    onChange={(e) => setIncludeUnapproved(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Include Unapproved</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={includeBillRates}
-                    onChange={(e) => setIncludeBillRates(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Include Bill Rates</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={includePayRates}
-                    onChange={(e) => setIncludePayRates(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Include Pay Rates</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={includeDetails}
-                    onChange={(e) => setIncludeDetails(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Include Details</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={includeZeroHours}
-                    onChange={(e) => setIncludeZeroHours(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Include Zero Hours</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={summaryOnly}
-                    onChange={(e) => setSummaryOnly(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Summary Only</span>
-                </label>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-4">
-                {reportData.length > 0 && (
-                  <button 
-                    onClick={handleExportToExcel}
-                    className="px-6 py-2 bg-white text-[#1a1a1a] rounded-md hover:bg-[#FAFAF8] font-medium flex items-center"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export to Excel
-                  </button>
-                )}
-                <button 
-                  onClick={handleRunReport}
-                  disabled={isLoading}
-                  className={`px-6 py-2 rounded-md font-medium ${
-                    isLoading 
-                      ? 'bg-[#FAFAF8] text-[#999] cursor-not-allowed' 
-                      : 'bg-green-600 text-white hover:bg-green-700'
-                  }`}
-                >
-                  {isLoading ? 'Running...' : 'Run'}
-                </button>
-              </div>
-
-              {/* Results Summary */}
-              {reportData.length > 0 && (
-                <div className="mt-6 p-4 bg-[#FAFAF8] rounded">
-                  <p className="text-sm text-[#777]">
-                    Found {reportData.length} timesheet records for the selected period.
-                  </p>
-                </div>
-              )}
-            </div>
+      {/* Results */}
+      {reportData.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <div style={{ background: '#FFFFFF', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '16px 20px' }}>
+            <p style={{ fontSize: 12.5, color: '#999' }}>
+              Found <span style={{ fontWeight: 600, color: '#1a1a1a' }}>{reportData.length}</span> timesheet records for the selected period.
+            </p>
           </div>
         </div>
-      </div>
-
-    </>
+      )}
+    </div>
   )
 }

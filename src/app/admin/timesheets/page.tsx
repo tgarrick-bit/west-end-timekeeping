@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import TimesheetModal from '@/components/TimesheetModal';
-import { 
+import {
   Clock,
   Calendar,
   Check,
@@ -66,6 +66,13 @@ interface TimesheetEntry {
   };
 }
 
+const statusConfig: Record<string, { dot: string; bg: string; text: string; label: string }> = {
+  submitted: { dot: '#c4983a', bg: 'rgba(196,152,58,0.08)', text: '#c4983a', label: 'Pending' },
+  approved: { dot: '#2d9b6e', bg: 'rgba(45,155,110,0.08)', text: '#2d9b6e', label: 'Approved' },
+  rejected: { dot: '#b91c1c', bg: 'rgba(185,28,28,0.08)', text: '#b91c1c', label: 'Rejected' },
+  draft: { dot: '#c0bab2', bg: 'rgba(192,186,178,0.08)', text: '#999', label: 'Draft' },
+};
+
 export default function AdminTimesheets() {
   const [allTimesheets, setAllTimesheets] = useState<Timesheet[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -77,7 +84,7 @@ export default function AdminTimesheets() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'draft' | 'submitted' | 'approved' | 'rejected'>('all');
   const [filterWeek, setFilterWeek] = useState<string>('all');
   const [filterManager, setFilterManager] = useState<string>('all');
-  
+
   const supabase = createClient();
   const router = useRouter();
 
@@ -88,7 +95,7 @@ export default function AdminTimesheets() {
   const fetchAllData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch all employees
       const { data: employeeData, error: empError } = await supabase
         .from('employees')
@@ -96,11 +103,11 @@ export default function AdminTimesheets() {
         .order('last_name');
 
       setEmployees(employeeData || []);
-      
+
       // Extract managers from employees
       const managersData = employeeData?.filter(emp => emp.role === 'manager') || [];
       setManagers(managersData);
-      
+
       // Fetch ALL timesheets with employee details including manager_id
       const { data: timesheetData, error: tsError } = await supabase
         .from('timesheets')
@@ -122,7 +129,7 @@ export default function AdminTimesheets() {
         console.error('Timesheets error:', tsError);
       }
       setAllTimesheets(timesheetData || []);
-      
+
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -134,10 +141,10 @@ export default function AdminTimesheets() {
     setProcessing(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       const { error } = await supabase
         .from('timesheets')
-        .update({ 
+        .update({
           status: 'approved',
           approved_at: new Date().toISOString(),
           approved_by: user?.id
@@ -145,10 +152,10 @@ export default function AdminTimesheets() {
         .eq('id', timesheetId);
 
       if (error) throw error;
-      
+
       // Refresh data
       await fetchAllData();
-      
+
       // Close modal if this was the selected timesheet
       if (selectedTimesheet?.id === timesheetId) {
         setIsModalOpen(false);
@@ -166,17 +173,17 @@ export default function AdminTimesheets() {
     try {
       const { error } = await supabase
         .from('timesheets')
-        .update({ 
+        .update({
           status: 'rejected',
           comments: 'Please review and resubmit'
         })
         .eq('id', timesheetId);
 
       if (error) throw error;
-      
+
       // Refresh data
       await fetchAllData();
-      
+
       // Close modal if this was the selected timesheet
       if (selectedTimesheet?.id === timesheetId) {
         setIsModalOpen(false);
@@ -192,7 +199,7 @@ export default function AdminTimesheets() {
   const openTimecardDetail = async (timesheet: Timesheet) => {
     console.log('Opening timecard for timesheet:', timesheet.id);
     console.log('Employee ID:', timesheet.employee_id);
-    
+
     // Fetch entries for this specific timesheet with project information
     const { data: entries, error } = await supabase
       .from('timesheet_entries')
@@ -211,7 +218,7 @@ export default function AdminTimesheets() {
       console.error('Error fetching entries:', error);
       return;
     }
-    
+
     console.log('Raw entries from database:', entries);
     console.log('Number of entries:', entries?.length || 0);
 
@@ -226,10 +233,10 @@ export default function AdminTimesheets() {
       overtime_hours: overtimeHours,
       entries: entries || []
     };
-    
+
     console.log('Final timesheet with entries:', timesheetWithEntries);
     console.log('Entries in timesheet:', timesheetWithEntries.entries);
-    
+
     setSelectedTimesheet(timesheetWithEntries);
     setIsModalOpen(true);
   };
@@ -296,7 +303,7 @@ export default function AdminTimesheets() {
   // Group timesheets by week (after filtering)
   const groupedByWeek = new Map<string, Timesheet[]>();
   const filteredData = getFullyFilteredTimesheets();
-  
+
   filteredData.forEach(ts => {
     const week = ts.week_ending;
     if (!groupedByWeek.has(week)) {
@@ -306,22 +313,22 @@ export default function AdminTimesheets() {
   });
 
   // Sort weeks (most recent first)
-  const sortedWeeks = Array.from(groupedByWeek.entries()).sort((a, b) => 
+  const sortedWeeks = Array.from(groupedByWeek.entries()).sort((a, b) =>
     new Date(b[0]).getTime() - new Date(a[0]).getTime()
   );
 
   // Get unique weeks for dropdown (from all timesheets, not filtered)
-  const availableWeeks = [...new Set(allTimesheets.map(ts => ts.week_ending))].sort((a, b) => 
+  const availableWeeks = [...new Set(allTimesheets.map(ts => ts.week_ending))].sort((a, b) =>
     new Date(b).getTime() - new Date(a).getTime()
   );
 
   // Calculate stats based on filtered data
   const getFilteredStats = () => {
     const relevantTimesheets = getFullyFilteredTimesheets();
-    
+
     // Get unique employees in filtered timesheets
     const uniqueEmployees = new Set(relevantTimesheets.map(ts => ts.employee_id));
-    
+
     return {
       totalEmployees: uniqueEmployees.size,
       pendingApproval: relevantTimesheets.filter(ts => ts.status === 'submitted').length,
@@ -358,12 +365,55 @@ export default function AdminTimesheets() {
     return `${format(weekStart, 'MMM d')} - ${format(weekDate, 'MMM d, yyyy')}`;
   };
 
+  // Skeleton loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#e8e4df] border-t-[#e31c79] mx-auto"></div>
-          <p className="mt-4 text-[#777]">Loading all timesheets...</p>
+      <div style={{ padding: '36px 40px' }}>
+        <div className="mb-6">
+          <div className="anim-shimmer" style={{ width: 140, height: 24, borderRadius: 6, marginBottom: 8 }} />
+          <div className="anim-shimmer" style={{ width: 300, height: 14, borderRadius: 4 }} />
+        </div>
+
+        {/* Tab skeleton */}
+        <div className="flex items-center gap-6 mb-6" style={{ borderBottom: '0.5px solid #f0ece7', paddingBottom: 10 }}>
+          {[40, 60, 70, 60].map((w, i) => (
+            <div key={i} className="anim-shimmer" style={{ width: w, height: 12, borderRadius: 3 }} />
+          ))}
+        </div>
+
+        {/* Controls skeleton */}
+        <div className="anim-slide-up stagger-1" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '16px 22px', marginBottom: 24 }}>
+          <div className="flex items-center gap-4">
+            <div className="anim-shimmer" style={{ width: 120, height: 28, borderRadius: 7 }} />
+            <div className="anim-shimmer" style={{ width: 140, height: 28, borderRadius: 7 }} />
+            <div className="anim-shimmer" style={{ width: 80, height: 28, borderRadius: 7 }} />
+          </div>
+        </div>
+
+        {/* Stats skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {[1, 2, 3, 4].map(n => (
+            <div key={n} className={`anim-slide-up stagger-${n}`} style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px' }}>
+              <div className="anim-shimmer" style={{ width: 70, height: 8, borderRadius: 3, marginBottom: 12 }} />
+              <div className="anim-shimmer" style={{ width: 40, height: 28, borderRadius: 4 }} />
+            </div>
+          ))}
+        </div>
+
+        {/* Table skeleton */}
+        <div className="anim-slide-up stagger-5" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7' }}>
+            <div className="anim-shimmer" style={{ width: 220, height: 14, borderRadius: 4 }} />
+          </div>
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} style={{ padding: '12px 20px', borderBottom: '0.5px solid #f5f2ee' }} className="flex items-center gap-6">
+              <div className="anim-shimmer" style={{ width: 140, height: 14, borderRadius: 4 }} />
+              <div className="anim-shimmer" style={{ width: 80, height: 14, borderRadius: 4 }} />
+              <div className="anim-shimmer" style={{ width: 80, height: 14, borderRadius: 4 }} />
+              <div className="anim-shimmer" style={{ width: 50, height: 14, borderRadius: 4 }} />
+              <div className="anim-shimmer" style={{ width: 60, height: 18, borderRadius: 3 }} />
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -374,13 +424,13 @@ export default function AdminTimesheets() {
       {/* Main Content */}
       <div style={{ padding: '36px 40px' }}>
         {/* Page Header */}
-        <div className="mb-6">
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>Timesheets</h1>
-          <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb' }}>Review and manage all employee timesheets</p>
+        <div className="mb-6 anim-slide-up stagger-1">
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', letterSpacing: -0.3 }}>Timesheets</h1>
+          <p style={{ fontSize: 13, fontWeight: 400, color: '#999' }}>Review and manage all employee timesheets</p>
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-6 mb-6" style={{ borderBottom: '0.5px solid #f0ece7' }}>
+        <div className="flex items-center gap-6 mb-6 anim-slide-up stagger-1" style={{ borderBottom: '0.5px solid #f0ece7' }}>
           {([
             { key: 'all', label: 'All' },
             { key: 'submitted', label: 'Pending' },
@@ -396,6 +446,7 @@ export default function AdminTimesheets() {
                 color: filterStatus === tab.key ? '#1a1a1a' : '#999',
                 borderBottom: filterStatus === tab.key ? '2px solid #e31c79' : '2px solid transparent',
                 paddingBottom: 10,
+                transition: 'color 0.15s ease',
               }}
             >
               {tab.label}
@@ -404,13 +455,13 @@ export default function AdminTimesheets() {
         </div>
 
         {/* Controls Bar */}
-        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '16px 22px', marginBottom: 24 }}>
+        <div className="anim-slide-up stagger-2" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '16px 22px', marginBottom: 24 }}>
           <div className="flex flex-wrap items-center gap-4">
             <select
               value={filterWeek}
               onChange={(e) => setFilterWeek(e.target.value)}
               style={{ border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, padding: '6px 10px' }}
-              className="focus:outline-none focus:border-[#d3ad6b]"
+              className="focus:outline-none focus:border-[#d3ad6b] focus:shadow-[0_0_0_3px_rgba(211,173,107,0.08)]"
             >
               <option value="all">All Weeks</option>
               {availableWeeks.map(week => (
@@ -424,7 +475,7 @@ export default function AdminTimesheets() {
               value={filterManager}
               onChange={(e) => setFilterManager(e.target.value)}
               style={{ border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, padding: '6px 10px' }}
-              className="focus:outline-none focus:border-[#d3ad6b]"
+              className="focus:outline-none focus:border-[#d3ad6b] focus:shadow-[0_0_0_3px_rgba(211,173,107,0.08)]"
             >
               <option value="all">All Managers</option>
               {managers.map(manager => (
@@ -437,14 +488,16 @@ export default function AdminTimesheets() {
 
             <button
               onClick={exportToCSV}
-              className="flex items-center gap-2 hover:border-[#ccc] hover:text-[#555]"
-              style={{ padding: '6px 14px', background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 7, fontSize: 12, fontWeight: 500 }}
+              className="flex items-center gap-2 transition-colors"
+              style={{ padding: '8px 18px', background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 7, fontSize: 12, fontWeight: 600 }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#d3ad6b'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; }}
             >
               <Download className="h-4 w-4" />
               Export
             </button>
 
-            <span style={{ fontSize: 12, color: '#999', marginLeft: 'auto' }}>
+            <span style={{ fontSize: 11, color: '#c0bab2', marginLeft: 'auto' }}>
               {sortedWeeks.length} week{sortedWeeks.length !== 1 ? 's' : ''}
               {filterManager !== 'all' && ` \u00b7 ${getManagerName(filterManager)}`}
             </span>
@@ -453,45 +506,53 @@ export default function AdminTimesheets() {
 
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Employees</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{stats.totalEmployees}</div>
-          </div>
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Pending</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#e31c79' }}>{stats.pendingApproval}</div>
-          </div>
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Approved</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{stats.approved}</div>
-          </div>
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Total Hours</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{stats.totalHours.toFixed(0)}</div>
-          </div>
+          {[
+            { label: 'Employees', value: stats.totalEmployees, accent: true },
+            { label: 'Pending', value: stats.pendingApproval, pink: true },
+            { label: 'Approved', value: stats.approved },
+            { label: 'Total Hours', value: stats.totalHours.toFixed(0) },
+          ].map((stat, i) => (
+            <div
+              key={stat.label}
+              className={`anim-slide-up stagger-${i + 1}`}
+              style={{
+                background: '#fff',
+                border: '0.5px solid #e8e4df',
+                borderRadius: 10,
+                padding: '22px 24px',
+                transition: 'border-color 0.15s ease',
+                cursor: 'default',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = i === 0 ? '#e31c79' : '#d3ad6b' }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e8e4df' }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1.2, color: '#c0bab2' }}>{stat.label}</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: stat.pink ? '#e31c79' : '#1a1a1a' }}>{stat.value}</div>
+            </div>
+          ))}
         </div>
 
         {/* Timesheets by Week */}
         <div className="space-y-6">
           {sortedWeeks.length === 0 ? (
-            <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 32, textAlign: 'center' }}>
+            <div className="anim-slide-up stagger-5" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 32, textAlign: 'center' }}>
               <p style={{ fontSize: 13, color: '#999' }}>No timesheets found for the selected filters.</p>
             </div>
           ) : (
-            sortedWeeks.map(([weekEnding, weekTimesheets]) => {
+            sortedWeeks.map(([weekEnding, weekTimesheets], weekIdx) => {
               const weekDate = new Date(weekEnding);
               const weekStart = new Date(weekDate);
               weekStart.setDate(weekDate.getDate() - 6);
-              
+
               return (
-                <div key={weekEnding} style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
+                <div key={weekEnding} className={`anim-slide-up stagger-${Math.min(weekIdx + 5, 6)}`} style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
                   {/* Week Header */}
                   <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7' }}>
                     <div className="flex items-center justify-between">
-                      <h2 style={{ fontSize: 12, fontWeight: 600 }}>
+                      <h2 style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>
                         Week of {weekStart.toLocaleDateString()} - {weekDate.toLocaleDateString()}
                       </h2>
-                      <span style={{ fontSize: 11, color: '#999' }}>
+                      <span style={{ fontSize: 10.5, color: '#c0bab2' }}>
                         {weekTimesheets.length} timesheets
                       </span>
                     </div>
@@ -502,53 +563,63 @@ export default function AdminTimesheets() {
                     <table className="min-w-full">
                       <thead>
                         <tr>
-                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Employee</th>
-                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Department</th>
-                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Manager</th>
-                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Hours</th>
-                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Status</th>
-                          <th className="px-6 py-2 text-left" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Actions</th>
+                          {['Employee', 'Department', 'Manager', 'Hours', 'Status', 'Actions'].map(h => (
+                            <th
+                              key={h}
+                              className="text-left"
+                              style={{ padding: '11px 20px', fontSize: 9, fontWeight: 500, letterSpacing: 1.2, color: '#c0bab2', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7' }}
+                            >
+                              {h}
+                            </th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody>
                         {weekTimesheets.map((timesheet) => {
                           const empInfo = getEmployeeInfo(timesheet.employee_id);
                           const managerName = getManagerName(timesheet.employee?.manager_id || '');
+                          const badge = statusConfig[timesheet.status] || statusConfig.draft;
                           return (
-                            <tr key={timesheet.id} className="hover:bg-[#FDFCFB]" style={{ borderBottom: '0.5px solid #f5f2ee' }}>
-                              <td className="px-6 py-3 whitespace-nowrap">
+                            <tr key={timesheet.id} className="hover:bg-[#FDFCFB]" style={{ borderBottom: '0.5px solid #f5f2ee', transition: 'background 0.15s ease' }}>
+                              <td style={{ padding: '12px 20px' }} className="whitespace-nowrap">
                                 <div>
                                   <p style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
                                     {empInfo.name}
                                   </p>
-                                  <p style={{ fontSize: 11, color: '#999' }}>{empInfo.email}</p>
+                                  <p style={{ fontSize: 10.5, color: '#c0bab2' }}>{empInfo.email}</p>
                                 </div>
                               </td>
-                              <td className="px-6 py-3 whitespace-nowrap" style={{ fontSize: 12.5, color: '#555' }}>
+                              <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#555' }} className="whitespace-nowrap">
                                 {empInfo.department}
                               </td>
-                              <td className="px-6 py-3 whitespace-nowrap" style={{ fontSize: 12.5, color: '#555' }}>
+                              <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#555' }} className="whitespace-nowrap">
                                 {managerName}
                               </td>
-                              <td className="px-6 py-3 whitespace-nowrap" style={{ fontSize: 12.5, color: '#555' }}>
+                              <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#555' }} className="whitespace-nowrap">
                                 {timesheet.total_hours || 0} hrs
                                 {timesheet.overtime_hours ? ` (+${timesheet.overtime_hours} OT)` : ''}
                               </td>
-                              <td className="px-6 py-3 whitespace-nowrap">
-                                <span className={`px-2 py-0.5 rounded-[3px] ${
-                                  timesheet.status === 'submitted' ? 'bg-yellow-100 text-yellow-800' :
-                                  timesheet.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                  timesheet.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                  'bg-[#FAFAF8] text-[#1a1a1a]'
-                                }`} style={{ fontSize: 9, fontWeight: 500 }}>
-                                  {timesheet.status}
+                              <td style={{ padding: '12px 20px' }} className="whitespace-nowrap">
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                  fontSize: 9,
+                                  fontWeight: 500,
+                                  borderRadius: 3,
+                                  padding: '2px 8px',
+                                  background: badge.bg,
+                                  color: badge.text,
+                                }}>
+                                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: badge.dot }} />
+                                  {badge.label}
                                 </span>
                               </td>
-                              <td className="px-6 py-3 whitespace-nowrap">
+                              <td style={{ padding: '12px 20px' }} className="whitespace-nowrap">
                                 <div className="flex items-center gap-2">
                                   <button
                                     onClick={() => openTimecardDetail(timesheet)}
-                                    className="p-1 hover:bg-[#FDFCFB] rounded"
+                                    className="p-1 hover:bg-[#FDFCFB] rounded transition-colors"
                                     style={{ color: '#777' }}
                                   >
                                     <Eye className="h-4 w-4" />
@@ -558,14 +629,20 @@ export default function AdminTimesheets() {
                                       <button
                                         onClick={() => handleApproveTimesheet(timesheet.id)}
                                         disabled={processing}
-                                        className="p-1 text-green-600 hover:bg-green-50 rounded disabled:opacity-50"
+                                        className="p-1 rounded disabled:opacity-50 transition-colors"
+                                        style={{ color: '#2d9b6e' }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(45,155,110,0.06)'; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                                       >
                                         <Check className="h-4 w-4" />
                                       </button>
                                       <button
                                         onClick={() => handleRejectTimesheet(timesheet.id)}
                                         disabled={processing}
-                                        className="p-1 text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
+                                        className="p-1 rounded disabled:opacity-50 transition-colors"
+                                        style={{ color: '#b91c1c' }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(185,28,28,0.06)'; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                                       >
                                         <X className="h-4 w-4" />
                                       </button>

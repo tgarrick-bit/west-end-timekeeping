@@ -5,14 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
-import { 
-  Clock, 
-  LogOut,
-  Calendar,
-  ChevronRight,
-  FileText,
-  Download
-} from 'lucide-react'
+import { Download } from 'lucide-react'
 
 interface ReportData {
   id: string
@@ -40,11 +33,29 @@ interface ReportData {
   }
 }
 
+const inputStyle = { padding: '8px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12.5, color: '#1a1a1a', outline: 'none' } as const
+const selectStyle = { ...inputStyle, width: '100%', background: 'white' } as const
+const labelStyle = { display: 'block' as const, fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 6 }
+const sectionLabel = { fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 12 }
+
+function focusIn(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 2px rgba(211,173,107,0.15)' }
+function focusOut(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }
+
+function StatusBadge({ status }: { status: string }) {
+  const color = status === 'approved' ? '#2d9b6e' : (status === 'pending' || status === 'submitted') ? '#c4983a' : '#999'
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 9, fontWeight: 500, borderRadius: 3, padding: '2px 8px', background: status === 'approved' ? 'rgba(45,155,110,0.08)' : (status === 'pending' || status === 'submitted') ? 'rgba(196,152,58,0.08)' : 'rgba(0,0,0,0.03)' }}>
+      <span style={{ width: 5, height: 5, borderRadius: '50%', background: color, flexShrink: 0 }} />
+      <span style={{ color }}>{status}</span>
+    </span>
+  )
+}
+
 export default function TimeByApproverReport() {
   const router = useRouter()
   const { user } = useAuth()
   const supabase = createClient()
-  
+
   const [startDate, setStartDate] = useState('2025-09-07')
   const [endDate, setEndDate] = useState('2025-09-13')
   const [selectedUser, setSelectedUser] = useState('')
@@ -55,57 +66,30 @@ export default function TimeByApproverReport() {
   const [includeDetails, setIncludeDetails] = useState(false)
   const [reportData, setReportData] = useState<ReportData[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
 
-  const timeTypes = [
-    '-All-',
-    'Regular',
-    'Overtime', 
-    'Doubletime',
-    'Sick',
-    'Vacation',
-    'Holiday',
-    'Non-billable',
-    'Overtime *',
-    'regular *'
-  ]
+  const timeTypes = ['-All-', 'Regular', 'Overtime', 'Doubletime', 'Sick', 'Vacation', 'Holiday', 'Non-billable', 'Overtime *', 'regular *']
+
+  useEffect(() => { const t = setTimeout(() => setPageLoading(false), 400); return () => clearTimeout(t) }, [])
 
   const handleRunReport = async () => {
     setIsLoading(true)
-    
     try {
-      // Build query
       let query = supabase
         .from('timesheets')
-        .select(`
-          *,
-          employees!inner (
-            first_name,
-            last_name,
-            department,
-            hourly_rate
-          ),
-          projects (
-            name,
-            code
-          )
-        `)
+        .select(`*, employees!inner (first_name, last_name, department, hourly_rate), projects (name, code)`)
         .gte('week_ending', startDate)
         .lte('week_ending', endDate)
 
-      // Add status filter based on includeUnapproved
       if (!includeUnapproved) {
         query = query.eq('status', 'approved')
       } else {
-        // Include both approved and pending for review
         query = query.in('status', ['approved', 'pending', 'submitted'])
       }
 
       const { data, error } = await query
-
-      if (error) {
-        console.error('Error fetching report data:', error)
-      } else if (data) {
-        // Fetch approver details if needed
+      if (error) { console.error('Error fetching report data:', error) }
+      else if (data) {
         const dataWithApprovers = await Promise.all(
           data.map(async (item) => {
             if (item.approved_by) {
@@ -114,7 +98,6 @@ export default function TimeByApproverReport() {
                 .select('first_name, last_name')
                 .eq('id', item.approved_by)
                 .single()
-              
               return { ...item, approver: approverData }
             }
             return item
@@ -122,27 +105,18 @@ export default function TimeByApproverReport() {
         )
         setReportData(dataWithApprovers as ReportData[])
       }
-    } catch (error) {
-      console.error('Error generating report:', error)
-    } finally {
-      setIsLoading(false)
-    }
+    } catch (error) { console.error('Error generating report:', error) }
+    finally { setIsLoading(false) }
   }
 
   const handleExportToExcel = () => {
-    if (reportData.length === 0) {
-      alert('No data to export. Please run the report first.')
-      return
-    }
-
-    // Format data for Excel
+    if (reportData.length === 0) { alert('No data to export. Please run the report first.'); return }
     const exportData = reportData.map(row => {
       const regularHours = Math.min(row.total_hours || 0, 40)
       const overtimeHours = row.overtime_hours || Math.max(0, (row.total_hours || 0) - 40)
       const hourlyRate = row.employees?.hourly_rate || 0
       const regularAmount = regularHours * hourlyRate
       const overtimeAmount = overtimeHours * hourlyRate * 1.5
-      
       const rowData: any = {
         'Employee': `${row.employees?.first_name} ${row.employees?.last_name}`,
         'Department': row.employees?.department || '',
@@ -154,372 +128,189 @@ export default function TimeByApproverReport() {
         'Status': row.status.charAt(0).toUpperCase() + row.status.slice(1),
         'Approved Date': row.approved_at ? new Date(row.approved_at).toLocaleDateString() : 'N/A'
       }
-
       if (byProject && row.projects) {
         rowData['Project'] = row.projects.name
         rowData['Project Code'] = row.projects.code || ''
       }
-
       return rowData
     })
-
-    // Create workbook
     const wb = XLSX.utils.book_new()
     const ws = XLSX.utils.json_to_sheet(exportData)
-    
-    // Auto-size columns
     const colWidths = Object.keys(exportData[0] || {}).map(key => {
-      const maxLength = Math.max(
-        key.length,
-        ...exportData.map(row => String(row[key]).length)
-      )
+      const maxLength = Math.max(key.length, ...exportData.map(row => String(row[key]).length))
       return { wch: Math.min(maxLength + 2, 30) }
     })
     ws['!cols'] = colWidths
-    
-    // Add worksheet to workbook
     XLSX.utils.book_append_sheet(wb, ws, 'Time by Approver')
-    
-    // Generate filename with date range
-    const fileName = `time_by_approver_${startDate}_to_${endDate}.xlsx`
-    
-    // Write the file
-    XLSX.writeFile(wb, fileName)
+    XLSX.writeFile(wb, `time_by_approver_${startDate}_to_${endDate}.xlsx`)
   }
 
-  // Calculate totals
   const totals = reportData.reduce((acc, row) => {
     const regularHours = Math.min(row.total_hours || 0, 40)
     const overtimeHours = row.overtime_hours || Math.max(0, (row.total_hours || 0) - 40)
-    
     acc.regularHours += regularHours
     acc.overtimeHours += overtimeHours
     acc.totalHours += row.total_hours || 0
     acc.approvedCount += row.status === 'approved' ? 1 : 0
     acc.pendingCount += row.status === 'pending' || row.status === 'submitted' ? 1 : 0
-    
     return acc
   }, { regularHours: 0, overtimeHours: 0, totalHours: 0, approvedCount: 0, pendingCount: 0 })
 
+  if (pageLoading) {
+    return (
+      <div style={{ padding: '36px 40px' }}>
+        <div style={{ height: 24, width: 200, background: '#f5f2ee', borderRadius: 6, marginBottom: 8 }} className="anim-shimmer" />
+        <div style={{ height: 13, width: 300, background: '#f5f2ee', borderRadius: 6, marginBottom: 32 }} className="anim-shimmer" />
+        <div style={{ background: '#FFFFFF', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px' }}>
+          {[0,1,2,3].map(i => (<div key={i} style={{ height: 38, background: '#f5f2ee', borderRadius: 7, marginBottom: 16 }} className="anim-shimmer" />))}
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <>
-      {/* Header */}
-      {/* Navigation */}
-      <div className="bg-[#FAFAF8] border-b">
-        <div className="max-w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
-            <button 
-              onClick={() => router.push('/manager')}
-              className="py-3 text-sm font-medium text-[#777] hover:text-[#1a1a1a]"
-            >
-              Review
-            </button>
-            <button className="py-3 text-sm font-medium text-[#1a1a1a] border-b-2 border-[#e31c79]">
-              Reports
-            </button>
+    <div style={{ padding: '36px 40px' }}>
+      <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', letterSpacing: -0.3, margin: 0 }}>Time by Approver</h1>
+      <p style={{ fontSize: 13, fontWeight: 400, color: '#999', marginTop: 4, marginBottom: 28 }}>Generate time reports grouped by approver</p>
+
+      <div style={{ background: '#FFFFFF', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '28px 28px' }}>
+        <div style={sectionLabel}>Report Parameters</div>
+
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 24 }}>
+          <div>
+            <label style={labelStyle}>Date Start</label>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inputStyle} onFocus={focusIn} onBlur={focusOut} />
           </div>
+          <div>
+            <label style={labelStyle}>Date Stop</label>
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={inputStyle} onFocus={focusIn} onBlur={focusOut} />
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', paddingBottom: 4 }}>
+            <input type="checkbox" checked={forceCompleteWeeks} onChange={(e) => setForceCompleteWeeks(e.target.checked)} style={{ accentColor: '#e31c79' }} />
+            <span style={{ fontSize: 12, color: '#1a1a1a' }}>Force Complete Weeks</span>
+          </label>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+          <div>
+            <label style={labelStyle}>User</label>
+            <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}><option value=""></option></select>
+          </div>
+          <div>
+            <label style={labelStyle}>Time Type</label>
+            <select value={selectedTimeType} onChange={(e) => setSelectedTimeType(e.target.value)} style={selectStyle} onFocus={focusIn} onBlur={focusOut}>
+              {timeTypes.map(type => (<option key={type} value={type}>{type}</option>))}
+            </select>
+          </div>
+        </div>
+
+        <div style={sectionLabel}>Options</div>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, marginBottom: 24 }}>
+          {[
+            { label: 'By Project', checked: byProject, onChange: setByProject },
+            { label: 'Include Unapproved', checked: includeUnapproved, onChange: setIncludeUnapproved },
+            { label: 'Include Details', checked: includeDetails, onChange: setIncludeDetails },
+          ].map(opt => (
+            <label key={opt.label} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input type="checkbox" checked={opt.checked} onChange={(e) => opt.onChange(e.target.checked)} style={{ accentColor: '#e31c79' }} />
+              <span style={{ fontSize: 12.5, color: '#1a1a1a' }}>{opt.label}</span>
+            </label>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+          {reportData.length > 0 && (
+            <button onClick={handleExportToExcel} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, fontWeight: 500, color: '#1a1a1a', background: 'white', cursor: 'pointer' }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#e31c79' }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e8e4df' }}>
+              <Download style={{ width: 14, height: 14 }} /> Export to Excel
+            </button>
+          )}
+          <button onClick={handleRunReport} disabled={isLoading}
+            style={{ padding: '8px 24px', borderRadius: 7, fontSize: 12, fontWeight: 600, border: 'none', color: isLoading ? '#999' : 'white', background: isLoading ? '#f5f2ee' : '#e31c79', cursor: isLoading ? 'not-allowed' : 'pointer' }}
+            onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.background = '#cc1069' }} onMouseLeave={(e) => { if (!isLoading) e.currentTarget.style.background = '#e31c79' }}>
+            {isLoading ? 'Running...' : 'Run Report'}
+          </button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex gap-6">
-          {/* Left Sidebar */}
-          <div className="w-64 bg-white rounded-lg p-4">
-            <h3 className="font-semibold text-[#1a1a1a] mb-4">Time Reports</h3>
-            <div className="space-y-1">
-              <a href="/admin/reports/time-by-project" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Project
-              </a>
-              <a href="/admin/reports/time-by-employee" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Employee
-              </a>
-              <a href="/admin/reports/time-by-class" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Class
-              </a>
-              <a href="/admin/reports/time-by-approver" className="flex items-center justify-between px-3 py-2 text-sm bg-[#FAFAF8] text-[#1a1a1a] rounded">
-                Time by Approver
-                <ChevronRight className="h-4 w-4" />
-              </a>
-              <a href="/admin/reports/time-missing" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time Missing
-              </a>
+      {/* Results */}
+      {reportData.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          {/* Stat cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
+            <div style={{ background: '#FFFFFF', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px' }}>
+              <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: 1.2, color: '#c0bab2', marginBottom: 6 }}>Total Records</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{reportData.length}</div>
             </div>
-
-            <h3 className="font-semibold text-[#1a1a1a] mt-6 mb-4">Expense Reports</h3>
-            <div className="space-y-1">
-              <a href="/admin/reports/expenses-by-employee" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Expenses by Employee
-              </a>
-              <a href="/admin/reports/expenses-by-project" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Expenses by Project
-              </a>
-              <a href="/admin/reports/expenses-by-approver" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Expenses by Approver
-              </a>
+            <div style={{ background: '#FFFFFF', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px' }}>
+              <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: 1.2, color: '#c0bab2', marginBottom: 6 }}>Approved</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#2d9b6e' }}>{totals.approvedCount}</div>
+            </div>
+            <div style={{ background: '#FFFFFF', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px' }}>
+              <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: 1.2, color: '#c0bab2', marginBottom: 6 }}>Pending Review</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#c4983a' }}>{totals.pendingCount}</div>
             </div>
           </div>
 
-          {/* Report Configuration */}
-          <div className="flex-1 bg-white rounded-lg p-6">
-            <h2 className="text-[12px] font-semibold text-[#1a1a1a] mb-6">Report Details: Time by Approver</h2>
-
-            <div className="space-y-6">
-              {/* Date Range */}
-              <div className="flex items-center gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Date Start</label>
-                  <div className="flex items-center">
-                    <input 
-                      type="date" 
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Date Stop</label>
-                  <div className="flex items-center">
-                    <input 
-                      type="date" 
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center mt-6">
-                  <input 
-                    type="checkbox"
-                    checked={forceCompleteWeeks}
-                    onChange={(e) => setForceCompleteWeeks(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <label className="ml-2 text-sm text-[#555]">Force Complete Weeks</label>
-                </div>
-              </div>
-
-              {/* Filters */}
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">User</label>
-                  <select 
-                    value={selectedUser}
-                    onChange={(e) => setSelectedUser(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    <option value=""></option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Time Type</label>
-                  <select 
-                    value={selectedTimeType}
-                    onChange={(e) => setSelectedTimeType(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    {timeTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Options */}
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={byProject}
-                    onChange={(e) => setByProject(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">By Project</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={includeUnapproved}
-                    onChange={(e) => setIncludeUnapproved(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Include Unapproved</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={includeDetails}
-                    onChange={(e) => setIncludeDetails(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Include Details</span>
-                </label>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-4">
-                {reportData.length > 0 && (
-                  <button 
-                    onClick={handleExportToExcel}
-                    className="px-6 py-2 bg-white text-[#1a1a1a] rounded-md hover:bg-[#FAFAF8] font-medium flex items-center"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export to Excel
-                  </button>
-                )}
-                <button 
-                  onClick={handleRunReport}
-                  disabled={isLoading}
-                  className={`px-6 py-2 rounded-md font-medium ${
-                    isLoading 
-                      ? 'bg-[#FAFAF8] text-[#999] cursor-not-allowed' 
-                      : 'bg-green-600 text-white hover:bg-green-700'
-                  }`}
-                >
-                  {isLoading ? 'Running...' : 'Run'}
-                </button>
-              </div>
-
-              {/* Results */}
-              {reportData.length > 0 && (
-                <div className="mt-6">
-                  <div className="p-4 bg-[#FAFAF8] rounded mb-4">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-sm text-[#777]">Total Records: <span className="font-semibold">{reportData.length}</span></p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-[#777]">Approved: <span className="font-semibold text-green-600">{totals.approvedCount}</span></p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-[#777]">Pending Review: <span className="font-semibold text-yellow-600">{totals.pendingCount}</span></p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Results Table */}
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-[#FAFAF8]">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Employee
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Department
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Week Ending
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Approver
-                          </th>
-                          {byProject && (
-                            <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                              Project
-                            </th>
-                          )}
-                          <th className="px-6 py-3 text-right text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Regular
-                          </th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Overtime
-                          </th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Total
-                          </th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Status
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {reportData.map((row) => {
-                          const regularHours = Math.min(row.total_hours || 0, 40)
-                          const overtimeHours = row.overtime_hours || Math.max(0, (row.total_hours || 0) - 40)
-                          
-                          return (
-                            <tr key={row.id} className="hover:bg-[#FAFAF8]">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                {row.employees?.first_name} {row.employees?.last_name}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                {row.employees?.department || 'N/A'}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                {new Date(row.week_ending).toLocaleDateString()}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                {row.approver ? `${row.approver.first_name} ${row.approver.last_name}` : '-'}
-                              </td>
-                              {byProject && (
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                  {row.projects?.name || 'N/A'}
-                                </td>
-                              )}
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-[#1a1a1a]">
-                                {regularHours.toFixed(2)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-[#1a1a1a]">
-                                {overtimeHours.toFixed(2)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-[#1a1a1a]">
-                                {(row.total_hours || 0).toFixed(2)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <span className={`px-2 inline-flex leading-5 rounded ${
-                                  row.status === 'approved' 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : row.status === 'pending' || row.status === 'submitted'
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : 'bg-[#FAFAF8] text-[#1a1a1a]'
-                                }`}>
-                                  {row.status}
-                                </span>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                      <tfoot className="bg-[#FAFAF8]">
-                        <tr>
-                          <td colSpan={byProject ? 5 : 4} className="px-6 py-3 text-left text-sm font-semibold text-[#1a1a1a]">
-                            Total
-                          </td>
-                          <td className="px-6 py-3 text-right text-sm font-semibold text-[#1a1a1a]">
-                            {totals.regularHours.toFixed(2)}
-                          </td>
-                          <td className="px-6 py-3 text-right text-sm font-semibold text-[#1a1a1a]">
-                            {totals.overtimeHours.toFixed(2)}
-                          </td>
-                          <td className="px-6 py-3 text-right text-sm font-semibold text-[#1a1a1a]">
-                            {totals.totalHours.toFixed(2)}
-                          </td>
-                          <td className="px-6 py-3"></td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-
-                  {/* Details Section */}
-                  {includeDetails && (
-                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded">
-                      <h3 className="text-sm font-semibold text-blue-900 mb-2">Report Details</h3>
-                      <p className="text-sm text-blue-800">
-                        This report shows all timesheets grouped by their approvers for the selected period.
-                        {includeUnapproved && ' Including unapproved entries allows you to see pending items awaiting review.'}
-                        {byProject && ' Project breakdown helps identify which projects are consuming the most resources.'}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+          {/* Table */}
+          <div style={{ background: '#FFFFFF', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  {['Employee', 'Department', 'Week Ending', 'Approver',
+                    ...(byProject ? ['Project'] : []),
+                    'Regular', 'Overtime', 'Total', 'Status'
+                  ].map(h => (
+                    <th key={h} style={{ padding: '11px 20px', fontSize: 9, fontWeight: 500, letterSpacing: 1.2, color: '#c0bab2', textTransform: 'uppercase' as const, borderBottom: '0.5px solid #f0ece7', textAlign: ['Regular', 'Overtime', 'Total'].includes(h) ? 'right' : 'left' }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {reportData.map((row) => {
+                  const regularHours = Math.min(row.total_hours || 0, 40)
+                  const overtimeHours = row.overtime_hours || Math.max(0, (row.total_hours || 0) - 40)
+                  return (
+                    <tr key={row.id} style={{ borderBottom: '0.5px solid #f5f2ee' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#FDFCFB')} onMouseLeave={e => (e.currentTarget.style.background = 'white')}>
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }}>{row.employees?.first_name} {row.employees?.last_name}</td>
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }}>{row.employees?.department || 'N/A'}</td>
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }}>{new Date(row.week_ending).toLocaleDateString()}</td>
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }}>{row.approver ? `${row.approver.first_name} ${row.approver.last_name}` : '-'}</td>
+                      {byProject && <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }}>{row.projects?.name || 'N/A'}</td>}
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a', textAlign: 'right' }}>{regularHours.toFixed(2)}</td>
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a', textAlign: 'right' }}>{overtimeHours.toFixed(2)}</td>
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a', textAlign: 'right', fontWeight: 600 }}>{(row.total_hours || 0).toFixed(2)}</td>
+                      <td style={{ padding: '12px 20px' }}><StatusBadge status={row.status} /></td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+              <tfoot>
+                <tr style={{ borderTop: '0.5px solid #f0ece7' }}>
+                  <td colSpan={byProject ? 5 : 4} style={{ padding: '12px 20px', fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>Total</td>
+                  <td style={{ padding: '12px 20px', fontSize: 12, fontWeight: 600, color: '#1a1a1a', textAlign: 'right' }}>{totals.regularHours.toFixed(2)}</td>
+                  <td style={{ padding: '12px 20px', fontSize: 12, fontWeight: 600, color: '#1a1a1a', textAlign: 'right' }}>{totals.overtimeHours.toFixed(2)}</td>
+                  <td style={{ padding: '12px 20px', fontSize: 12, fontWeight: 600, color: '#1a1a1a', textAlign: 'right' }}>{totals.totalHours.toFixed(2)}</td>
+                  <td style={{ padding: '12px 20px' }} />
+                </tr>
+              </tfoot>
+            </table>
           </div>
+
+          {includeDetails && (
+            <div style={{ marginTop: 16, background: '#FFFFFF', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 24px' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', marginBottom: 8 }}>Report Details</div>
+              <p style={{ fontSize: 12.5, color: '#999', margin: 0, lineHeight: 1.6 }}>
+                This report shows all timesheets grouped by their approvers for the selected period.
+                {includeUnapproved && ' Including unapproved entries allows you to see pending items awaiting review.'}
+                {byProject && ' Project breakdown helps identify which projects are consuming the most resources.'}
+              </p>
+            </div>
+          )}
         </div>
-      </div>
-
-    </>
+      )}
+    </div>
   )
 }

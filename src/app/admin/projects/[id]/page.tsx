@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, Trash2 } from 'lucide-react'
+import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton'
 
 interface Project {
   id: string
@@ -18,7 +19,7 @@ interface Project {
   track_time: boolean
   track_expenses: boolean
   is_billable: boolean
-  // invoicing / extras (UI only for now – NOT saved to DB):
+  // invoicing / extras (UI only for now -- NOT saved to DB):
   billing_rate?: number
   budget?: number
   active_po?: string
@@ -96,6 +97,49 @@ const buildProjectPayload = (data: Partial<Project>) => {
     track_expenses: data.track_expenses ?? false,
     is_billable: data.is_billable ?? true,
   }
+}
+
+// Shared input style
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '8px 12px',
+  border: '0.5px solid #e8e4df',
+  borderRadius: 7,
+  fontSize: 12,
+  color: '#1a1a1a',
+  outline: 'none',
+  background: '#fff',
+  marginTop: 4,
+}
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 9,
+  fontWeight: 500,
+  textTransform: 'uppercase',
+  letterSpacing: 1,
+  color: '#c0bab2',
+}
+
+const focusHandler = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  e.currentTarget.style.borderColor = '#d3ad6b'
+  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)'
+}
+const blurHandler = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  e.currentTarget.style.borderColor = '#e8e4df'
+  e.currentTarget.style.boxShadow = 'none'
+}
+
+// Table header cell
+const thStyle: React.CSSProperties = {
+  padding: '11px 20px',
+  textAlign: 'left',
+  fontSize: 9,
+  fontWeight: 500,
+  letterSpacing: 1.2,
+  color: '#c0bab2',
+  textTransform: 'uppercase',
+  borderBottom: '0.5px solid #f0ece7',
+  background: 'transparent',
 }
 
 export default function ProjectEditPage() {
@@ -400,14 +444,13 @@ export default function ProjectEditPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="flex flex-col items-center gap-4">
-          <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
-            <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          <p className="text-[13px]" style={{ color: '#bbb' }}>Loading...</p>
+      <div style={{ padding: '36px 40px' }} className="space-y-6">
+        <div>
+          <div className="anim-shimmer" style={{ width: 200, height: 24, borderRadius: 4, marginBottom: 8 }} />
+          <div className="anim-shimmer" style={{ width: 340, height: 14, borderRadius: 4 }} />
         </div>
+        <SkeletonStats count={3} />
+        <SkeletonList rows={4} />
       </div>
     )
   }
@@ -427,930 +470,998 @@ export default function ProjectEditPage() {
   const nextTabLabel = nextTab ? tabLabelMap[nextTab] : null
 
   return (
-    <>
-      {/* Page Header + Tabs */}
-      <section className="bg-white border-b border-[#e8e4df]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex flex-col">
-            <div className="mb-1 flex items-center gap-1 text-xs text-[#999]">
-              <span>Admin</span>
-              <span className="text-[#bbb]">/</span>
-              <span>Projects</span>
-              <span className="text-[#bbb]">/</span>
-              <span>{pageName}</span>
-            </div>
-            <h1 className="text-[14px] font-semibold text-[#1a1814]">
-              {pageName}
-            </h1>
-            <p className="mt-1 text-xs text-[#999]">
-              Configure project details, people, and approvals.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span
-              className={`inline-flex items-center rounded px-3 py-1 text-xs font-medium ${
-                isActive
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                  : 'bg-[#FAFAF8] text-[#777] border border-[#e8e4df]'
-              }`}
+    <div style={{ padding: '36px 40px' }}>
+      {/* Page Title */}
+      <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+        <div>
+          <div className="flex items-center gap-1" style={{ fontSize: 11, color: '#c0bab2', marginBottom: 4 }}>
+            <button
+              onClick={() => router.push('/admin/projects')}
+              style={{ color: '#c0bab2', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11 }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#e31c79' }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#c0bab2' }}
             >
-              {isActive ? 'Active' : 'Inactive'}
-            </span>
+              Projects
+            </button>
+            <span>/</span>
+            <span style={{ color: '#999' }}>{pageName}</span>
           </div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', letterSpacing: -0.3, margin: 0 }}>
+            {pageName}
+          </h1>
+          <p style={{ fontSize: 13, fontWeight: 400, color: '#999', marginTop: 4 }}>
+            Configure project details, people, and approvals.
+          </p>
         </div>
 
-        {/* Tabs */}
-        <div className="border-t border-[#f0ece7]">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-6">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-3 text-sm font-medium border-b-2 -mb-px transition-all ${
-                  activeTab === tab.id
-                    ? 'border-[#e31c79] text-[#e31c79]'
-                    : 'border-transparent text-[#999] hover:text-[#555] hover:border-[#e8e4df]'
-                }`}
-              >
-                {tab.label}
-              </button>
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            fontSize: 9,
+            fontWeight: 500,
+            padding: '2px 10px',
+            borderRadius: 3,
+            background: isActive ? '#f0faf5' : '#f7f6f4',
+            color: isActive ? '#2d9b6e' : '#999',
+            border: `0.5px solid ${isActive ? '#d1eee0' : '#e8e4df'}`,
+          }}
+        >
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: isActive ? '#2d9b6e' : '#ccc' }} />
+          {isActive ? 'Active' : 'Inactive'}
+        </span>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1" style={{ marginBottom: 24, borderBottom: '0.5px solid #f0ece7' }}>
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              padding: '10px 16px',
+              fontSize: 12,
+              fontWeight: activeTab === tab.id ? 600 : 400,
+              color: activeTab === tab.id ? '#e31c79' : '#999',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === tab.id ? '2px solid #e31c79' : '2px solid transparent',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              marginBottom: -1,
+            }}
+            onMouseEnter={e => {
+              if (activeTab !== tab.id) e.currentTarget.style.color = '#777'
+            }}
+            onMouseLeave={e => {
+              if (activeTab !== tab.id) e.currentTarget.style.color = '#999'
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Summary card once project exists */}
+      {hasSummary && (
+        <div
+          className="anim-slide-up stagger-1"
+          style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 24px', marginBottom: 24 }}
+        >
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', marginBottom: 14 }}>
+            Project Summary
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {[
+              { label: 'Client', value: formData.client_name || 'Not set' },
+              { label: 'Status', value: isActive ? 'Active' : 'Inactive' },
+              { label: 'Dates', value: `${formData.start_date || 'Not set'} \u2192 ${formData.end_date || 'Forever'}` },
+              { label: 'Department / Class', value: formData.department || 'None' },
+              { label: 'Tracking', value: `${trackTime ? 'Time' : ''}${trackTime && trackExpenses ? ' + ' : ''}${trackExpenses ? 'Expenses' : !trackTime ? 'None' : ''}` },
+              { label: 'People / Approvers', value: `${projectEmployees.length} people \u00b7 ${approvers.length} approver(s)` },
+            ].map(item => (
+              <div key={item.label}>
+                <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', margin: 0 }}>
+                  {item.label}
+                </p>
+                <p style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a', marginTop: 4 }}>
+                  {item.value}
+                </p>
+              </div>
             ))}
           </div>
         </div>
-      </section>
+      )}
 
-      {/* Content */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Summary card once project exists */}
-        {hasSummary && (
-          <section className="rounded-2xl border border-[#e8e4df] bg-white p-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-[#999] mb-3">
-              Project summary
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+      {/* OVERVIEW = MAIN DATA ENTRY */}
+      {activeTab === 'overview' && (
+        <div
+          className="anim-slide-up stagger-2"
+          style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '24px' }}
+        >
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', marginBottom: 20 }}>
+            Project details
+          </div>
+          <div className="space-y-6">
+            {/* main project fields */}
+            <div className="grid grid-cols-2 gap-6">
               <div>
-                <p className="text-[11px] font-semibold text-[#999]">
-                  Client
-                </p>
-                <p className="mt-1 text-sm text-[#1a1a1a]">
-                  {formData.client_name || 'Not set'}
-                </p>
+                <label style={labelStyle}>Client</label>
+                <select
+                  value={formData.client_id || ''}
+                  onChange={(e) => {
+                    const client = clients.find(
+                      (c) => c.id === e.target.value
+                    )
+                    setFormData({
+                      ...formData,
+                      client_id: e.target.value,
+                      client_name: client?.name,
+                    })
+                  }}
+                  style={inputStyle}
+                  onFocus={focusHandler}
+                  onBlur={blurHandler}
+                >
+                  <option value="">Select client</option>
+                  {clients.map((client: any) => (
+                    <option key={client.id} value={client.id}>
+                      {client.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
-                <p className="text-[11px] font-semibold text-[#999]">
-                  Status
-                </p>
-                <p className="mt-1 text-sm text-[#1a1a1a]">
-                  {isActive ? 'Active' : 'Inactive'}
-                </p>
+                <label style={labelStyle}>Project name</label>
+                <input
+                  type="text"
+                  value={formData.name || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  style={inputStyle}
+                  onFocus={focusHandler}
+                  onBlur={blurHandler}
+                />
               </div>
               <div>
-                <p className="text-[11px] font-semibold text-[#999]">
-                  Dates
-                </p>
-                <p className="mt-1 text-sm text-[#1a1a1a]">
-                  {formData.start_date || 'Not set'} →{' '}
-                  {formData.end_date || 'Forever'}
-                </p>
+                <label style={labelStyle}>Short name</label>
+                <input
+                  type="text"
+                  value={formData.short_name || ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      short_name: e.target.value,
+                    })
+                  }
+                  style={inputStyle}
+                  onFocus={focusHandler}
+                  onBlur={blurHandler}
+                />
               </div>
               <div>
-                <p className="text-[11px] font-semibold text-[#999]">
-                  Department / class
-                </p>
-                <p className="mt-1 text-sm text-[#1a1a1a]">
-                  {formData.department || 'None'}
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold text-[#999]">
-                  Track time / expenses
-                </p>
-                <p className="mt-1 text-sm text-[#1a1a1a]">
-                  {trackTime ? 'Time' : ''}
-                  {trackTime && trackExpenses ? ' + ' : ''}
-                  {trackExpenses ? 'Expenses' : !trackTime ? 'None' : ''}
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold text-[#999]">
-                  People / approvers
-                </p>
-                <p className="mt-1 text-sm text-[#1a1a1a]">
-                  {projectEmployees.length} people · {approvers.length} approver(s)
-                </p>
+                <label style={labelStyle}>Number</label>
+                <input
+                  type="text"
+                  value={formData.project_number || ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      project_number: e.target.value,
+                    })
+                  }
+                  style={inputStyle}
+                  onFocus={focusHandler}
+                  onBlur={blurHandler}
+                />
               </div>
             </div>
-          </section>
-        )}
 
-        {/* OVERVIEW = MAIN DATA ENTRY */}
-        {activeTab === 'overview' && (
-          <section className="rounded-2xl border border-[#e8e4df] bg-white p-6">
-            <h2 className="text-sm font-semibold text-[#1a1a1a] mb-6">
-              Project details
-            </h2>
-            <div className="space-y-6 text-sm">
-              {/* main project fields */}
+            {/* dates */}
+            <div style={{ borderTop: '0.5px solid #f0ece7', paddingTop: 24 }} className="grid grid-cols-2 gap-6">
+              <div>
+                <label style={labelStyle}>Start date</label>
+                <input
+                  type="date"
+                  value={formData.start_date || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, start_date: e.target.value })
+                  }
+                  style={inputStyle}
+                  onFocus={focusHandler}
+                  onBlur={blurHandler}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>End date</label>
+                <input
+                  type="date"
+                  value={formData.end_date || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, end_date: e.target.value })
+                  }
+                  style={inputStyle}
+                  onFocus={focusHandler}
+                  onBlur={blurHandler}
+                />
+              </div>
+            </div>
+
+            {/* department + status + toggles */}
+            <div style={{ borderTop: '0.5px solid #f0ece7', paddingTop: 24 }} className="space-y-4">
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                    Client
-                  </label>
+                  <label style={labelStyle}>Department / class</label>
                   <select
-                    value={formData.client_id || ''}
-                    onChange={(e) => {
-                      const client = clients.find(
-                        (c) => c.id === e.target.value
-                      )
-                      setFormData({
-                        ...formData,
-                        client_id: e.target.value,
-                        client_name: client?.name,
-                      })
-                    }}
-                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                    value={formData.department || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, department: e.target.value })
+                    }
+                    style={inputStyle}
+                    onFocus={focusHandler}
+                    onBlur={blurHandler}
                   >
-                    <option value="">Select client</option>
-                    {clients.map((client: any) => (
-                      <option key={client.id} value={client.id}>
-                        {client.name}
-                      </option>
-                    ))}
+                    <option value="">None</option>
+                    <option value="IT/Commerce">IT/Commerce</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Operations">Operations</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="HR">Human Resources</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                    Project name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                    Short name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.short_name || ''}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        short_name: e.target.value,
-                      })
-                    }
-                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                    Number
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.project_number || ''}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        project_number: e.target.value,
-                      })
-                    }
-                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                  />
-                </div>
-              </div>
-
-              {/* dates */}
-              <div className="border-t border-[#f0ece7] pt-6 grid grid-cols-2 gap-6">
-                <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                    Start date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.start_date || ''}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        start_date: e.target.value,
-                      })
-                    }
-                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                    End date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.end_date || ''}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        end_date: e.target.value,
-                      })
-                    }
-                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                  />
-                </div>
-              </div>
-
-              {/* department + status + toggles */}
-              <div className="border-t border-[#f0ece7] pt-6 space-y-4">
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                      Department / class
-                    </label>
-                    <select
-                      value={formData.department || ''}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          department: e.target.value,
-                        })
-                      }
-                      className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                    >
-                      <option value="">None</option>
-                      <option value="IT/Commerce">IT/Commerce</option>
-                      <option value="Healthcare">Healthcare</option>
-                      <option value="Finance">Finance</option>
-                      <option value="Operations">Operations</option>
-                      <option value="Marketing">Marketing</option>
-                      <option value="HR">Human Resources</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                      Project status
-                    </label>
-                    <div className="mt-1 flex gap-3 text-sm">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFormData({ ...formData, is_active: true })
-                        }
-                        className={`rounded-full px-4 py-1.5 border text-xs font-semibold ${
-                          isActive
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-white text-[#777] border-[#e8e4df]'
-                        }`}
-                      >
-                        Active
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFormData({ ...formData, is_active: false })
-                        }
-                        className={`rounded-full px-4 py-1.5 border text-xs font-semibold ${
-                          !isActive
-                            ? 'bg-rose-50 text-rose-700 border-rose-200'
-                            : 'bg-white text-[#777] border-[#e8e4df]'
-                        }`}
-                      >
-                        Inactive
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="flex items-center justify-between rounded-xl border border-[#e8e4df] bg-[#FAFAF8] px-4 py-3">
-                    <div>
-                      <p className="text-xs font-medium text-[#777]">
-                        Track time on this project
-                      </p>
-                      <p className="text-xs text-[#999]">
-                        Controls whether hours can be coded here.
-                      </p>
-                    </div>
+                  <label style={labelStyle}>Project status</label>
+                  <div className="flex gap-3" style={{ marginTop: 4 }}>
                     <button
+                      type="button"
                       onClick={() =>
-                        setFormData({
-                          ...formData,
-                          track_time: !trackTime,
-                        })
+                        setFormData({ ...formData, is_active: true })
                       }
-                      className={`inline-flex items-center rounded px-4 py-1.5 text-xs font-semibold ${
-                        trackTime
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-[#f5f2ee] text-[#555]'
-                      }`}
+                      style={{
+                        padding: '6px 16px',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        borderRadius: 7,
+                        border: `0.5px solid ${isActive ? '#d1eee0' : '#e8e4df'}`,
+                        background: isActive ? '#f0faf5' : '#fff',
+                        color: isActive ? '#2d9b6e' : '#777',
+                        cursor: 'pointer',
+                      }}
                     >
-                      {trackTime ? 'YES' : 'NO'}
+                      Active
                     </button>
-                  </div>
-                  <div className="flex items-center justify-between rounded-xl border border-[#e8e4df] bg-[#FAFAF8] px-4 py-3">
-                    <div>
-                      <p className="text-xs font-medium text-[#777]">
-                        Track expenses on this project
-                      </p>
-                      <p className="text-xs text-[#999]">
-                        Controls whether expenses can be submitted.
-                      </p>
-                    </div>
                     <button
+                      type="button"
                       onClick={() =>
-                        setFormData({
-                          ...formData,
-                          track_expenses: !trackExpenses,
-                        })
+                        setFormData({ ...formData, is_active: false })
                       }
-                      className={`inline-flex items-center rounded px-4 py-1.5 text-xs font-semibold ${
-                        trackExpenses
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-[#f5f2ee] text-[#555]'
-                      }`}
+                      style={{
+                        padding: '6px 16px',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        borderRadius: 7,
+                        border: `0.5px solid ${!isActive ? '#e8b4b4' : '#e8e4df'}`,
+                        background: !isActive ? '#fef8f8' : '#fff',
+                        color: !isActive ? '#b91c1c' : '#777',
+                        cursor: 'pointer',
+                      }}
                     >
-                      {trackExpenses ? 'YES' : 'NO'}
+                      Inactive
                     </button>
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
-        )}
 
-        {/* Budget */}
-        {activeTab === 'budget' && (
-          <section className="rounded-2xl border border-[#e8e4df] bg-white p-6">
-            <h2 className="text-sm font-semibold text-[#1a1a1a] mb-6">
-              Budget
-            </h2>
-            <p className="text-xs text-[#999] mb-4">
-              Budget features are scaffolded for future use.
-            </p>
-            <button className="inline-flex items-center rounded border border-[#e8e4df] bg-[#FAFAF8] px-4 py-2 text-xs font-semibold text-[#555] hover:bg-[#FAFAF8]">
-              Add budget
-            </button>
-          </section>
-        )}
-
-        {/* Invoicing */}
-        {activeTab === 'invoicing' && (
-          <section className="rounded-2xl border border-[#e8e4df] bg-white p-6">
-            <h2 className="text-sm font-semibold text-[#1a1a1a] mb-6">
-              Project invoicing
-            </h2>
-
-            <div className="space-y-6 text-sm">
-              <div className="space-y-3">
-                <label className="flex items-center gap-2 text-sm text-[#555]">
-                  <input
-                    type="radio"
-                    checked={!isBillable}
-                    onChange={() =>
-                      setFormData({ ...formData, is_billable: false })
-                    }
-                  />
-                  This project is not billable
-                </label>
-                <label className="flex items-center gap-2 text-sm text-[#555]">
-                  <input
-                    type="radio"
-                    checked={isBillable}
-                    onChange={() =>
-                      setFormData({ ...formData, is_billable: true })
-                    }
-                  />
-                  This project is billable and we invoice
-                </label>
-              </div>
-
-              {isBillable && (
-                <>
-                  <div className="border-t border-[#f0ece7] pt-6">
-                    <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                      Invoice contact
-                    </label>
-                    <div className="mt-2 grid grid-cols-2 gap-6">
-                      <div>
-                        <p className="text-xs text-[#999] mb-1">
-                          Accounts payable contact
-                        </p>
-                        <input
-                          type="text"
-                          value={formData.ap_contact || ''}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              ap_contact: e.target.value,
-                            })
-                          }
-                          className="w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                        />
-                      </div>
-                    </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="flex items-center justify-between" style={{ border: '0.5px solid #e8e4df', borderRadius: 10, padding: '12px 16px', background: '#FDFCFB' }}>
+                  <div>
+                    <p style={{ fontSize: 12, fontWeight: 500, color: '#777', margin: 0 }}>Track time on this project</p>
+                    <p style={{ fontSize: 10.5, color: '#c0bab2', marginTop: 2 }}>Controls whether hours can be coded here.</p>
                   </div>
-
-                  <div className="border-t border-[#f0ece7] pt-6 grid grid-cols-2 gap-6">
-                    <div>
-                      <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                        Company name
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.company_name || ''}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            company_name: e.target.value,
-                          })
-                        }
-                        className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                        Shipping company name
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.shipping_company || ''}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            shipping_company: e.target.value,
-                          })
-                        }
-                        className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                        Invoice address
-                      </label>
-                      <textarea
-                        value={formData.invoice_address || ''}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            invoice_address: e.target.value,
-                          })
-                        }
-                        rows={4}
-                        className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                        Shipping address
-                      </label>
-                      <textarea
-                        value={formData.shipping_address || ''}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            shipping_address: e.target.value,
-                          })
-                        }
-                        rows={4}
-                        className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* People */}
-        {activeTab === 'people' && (
-          <section className="rounded-2xl border border-[#e8e4df] bg-white p-6">
-            <h2 className="text-sm font-semibold text-[#1a1a1a] mb-6">
-              People
-            </h2>
-
-            <div className="mb-6 rounded-xl border border-[#e8e4df] bg-[#FAFAF8] p-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-[#777] mb-3">
-                Add person to project
-              </h3>
-              <div className="grid grid-cols-4 gap-4 items-end text-sm">
-                <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                    Employee
-                  </label>
-                  <select
-                    value={selectedEmployeeId}
-                    onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                  <button
+                    onClick={() =>
+                      setFormData({ ...formData, track_time: !trackTime })
+                    }
+                    style={{
+                      padding: '6px 16px',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      borderRadius: 7,
+                      border: 'none',
+                      background: trackTime ? '#e31c79' : '#f5f2ee',
+                      color: trackTime ? '#fff' : '#555',
+                      cursor: 'pointer',
+                    }}
                   >
-                    <option value="">Select employee</option>
-                    {employees.map((emp) => (
+                    {trackTime ? 'YES' : 'NO'}
+                  </button>
+                </div>
+                <div className="flex items-center justify-between" style={{ border: '0.5px solid #e8e4df', borderRadius: 10, padding: '12px 16px', background: '#FDFCFB' }}>
+                  <div>
+                    <p style={{ fontSize: 12, fontWeight: 500, color: '#777', margin: 0 }}>Track expenses on this project</p>
+                    <p style={{ fontSize: 10.5, color: '#c0bab2', marginTop: 2 }}>Controls whether expenses can be submitted.</p>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setFormData({ ...formData, track_expenses: !trackExpenses })
+                    }
+                    style={{
+                      padding: '6px 16px',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      borderRadius: 7,
+                      border: 'none',
+                      background: trackExpenses ? '#e31c79' : '#f5f2ee',
+                      color: trackExpenses ? '#fff' : '#555',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {trackExpenses ? 'YES' : 'NO'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Budget */}
+      {activeTab === 'budget' && (
+        <div className="anim-slide-up stagger-2" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 24 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', marginBottom: 20 }}>Budget</div>
+          <p style={{ fontSize: 12, color: '#999', marginBottom: 16 }}>
+            Budget features are scaffolded for future use.
+          </p>
+          <button
+            style={{
+              background: '#fff',
+              border: '0.5px solid #e0dcd7',
+              borderRadius: 7,
+              padding: '8px 18px',
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#777',
+              cursor: 'pointer',
+            }}
+          >
+            Add budget
+          </button>
+        </div>
+      )}
+
+      {/* Invoicing */}
+      {activeTab === 'invoicing' && (
+        <div className="anim-slide-up stagger-2" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 24 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', marginBottom: 20 }}>Project invoicing</div>
+
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <label className="flex items-center gap-2" style={{ fontSize: 12, color: '#555' }}>
+                <input
+                  type="radio"
+                  checked={!isBillable}
+                  onChange={() =>
+                    setFormData({ ...formData, is_billable: false })
+                  }
+                />
+                This project is not billable
+              </label>
+              <label className="flex items-center gap-2" style={{ fontSize: 12, color: '#555' }}>
+                <input
+                  type="radio"
+                  checked={isBillable}
+                  onChange={() =>
+                    setFormData({ ...formData, is_billable: true })
+                  }
+                />
+                This project is billable and we invoice
+              </label>
+            </div>
+
+            {isBillable && (
+              <>
+                <div style={{ borderTop: '0.5px solid #f0ece7', paddingTop: 24 }}>
+                  <label style={labelStyle}>Invoice contact</label>
+                  <div className="grid grid-cols-2 gap-6" style={{ marginTop: 8 }}>
+                    <div>
+                      <p style={{ fontSize: 10.5, color: '#c0bab2', marginBottom: 4 }}>Accounts payable contact</p>
+                      <input
+                        type="text"
+                        value={formData.ap_contact || ''}
+                        onChange={(e) =>
+                          setFormData({ ...formData, ap_contact: e.target.value })
+                        }
+                        style={inputStyle}
+                        onFocus={focusHandler}
+                        onBlur={blurHandler}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ borderTop: '0.5px solid #f0ece7', paddingTop: 24 }} className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label style={labelStyle}>Company name</label>
+                    <input
+                      type="text"
+                      value={formData.company_name || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, company_name: e.target.value })
+                      }
+                      style={inputStyle}
+                      onFocus={focusHandler}
+                      onBlur={blurHandler}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Shipping company name</label>
+                    <input
+                      type="text"
+                      value={formData.shipping_company || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, shipping_company: e.target.value })
+                      }
+                      style={inputStyle}
+                      onFocus={focusHandler}
+                      onBlur={blurHandler}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Invoice address</label>
+                    <textarea
+                      value={formData.invoice_address || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, invoice_address: e.target.value })
+                      }
+                      rows={4}
+                      style={{ ...inputStyle, resize: 'vertical' }}
+                      onFocus={focusHandler as any}
+                      onBlur={blurHandler as any}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Shipping address</label>
+                    <textarea
+                      value={formData.shipping_address || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, shipping_address: e.target.value })
+                      }
+                      rows={4}
+                      style={{ ...inputStyle, resize: 'vertical' }}
+                      onFocus={focusHandler as any}
+                      onBlur={blurHandler as any}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* People */}
+      {activeTab === 'people' && (
+        <div className="anim-slide-up stagger-2" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 24 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', marginBottom: 20 }}>People</div>
+
+          <div style={{ border: '0.5px solid #e8e4df', borderRadius: 10, padding: 16, background: '#FDFCFB', marginBottom: 20 }}>
+            <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', marginBottom: 12 }}>
+              Add person to project
+            </div>
+            <div className="grid grid-cols-4 gap-4 items-end">
+              <div>
+                <label style={labelStyle}>Employee</label>
+                <select
+                  value={selectedEmployeeId}
+                  onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                  style={inputStyle}
+                  onFocus={focusHandler}
+                  onBlur={blurHandler}
+                >
+                  <option value="">Select employee</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.last_name}, {emp.first_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Bill rate</label>
+                <input
+                  type="number"
+                  value={newBillRate}
+                  onChange={(e) => setNewBillRate(e.target.value)}
+                  placeholder="0.00"
+                  style={inputStyle}
+                  onFocus={focusHandler}
+                  onBlur={blurHandler}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Pay rate</label>
+                <input
+                  type="number"
+                  value={newPayRate}
+                  onChange={(e) => setNewPayRate(e.target.value)}
+                  placeholder="0.00"
+                  style={inputStyle}
+                  onFocus={focusHandler}
+                  onBlur={blurHandler}
+                />
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={handleAddEmployee}
+                  disabled={saving}
+                  style={{
+                    width: '100%',
+                    padding: '8px 18px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    borderRadius: 7,
+                    border: 'none',
+                    background: '#e31c79',
+                    color: '#fff',
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    opacity: saving ? 0.6 : 1,
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={e => { if (!saving) { e.currentTarget.style.background = '#cc1069'; e.currentTarget.style.transform = 'translateY(-1px)' } }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#e31c79'; e.currentTarget.style.transform = 'translateY(0)' }}
+                >
+                  Add person
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  {['Name', 'Active dates', 'Bill rate', 'Pay rate', 'Invoice item', ''].map((h, i) => (
+                    <th key={i} style={thStyle}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {projectEmployees.map((pe: any) => (
+                  <tr
+                    key={pe.id}
+                    style={{ borderBottom: '0.5px solid #f5f2ee', transition: 'background 0.15s ease' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#FDFCFB' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <td style={{ padding: '12px 20px', fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
+                      {pe.employee
+                        ? `${pe.employee.last_name}, ${pe.employee.first_name}`
+                        : 'Unknown'}
+                    </td>
+                    <td style={{ padding: '12px 20px', fontSize: 11, color: '#c0bab2' }}>
+                      Current
+                    </td>
+                    <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }}>
+                      ${pe.bill_rate || 0}
+                    </td>
+                    <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }}>
+                      ${pe.pay_rate || 0}
+                    </td>
+                    <td style={{ padding: '12px 20px', fontSize: 11, color: '#c0bab2' }}>
+                      Default
+                    </td>
+                    <td style={{ padding: '12px 20px', textAlign: 'right' }}>
+                      <button
+                        onClick={() => handleRemoveEmployee(pe.id)}
+                        style={{
+                          padding: '4px 6px',
+                          borderRadius: 5,
+                          border: '0.5px solid #e0dcd7',
+                          background: '#fff',
+                          color: '#b91c1c',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#b91c1c' }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0dcd7' }}
+                      >
+                        <Trash2 style={{ width: 14, height: 14 }} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {projectEmployees.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      style={{ padding: '32px 20px', textAlign: 'center', fontSize: 11, color: '#ccc' }}
+                    >
+                      No people assigned yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Approvers */}
+      {activeTab === 'approvers' && (
+        <div className="anim-slide-up stagger-2" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 24 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', marginBottom: 20 }}>Approvers</div>
+
+          <div style={{ border: '0.5px solid #e8e4df', borderRadius: 10, padding: 16, background: '#FDFCFB', marginBottom: 20 }}>
+            <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', marginBottom: 12 }}>
+              Add time approver
+            </div>
+            <div className="grid grid-cols-3 gap-4 items-end">
+              <div>
+                <label style={labelStyle}>Manager</label>
+                <select
+                  value={selectedApproverId}
+                  onChange={(e) => setSelectedApproverId(e.target.value)}
+                  style={inputStyle}
+                  onFocus={focusHandler}
+                  onBlur={blurHandler}
+                >
+                  <option value="">Select manager</option>
+                  {employees
+                    .filter((e) => e.role === 'manager')
+                    .map((emp) => (
                       <option key={emp.id} value={emp.id}>
                         {emp.last_name}, {emp.first_name}
                       </option>
                     ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                    Bill rate
-                  </label>
-                  <input
-                    type="number"
-                    value={newBillRate}
-                    onChange={(e) => setNewBillRate(e.target.value)}
-                    placeholder="0.00"
-                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                    Pay rate
-                  </label>
-                  <input
-                    type="number"
-                    value={newPayRate}
-                    onChange={(e) => setNewPayRate(e.target.value)}
-                    placeholder="0.00"
-                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                  />
-                </div>
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleAddEmployee}
-                    disabled={saving}
-                    className="inline-flex w-full items-center justify-center rounded bg-[#1a1a1a] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
-                  >
-                    Add person
-                  </button>
-                </div>
+                </select>
               </div>
-            </div>
-
-            <div className="rounded-xl border border-[#e8e4df] bg-white overflow-hidden">
-              <table className="min-w-full text-sm">
-                <thead className="bg-[#FAFAF8]">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
-                      Name
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
-                      Active dates
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
-                      Bill rate
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
-                      Pay rate
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
-                      Invoice item
-                    </th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {projectEmployees.map((pe: any) => (
-                    <tr key={pe.id}>
-                      <td className="px-4 py-3">
-                        {pe.employee
-                          ? `${pe.employee.last_name}, ${pe.employee.first_name}`
-                          : 'Unknown'}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-[#999]">
-                        Current
-                      </td>
-                      <td className="px-4 py-3">
-                        ${pe.bill_rate || 0}
-                      </td>
-                      <td className="px-4 py-3">
-                        ${pe.pay_rate || 0}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-[#999]">
-                        Default
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => handleRemoveEmployee(pe.id)}
-                          className="inline-flex items-center justify-center rounded bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {projectEmployees.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="px-4 py-6 text-center text-xs text-[#999]"
-                      >
-                        No people assigned yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
-
-        {/* Approvers */}
-        {activeTab === 'approvers' && (
-          <section className="rounded-2xl border border-[#e8e4df] bg-white p-6">
-            <h2 className="text-sm font-semibold text-[#1a1a1a] mb-6">
-              Approvers
-            </h2>
-
-            <div className="mb-6 rounded-xl border border-[#e8e4df] bg-[#FAFAF8] p-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-[#777] mb-3">
-                Add time approver
-              </h3>
-              <div className="grid grid-cols-3 gap-4 items-end text-sm">
-                <div>
-                  <label className="text-xs font-medium uppercase tracking-wide text-[#999]">
-                    Manager
-                  </label>
-                  <select
-                    value={selectedApproverId}
-                    onChange={(e) => setSelectedApproverId(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-[#e8e4df] bg-white px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                  >
-                    <option value="">Select manager</option>
-                    {employees
-                      .filter((e) => e.role === 'manager')
-                      .map((emp) => (
-                        <option key={emp.id} value={emp.id}>
-                          {emp.last_name}, {emp.first_name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-                <div />
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleAddApprover}
-                    disabled={saving}
-                    className="inline-flex w-full items-center justify-center rounded bg-[#1a1a1a] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
-                  >
-                    Add approver
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-[#e8e4df] bg-white overflow-hidden">
-              <table className="min-w-full text-sm">
-                <thead className="bg-[#FAFAF8]">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
-                      Name
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
-                      Email
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {approvers.map((ap) => (
-                    <tr key={ap.id}>
-                      <td className="px-4 py-3">
-                        {ap.employee
-                          ? `${ap.employee.last_name}, ${ap.employee.first_name}`
-                          : 'Unknown'}
-                      </td>
-                      <td className="px-4 py-3">
-                        {ap.employee?.email || '—'}
-                      </td>
-                    </tr>
-                  ))}
-                  {approvers.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={2}
-                        className="px-4 py-6 text-center text-xs text-[#999]"
-                      >
-                        No time approvers assigned yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
-
-        {/* Time Settings */}
-        {activeTab === 'time-settings' && (
-          <section className="rounded-2xl border border-[#e8e4df] bg-white p-6">
-            <h2 className="text-sm font-semibold text-[#1a1a1a] mb-6">
-              Time settings
-            </h2>
-
-            <div className="space-y-6 text-sm">
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-[#777] mb-3">
-                  Time types
-                </h3>
-                <div className="overflow-hidden rounded-xl border border-[#e8e4df] bg-white">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-[#FAFAF8]">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
-                          Name
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
-                          Multipliers
-                        </th>
-                        <th className="px-4 py-3" />
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {timeTypes.map((type, index) => (
-                        <tr key={index}>
-                          <td className="px-4 py-3">
-                            <input
-                              type="text"
-                              value={type.name}
-                              readOnly={index === 0}
-                              className="w-full rounded-lg border border-[#e8e4df] bg-white px-2 py-1 text-sm text-[#1a1a1a]"
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2 text-xs text-[#555]">
-                              <span>Bill at</span>
-                              <input
-                                type="number"
-                                value={type.bill_multiplier}
-                                readOnly={index === 0}
-                                className="w-16 rounded-lg border border-[#e8e4df] bg-white px-2 py-1 text-sm"
-                              />
-                              <span>X</span>
-                              <span className="ml-4">Pay at</span>
-                              <input
-                                type="number"
-                                value={type.pay_multiplier}
-                                readOnly={index === 0}
-                                className="w-16 rounded-lg border border-[#e8e4df] bg-white px-2 py-1 text-sm"
-                              />
-                              <span>X</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            {index > 0 && (
-                              <button className="inline-flex items-center justify-center rounded bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100">
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
+              <div />
+              <div className="flex justify-end">
                 <button
-                  onClick={() =>
-                    setTimeTypes([
-                      ...timeTypes,
-                      { name: '', bill_multiplier: 1, pay_multiplier: 1 },
-                    ])
-                  }
-                  className="mt-3 inline-flex items-center rounded border border-[#e8e4df] bg-[#FAFAF8] px-4 py-2 text-xs font-semibold text-[#555] hover:bg-[#FAFAF8]"
+                  onClick={handleAddApprover}
+                  disabled={saving}
+                  style={{
+                    width: '100%',
+                    padding: '8px 18px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    borderRadius: 7,
+                    border: 'none',
+                    background: '#e31c79',
+                    color: '#fff',
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    opacity: saving ? 0.6 : 1,
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={e => { if (!saving) { e.currentTarget.style.background = '#cc1069'; e.currentTarget.style.transform = 'translateY(-1px)' } }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#e31c79'; e.currentTarget.style.transform = 'translateY(0)' }}
                 >
-                  Add standard time type
+                  Add approver
                 </button>
-
-                <div className="mt-4">
-                  <label className="text-xs font-medium text-[#777]">
-                    Split time using this rule:
-                  </label>
-                  <select
-                    value={splitTimeRule}
-                    onChange={(e) => setSplitTimeRule(e.target.value)}
-                    className="ml-2 rounded-full border border-[#e8e4df] bg-white px-3 py-1.5 text-xs text-[#1a1a1a] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-                  >
-                    <option value="company">Use company settings</option>
-                    <option value="custom">Custom rule</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="border-t border-[#f0ece7] pt-6 space-y-4">
-                <div>
-                  <label className="inline-flex items-center gap-2 text-xs text-[#555]">
-                    <input
-                      type="checkbox"
-                      checked={customTimeTypes}
-                      onChange={(e) => setCustomTimeTypes(e.target.checked)}
-                    />
-                    Custom time types are used on this project
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={maxHoursPerDay}
-                      onChange={(e) => setMaxHoursPerDay(e.target.value)}
-                      placeholder="8"
-                      className="w-20 rounded-lg border border-[#e8e4df] bg-white px-2 py-1 text-sm"
-                    />
-                    <span className="text-xs text-[#555]">
-                      hours per person, per day
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={maxHoursPerWeek}
-                      onChange={(e) => setMaxHoursPerWeek(e.target.value)}
-                      placeholder="40"
-                      className="w-20 rounded-lg border border-[#e8e4df] bg-white px-2 py-1 text-sm"
-                    />
-                    <span className="text-xs text-[#555]">
-                      hours per person, per week
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-[#777]">
-                    Alert when the total number of hours for this project
-                    reaches
-                  </label>
-                  <input
-                    type="number"
-                    value={projectHoursAlert}
-                    onChange={(e) => setProjectHoursAlert(e.target.value)}
-                    className="ml-2 w-24 rounded-lg border border-[#e8e4df] bg-white px-2 py-1 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-[#777]">
-                    Track time for this project in
-                  </label>
-                  <input
-                    type="number"
-                    value={timeIncrements}
-                    onChange={(e) => setTimeIncrements(e.target.value)}
-                    placeholder="15"
-                    className="ml-2 w-20 rounded-lg border border-[#e8e4df] bg-white px-2 py-1 text-sm"
-                  />
-                  <span className="ml-2 text-xs text-[#555]">
-                    minute increments
-                  </span>
-                </div>
               </div>
             </div>
-          </section>
-        )}
+          </div>
 
-        {/* Footer actions */}
-        <section className="flex items-center justify-between border-t border-[#e8e4df] pt-4">
+          <div style={{ border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  {['Name', 'Email'].map(h => (
+                    <th key={h} style={thStyle}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {approvers.map((ap) => (
+                  <tr
+                    key={ap.id}
+                    style={{ borderBottom: '0.5px solid #f5f2ee', transition: 'background 0.15s ease' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#FDFCFB' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <td style={{ padding: '12px 20px', fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
+                      {ap.employee
+                        ? `${ap.employee.last_name}, ${ap.employee.first_name}`
+                        : 'Unknown'}
+                    </td>
+                    <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#555' }}>
+                      {ap.employee?.email || '\u2014'}
+                    </td>
+                  </tr>
+                ))}
+                {approvers.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={2}
+                      style={{ padding: '32px 20px', textAlign: 'center', fontSize: 11, color: '#ccc' }}
+                    >
+                      No time approvers assigned yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Time Settings */}
+      {activeTab === 'time-settings' && (
+        <div className="anim-slide-up stagger-2" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 24 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', marginBottom: 20 }}>Time settings</div>
+
+          <div className="space-y-6">
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', marginBottom: 12 }}>
+                Time types
+              </div>
+              <div style={{ border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      {['Name', 'Multipliers', ''].map((h, i) => (
+                        <th key={i} style={thStyle}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {timeTypes.map((type, index) => (
+                      <tr key={index} style={{ borderBottom: '0.5px solid #f5f2ee' }}>
+                        <td style={{ padding: '12px 20px' }}>
+                          <input
+                            type="text"
+                            value={type.name}
+                            readOnly={index === 0}
+                            style={{ ...inputStyle, marginTop: 0 }}
+                            onFocus={focusHandler}
+                            onBlur={blurHandler}
+                          />
+                        </td>
+                        <td style={{ padding: '12px 20px' }}>
+                          <div className="flex items-center gap-2" style={{ fontSize: 11, color: '#555' }}>
+                            <span>Bill at</span>
+                            <input
+                              type="number"
+                              value={type.bill_multiplier}
+                              readOnly={index === 0}
+                              style={{ width: 64, padding: '4px 8px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, outline: 'none' }}
+                              onFocus={focusHandler}
+                              onBlur={blurHandler}
+                            />
+                            <span>X</span>
+                            <span style={{ marginLeft: 16 }}>Pay at</span>
+                            <input
+                              type="number"
+                              value={type.pay_multiplier}
+                              readOnly={index === 0}
+                              style={{ width: 64, padding: '4px 8px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, outline: 'none' }}
+                              onFocus={focusHandler}
+                              onBlur={blurHandler}
+                            />
+                            <span>X</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 20px', textAlign: 'right' }}>
+                          {index > 0 && (
+                            <button style={{
+                              padding: '4px 6px',
+                              borderRadius: 5,
+                              border: '0.5px solid #e0dcd7',
+                              background: '#fff',
+                              color: '#b91c1c',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                            }}>
+                              <Trash2 style={{ width: 14, height: 14 }} />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <button
+                onClick={() =>
+                  setTimeTypes([
+                    ...timeTypes,
+                    { name: '', bill_multiplier: 1, pay_multiplier: 1 },
+                  ])
+                }
+                style={{
+                  marginTop: 12,
+                  background: '#fff',
+                  border: '0.5px solid #e0dcd7',
+                  borderRadius: 7,
+                  padding: '8px 18px',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: '#777',
+                  cursor: 'pointer',
+                }}
+              >
+                Add standard time type
+              </button>
+
+              <div style={{ marginTop: 16 }}>
+                <label style={{ fontSize: 12, fontWeight: 500, color: '#777' }}>
+                  Split time using this rule:
+                </label>
+                <select
+                  value={splitTimeRule}
+                  onChange={(e) => setSplitTimeRule(e.target.value)}
+                  style={{ marginLeft: 8, padding: '6px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, color: '#1a1a1a', outline: 'none', background: '#fff' }}
+                  onFocus={focusHandler}
+                  onBlur={blurHandler}
+                >
+                  <option value="company">Use company settings</option>
+                  <option value="custom">Custom rule</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ borderTop: '0.5px solid #f0ece7', paddingTop: 24 }} className="space-y-4">
+              <div>
+                <label className="flex items-center gap-2" style={{ fontSize: 12, color: '#555' }}>
+                  <input
+                    type="checkbox"
+                    checked={customTimeTypes}
+                    onChange={(e) => setCustomTimeTypes(e.target.checked)}
+                  />
+                  Custom time types are used on this project
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={maxHoursPerDay}
+                    onChange={(e) => setMaxHoursPerDay(e.target.value)}
+                    placeholder="8"
+                    style={{ width: 80, padding: '6px 8px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, outline: 'none' }}
+                    onFocus={focusHandler}
+                    onBlur={blurHandler}
+                  />
+                  <span style={{ fontSize: 11, color: '#555' }}>hours per person, per day</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={maxHoursPerWeek}
+                    onChange={(e) => setMaxHoursPerWeek(e.target.value)}
+                    placeholder="40"
+                    style={{ width: 80, padding: '6px 8px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, outline: 'none' }}
+                    onFocus={focusHandler}
+                    onBlur={blurHandler}
+                  />
+                  <span style={{ fontSize: 11, color: '#555' }}>hours per person, per week</span>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: '#777' }}>
+                  Alert when the total number of hours for this project reaches
+                </label>
+                <input
+                  type="number"
+                  value={projectHoursAlert}
+                  onChange={(e) => setProjectHoursAlert(e.target.value)}
+                  style={{ marginLeft: 8, width: 96, padding: '6px 8px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, outline: 'none' }}
+                  onFocus={focusHandler}
+                  onBlur={blurHandler}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: '#777' }}>
+                  Track time for this project in
+                </label>
+                <input
+                  type="number"
+                  value={timeIncrements}
+                  onChange={(e) => setTimeIncrements(e.target.value)}
+                  placeholder="15"
+                  style={{ marginLeft: 8, width: 80, padding: '6px 8px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, outline: 'none' }}
+                  onFocus={focusHandler}
+                  onBlur={blurHandler}
+                />
+                <span style={{ marginLeft: 8, fontSize: 11, color: '#555' }}>minute increments</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Footer actions */}
+      <div className="flex items-center justify-between" style={{ borderTop: '0.5px solid #e8e4df', paddingTop: 20, marginTop: 24 }}>
+        <button
+          onClick={() => router.push('/admin/projects')}
+          style={{ fontSize: 12, color: '#999', background: 'none', border: 'none', cursor: 'pointer' }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#e31c79' }}
+          onMouseLeave={e => { e.currentTarget.style.color = '#999' }}
+        >
+          &larr; Back to list
+        </button>
+        <div className="flex items-center gap-3">
           <button
             onClick={() => router.push('/admin/projects')}
-            className="text-xs text-[#777] hover:text-[#1a1a1a]"
+            style={{
+              background: '#fff',
+              border: '0.5px solid #e0dcd7',
+              borderRadius: 7,
+              padding: '8px 18px',
+              fontSize: 12,
+              color: '#777',
+              cursor: 'pointer',
+            }}
           >
-            ← Back to list
+            Cancel
           </button>
-          <div className="flex items-center gap-3">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              background: '#fff',
+              border: '0.5px solid #e31c79',
+              borderRadius: 7,
+              padding: '8px 18px',
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#e31c79',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              opacity: saving ? 0.6 : 1,
+            }}
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+          {nextTab && nextTabLabel && (
             <button
-              onClick={() => router.push('/admin/projects')}
-              className="rounded-full bg-[#f5f2ee] px-4 py-2 text-xs font-semibold text-[#555] hover:bg-[#FAFAF8]"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
+              onClick={handleSaveAndNext}
               disabled={saving}
-              className="rounded-full border border-[#e31c79] text-[#e31c79] px-4 py-2 text-xs font-semibold hover:bg-pink-50 disabled:opacity-60"
+              style={{
+                background: '#fff',
+                border: '0.5px solid #e0dcd7',
+                borderRadius: 7,
+                padding: '8px 18px',
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#1a1a1a',
+                cursor: saving ? 'not-allowed' : 'pointer',
+                opacity: saving ? 0.6 : 1,
+              }}
             >
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? 'Saving...' : `Save & ${nextTabLabel}`}
             </button>
-            {nextTab && nextTabLabel && (
-              <button
-                onClick={handleSaveAndNext}
-                disabled={saving}
-                className="rounded-full bg-[#1a1a1a] px-4 py-2 text-xs font-semibold text-white hover:bg-black disabled:opacity-60"
-              >
-                {saving ? 'Saving…' : `Save & ${nextTabLabel}`}
-              </button>
-            )}
-            <button
-              onClick={handleSaveAndExit}
-              disabled={saving}
-              className="rounded-full bg-[#e31c79] px-4 py-2 text-xs font-semibold text-white hover:bg-[#c91865] disabled:opacity-60"
-            >
-              {saving ? 'Saving…' : 'Save & exit'}
-            </button>
-          </div>
-        </section>
-      </main>
-    </>
+          )}
+          <button
+            onClick={handleSaveAndExit}
+            disabled={saving}
+            style={{
+              background: '#e31c79',
+              border: 'none',
+              borderRadius: 7,
+              padding: '8px 18px',
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#fff',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              opacity: saving ? 0.6 : 1,
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={e => { if (!saving) { e.currentTarget.style.background = '#cc1069'; e.currentTarget.style.transform = 'translateY(-1px)' } }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#e31c79'; e.currentTarget.style.transform = 'translateY(0)' }}
+          >
+            {saving ? 'Saving...' : 'Save & exit'}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }

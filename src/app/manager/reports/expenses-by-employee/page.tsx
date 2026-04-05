@@ -1,52 +1,36 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
-import { 
-  Clock, 
-  LogOut,
-  Calendar,
-  ChevronRight,
-  FileText,
-  Download
-} from 'lucide-react'
+import { Download } from 'lucide-react'
 
 interface ExpenseData {
-  id: string
-  employee_id: string
-  expense_date: string
-  amount: number
-  category: string
-  description: string
-  receipt_url?: string
-  status: string
-  payment_method?: string
-  is_reimbursable: boolean
-  is_billable: boolean
-  submitted_at?: string
-  approved_at?: string
-  approved_by?: string
-  employees?: {
-    first_name: string
-    last_name: string
-    department?: string
-    employee_type?: string
-    email: string
+  id: string; employee_id: string; expense_date: string; amount: number; category: string; description: string
+  receipt_url?: string; status: string; payment_method?: string; is_reimbursable: boolean; is_billable: boolean
+  submitted_at?: string; approved_at?: string; approved_by?: string
+  employees?: { first_name: string; last_name: string; department?: string; employee_type?: string; email: string }
+  projects?: { name: string; code: string }
+}
+
+const StatusBadge = ({ status }: { status: string }) => {
+  const m: Record<string, { bg: string; color: string; border: string }> = {
+    approved: { bg: '#ecfdf5', color: '#2d9b6e', border: '#2d9b6e' },
+    pending: { bg: '#FFF8E1', color: '#c4983a', border: '#c4983a' },
+    submitted: { bg: '#FFF8E1', color: '#c4983a', border: '#c4983a' },
+    rejected: { bg: '#fef2f2', color: '#b91c1c', border: '#b91c1c' },
   }
-  projects?: {
-    name: string
-    code: string
-  }
+  const c = m[status] || { bg: '#FAFAF8', color: '#777', border: '#e8e4df' }
+  return <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: 9, fontWeight: 500, borderRadius: 3, background: c.bg, color: c.color, border: `0.5px solid ${c.border}` }}>{status}</span>
 }
 
 export default function ExpensesByEmployeeReport() {
   const router = useRouter()
   const { user } = useAuth()
   const supabase = createClient()
-  
+
   const [startDate, setStartDate] = useState('2025-09-01')
   const [endDate, setEndDate] = useState('2025-09-30')
   const [selectedUser, setSelectedUser] = useState('-All-')
@@ -62,608 +46,156 @@ export default function ExpensesByEmployeeReport() {
   const [reportData, setReportData] = useState<ExpenseData[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  const employeeTypes = [
-    '-All-',
-    'Internal',
-    'Hourly',
-    '1099',
-    'Corp2Corp',
-    'Salary',
-    'External'
-  ]
-
-  const expenseTypes = [
-    '-All-',
-    'Airfare',
-    'Breakfast',
-    'Dinner',
-    'Fuel',
-    'Incidental',
-    'Lodging',
-    'Lunch',
-    'Meals and Incidentals(GSA)',
-    'Mileage',
-    'Miscellaneous',
-    'Parking',
-    'Rental Car - Standard size'
-  ]
-
-  const paymentMethods = [
-    '-All-',
-    'Company Card',
-    'Personal Card',
-    'Cash',
-    'Check',
-    'Direct Bill'
-  ]
+  const employeeTypes = ['-All-','Internal','Hourly','1099','Corp2Corp','Salary','External']
+  const expenseTypes = ['-All-','Airfare','Breakfast','Dinner','Fuel','Incidental','Lodging','Lunch','Meals and Incidentals(GSA)','Mileage','Miscellaneous','Parking','Rental Car - Standard size']
+  const paymentMethods = ['-All-','Company Card','Personal Card','Cash','Check','Direct Bill']
 
   const handleRunReport = async () => {
     setIsLoading(true)
-    
     try {
-      // Build query
-      let query = supabase
-        .from('expenses')
-        .select(`
-          *,
-          employees!inner (
-            first_name,
-            last_name,
-            department,
-            employee_type,
-            email
-          ),
-          projects (
-            name,
-            code
-          )
-        `)
-        .gte('expense_date', startDate)
-        .lte('expense_date', endDate)
-
-      // Add employee type filter
-      if (selectedEmployeeType !== '-All-') {
-        query = query.eq('employees.employee_type', selectedEmployeeType)
-      }
-
-      // Add expense type filter
-      if (selectedExpenseType !== '-All-') {
-        query = query.eq('category', selectedExpenseType)
-      }
-
-      // Add payment method filter
-      if (selectedPaymentMethod !== '-All-') {
-        query = query.eq('payment_method', selectedPaymentMethod)
-      }
-
-      // Add reimbursable filters
-      if (reimbursableOnly) {
-        query = query.eq('is_reimbursable', true)
-      } else if (nonReimbursableOnly) {
-        query = query.eq('is_reimbursable', false)
-      }
-
-      // Add billable filters
-      if (billableOnly) {
-        query = query.eq('is_billable', true)
-      } else if (nonBillableOnly) {
-        query = query.eq('is_billable', false)
-      }
-
+      let query = supabase.from('expenses').select(`*, employees!inner (first_name, last_name, department, employee_type, email), projects (name, code)`).gte('expense_date', startDate).lte('expense_date', endDate)
+      if (selectedEmployeeType !== '-All-') query = query.eq('employees.employee_type', selectedEmployeeType)
+      if (selectedExpenseType !== '-All-') query = query.eq('category', selectedExpenseType)
+      if (selectedPaymentMethod !== '-All-') query = query.eq('payment_method', selectedPaymentMethod)
+      if (reimbursableOnly) query = query.eq('is_reimbursable', true)
+      else if (nonReimbursableOnly) query = query.eq('is_reimbursable', false)
+      if (billableOnly) query = query.eq('is_billable', true)
+      else if (nonBillableOnly) query = query.eq('is_billable', false)
       const { data, error } = await query
-
-      if (error) {
-        console.error('Error fetching report data:', error)
-      } else if (data) {
-        setReportData(data as ExpenseData[])
-      }
-    } catch (error) {
-      console.error('Error generating report:', error)
-    } finally {
-      setIsLoading(false)
-    }
+      if (error) console.error('Error:', error)
+      else if (data) setReportData(data as ExpenseData[])
+    } catch (error) { console.error('Error:', error) } finally { setIsLoading(false) }
   }
 
   const handleExportToExcel = () => {
-    if (reportData.length === 0) {
-      alert('No data to export. Please run the report first.')
-      return
-    }
-
-    // Format data for Excel
+    if (reportData.length === 0) { alert('No data to export.'); return }
     const exportData: any[] = []
-    
     if (summaryOnly) {
-      // Group by employee for summary
-      const employeeGroups: { [key: string]: ExpenseData[] } = {}
-      reportData.forEach(expense => {
-        const key = expense.employee_id
-        if (!employeeGroups[key]) {
-          employeeGroups[key] = []
-        }
-        employeeGroups[key].push(expense)
-      })
-
-      Object.values(employeeGroups).forEach(expenses => {
-        const employee = expenses[0].employees
-        const totalAmount = expenses.reduce((sum, exp) => sum + exp.amount, 0)
-        const reimbursableAmount = expenses.filter(e => e.is_reimbursable).reduce((sum, exp) => sum + exp.amount, 0)
-        const billableAmount = expenses.filter(e => e.is_billable).reduce((sum, exp) => sum + exp.amount, 0)
-        
-        exportData.push({
-          'Employee': employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown',
-          'Department': employee?.department || '',
-          'Employee Type': employee?.employee_type || '',
-          'Total Expenses': totalAmount.toFixed(2),
-          'Reimbursable': reimbursableAmount.toFixed(2),
-          'Billable': billableAmount.toFixed(2),
-          'Expense Count': expenses.length.toString()
-        })
+      const groups: { [key: string]: ExpenseData[] } = {}
+      reportData.forEach(e => { const k = e.employee_id; if (!groups[k]) groups[k] = []; groups[k].push(e) })
+      Object.values(groups).forEach(expenses => {
+        const emp = expenses[0].employees; const total = expenses.reduce((s, e) => s + e.amount, 0)
+        exportData.push({ 'Employee': emp ? `${emp.first_name} ${emp.last_name}` : 'Unknown', 'Department': emp?.department || '', 'Total Expenses': total.toFixed(2), 'Expense Count': expenses.length.toString() })
       })
     } else {
-      // Detailed view
-      reportData.forEach(expense => {
-        exportData.push({
-          'Employee': expense.employees ? `${expense.employees.first_name} ${expense.employees.last_name}` : 'Unknown',
-          'Department': expense.employees?.department || '',
-          'Employee Type': expense.employees?.employee_type || '',
-          'Date': expense.expense_date,
-          'Category': expense.category,
-          'Description': expense.description,
-          'Amount': expense.amount.toFixed(2),
-          'Payment Method': expense.payment_method || '',
-          'Reimbursable': expense.is_reimbursable ? 'Yes' : 'No',
-          'Billable': expense.is_billable ? 'Yes' : 'No',
-          'Status': expense.status
-        })
-      })
+      reportData.forEach(e => { exportData.push({ 'Employee': e.employees ? `${e.employees.first_name} ${e.employees.last_name}` : 'Unknown', 'Date': e.expense_date, 'Category': e.category, 'Description': e.description, 'Amount': e.amount.toFixed(2), 'Status': e.status }) })
     }
-
-    // Create workbook
-    const wb = XLSX.utils.book_new()
-    const ws = XLSX.utils.json_to_sheet(exportData)
-    
-    // Auto-size columns
-    if (exportData.length > 0) {
-      const colWidths = Object.keys(exportData[0]).map(key => {
-        const maxLength = Math.max(
-          key.length,
-          ...exportData.map((row) => {
-            const value = row[key]
-            return value ? String(value).length : 0
-          })
-        )
-        return { wch: Math.min(maxLength + 2, 30) }
-      })
-      ws['!cols'] = colWidths
-    }
-    
-    // Add worksheet to workbook
-    XLSX.utils.book_append_sheet(wb, ws, 'Expenses by Employee')
-    
-    // Generate filename with date range
-    const fileName = `expenses_by_employee_${startDate}_to_${endDate}.xlsx`
-    
-    // Write the file
-    XLSX.writeFile(wb, fileName)
+    const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(exportData)
+    if (exportData.length > 0) { ws['!cols'] = Object.keys(exportData[0]).map(k => ({ wch: Math.min(Math.max(k.length, ...exportData.map(r => r[k] ? String(r[k]).length : 0)) + 2, 30) })) }
+    XLSX.utils.book_append_sheet(wb, ws, 'Expenses by Employee'); XLSX.writeFile(wb, `expenses_by_employee_${startDate}_to_${endDate}.xlsx`)
   }
 
-  // Calculate totals
-  const totals = reportData.reduce((acc, expense) => {
-    acc.totalAmount += expense.amount
-    acc.reimbursable += expense.is_reimbursable ? expense.amount : 0
-    acc.billable += expense.is_billable ? expense.amount : 0
-    acc.count += 1
-    return acc
-  }, { totalAmount: 0, reimbursable: 0, billable: 0, count: 0 })
+  const totals = reportData.reduce((acc, e) => { acc.totalAmount += e.amount; acc.reimbursable += e.is_reimbursable ? e.amount : 0; acc.billable += e.is_billable ? e.amount : 0; acc.count += 1; return acc }, { totalAmount: 0, reimbursable: 0, billable: 0, count: 0 })
+
+  const labelSt: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 600, color: '#c0bab2', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }
+  const inputSt: React.CSSProperties = { padding: '8px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, color: '#555', outline: 'none' }
+  const selectSt: React.CSSProperties = { ...inputSt, width: '100%' }
+  const checkSt: React.CSSProperties = { accentColor: '#e31c79' }
+  const spanSt: React.CSSProperties = { marginLeft: 8, fontSize: 12, color: '#555' }
+  const thSt: React.CSSProperties = { padding: '11px 20px', fontSize: 9, fontWeight: 500, letterSpacing: 1.2, color: '#c0bab2', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7', textAlign: 'left' }
+  const tdSt: React.CSSProperties = { padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }
 
   return (
-    <>
-      {/* Header */}
-      {/* Navigation */}
-      <div className="bg-[#FAFAF8] border-b">
-        <div className="max-w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
-            <button 
-              onClick={() => router.push('/manager')}
-              className="py-3 text-sm font-medium text-[#777] hover:text-[#1a1a1a]"
-            >
-              Review
-            </button>
-            <button className="py-3 text-sm font-medium text-[#1a1a1a] border-b-2 border-[#e31c79]">
-              Reports
-            </button>
-          </div>
-        </div>
+    <div style={{ padding: '36px 40px' }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0, letterSpacing: -0.3 }}>Expenses by Employee</h1>
+        <p style={{ fontSize: 13, fontWeight: 400, color: '#999', marginTop: 4 }}>Generate expense reports grouped by employee</p>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex gap-6">
-          {/* Left Sidebar */}
-          <div className="w-64 bg-white rounded-lg p-4">
-            <h3 className="font-semibold text-[#1a1a1a] mb-4">Time Reports</h3>
-            <div className="space-y-1">
-              <a href="/manager/reports/time-by-project" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Project
-              </a>
-              <a href="/manager/reports/time-by-employee" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Employee
-              </a>
-              <a href="/manager/reports/time-by-class" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Class
-              </a>
-              <a href="/manager/reports/time-by-approver" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Approver
-              </a>
-              <a href="/manager/reports/time-missing" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time Missing
-              </a>
-            </div>
-
-            <h3 className="font-semibold text-[#1a1a1a] mt-6 mb-4">Expense Reports</h3>
-            <div className="space-y-1">
-              <a href="/manager/reports/expenses-by-employee" className="flex items-center justify-between px-3 py-2 text-sm bg-[#FAFAF8] text-[#1a1a1a] rounded">
-                Expenses by Employee
-                <ChevronRight className="h-4 w-4" />
-              </a>
-              <a href="/manager/reports/expenses-by-project" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Expenses by Project
-              </a>
-              <a href="/manager/reports/expenses-by-approver" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Expenses by Approver
-              </a>
-            </div>
+      <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 24 }}>
+        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', margin: '0 0 16px 0' }}>Report Details</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div><label style={labelSt}>Date Start</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={inputSt} /></div>
+            <div><label style={labelSt}>Date Stop</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={inputSt} /></div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div><label style={labelSt}>User</label><select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} style={selectSt}><option>-All-</option></select></div>
+            <div><label style={labelSt}>Employee Type</label><select value={selectedEmployeeType} onChange={e => setSelectedEmployeeType(e.target.value)} style={selectSt}>{employeeTypes.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
+            <div><label style={labelSt}>Expense Type</label><select value={selectedExpenseType} onChange={e => setSelectedExpenseType(e.target.value)} style={selectSt}>{expenseTypes.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
+            <div><label style={labelSt}>Payment Method</label><select value={selectedPaymentMethod} onChange={e => setSelectedPaymentMethod(e.target.value)} style={selectSt}>{paymentMethods.map(m => <option key={m} value={m}>{m}</option>)}</select></div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[
+              { label: 'Reimbursable Only', checked: reimbursableOnly, set: (v: boolean) => { setReimbursableOnly(v); if (v) setNonReimbursableOnly(false) } },
+              { label: 'Non-Reimbursable Only', checked: nonReimbursableOnly, set: (v: boolean) => { setNonReimbursableOnly(v); if (v) setReimbursableOnly(false) } },
+              { label: 'Billable Only', checked: billableOnly, set: (v: boolean) => { setBillableOnly(v); if (v) setNonBillableOnly(false) } },
+              { label: 'Non-Billable Only', checked: nonBillableOnly, set: (v: boolean) => { setNonBillableOnly(v); if (v) setBillableOnly(false) } },
+              { label: 'Include Details', checked: includeDetails, set: setIncludeDetails },
+              { label: 'Summary Only', checked: summaryOnly, set: setSummaryOnly },
+            ].map(opt => (
+              <label key={opt.label} style={{ display: 'flex', alignItems: 'center' }}><input type="checkbox" checked={opt.checked} onChange={e => opt.set(e.target.checked)} style={checkSt} /><span style={spanSt}>{opt.label}</span></label>
+            ))}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+            {reportData.length > 0 && <button onClick={handleExportToExcel} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', background: '#fff', color: '#777', border: '0.5px solid #e0dcd7', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}><Download style={{ width: 16, height: 16 }} /> Export to Excel</button>}
+            <button onClick={handleRunReport} disabled={isLoading} style={{ padding: '8px 24px', borderRadius: 6, fontSize: 12, fontWeight: 500, border: 'none', cursor: isLoading ? 'not-allowed' : 'pointer', background: isLoading ? '#f5f2ee' : '#e31c79', color: isLoading ? '#999' : '#fff' }}>{isLoading ? 'Running...' : 'Run'}</button>
           </div>
 
-          {/* Report Configuration */}
-          <div className="flex-1 bg-white rounded-lg p-6">
-            <h2 className="text-[12px] font-semibold text-[#1a1a1a] mb-6">Report Details: Expenses by Employee</h2>
-
-            <div className="space-y-6">
-              {/* Date Range */}
-              <div className="flex items-center gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Date Start</label>
-                  <div className="flex items-center">
-                    <input 
-                      type="date" 
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Date Stop</label>
-                  <div className="flex items-center">
-                    <input 
-                      type="date" 
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
-                    />
-                  </div>
-                </div>
+          {reportData.length > 0 && (
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 16 }}>
+                <div style={{ padding: 16, background: '#FDFCFB', borderRadius: 10, border: '0.5px solid #f5f2ee' }}><p style={{ fontSize: 12, color: '#999', margin: 0 }}>Total Expenses</p><p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', margin: '4px 0 0' }}>${totals.totalAmount.toFixed(2)}</p></div>
+                <div style={{ padding: 16, background: '#FDFCFB', borderRadius: 10, border: '0.5px solid #f5f2ee' }}><p style={{ fontSize: 12, color: '#999', margin: 0 }}>Reimbursable</p><p style={{ fontSize: 14, fontWeight: 600, color: '#2d9b6e', margin: '4px 0 0' }}>${totals.reimbursable.toFixed(2)}</p></div>
+                <div style={{ padding: 16, background: '#FDFCFB', borderRadius: 10, border: '0.5px solid #f5f2ee' }}><p style={{ fontSize: 12, color: '#999', margin: 0 }}>Billable</p><p style={{ fontSize: 14, fontWeight: 600, color: '#e31c79', margin: '4px 0 0' }}>${totals.billable.toFixed(2)}</p></div>
+                <div style={{ padding: 16, background: '#FDFCFB', borderRadius: 10, border: '0.5px solid #f5f2ee' }}><p style={{ fontSize: 12, color: '#999', margin: 0 }}>Count</p><p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', margin: '4px 0 0' }}>{totals.count}</p></div>
               </div>
 
-              {/* Filters */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">User</label>
-                  <select 
-                    value={selectedUser}
-                    onChange={(e) => setSelectedUser(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    <option>-All-</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Employee Type</label>
-                  <select 
-                    value={selectedEmployeeType}
-                    onChange={(e) => setSelectedEmployeeType(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    {employeeTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Expense Type</label>
-                  <select 
-                    value={selectedExpenseType}
-                    onChange={(e) => setSelectedExpenseType(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    {expenseTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Payment Method</label>
-                  <select 
-                    value={selectedPaymentMethod}
-                    onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                  >
-                    {paymentMethods.map(method => (
-                      <option key={method} value={method}>{method}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Options */}
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={reimbursableOnly}
-                    onChange={(e) => {
-                      setReimbursableOnly(e.target.checked)
-                      if (e.target.checked) setNonReimbursableOnly(false)
-                    }}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Reimbursable Only</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={nonReimbursableOnly}
-                    onChange={(e) => {
-                      setNonReimbursableOnly(e.target.checked)
-                      if (e.target.checked) setReimbursableOnly(false)
-                    }}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Non-Reimbursable Only</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={billableOnly}
-                    onChange={(e) => {
-                      setBillableOnly(e.target.checked)
-                      if (e.target.checked) setNonBillableOnly(false)
-                    }}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Billable Only</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={nonBillableOnly}
-                    onChange={(e) => {
-                      setNonBillableOnly(e.target.checked)
-                      if (e.target.checked) setBillableOnly(false)
-                    }}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Non-Billable Only</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={includeDetails}
-                    onChange={(e) => setIncludeDetails(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Include Details</span>
-                </label>
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={summaryOnly}
-                    onChange={(e) => setSummaryOnly(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Summary Only</span>
-                </label>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-4">
-                {reportData.length > 0 && (
-                  <button 
-                    onClick={handleExportToExcel}
-                    className="px-6 py-2 bg-white text-[#1a1a1a] rounded-md hover:bg-[#FAFAF8] font-medium flex items-center"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export to Excel
-                  </button>
+              <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
+                {!summaryOnly ? (
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead><tr>
+                      {['Employee', 'Date', 'Category', 'Description', 'Amount', 'Method', 'Status'].map(h => (
+                        <th key={h} style={{ ...thSt, textAlign: h === 'Amount' ? 'right' : h === 'Method' || h === 'Status' ? 'center' : 'left' }}>{h}</th>
+                      ))}
+                    </tr></thead>
+                    <tbody>
+                      {reportData.map(e => (
+                        <tr key={e.id} style={{ borderBottom: '0.5px solid #f5f2ee' }} onMouseEnter={ev => ev.currentTarget.style.background='#FDFCFB'} onMouseLeave={ev => ev.currentTarget.style.background='transparent'}>
+                          <td style={tdSt}>{e.employees ? `${e.employees.first_name} ${e.employees.last_name}` : 'Unknown'}</td>
+                          <td style={tdSt}>{new Date(e.expense_date).toLocaleDateString()}</td>
+                          <td style={tdSt}>{e.category}</td>
+                          <td style={tdSt}>{e.description}</td>
+                          <td style={{ ...tdSt, textAlign: 'right', fontWeight: 600 }}>${e.amount.toFixed(2)}</td>
+                          <td style={{ ...tdSt, textAlign: 'center' }}>{e.payment_method || '-'}</td>
+                          <td style={{ ...tdSt, textAlign: 'center' }}><StatusBadge status={e.status} /></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead><tr>
+                      {['Employee', 'Department', 'Total Amount', 'Reimbursable', 'Billable', 'Count'].map(h => (
+                        <th key={h} style={{ ...thSt, textAlign: ['Total Amount','Reimbursable','Billable'].includes(h) ? 'right' : h === 'Count' ? 'center' : 'left' }}>{h}</th>
+                      ))}
+                    </tr></thead>
+                    <tbody>
+                      {(() => {
+                        const groups: { [key: string]: ExpenseData[] } = {}
+                        reportData.forEach(e => { const k = e.employee_id; if (!groups[k]) groups[k] = []; groups[k].push(e) })
+                        return Object.values(groups).map((expenses, i) => {
+                          const emp = expenses[0].employees; const total = expenses.reduce((s, e) => s + e.amount, 0)
+                          const reimb = expenses.filter(e => e.is_reimbursable).reduce((s, e) => s + e.amount, 0)
+                          const bill = expenses.filter(e => e.is_billable).reduce((s, e) => s + e.amount, 0)
+                          return (<tr key={i} style={{ borderBottom: '0.5px solid #f5f2ee' }} onMouseEnter={ev => ev.currentTarget.style.background='#FDFCFB'} onMouseLeave={ev => ev.currentTarget.style.background='transparent'}>
+                            <td style={tdSt}>{emp ? `${emp.first_name} ${emp.last_name}` : 'Unknown'}</td>
+                            <td style={tdSt}>{emp?.department || 'N/A'}</td>
+                            <td style={{ ...tdSt, textAlign: 'right', fontWeight: 600 }}>${total.toFixed(2)}</td>
+                            <td style={{ ...tdSt, textAlign: 'right', color: '#2d9b6e' }}>${reimb.toFixed(2)}</td>
+                            <td style={{ ...tdSt, textAlign: 'right', color: '#e31c79' }}>${bill.toFixed(2)}</td>
+                            <td style={{ ...tdSt, textAlign: 'center' }}>{expenses.length}</td>
+                          </tr>)
+                        })
+                      })()}
+                    </tbody>
+                  </table>
                 )}
-                <button 
-                  onClick={handleRunReport}
-                  disabled={isLoading}
-                  className={`px-6 py-2 rounded-md font-medium ${
-                    isLoading 
-                      ? 'bg-[#FAFAF8] text-[#999] cursor-not-allowed' 
-                      : 'bg-green-600 text-white hover:bg-green-700'
-                  }`}
-                >
-                  {isLoading ? 'Running...' : 'Run'}
-                </button>
               </div>
-
-              {/* Results */}
-              {reportData.length > 0 && (
-                <div className="mt-6">
-                  <div className="p-4 bg-[#FAFAF8] rounded mb-4">
-                    <div className="grid grid-cols-4 gap-4">
-                      <div>
-                        <p className="text-sm text-[#777]">Total Expenses</p>
-                        <p className="text-[14px] font-semibold">${totals.totalAmount.toFixed(2)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-[#777]">Reimbursable</p>
-                        <p className="text-[14px] font-semibold text-green-600">${totals.reimbursable.toFixed(2)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-[#777]">Billable</p>
-                        <p className="text-[14px] font-semibold text-blue-600">${totals.billable.toFixed(2)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-[#777]">Count</p>
-                        <p className="text-[14px] font-semibold">{totals.count}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Results Table */}
-                  {!summaryOnly ? (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-[#FAFAF8]">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                              Employee
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                              Date
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                              Category
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                              Description
-                            </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-[#999] uppercase tracking-wider">
-                              Amount
-                            </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-[#999] uppercase tracking-wider">
-                              Method
-                            </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-[#999] uppercase tracking-wider">
-                              Status
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {reportData.map((expense) => (
-                            <tr key={expense.id} className="hover:bg-[#FAFAF8]">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                {expense.employees ? `${expense.employees.first_name} ${expense.employees.last_name}` : 'Unknown'}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                {new Date(expense.expense_date).toLocaleDateString()}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                {expense.category}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-[#1a1a1a]">
-                                {expense.description}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-[#1a1a1a]">
-                                ${expense.amount.toFixed(2)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-[#1a1a1a]">
-                                {expense.payment_method || '-'}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <span className={`px-2 inline-flex leading-5 rounded ${
-                                  expense.status === 'approved' 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : expense.status === 'pending' || expense.status === 'submitted'
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : expense.status === 'rejected'
-                                    ? 'bg-red-100 text-red-800'
-                                    : 'bg-[#FAFAF8] text-[#1a1a1a]'
-                                }`}>
-                                  {expense.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    // Summary View
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-[#FAFAF8]">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                              Employee
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                              Department
-                            </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-[#999] uppercase tracking-wider">
-                              Total Amount
-                            </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-[#999] uppercase tracking-wider">
-                              Reimbursable
-                            </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-[#999] uppercase tracking-wider">
-                              Billable
-                            </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-[#999] uppercase tracking-wider">
-                              Count
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {(() => {
-                            const employeeGroups: { [key: string]: ExpenseData[] } = {}
-                            reportData.forEach(expense => {
-                              const key = expense.employee_id
-                              if (!employeeGroups[key]) {
-                                employeeGroups[key] = []
-                              }
-                              employeeGroups[key].push(expense)
-                            })
-
-                            return Object.values(employeeGroups).map((expenses, index) => {
-                              const employee = expenses[0].employees
-                              const totalAmount = expenses.reduce((sum, exp) => sum + exp.amount, 0)
-                              const reimbursableAmount = expenses.filter(e => e.is_reimbursable).reduce((sum, exp) => sum + exp.amount, 0)
-                              const billableAmount = expenses.filter(e => e.is_billable).reduce((sum, exp) => sum + exp.amount, 0)
-                              
-                              return (
-                                <tr key={index} className="hover:bg-[#FAFAF8]">
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                    {employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown'}
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                    {employee?.department || 'N/A'}
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-[#1a1a1a]">
-                                    ${totalAmount.toFixed(2)}
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600">
-                                    ${reimbursableAmount.toFixed(2)}
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-blue-600">
-                                    ${billableAmount.toFixed(2)}
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-[#1a1a1a]">
-                                    {expenses.length}
-                                  </td>
-                                </tr>
-                              )
-                            })
-                          })()}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
-          </div>
+          )}
         </div>
       </div>
-
-    </>
+    </div>
   )
 }

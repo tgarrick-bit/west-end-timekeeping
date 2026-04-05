@@ -951,10 +951,10 @@ export default function AdminPage() {
     <>
       {/* Page Title */}
       <div style={{ padding: '36px 40px 0 40px' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', letterSpacing: -0.3, margin: 0 }}>
           Admin Dashboard
         </h1>
-        <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb', marginTop: 4 }}>
+        <p style={{ fontSize: 13, fontWeight: 400, color: '#999', marginTop: 4 }}>
           Monitor submissions, approvals, and reminders across the organization.
         </p>
       </div>
@@ -977,14 +977,20 @@ export default function AdminPage() {
   </div>
   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
     {[
-      { label: 'Employees', value: employees.length },
+      { label: 'Employees', value: employees.length, accent: true },
       { label: 'Pending Hours', value: submissions.filter(s => s.status === 'submitted' && s.type === 'timesheet').reduce((sum, s) => sum + (s.hours || 0), 0).toFixed(2) },
       { label: 'Pending Amount', value: '$' + submissions.filter(s => s.status === 'submitted').reduce((sum, s) => sum + s.amount, 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
       { label: 'Approved', value: approvedCount },
-    ].map(card => (
-      <div key={card.label} style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-        <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: 0.5, color: '#999', marginBottom: 8 }}>{card.label}</div>
-        <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{card.value}</div>
+    ].map((card, i) => (
+      <div
+        key={card.label}
+        className={`anim-slide-up stagger-${i + 1}`}
+        style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px', cursor: 'default', transition: 'border-color 0.15s ease' }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = i === 0 ? '#e31c79' : '#d3ad6b' }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e4df' }}
+      >
+        <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: 1.2, color: '#c0bab2', marginBottom: 8 }}>{card.label}</div>
+        <div style={{ fontSize: 28, fontWeight: 700, color: card.accent ? '#e31c79' : '#1a1a1a' }}>{card.value}</div>
       </div>
     ))}
   </div>
@@ -996,8 +1002,10 @@ export default function AdminPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 gap-3">
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-[#555]">Department:</span>
-                <select className="text-sm px-3 py-1.5 border border-[#e8e4df] rounded-lg bg-white">
+                <span style={{ fontSize: 11, color: '#c0bab2' }}>Department:</span>
+                <select style={{ fontSize: 12, padding: '6px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, background: '#fff', outline: 'none' }}
+                onFocus={(e: any) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)' }}
+                onBlur={(e: any) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }}>
                   <option value="all">All</option>
                   <option value="engineering">Commerce</option>
                   <option value="sales">Healthcare</option>
@@ -1005,9 +1013,11 @@ export default function AdminPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-sm text-[#555]">Manager:</span>
+                <span style={{ fontSize: 11, color: '#c0bab2' }}>Manager:</span>
                 <select 
-                  className="text-sm px-3 py-1.5 border border-[#e8e4df] rounded-lg bg-white"
+                  style={{ fontSize: 12, padding: '6px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, background: '#fff', outline: 'none' }}
+                onFocus={(e: any) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)' }}
+                onBlur={(e: any) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }}
                   value={managerFilter}
                   onChange={(e) => setManagerFilter(e.target.value)}
                 >
@@ -1030,18 +1040,22 @@ export default function AdminPage() {
               </div>
 
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-[#555]">Project:</span>
+                <span style={{ fontSize: 11, color: '#c0bab2' }}>Project:</span>
                 <select
-                  className="text-sm px-3 py-1.5 border border-[#e8e4df] rounded-lg bg-white"
+                  style={{ fontSize: 12, padding: '6px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, background: '#fff', outline: 'none' }}
+                onFocus={(e: any) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)' }}
+                onBlur={(e: any) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }}
                 >
                   <option value="all">All</option>
                 </select>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-sm text-[#555]">Employee:</span>
+                <span style={{ fontSize: 11, color: '#c0bab2' }}>Employee:</span>
                 <select
-                  className="text-sm px-3 py-1.5 border border-[#e8e4df] rounded-lg bg-white"
+                  style={{ fontSize: 12, padding: '6px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, background: '#fff', outline: 'none' }}
+                onFocus={(e: any) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)' }}
+                onBlur={(e: any) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }}
                   value={employeeFilter}
                   onChange={(e) => setEmployeeFilter(e.target.value)}
                 >
@@ -1063,7 +1077,7 @@ export default function AdminPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-[#555]">Items per page:</span>
+              <span style={{ fontSize: 11, color: '#c0bab2' }}>Items per page:</span>
               <select className="text-sm border border-[#e8e4df] rounded-lg px-2 py-1.5 bg-white">
                 <option>100</option>
                 <option>50</option>
@@ -1080,18 +1094,18 @@ export default function AdminPage() {
           <div>
             <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Time summary</span>
             <div className="mt-1 flex flex-wrap items-center gap-4" style={{ fontSize: 12.5, color: '#555' }}>
-              <span>Approved: <strong className="text-green-600">{approvedTimesheetCount}</strong></span>
-              <span>Pending: <strong className="text-orange-600">{timesheetPendingCount}</strong></span>
-              <span>Rejected: <strong className="text-red-600">{rejectedTimesheetCount}</strong></span>
+              <span>Approved: <strong style={{ color: '#2d9b6e' }}>{approvedTimesheetCount}</strong></span>
+              <span>Pending: <strong style={{ color: '#c4983a' }}>{timesheetPendingCount}</strong></span>
+              <span>Rejected: <strong style={{ color: '#b91c1c' }}>{rejectedTimesheetCount}</strong></span>
               <span>Draft: <strong style={{ color: '#555' }}>{draftTimesheetCount}</strong></span>
             </div>
           </div>
           <div className="text-left sm:text-right">
             <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Expense summary</span>
             <div className="mt-1 flex flex-wrap items-center gap-4 sm:justify-end" style={{ fontSize: 12.5, color: '#555' }}>
-              <span>Approved: <strong className="text-green-600">{approvedExpenseCount}</strong></span>
-              <span>Pending: <strong className="text-orange-600">{expensePendingCount}</strong></span>
-              <span>Rejected: <strong className="text-red-600">{rejectedExpenseCount}</strong></span>
+              <span>Approved: <strong style={{ color: '#2d9b6e' }}>{approvedExpenseCount}</strong></span>
+              <span>Pending: <strong style={{ color: '#c4983a' }}>{expensePendingCount}</strong></span>
+              <span>Rejected: <strong style={{ color: '#b91c1c' }}>{rejectedExpenseCount}</strong></span>
               <span>Draft: <strong style={{ color: '#555' }}>{draftExpenseCount}</strong></span>
             </div>
           </div>
@@ -1109,20 +1123,19 @@ export default function AdminPage() {
               <div style={{ padding: '16px 22px' }}>
               <div className="space-y-2">
                 {[
-                  { label: 'Approved', count: approvedTimesheetCount, color: 'bg-green-500', total: allTimesheetsCount },
-                  { label: 'Pending', count: timesheetPendingCount, color: 'bg-yellow-500', total: allTimesheetsCount },
-                  { label: 'Draft', count: draftTimesheetCount, color: 'bg-[#FAFAF8]', total: allTimesheetsCount },
-                  { label: 'Rejected', count: rejectedTimesheetCount, color: 'bg-red-500', total: allTimesheetsCount },
+                  { label: 'Approved', count: approvedTimesheetCount, barColor: '#2d9b6e', total: allTimesheetsCount },
+                  { label: 'Pending', count: timesheetPendingCount, barColor: '#c4983a', total: allTimesheetsCount },
+                  { label: 'Draft', count: draftTimesheetCount, barColor: '#ccc', total: allTimesheetsCount },
+                  { label: 'Rejected', count: rejectedTimesheetCount, barColor: '#b91c1c', total: allTimesheetsCount },
                 ].map(item => (
                   <div key={item.label}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-[#777]">{item.label}</span>
-                      <span className="font-medium">{item.count}</span>
+                    <div className="flex justify-between mb-1">
+                      <span style={{ fontSize: 12.5, color: '#777' }}>{item.label}</span>
+                      <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1a1a1a' }}>{item.count}</span>
                     </div>
-                    <div className="w-full bg-[#FAFAF8] rounded-full h-2">
+                    <div style={{ width: '100%', height: 6, borderRadius: 3, background: '#f5f2ee' }}>
                       <div
-                        className={`${item.color} h-2 rounded-full transition-all duration-500`}
-                        style={{ width: `${item.total > 0 ? (item.count / item.total) * 100 : 0}%` }}
+                        style={{ height: 6, borderRadius: 3, transition: 'width 0.5s ease', background: item.barColor, width: `${item.total > 0 ? (item.count / item.total) * 100 : 0}%` }}
                       />
                     </div>
                   </div>
@@ -1148,14 +1161,13 @@ export default function AdminPage() {
                     .slice(0, 6)
                     .map(([dept, hours]) => (
                       <div key={dept}>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-[#777] truncate">{dept}</span>
-                          <span className="font-medium">{hours.toFixed(1)} hrs</span>
+                        <div className="flex justify-between mb-1">
+                          <span style={{ fontSize: 12.5, color: '#777' }} className="truncate">{dept}</span>
+                          <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1a1a1a' }}>{hours.toFixed(1)} hrs</span>
                         </div>
-                        <div className="w-full bg-[#FAFAF8] rounded-full h-2">
+                        <div style={{ width: '100%', height: 6, borderRadius: 3, background: '#f5f2ee' }}>
                           <div
-                            className="bg-[#e31c79] h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${(hours / maxHours) * 100}%` }}
+                            style={{ height: 6, borderRadius: 3, transition: 'width 0.5s ease', background: '#e31c79', width: `${(hours / maxHours) * 100}%` }}
                           />
                         </div>
                       </div>
@@ -1176,10 +1188,10 @@ export default function AdminPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Submittal Monitoring */}
             <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-              <div className="flex justify-between items-start mb-3">
+              <div className="flex justify-between items-start" style={{ marginBottom: 12 }}>
                 <div>
-                  <h4 className="font-medium text-[#1a1a1a]">Timecard submittals</h4>
-                  <p className="text-sm text-[#777] mt-1">Employees with unsubmitted timecards</p>
+                  <h4 style={{ fontSize: 12.5, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>Timecard submittals</h4>
+                  <p style={{ fontSize: 11, color: '#777', marginTop: 4 }}>Employees with unsubmitted timecards</p>
                 </div>
                 <button
                   onClick={handleBulkSubmittalReminders}
@@ -1194,21 +1206,21 @@ export default function AdminPage() {
               
               <div className="space-y-2">
                 {draftTimesheetCount === 0 ? (
-                  <p className="text-sm text-green-600 flex items-center gap-1">
+                  <p className="flex items-center gap-1" style={{ fontSize: 12.5, color: '#2d9b6e' }}>
                     <CheckCircle className="h-4 w-4" />
                     All timecards submitted
                   </p>
                 ) : (
                   <>
-                    <p className="text-sm font-medium text-red-600">
+                    <p style={{ fontSize: 12.5, fontWeight: 600, color: '#b91c1c' }}>
                       {draftTimesheetCount} unsubmitted timecard{draftTimesheetCount !== 1 ? 's' : ''}
                     </p>
                     {submissions
   .filter(s => s.type === 'timesheet' && s.status === 'draft')
   .slice(0, 5)
   .map(submission => (
-    <div key={submission.id} className="flex justify-between items-center text-sm py-1">
-      <span className="text-[#555]">
+    <div key={submission.id} className="flex justify-between items-center py-1">
+      <span style={{ fontSize: 12.5, color: '#555' }}>
         {formatName(
           submission.employee?.first_name,
           submission.employee?.middle_name,
@@ -1217,7 +1229,10 @@ export default function AdminPage() {
       </span>
       <button
         onClick={() => handleSendSubmittalReminder(submission)}
-        className="text-[#e31c79] hover:text-[#c71865] text-xs flex items-center gap-1"
+        className="flex items-center gap-1"
+        style={{ fontSize: 11, color: '#e31c79', background: 'none', border: 'none', cursor: 'pointer' }}
+        onMouseEnter={e => { e.currentTarget.style.color = '#cc1069' }}
+        onMouseLeave={e => { e.currentTarget.style.color = '#e31c79' }}
       >
         <Send className="h-3 w-3" />
         Send reminder
@@ -1237,16 +1252,16 @@ export default function AdminPage() {
 
             {/* Approval Monitoring by Manager */}
             <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-              <div className="flex justify-between items-start mb-3">
+              <div className="flex justify-between items-start" style={{ marginBottom: 12 }}>
                 <div>
-                  <h4 className="font-medium text-[#1a1a1a]">Pending approvals by manager</h4>
-                  <p className="text-sm text-[#777] mt-1">Managers with pending timecards to approve</p>
+                  <h4 style={{ fontSize: 12.5, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>Pending approvals by manager</h4>
+                  <p style={{ fontSize: 11, color: '#777', marginTop: 4 }}>Managers with pending timecards to approve</p>
                 </div>
               </div>
               
               <div className="space-y-2">
                 {timesheetPendingCount === 0 ? (
-                  <p className="text-sm text-green-600 flex items-center gap-1">
+                  <p className="flex items-center gap-1" style={{ fontSize: 12.5, color: '#2d9b6e' }}>
                     <CheckCircle className="h-4 w-4" />
                     All timecards approved
                   </p>
@@ -1259,25 +1274,28 @@ export default function AdminPage() {
                       return (
                         <div
                           key={managerId}
-                          className={`border rounded-xl p-2 ${
-                            isOverdue ? 'bg-red-50 border-red-300' : 'bg-[#FAFAF8] border-[#e8e4df]'
-                          }`}
+                          style={{
+                            border: `0.5px solid ${isOverdue ? '#e8b4b4' : '#e8e4df'}`,
+                            borderRadius: 10,
+                            padding: '10px 14px',
+                            background: isOverdue ? '#fef8f8' : '#FDFCFB',
+                          }}
                         >
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
-                              <div className="font-medium text-sm text-[#1a1a1a]">
+                              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#1a1a1a' }}>
                                 {data.managerName}
                               </div>
-                              <div className="text-xs text-[#777] mt-1">
-                                <span className={`font-medium ${isOverdue ? 'text-red-600' : 'text-orange-600'}`}>
+                              <div style={{ fontSize: 11, color: '#777', marginTop: 4 }}>
+                                <span style={{ fontWeight: 600, color: isOverdue ? '#b91c1c' : '#c4983a' }}>
                                   {data.count} pending
                                 </span>
-                                {' • '}
+                                {' \u2022 '}
                                 {data.totalHours.toFixed(2)} hours
                                 {isOverdue && (
                                   <>
-                                    {' • '}
-                                    <span className="text-red-600">⚠ {daysOld} days old</span>
+                                    {' \u2022 '}
+                                    <span style={{ color: '#b91c1c' }}>{daysOld} days old</span>
                                   </>
                                 )}
                               </div>
@@ -1309,28 +1327,28 @@ export default function AdminPage() {
           {/* Missing Timesheets for Current Week */}
           {missingEmployees.length > 0 && (
             <div style={{ marginTop: 24, background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-              <div className="flex justify-between items-start mb-3">
+              <div className="flex justify-between items-start" style={{ marginBottom: 12 }}>
                 <div>
-                  <h4 className="font-medium text-red-900 flex items-center gap-2">
+                  <h4 className="flex items-center gap-2" style={{ fontSize: 12.5, fontWeight: 600, color: '#b91c1c', margin: 0 }}>
                     <AlertCircle className="h-4 w-4" />
                     Missing timesheets — current week
                   </h4>
-                  <p className="text-sm text-red-700 mt-1">
+                  <p style={{ fontSize: 12, color: '#b91c1c', marginTop: 4 }}>
                     {missingEmployees.length} active employee{missingEmployees.length !== 1 ? 's have' : ' has'} not created a timesheet for this week
                   </p>
                 </div>
               </div>
               <div className="space-y-1">
                 {missingEmployees.slice(0, 10).map(emp => (
-                  <div key={emp.id} className="flex justify-between items-center text-sm py-1">
-                    <span className="text-red-800">
+                  <div key={emp.id} className="flex justify-between items-center py-1">
+                    <span style={{ fontSize: 12.5, color: '#1a1a1a' }}>
                       {formatName(emp.first_name, emp.middle_name, emp.last_name)}
-                      <span className="text-red-600 ml-2 text-xs">{emp.department || ''}</span>
+                      <span style={{ fontSize: 11, color: '#c0bab2', marginLeft: 8 }}>{emp.department || ''}</span>
                     </span>
                   </div>
                 ))}
                 {missingEmployees.length > 10 && (
-                  <p className="text-xs text-red-600 mt-2">
+                  <p style={{ fontSize: 11, color: '#b91c1c', marginTop: 8 }}>
                     +{missingEmployees.length - 10} more...
                   </p>
                 )}
@@ -1339,18 +1357,22 @@ export default function AdminPage() {
           )}
 
           {/* Quick Actions */}
-          <div className="mt-4 flex gap-4">
+          <div className="flex gap-4" style={{ marginTop: 16 }}>
             <button
               onClick={() => setActiveTab('unsubmitted')}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              style={{ fontSize: 12, color: '#e31c79', background: 'none', border: 'none', cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#cc1069' }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#e31c79' }}
             >
-              View all unsubmitted →
+              View all unsubmitted &rarr;
             </button>
             <button
               onClick={() => setActiveTab('pending')}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              style={{ fontSize: 12, color: '#e31c79', background: 'none', border: 'none', cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#cc1069' }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#e31c79' }}
             >
-              View all pending approvals →
+              View all pending approvals &rarr;
             </button>
           </div>
         </div>
@@ -1367,7 +1389,9 @@ export default function AdminPage() {
         placeholder="Search by employee, email, category..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        style={{ width: '100%', paddingLeft: 36, paddingRight: 12, paddingTop: 8, paddingBottom: 8, fontSize: 13, border: '0.5px solid #e0dcd7', borderRadius: 8, outline: 'none' }}
+        style={{ width: '100%', paddingLeft: 36, paddingRight: 12, paddingTop: 8, paddingBottom: 8, fontSize: 12, border: '0.5px solid #e8e4df', borderRadius: 7, outline: 'none', color: '#1a1a1a' }}
+        onFocus={(e) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)' }}
+        onBlur={(e) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }}
       />
     </div>
   </div>
@@ -1387,8 +1411,8 @@ export default function AdminPage() {
 
             {/* Currently filtered pill */}
             {hasTimesheetFilters && (
-              <div className="px-4 pt-2 pb-3 bg-white">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[#FAFAF8] border border-[#e8e4df] text-xs text-[#555]">
+              <div style={{ padding: '8px 16px 12px' }}>
+                <div className="inline-flex items-center gap-2" style={{ padding: '4px 12px', borderRadius: 5, background: '#FDFCFB', border: '0.5px solid #e8e4df', fontSize: 11, color: '#555' }}>
                   <span className="font-semibold">Currently filtered by:</span>
                   {employeeFilterLabel && <span>Employee: {employeeFilterLabel}</span>}
                   {timesheetWeekFilter !== 'all' && <span>Week: {timesheetWeekFilter}</span>}
@@ -1402,7 +1426,7 @@ export default function AdminPage() {
                   <button
                     type="button"
                     onClick={resetTimesheetFilters}
-                    className="ml-2 text-blue-600 hover:text-blue-700 underline decoration-blue-300"
+                    style={{ marginLeft: 8, fontSize: 11, color: '#e31c79', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
                   >
                     Reset filters
                   </button>
@@ -1411,7 +1435,7 @@ export default function AdminPage() {
             )}
             
             {allTimesheetsCount === 0 ? (
-              <div className="px-4 py-8 text-center text-[#999] bg-[#FAFAF8]">
+              <div style={{ padding: '32px 16px', textAlign: 'center', color: '#ccc', fontSize: 12.5 }}>
                 No timesheets to display.
               </div>
             ) : (
@@ -1423,7 +1447,9 @@ export default function AdminPage() {
                     <select
                       value={timesheetEmployeeFilter}
                       onChange={(e) => setTimesheetEmployeeFilter(e.target.value)}
-                      className="w-full text-xs px-2 py-1 border border-[#e8e4df] rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                      style={{ width: '100%', fontSize: 11, padding: '4px 8px', border: '0.5px solid #e8e4df', borderRadius: 5, background: '#fff', outline: 'none' }}
+                      onFocus={(e: any) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)' }}
+                      onBlur={(e: any) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }}
                     >
                       <option value="all">Employee</option>
                       {timesheetEmployeeOptions.map(emp => (
@@ -1437,7 +1463,9 @@ export default function AdminPage() {
                     <select
                       value={timesheetWeekFilter}
                       onChange={(e) => setTimesheetWeekFilter(e.target.value)}
-                      className="w-full text-xs px-2 py-1 border border-[#e8e4df] rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                      style={{ width: '100%', fontSize: 11, padding: '4px 8px', border: '0.5px solid #e8e4df', borderRadius: 5, background: '#fff', outline: 'none' }}
+                      onFocus={(e: any) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)' }}
+                      onBlur={(e: any) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }}
                     >
                       <option value="all">Week</option>
                       {weekOptions.map(week => (
@@ -1451,7 +1479,9 @@ export default function AdminPage() {
                     <select
                       value={timesheetStatusCardFilter}
                       onChange={(e) => setTimesheetStatusCardFilter(e.target.value)}
-                      className="w-full text-xs px-2 py-1 border border-[#e8e4df] rounded bg-white focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
+                      style={{ width: '100%', fontSize: 11, padding: '4px 8px', border: '0.5px solid #e8e4df', borderRadius: 5, background: '#fff', outline: 'none' }}
+                      onFocus={(e: any) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)' }}
+                      onBlur={(e: any) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }}
                     >
                       <option value="all">Status</option>
                       {statusOptions.map(status => (
@@ -1508,14 +1538,18 @@ export default function AdminPage() {
                         <>
                           <button
                             onClick={() => handleApprove(submission)}
-                            className="p-1 text-green-600 hover:bg-green-50 rounded"
+                            style={{ padding: 4, color: '#2d9b6e', background: 'none', border: 'none', borderRadius: 5, cursor: 'pointer' }}
+                            onMouseEnter={(e: any) => { e.currentTarget.style.background = '#f0faf5' }}
+                            onMouseLeave={(e: any) => { e.currentTarget.style.background = 'none' }}
                             title="Approve"
                           >
                             <CheckCircle className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleReject(submission)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded"
+                            style={{ padding: 4, color: '#b91c1c', background: 'none', border: 'none', borderRadius: 5, cursor: 'pointer' }}
+                            onMouseEnter={(e: any) => { e.currentTarget.style.background = '#fef2f2' }}
+                            onMouseLeave={(e: any) => { e.currentTarget.style.background = 'none' }}
                             title="Reject"
                           >
                             <XCircle className="h-4 w-4" />
@@ -1535,7 +1569,9 @@ export default function AdminPage() {
                       )}
                       <button
                         onClick={() => handleViewTimesheet(submission)}
-                        className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                        style={{ padding: 4, color: '#e31c79', background: 'none', border: 'none', borderRadius: 5, cursor: 'pointer' }}
+                        onMouseEnter={(e: any) => { e.currentTarget.style.background = '#fdf2f8' }}
+                        onMouseLeave={(e: any) => { e.currentTarget.style.background = 'none' }}
                         disabled={processingId === submission.id}
                         title="View timesheet"
                       >
@@ -1570,7 +1606,7 @@ export default function AdminPage() {
             </div>
             
             {visibleExpensesAllTab.length === 0 ? (
-              <div className="bg-[#FAFAF8] px-4 py-8 text-center text-[#999]">
+              <div style={{ padding: '32px 16px', textAlign: 'center', color: '#ccc', fontSize: 12.5 }}>
                 {timesheetEmployeeFilter !== 'all'
                   ? 'No expenses for the selected employee.'
                   : 'No expenses to display.'}
@@ -1633,14 +1669,18 @@ export default function AdminPage() {
                         <>
                           <button 
                             onClick={() => handleApprove(expense)}
-                            className="p-1 text-green-600 hover:bg-green-50 rounded"
+                            style={{ padding: 4, color: '#2d9b6e', background: 'none', border: 'none', borderRadius: 5, cursor: 'pointer' }}
+                            onMouseEnter={(e: any) => { e.currentTarget.style.background = '#f0faf5' }}
+                            onMouseLeave={(e: any) => { e.currentTarget.style.background = 'none' }}
                             title="Approve"
                           >
                             <CheckCircle className="h-4 w-4" />
                           </button>
                           <button 
                             onClick={() => handleReject(expense)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded"
+                            style={{ padding: 4, color: '#b91c1c', background: 'none', border: 'none', borderRadius: 5, cursor: 'pointer' }}
+                            onMouseEnter={(e: any) => { e.currentTarget.style.background = '#fef2f2' }}
+                            onMouseLeave={(e: any) => { e.currentTarget.style.background = 'none' }}
                             title="Reject"
                           >
                             <XCircle className="h-4 w-4" />
@@ -1649,7 +1689,9 @@ export default function AdminPage() {
                       )}
                       <button 
                         onClick={() => handleViewExpense(expense)}
-                        className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                        style={{ padding: 4, color: '#e31c79', background: 'none', border: 'none', borderRadius: 5, cursor: 'pointer' }}
+                        onMouseEnter={(e: any) => { e.currentTarget.style.background = '#fdf2f8' }}
+                        onMouseLeave={(e: any) => { e.currentTarget.style.background = 'none' }}
                         title="View details"
                       >
                         <Eye className="h-4 w-4" />
@@ -1688,10 +1730,10 @@ export default function AdminPage() {
 
       {/* Expense Modal */}
       {isExpenseModalOpen && selectedExpense && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-lg w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-[12px] font-semibold text-[#1a1a1a]">
+        <div className="fixed inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)', zIndex: 50 }}>
+          <div className="anim-scale-in" style={{ background: '#fff', borderRadius: 12, border: '0.5px solid #e8e4df', maxWidth: 512, width: '100%', padding: 24 }}>
+            <div className="flex justify-between items-center" style={{ marginBottom: 16 }}>
+              <h3 style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>
                 Expense details
               </h3>
               <button
@@ -1699,13 +1741,13 @@ export default function AdminPage() {
                   setIsExpenseModalOpen(false)
                   setSelectedExpense(null)
                 }}
-                className="p-1 rounded hover:bg-[#FAFAF8]"
+                style={{ padding: 4, background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 5, cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
               >
-                <XCircle className="h-5 w-5 text-[#999]" />
+                <XCircle style={{ width: 16, height: 16, color: '#999' }} />
               </button>
             </div>
 
-            <div className="space-y-2 text-sm text-[#555]">
+            <div className="space-y-2" style={{ fontSize: 12.5, color: '#555' }}>
               <div>
                 <span className="font-medium">Employee: </span>
                 {selectedExpense.employee
@@ -1751,7 +1793,7 @@ export default function AdminPage() {
                     href={selectedExpense.receipt_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
+                    style={{ color: '#e31c79', textDecoration: 'underline' }}
                   >
                     View uploaded receipt
                   </a>
@@ -1759,14 +1801,14 @@ export default function AdminPage() {
               )}
 
               {selectedExpense.rejection_reason && (
-                <div className="text-red-700">
+                <div style={{ color: '#b91c1c' }}>
                   <span className="font-medium">Rejection reason: </span>
                   {selectedExpense.rejection_reason}
                 </div>
               )}
             </div>
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="flex justify-end gap-3" style={{ marginTop: 24 }}>
               <button
                 onClick={() => {
                   setIsExpenseModalOpen(false)

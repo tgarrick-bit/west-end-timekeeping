@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
 import TimesheetModal from '@/components/TimesheetModal';
 import { FileText, Receipt } from 'lucide-react';
-import { AppShell } from '@/components/layout';
 import { StatCard } from '@/components/ui/StatCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -528,17 +527,15 @@ export default function EmployeeDashboard() {
 
   if (isLoading) {
     return (
-      <AppShell role="employee" userName={profile?.first_name} userEmail={profile?.email} onSignOut={handleSignOut}>
-        <div style={{ padding: '36px 40px' }}>
-          <SkeletonStats count={4} />
-          <div style={{ marginTop: 24 }}><SkeletonList rows={3} /></div>
-        </div>
-      </AppShell>
+      <div style={{ padding: '36px 40px' }}>
+        <SkeletonStats count={4} />
+        <div style={{ marginTop: 24 }}><SkeletonList rows={3} /></div>
+      </div>
     );
   }
 
   return (
-    <AppShell role="employee" userName={profile?.first_name} userEmail={profile?.email} onSignOut={handleSignOut}>
+    <>
       <div style={{ padding: '36px 40px' }}>
         {/* Greeting */}
         <div style={{ marginBottom: 24 }}>
@@ -668,6 +665,6 @@ export default function EmployeeDashboard() {
       </div>
 
       <TimesheetModal isOpen={isModalOpen} onClose={handleCloseModal} timesheet={selectedTimesheet} isEmployeeView={true} />
-    </AppShell>
+    </>
   );
 }

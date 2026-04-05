@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Plus, Search, Filter } from 'lucide-react'
+import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton'
 
 interface ProjectRow {
   id: string
@@ -115,201 +116,366 @@ export default function AdminProjectsPage() {
     router.push('/admin/projects/new')
   }
 
+  // Stat counts
+  const activeCount = projects.filter(p => p.is_active).length
+  const inactiveCount = projects.filter(p => !p.is_active).length
+  const billableCount = projects.filter(p => p.is_billable && p.is_active).length
+  const clientCount = new Set(projects.filter(p => p.is_active).map(p => p.client_id)).size
+
+  if (loading) {
+    return (
+      <div style={{ padding: '36px 40px' }} className="space-y-6">
+        <div>
+          <div className="anim-shimmer" style={{ width: 160, height: 24, borderRadius: 4, marginBottom: 8 }} />
+          <div className="anim-shimmer" style={{ width: 300, height: 14, borderRadius: 4 }} />
+        </div>
+        <SkeletonStats count={4} />
+        <SkeletonList rows={6} />
+      </div>
+    )
+  }
+
   return (
-    <>
-      {/* Page Header */}
-      <section className="bg-white border-b border-[#e8e4df]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex flex-col">
-            <div className="mb-1 flex items-center gap-1 text-xs text-[#999]">
-              <span>Admin</span>
-              <span className="text-[#bbb]">/</span>
-              <span>Projects</span>
-            </div>
-            <h1 className="text-[14px] font-semibold text-[#1a1814]">Projects</h1>
-            <p className="mt-1 text-xs text-[#999]">
-              Manage client-scoped projects that employees can bill time and expenses to.
-            </p>
-          </div>
-          <button
-            onClick={handleNew}
-            className="inline-flex items-center gap-2 rounded bg-[#e31c79] px-4 py-2 text-sm font-medium text-white hover:bg-[#c91865]"
+    <div style={{ padding: '36px 40px' }}>
+      {/* Page Title + Action */}
+      <div className="flex items-center justify-between" style={{ marginBottom: 24 }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', letterSpacing: -0.3, margin: 0 }}>
+            Projects
+          </h1>
+          <p style={{ fontSize: 13, fontWeight: 400, color: '#999', marginTop: 4 }}>
+            Manage client-scoped projects that employees can bill time and expenses to.
+          </p>
+        </div>
+        <button
+          onClick={handleNew}
+          className="flex items-center gap-2"
+          style={{
+            backgroundColor: '#e31c79',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 7,
+            padding: '8px 18px',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.backgroundColor = '#cc1069'
+            e.currentTarget.style.transform = 'translateY(-1px)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.backgroundColor = '#e31c79'
+            e.currentTarget.style.transform = 'translateY(0)'
+          }}
+        >
+          <Plus style={{ width: 14, height: 14 }} />
+          New Project
+        </button>
+      </div>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4" style={{ marginBottom: 24 }}>
+        {[
+          { label: 'Active Projects', value: activeCount, accent: true },
+          { label: 'Inactive', value: inactiveCount },
+          { label: 'Billable', value: billableCount },
+          { label: 'Clients', value: clientCount },
+        ].map((card, i) => (
+          <div
+            key={card.label}
+            className={`anim-slide-up stagger-${i + 1}`}
+            style={{
+              background: '#fff',
+              border: '0.5px solid #e8e4df',
+              borderRadius: 10,
+              padding: '22px 24px',
+              cursor: 'default',
+              transition: 'border-color 0.15s ease',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = i === 0 ? '#e31c79' : '#d3ad6b'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = '#e8e4df'
+            }}
           >
-            <Plus className="h-4 w-4" />
-            New project
+            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1.2, color: '#c0bab2', marginBottom: 8 }}>
+              {card.label}
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: card.accent ? '#e31c79' : '#1a1a1a' }}>
+              {card.value}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Search + Filters */}
+      <div className="flex flex-wrap items-center justify-between gap-3" style={{ marginBottom: 16 }}>
+        <div className="flex items-center gap-3">
+          <div className="relative" style={{ maxWidth: 300 }}>
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2"
+              style={{ width: 14, height: 14, color: '#d0cbc4', pointerEvents: 'none' }}
+            />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by project or client..."
+              style={{
+                width: 280,
+                paddingLeft: 34,
+                paddingRight: 12,
+                paddingTop: 8,
+                paddingBottom: 8,
+                border: '0.5px solid #e8e4df',
+                borderRadius: 7,
+                fontSize: 12,
+                color: '#1a1a1a',
+                outline: 'none',
+                background: '#fff',
+              }}
+              onFocus={e => {
+                e.currentTarget.style.borderColor = '#d3ad6b'
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)'
+              }}
+              onBlur={e => {
+                e.currentTarget.style.borderColor = '#e8e4df'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            />
+          </div>
+
+          <button
+            onClick={() => setShowActiveOnly((prev) => !prev)}
+            className="flex items-center gap-2"
+            style={{
+              padding: '7px 14px',
+              fontSize: 11,
+              fontWeight: 500,
+              borderRadius: 7,
+              border: showActiveOnly ? '0.5px solid #1a1a1a' : '0.5px solid #e0dcd7',
+              background: '#fff',
+              color: showActiveOnly ? '#1a1a1a' : '#777',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <Filter style={{ width: 12, height: 12 }} />
+            {showActiveOnly ? 'Active only' : 'All projects'}
           </button>
         </div>
-      </section>
 
-      {/* Content */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Filters row */}
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#bbb]" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by project or client…"
-                className="w-64 rounded-full border border-[#e8e4df] bg-white px-9 py-2 text-sm text-[#1a1a1a] placeholder:text-[#bbb] focus:border-[#e31c79] focus:outline-none focus:ring-1 focus:ring-[#e31c79]"
-              />
-            </div>
-
-            <button
-              onClick={() => setShowActiveOnly((prev) => !prev)}
-              className={`inline-flex items-center gap-2 rounded border px-3 py-1.5 text-xs font-medium transition-colors ${
-                showActiveOnly
-                  ? 'border-[#1a1a1a] bg-white text-[#1a1a1a]'
-                  : 'border-[#e8e4df] bg-white text-[#777] hover:border-[#e31c79] hover:text-[#e31c79]'
-              }`}
-            >
-              <Filter className="h-3 w-3" />
-              {showActiveOnly ? 'Active only' : 'All projects'}
-            </button>
-          </div>
-
-        <div className="text-xs text-[#999]">
+        <div style={{ fontSize: 11, color: '#c0bab2' }}>
           Showing{' '}
-          <span className="font-semibold">{filteredProjects.length}</span>{' '}
-          of <span className="font-semibold">{projects.length}</span> projects
+          <span style={{ fontWeight: 600 }}>{filteredProjects.length}</span>{' '}
+          of <span style={{ fontWeight: 600 }}>{projects.length}</span> projects
         </div>
-        </div>
+      </div>
 
-        {/* Projects list */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="flex flex-col items-center gap-4">
-              <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
-                <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
-                <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-              <p className="text-[13px]" style={{ color: '#bbb' }}>Loading...</p>
-            </div>
+      {/* Projects Table */}
+      {filteredProjects.length === 0 ? (
+        <div className="anim-slide-up stagger-1" style={{ padding: '48px 24px', textAlign: 'center' }}>
+          <div style={{
+            width: 44,
+            height: 44,
+            borderRadius: '50%',
+            border: '0.5px solid #e8e4df',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 12px',
+          }}>
+            <Search style={{ width: 18, height: 18, color: '#d0cbc4' }} />
           </div>
-        ) : filteredProjects.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-[#e8e4df] bg-white px-6 py-10 text-center">
-            <p className="text-sm font-medium text-[#555]">
-              No projects found
-            </p>
-            <p className="mt-1 text-xs text-[#999]">
-              Try adjusting your search or create a new project.
-            </p>
-            <button
-              onClick={handleNew}
-              className="mt-4 inline-flex items-center gap-2 rounded bg-[#e31c79] px-4 py-2 text-sm font-medium text-white hover:bg-[#c91865]"
-            >
-              <Plus className="h-4 w-4" />
-              New project
-            </button>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-2xl border border-[#e8e4df] bg-white">
-            <table className="min-w-full divide-y divide-gray-100 text-sm">
-              <thead className="bg-[#FAFAF8]">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
-                    Project
+          <p style={{ fontSize: 13, fontWeight: 500, color: '#999', margin: 0 }}>No projects found</p>
+          <p style={{ fontSize: 11, color: '#ccc', marginTop: 4 }}>
+            Try adjusting your search or create a new project.
+          </p>
+          <button
+            onClick={handleNew}
+            className="flex items-center gap-2"
+            style={{
+              margin: '16px auto 0',
+              backgroundColor: '#e31c79',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 7,
+              padding: '8px 18px',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.backgroundColor = '#cc1069'
+              e.currentTarget.style.transform = 'translateY(-1px)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.backgroundColor = '#e31c79'
+              e.currentTarget.style.transform = 'translateY(0)'
+            }}
+          >
+            <Plus style={{ width: 14, height: 14 }} />
+            New Project
+          </button>
+        </div>
+      ) : (
+        <div
+          className="anim-slide-up stagger-2"
+          style={{
+            background: '#fff',
+            border: '0.5px solid #e8e4df',
+            borderRadius: 10,
+            overflow: 'hidden',
+          }}
+        >
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                {['Project', 'Client', 'Tracking', 'Billing', 'Status'].map((h, i) => (
+                  <th
+                    key={h}
+                    style={{
+                      padding: '11px 20px',
+                      textAlign: i === 4 ? 'right' : 'left',
+                      fontSize: 9,
+                      fontWeight: 500,
+                      letterSpacing: 1.2,
+                      color: '#c0bab2',
+                      textTransform: 'uppercase',
+                      borderBottom: '0.5px solid #f0ece7',
+                      background: 'transparent',
+                    }}
+                  >
+                    {h}
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
-                    Client
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
-                    Tracking
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#999]">
-                    Billing
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[#999]">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredProjects.map((p) => {
-                  const client = clientLookup[p.client_id]
-                  return (
-                    <tr
-                      key={p.id}
-                      className="cursor-pointer hover:bg-[#FAFAF8]"
-                      onClick={() => handleOpen(p.id)}
-                    >
-                      <td className="px-4 py-3 align-middle">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-[#1a1a1a]">
-                            {p.name || '(Untitled project)'}
-                          </span>
-                          <span className="mt-0.5 text-xs text-[#999]">
-                            {p.short_name || p.project_number
-                              ? [p.short_name, p.project_number]
-                                  .filter(Boolean)
-                                  .join(' • ')
-                              : 'No short name / number'}
-                          </span>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProjects.map((p) => {
+                const client = clientLookup[p.client_id]
+                return (
+                  <tr
+                    key={p.id}
+                    style={{
+                      borderBottom: '0.5px solid #f5f2ee',
+                      cursor: 'pointer',
+                      transition: 'background 0.15s ease',
+                    }}
+                    onClick={() => handleOpen(p.id)}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#FDFCFB' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <td style={{ padding: '12px 20px' }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
+                        {p.name || '(Untitled project)'}
+                      </div>
+                      <div style={{ fontSize: 10.5, color: '#c0bab2', marginTop: 2 }}>
+                        {p.short_name || p.project_number
+                          ? [p.short_name, p.project_number]
+                              .filter(Boolean)
+                              .join(' \u2022 ')
+                          : 'No short name / number'}
+                      </div>
+                    </td>
+                    <td style={{ padding: '12px 20px' }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
+                        {client?.name || 'Unassigned'}
+                      </div>
+                      {client?.code && (
+                        <div style={{ fontSize: 10.5, color: '#c0bab2', marginTop: 2 }}>
+                          {client.code}
                         </div>
-                      </td>
-                      <td className="px-4 py-3 align-middle">
-                        <div className="flex flex-col">
-                          <span className="text-sm text-[#1a1a1a]">
-                            {client?.name || 'Unassigned'}
+                      )}
+                    </td>
+                    <td style={{ padding: '12px 20px' }}>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {p.track_time && (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            fontSize: 9,
+                            fontWeight: 500,
+                            padding: '2px 8px',
+                            borderRadius: 3,
+                            background: '#f0faf5',
+                            color: '#2d9b6e',
+                          }}>
+                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#2d9b6e' }} />
+                            Time
                           </span>
-                          {client?.code && (
-                            <span className="mt-0.5 text-xs text-[#999]">
-                              {client.code}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 align-middle">
-                        <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                          {p.track_time && (
-                            <span className="inline-flex rounded bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700">
-                              Time
-                            </span>
-                          )}
-                          {p.track_expenses && (
-                            <span className="inline-flex rounded bg-sky-50 px-2 py-0.5 font-medium text-sky-700">
-                              Expenses
-                            </span>
-                          )}
-                          {!p.track_time && !p.track_expenses && (
-                            <span className="text-xs text-[#bbb]">
-                              None
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 align-middle">
-                        <span
-                          className={`inline-flex rounded px-2 py-0.5 text-[11px] font-medium ${
-                            p.is_billable
-                              ? 'bg-amber-50 text-amber-700'
-                              : 'bg-[#FAFAF8] text-[#999]'
-                          }`}
-                        >
-                          {p.is_billable ? 'Billable' : 'Non-billable'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right align-middle">
-                        <span
-                          className={`inline-flex items-center justify-end rounded px-2 py-0.5 text-[11px] font-medium ${
-                            p.is_active
-                              ? 'bg-emerald-50 text-emerald-700'
-                              : 'bg-[#FAFAF8] text-[#999]'
-                          }`}
-                        >
-                          {p.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </main>
-    </>
+                        )}
+                        {p.track_expenses && (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            fontSize: 9,
+                            fontWeight: 500,
+                            padding: '2px 8px',
+                            borderRadius: 3,
+                            background: '#fdf8f0',
+                            color: '#c4983a',
+                          }}>
+                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#c4983a' }} />
+                            Expenses
+                          </span>
+                        )}
+                        {!p.track_time && !p.track_expenses && (
+                          <span style={{ fontSize: 11, color: '#ccc' }}>None</span>
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ padding: '12px 20px' }}>
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: 9,
+                        fontWeight: 500,
+                        padding: '2px 8px',
+                        borderRadius: 3,
+                        background: p.is_billable ? '#fdf8f0' : '#f7f6f4',
+                        color: p.is_billable ? '#c4983a' : '#999',
+                      }}>
+                        {p.is_billable && (
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#c4983a' }} />
+                        )}
+                        {p.is_billable ? 'Billable' : 'Non-billable'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 20px', textAlign: 'right' }}>
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: 9,
+                        fontWeight: 500,
+                        padding: '2px 8px',
+                        borderRadius: 3,
+                        background: p.is_active ? '#f0faf5' : '#f7f6f4',
+                        color: p.is_active ? '#2d9b6e' : '#999',
+                      }}>
+                        <span style={{
+                          width: 5,
+                          height: 5,
+                          borderRadius: '50%',
+                          background: p.is_active ? '#2d9b6e' : '#ccc',
+                        }} />
+                        {p.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   )
 }

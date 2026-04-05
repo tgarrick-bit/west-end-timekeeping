@@ -118,16 +118,16 @@ const formatCurrency = (amount: number | null | undefined) => {
 
 const statusBadge = (status: ExpenseReport['status']) => {
   const base =
-    'inline-flex px-2 py-1 rounded text-xs font-medium border';
+    'inline-flex px-2 py-1 rounded text-[9px] font-medium border';
   switch (status) {
     case 'submitted':
-      return `${base} bg-amber-50 text-amber-700 border-amber-200`;
+      return `${base} bg-white text-[#c4983a] border-[#e8e4df]`;
     case 'approved':
-      return `${base} bg-emerald-50 text-emerald-700 border-emerald-200`;
+      return `${base} bg-white text-[#2d9b6e] border-[#e8e4df]`;
     case 'rejected':
-      return `${base} bg-red-50 text-red-700 border-red-200`;
+      return `${base} bg-white text-[#b91c1c] border-[#e8e4df]`;
     default:
-      return `${base} bg-[#FAFAF8] text-[#555] border-[#e8e4df]`;
+      return `${base} bg-[#FAFAF8] text-[#999] border-[#e8e4df]`;
   }
 };
 
@@ -739,22 +739,31 @@ if (mode === 'submitted') {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
-        <p className="text-[#777] text-sm">Loading expense report...</p>
+      <div style={{ padding: '36px 40px' }}>
+        {/* Skeleton loading */}
+        <div style={{ marginBottom: 24 }}>
+          <div className="anim-shimmer" style={{ width: 200, height: 24, background: '#f0ece7', borderRadius: 6, marginBottom: 8 }} />
+          <div className="anim-shimmer" style={{ width: 300, height: 14, background: '#f0ece7', borderRadius: 6 }} />
+        </div>
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px', marginBottom: 16 }}>
+          <div className="anim-shimmer" style={{ width: '100%', height: 60, background: '#f0ece7', borderRadius: 6, marginBottom: 12 }} />
+          <div className="anim-shimmer" style={{ width: '100%', height: 80, background: '#f0ece7', borderRadius: 6 }} />
+        </div>
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px' }}>
+          <div className="anim-shimmer" style={{ width: '100%', height: 120, background: '#f0ece7', borderRadius: 6 }} />
+        </div>
       </div>
     );
   }
 
   if (loadErrorMessage && !report) {
     return (
-      <>
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-2">
-            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-            <span className="text-red-700 text-sm">{loadErrorMessage}</span>
-          </div>
-        </main>
-      </>
+      <div style={{ padding: '36px 40px' }}>
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 16, display: 'flex', gap: 8 }}>
+          <AlertCircle style={{ width: 16, height: 16, color: '#b91c1c', flexShrink: 0, marginTop: 2 }} />
+          <span style={{ fontSize: 12.5, fontWeight: 500, color: '#b91c1c' }}>{loadErrorMessage}</span>
+        </div>
+      </div>
     );
   }
 
@@ -765,35 +774,35 @@ if (mode === 'submitted') {
     : 'bg-[#FAFAF8] border-[#e8e4df]';
 
   return (
-    <>
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white/80 backdrop-blur rounded-2xl border border-[#e8e4df] overflow-hidden">
+    <div style={{ padding: '36px 40px' }}>
+      <div>
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
           {/* header */}
-          <div className="bg-white text-[#1a1a1a] px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div style={{ padding: '22px 24px', borderBottom: '0.5px solid #f0ece7', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <div>
-              <div className="flex items-center gap-2 text-xs mb-1">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <span className={statusBadge(report.status)}>
                   {report.status.charAt(0).toUpperCase() +
                     report.status.slice(1)}
                 </span>
                 {isEditable && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-rose-50/10 border border-rose-200/50 text-rose-100">
+                  <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 3, fontSize: 9, fontWeight: 500, background: '#FDFCFB', border: '0.5px solid #e8e4df', color: '#c0bab2' }}>
                     Editable
                   </span>
                 )}
               </div>
-              <h1 className="text-base sm:text-[12px] font-semibold">
+              <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', letterSpacing: -0.3 }}>
                 Expense Report Details
               </h1>
-              <p className="mt-1 text-xs text-[#ccc] flex items-center gap-2">
+              <p style={{ marginTop: 4, fontSize: 13, color: '#999', display: 'flex', alignItems: 'center', gap: 8 }}>
                 {employeeName && (
                   <>
-                    <User className="h-3 w-3 text-[#ccc]" />
+                    <User style={{ width: 12, height: 12, color: '#c0bab2' }} />
                     <span>{employeeName}</span>
-                    <span className="opacity-40">•</span>
+                    <span style={{ opacity: 0.4 }}>&bull;</span>
                   </>
                 )}
-                <Calendar className="h-3 w-3 text-[#ccc]" />
+                <Calendar style={{ width: 12, height: 12, color: '#c0bab2' }} />
                 <span>
                   Period:{' '}
                   {report.period_month
@@ -802,26 +811,26 @@ if (mode === 'submitted') {
                 </span>
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-[11px] uppercase tracking-wide text-[#ccc]">
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>
                 Total Expenses
               </p>
-              <p className="text-xl font-bold text-white">
+              <p style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>
                 {formatCurrency(computedTotal)}
               </p>
             </div>
           </div>
 
           {/* body */}
-          <div className="px-6 py-6 space-y-6 bg-[#FAFAF8]">
+          <div style={{ padding: '22px 24px' }} className="space-y-4">
             {(report.status === 'rejected' || hasRejectedLine) && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-2">
-                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-                <div className="text-sm text-red-800">
-                  <p className="font-semibold">
+              <div style={{ padding: 16, background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, display: 'flex', gap: 8 }}>
+                <AlertCircle style={{ width: 16, height: 16, color: '#b91c1c', flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  <p style={{ fontSize: 12.5, fontWeight: 600, color: '#b91c1c' }}>
                     This expense report has rejected entries.
                   </p>
-                  <p className="mt-1">
+                  <p style={{ marginTop: 4, fontSize: 12.5, fontWeight: 500, color: '#b91c1c' }}>
                     Review the entries highlighted in red, make the required
                     changes, and then resubmit this report for approval.
                   </p>
@@ -830,21 +839,21 @@ if (mode === 'submitted') {
             )}
 
             {actionErrorMessage && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-2">
-                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-                <span className="text-red-700 text-sm">
+              <div style={{ padding: 16, background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, display: 'flex', gap: 8 }}>
+                <AlertCircle style={{ width: 16, height: 16, color: '#b91c1c', flexShrink: 0, marginTop: 2 }} />
+                <span style={{ fontSize: 12.5, fontWeight: 500, color: '#b91c1c' }}>
                   {actionErrorMessage}
                 </span>
               </div>
             )}
             {actionSuccessMessage && (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-800">
-                {actionSuccessMessage}
+              <div style={{ padding: 16, background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 500, color: '#2d9b6e' }}>{actionSuccessMessage}</span>
               </div>
             )}
 
             {/* title / period card */}
-            <div className="bg-white rounded-xl border border-[#e8e4df] p-4 sm:p-5">
+            <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '18px 22px' }}>
               <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#777] mb-1">
@@ -884,8 +893,8 @@ if (mode === 'submitted') {
 
             {/* category summary */}
             {Object.keys(categoryTotals).length > 0 && (
-              <div className="bg-white rounded-xl border border-[#e8e4df] p-4 sm:p-5">
-                <h2 className="text-xs font-semibold text-[#555] mb-3">
+              <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '18px 22px' }}>
+                <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 12 }}>
                   Category Summary
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -907,11 +916,11 @@ if (mode === 'submitted') {
             )}
 
             {/* expense entry section */}
-            <div className="rounded-xl overflow-hidden border border-[#e8e4df] bg-white">
-              <div className="bg-white text-[#1a1a1a] px-4 py-2 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-[#ddd]" />
-                  <span className="text-xs font-semibold tracking-wide">
+            <div style={{ borderRadius: 10, overflow: 'hidden', border: '0.5px solid #e8e4df', background: '#fff' }}>
+              <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <FileText style={{ width: 14, height: 14, color: '#c0bab2' }} />
+                  <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>
                     Expense Entry
                   </span>
                 </div>
@@ -919,9 +928,12 @@ if (mode === 'submitted') {
                   <button
                     type="button"
                     onClick={handleAddLine}
-                    className="inline-flex items-center gap-1 px-4 py-2 text-xs font-semibold rounded-md bg-[#e31c79] text-white hover:bg-[#c91865] transition-colors"
+                    className="inline-flex items-center gap-1 transition-colors"
+                    style={{ padding: '7px 16px', fontSize: 11, fontWeight: 600, borderRadius: 7, background: '#e31c79', color: '#fff', border: 'none' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#cc1069')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = '#e31c79')}
                   >
-                    <Plus className="h-3 w-3" />
+                    <Plus style={{ width: 12, height: 12 }} />
                     Add Another Expense
                   </button>
                 )}
@@ -949,7 +961,7 @@ if (mode === 'submitted') {
                         line.status === 'draft' || line.status === 'rejected';
 
                       const entryBg = isRejectedLine
-                        ? 'bg-red-50 border-red-300'
+                        ? 'bg-white border-[#b91c1c]'
                         : editableEntryBg;
 
                       return (
@@ -961,7 +973,7 @@ if (mode === 'submitted') {
                           {/* entry header */}
                           <div className="flex items-center justify-between gap-3 mb-4">
                             <div className="flex items-center gap-2">
-                              <div className="h-6 w-6 rounded-full bg-[#ff3b96] text-white text-xs font-semibold flex items-center justify-center">
+                              <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#e31c79', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600 }}>
                                 {idx + 1}
                               </div>
                               <div className="flex flex-col">
@@ -973,12 +985,12 @@ if (mode === 'submitted') {
                                   or resubmit your report.
                                 </span>
                                 {isRejectedLine && (
-                                  <span className="mt-1 inline-flex px-2 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-800 border border-red-200">
-                                    Fix now – this entry was rejected
+                                  <span style={{ marginTop: 4, display: 'inline-flex', padding: '2px 8px', borderRadius: 3, fontSize: 9, fontWeight: 500, background: '#fff', border: '0.5px solid #e8e4df', color: '#b91c1c' }}>
+                                    Fix now -- this entry was rejected
                                   </span>
                                 )}
                                 {isRejectedLine && line.rejection_reason && (
-                                  <span className="mt-1 text-[11px] text-red-700">
+                                  <span style={{ marginTop: 4, fontSize: 11, color: '#b91c1c' }}>
                                     Reason: {line.rejection_reason}
                                   </span>
                                 )}
@@ -988,7 +1000,8 @@ if (mode === 'submitted') {
                               <button
                                 type="button"
                                 onClick={() => handleRemoveLine(idx)}
-                                className="inline-flex items-center gap-1 text-[11px] text-red-600 hover:text-red-700"
+                                className="inline-flex items-center gap-1 text-[11px]"
+                                style={{ color: '#b91c1c' }}
                               >
                                 <Trash2 className="h-3 w-3" />
                                 Remove
@@ -998,9 +1011,9 @@ if (mode === 'submitted') {
 
                           {/* inline GSA / IRS info – guideline only */}
                           {(isMileage || gsaMealLimit !== null) && (
-                            <div className="mb-3 flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2">
-                              <AlertCircle className="h-3.5 w-3.5 text-amber-700 mt-0.5" />
-                              <p className="text-[11px] text-amber-900">
+                            <div className="mb-3 flex items-start gap-2 rounded-md bg-white border border-[#e8e4df] px-3 py-2">
+                              <AlertCircle className="h-3.5 w-3.5 text-[#c4983a] mt-0.5" />
+                              <p className="text-[11px] text-[#c4983a]">
                                 {isMileage ? (
                                   <>
                                     Mileage amounts are based on guideline IRS
@@ -1499,7 +1512,7 @@ if (mode === 'submitted') {
             </div>
           </div>
         </div>
-      </main>
-    </>
+      </div>
+    </div>
   );
 }

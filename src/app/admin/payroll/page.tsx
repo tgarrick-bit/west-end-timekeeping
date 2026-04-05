@@ -363,17 +363,31 @@ export default function PayrollPage() {
     emp ? `${emp.last_name}, ${emp.first_name}` : 'Unknown'
 
   const statusBadge = (status: string) => {
-    const base = 'inline-flex px-2 py-0.5'
-    const radius = 'rounded-[3px]'
-    const font = 'text-[9px] font-medium'
-    switch (status) {
-      case 'payroll_approved': return `${base} ${radius} ${font} bg-emerald-100 text-emerald-800`
-      case 'client_approved': return `${base} ${radius} ${font} bg-blue-100 text-blue-800`
-      case 'approved': return `${base} ${radius} ${font} bg-green-100 text-green-800`
-      case 'submitted': return `${base} ${radius} ${font} bg-yellow-100 text-yellow-800`
-      case 'rejected': return `${base} ${radius} ${font} bg-red-100 text-red-800`
-      default: return `${base} ${radius} ${font} bg-[#FAFAF8] text-[#1a1a1a]`
+    const dotColors: Record<string, string> = {
+      payroll_approved: '#2d9b6e',
+      client_approved: '#2d9b6e',
+      approved: '#2d9b6e',
+      submitted: '#c4983a',
+      rejected: '#b91c1c',
+      draft: '#c0bab2',
     }
+    const bgColors: Record<string, string> = {
+      payroll_approved: 'rgba(45,155,110,0.08)',
+      client_approved: 'rgba(45,155,110,0.08)',
+      approved: 'rgba(45,155,110,0.08)',
+      submitted: 'rgba(196,152,58,0.08)',
+      rejected: 'rgba(185,28,28,0.08)',
+      draft: 'rgba(192,186,178,0.08)',
+    }
+    const textColors: Record<string, string> = {
+      payroll_approved: '#2d9b6e',
+      client_approved: '#2d9b6e',
+      approved: '#2d9b6e',
+      submitted: '#c4983a',
+      rejected: '#b91c1c',
+      draft: '#999',
+    }
+    return { dot: dotColors[status] || '#c0bab2', bg: bgColors[status] || 'transparent', text: textColors[status] || '#999' }
   }
 
   const statusLabel = (status: string) => {
@@ -387,25 +401,69 @@ export default function PayrollPage() {
     }
   }
 
+  // Skeleton loading state
+  if (loading && timesheets.length === 0) {
+    return (
+      <div style={{ padding: '36px 40px' }}>
+        <div className="mb-6">
+          <div className="anim-shimmer" style={{ width: 120, height: 24, borderRadius: 6, marginBottom: 8 }} />
+          <div className="anim-shimmer" style={{ width: 320, height: 14, borderRadius: 4 }} />
+        </div>
+
+        {/* Period selector skeleton */}
+        <div className="anim-slide-up stagger-1" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px', marginBottom: 24 }}>
+          <div className="anim-shimmer" style={{ width: 280, height: 32, borderRadius: 7 }} />
+        </div>
+
+        {/* Stats skeleton */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          {[1, 2, 3, 4, 5].map(n => (
+            <div key={n} className={`anim-slide-up stagger-${n}`} style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px' }}>
+              <div className="anim-shimmer" style={{ width: 60, height: 8, borderRadius: 3, marginBottom: 12 }} />
+              <div className="anim-shimmer" style={{ width: 50, height: 28, borderRadius: 4 }} />
+            </div>
+          ))}
+        </div>
+
+        {/* Table skeleton */}
+        <div className="anim-slide-up stagger-6" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7' }}>
+            <div className="anim-shimmer" style={{ width: 200, height: 14, borderRadius: 4 }} />
+          </div>
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} style={{ padding: '12px 20px', borderBottom: '0.5px solid #f5f2ee' }} className="flex items-center gap-6">
+              <div className="anim-shimmer" style={{ width: 140, height: 14, borderRadius: 4 }} />
+              <div className="anim-shimmer" style={{ width: 80, height: 14, borderRadius: 4 }} />
+              <div className="anim-shimmer" style={{ width: 50, height: 14, borderRadius: 4 }} />
+              <div className="anim-shimmer" style={{ width: 50, height: 14, borderRadius: 4 }} />
+              <div className="anim-shimmer" style={{ width: 60, height: 14, borderRadius: 4 }} />
+              <div className="anim-shimmer" style={{ width: 60, height: 18, borderRadius: 3 }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <>
       <div style={{ padding: '36px 40px' }}>
         {/* Page Header */}
-        <div className="mb-6">
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>Payroll</h1>
-          <p style={{ fontSize: 13, fontWeight: 400, color: '#bbb' }}>Manage pay periods, finalize timesheets, and export payroll data</p>
+        <div className="mb-6 anim-slide-up stagger-1">
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', letterSpacing: -0.3 }}>Payroll</h1>
+          <p style={{ fontSize: 13, fontWeight: 400, color: '#999' }}>Manage pay periods, finalize timesheets, and export payroll data</p>
         </div>
 
         {/* Period Selector */}
-        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px', marginBottom: 24 }}>
+        <div className="anim-slide-up stagger-1" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px', marginBottom: 24 }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <label style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Pay Period</label>
+              <label style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1.2, color: '#c0bab2' }}>Pay Period</label>
               <select
                 value={selectedPeriodId || ''}
                 onChange={(e) => setSelectedPeriodId(e.target.value)}
                 style={{ border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, padding: '6px 10px' }}
-                className="focus:outline-none focus:border-[#d3ad6b]"
+                className="focus:outline-none focus:border-[#d3ad6b] focus:shadow-[0_0_0_3px_rgba(211,173,107,0.08)]"
               >
                 {periods.length === 0 && <option value="">No periods generated</option>}
                 {periods.map(p => (
@@ -414,7 +472,7 @@ export default function PayrollPage() {
                   </option>
                 ))}
               </select>
-              <button onClick={loadTimesheets} className="p-2 hover:bg-[#FDFCFB] rounded-lg" title="Refresh">
+              <button onClick={loadTimesheets} className="p-2 hover:bg-[#FDFCFB] rounded-lg transition-colors" title="Refresh">
                 <RefreshCw className="h-4 w-4" style={{ color: '#777' }} />
               </button>
             </div>
@@ -422,8 +480,8 @@ export default function PayrollPage() {
               {selectedPeriod && (
                 <button
                   onClick={handleToggleLock}
-                  style={{ border: '0.5px solid #e0dcd7', borderRadius: 7, fontSize: 12, color: '#777', padding: '6px 12px' }}
-                  className="flex items-center gap-2 hover:border-[#ccc] hover:text-[#555]"
+                  style={{ border: '0.5px solid #e0dcd7', borderRadius: 7, fontSize: 12, fontWeight: 600, color: '#777', padding: '8px 18px' }}
+                  className="flex items-center gap-2 hover:border-[#d3ad6b] transition-colors"
                 >
                   {selectedPeriod.is_locked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
                   {selectedPeriod.is_locked ? 'Unlock Period' : 'Lock Period'}
@@ -435,40 +493,43 @@ export default function PayrollPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Total</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{timesheets.length}</div>
-            <div style={{ fontSize: 11, color: '#999' }}>{totalHours.toFixed(1)} hrs</div>
-          </div>
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Approved</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{approved.length}</div>
-            <div style={{ fontSize: 11, color: '#999' }}>{approvedHours.toFixed(1)} hrs</div>
-          </div>
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Finalized</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{finalized.length}</div>
-            <div style={{ fontSize: 11, color: '#999' }}>{finalizedHours.toFixed(1)} hrs</div>
-          </div>
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Pending</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#e31c79' }}>{submitted.length}</div>
-          </div>
-          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px' }}>
-            <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1, color: '#c0bab2' }}>Draft / Rejected</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a' }}>{draft.length + rejected.length}</div>
-          </div>
+          {[
+            { label: 'Total', value: timesheets.length, sub: `${totalHours.toFixed(1)} hrs`, accent: true },
+            { label: 'Approved', value: approved.length, sub: `${approvedHours.toFixed(1)} hrs` },
+            { label: 'Finalized', value: finalized.length, sub: `${finalizedHours.toFixed(1)} hrs` },
+            { label: 'Pending', value: submitted.length, pink: true },
+            { label: 'Draft / Rejected', value: draft.length + rejected.length },
+          ].map((stat, i) => (
+            <div
+              key={stat.label}
+              className={`anim-slide-up stagger-${i + 1} group`}
+              style={{
+                background: '#fff',
+                border: '0.5px solid #e8e4df',
+                borderRadius: 10,
+                padding: '22px 24px',
+                transition: 'border-color 0.15s ease',
+                cursor: 'default',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = i === 0 ? '#e31c79' : '#d3ad6b' }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e8e4df' }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: 1.2, color: '#c0bab2' }}>{stat.label}</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: stat.pink ? '#e31c79' : '#1a1a1a' }}>{stat.value}</div>
+              {stat.sub && <div style={{ fontSize: 11, color: '#999' }}>{stat.sub}</div>}
+            </div>
+          ))}
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-6 anim-slide-up stagger-3">
           <button
             onClick={handleBulkFinalize}
             disabled={processing || approved.length === 0}
             className="flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ padding: '8px 16px', background: '#e31c79', color: '#fff', borderRadius: 7, fontSize: 12, fontWeight: 500 }}
-            onMouseEnter={(e) => { if (!processing && approved.length > 0) (e.currentTarget.style.background = '#cc1069'); }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = '#e31c79'; }}
+            style={{ padding: '8px 18px', background: '#e31c79', color: '#fff', borderRadius: 7, fontSize: 12, fontWeight: 600 }}
+            onMouseEnter={(e) => { if (!processing && approved.length > 0) { e.currentTarget.style.background = '#cc1069'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#e31c79'; e.currentTarget.style.transform = 'translateY(0)'; }}
           >
             <CheckCircle className="h-4 w-4" />
             Finalize All Approved ({approved.length})
@@ -476,8 +537,10 @@ export default function PayrollPage() {
           <button
             onClick={handleExport}
             disabled={finalized.length === 0 && approved.length === 0}
-            className="flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#ccc] hover:text-[#555]"
-            style={{ padding: '8px 16px', background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 7, fontSize: 12, fontWeight: 500 }}
+            className="flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            style={{ padding: '8px 18px', background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 7, fontSize: 12, fontWeight: 600 }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#d3ad6b'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; }}
           >
             <Download className="h-4 w-4" />
             Export Summary
@@ -485,8 +548,10 @@ export default function PayrollPage() {
           <button
             onClick={handleDetailedExport}
             disabled={finalized.length === 0 && approved.length === 0}
-            className="flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#ccc] hover:text-[#555]"
-            style={{ padding: '8px 16px', background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 7, fontSize: 12, fontWeight: 500 }}
+            className="flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            style={{ padding: '8px 18px', background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 7, fontSize: 12, fontWeight: 600 }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#d3ad6b'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; }}
           >
             <Download className="h-4 w-4" />
             Export Detailed (by entry)
@@ -494,94 +559,100 @@ export default function PayrollPage() {
         </div>
 
         {/* Timesheets Table */}
-        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
+        <div className="anim-slide-up stagger-4" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7' }}>
-            <h3 style={{ fontSize: 12, fontWeight: 600 }}>
-              Timesheets for {selectedPeriod ? getPeriodLabel(selectedPeriod as PayPeriod) : '—'}
+            <h3 style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>
+              Timesheets for {selectedPeriod ? getPeriodLabel(selectedPeriod as PayPeriod) : '\u2014'}
             </h3>
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="flex flex-col items-center gap-4">
-                <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
-                  <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
-                  <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                <p className="text-[13px]" style={{ color: '#bbb' }}>Loading...</p>
-              </div>
+            <div style={{ padding: '20px' }}>
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} style={{ padding: '12px 0', borderBottom: '0.5px solid #f5f2ee' }} className="flex items-center gap-6">
+                  <div className="anim-shimmer" style={{ width: 140, height: 14, borderRadius: 4 }} />
+                  <div className="anim-shimmer" style={{ width: 80, height: 14, borderRadius: 4 }} />
+                  <div className="anim-shimmer" style={{ width: 50, height: 14, borderRadius: 4 }} />
+                  <div className="anim-shimmer" style={{ width: 60, height: 18, borderRadius: 3 }} />
+                </div>
+              ))}
             </div>
           ) : timesheets.length === 0 ? (
-            <div className="p-8 text-center text-[#999]">
-              <Clock className="h-8 w-8 mx-auto mb-2 text-[#bbb]" />
-              <p>No timesheets found for this pay period.</p>
-              <p className="text-sm mt-1">Timesheets will appear here once employees submit them.</p>
+            <div className="p-8 text-center">
+              <Clock className="h-8 w-8 mx-auto mb-2" style={{ color: '#c0bab2' }} />
+              <p style={{ fontSize: 13, color: '#999' }}>No timesheets found for this pay period.</p>
+              <p style={{ fontSize: 11, color: '#c0bab2', marginTop: 4 }}>Timesheets will appear here once employees submit them.</p>
             </div>
           ) : (
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="text-left px-4 py-2" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Employee</th>
-                  <th className="text-left px-4 py-2" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Week Ending</th>
-                  <th className="text-right px-4 py-2" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Reg Hrs</th>
-                  <th className="text-right px-4 py-2" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>OT Hrs</th>
-                  <th className="text-right px-4 py-2" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Total</th>
-                  <th className="text-right px-4 py-2" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Pay</th>
-                  <th className="text-center px-4 py-2" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Status</th>
-                  <th className="text-center px-4 py-2" style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#ccc', textTransform: 'uppercase' }}>Approved</th>
+                  {['Employee', 'Week Ending', 'Reg Hrs', 'OT Hrs', 'Total', 'Pay', 'Status', 'Approved'].map(h => (
+                    <th
+                      key={h}
+                      className={`${['Reg Hrs', 'OT Hrs', 'Total', 'Pay'].includes(h) ? 'text-right' : h === 'Status' || h === 'Approved' ? 'text-center' : 'text-left'}`}
+                      style={{ padding: '11px 20px', fontSize: 9, fontWeight: 500, letterSpacing: 1.2, color: '#c0bab2', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7' }}
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {timesheets.map((ts, i) => {
+                {timesheets.map((ts) => {
                   const emp = ts.employee
                   const isExempt = emp?.is_exempt || false
                   const rate = emp?.hourly_rate || 0
                   const regHrs = isExempt ? (ts.total_hours || 0) : Math.min(ts.total_hours || 0, 40)
                   const otHrs = isExempt ? 0 : (ts.overtime_hours || Math.max(0, (ts.total_hours || 0) - 40))
                   const pay = (regHrs * rate) + (otHrs * rate * 1.5)
+                  const badge = statusBadge(ts.status)
 
                   return (
-                    <tr key={ts.id} style={{ borderBottom: '0.5px solid #f5f2ee' }} className="hover:bg-[#FDFCFB]">
-                      <td className="px-4 py-2" style={{ fontSize: 12.5, color: '#555' }}>
-                        <div style={{ fontWeight: 500, color: '#1a1a1a' }}>{formatName(emp)}</div>
-                        <div style={{ fontSize: 11, color: '#999' }}>
-                          {emp?.department || ''} {emp?.employee_type ? `· ${emp.employee_type}` : ''}
-                          {isExempt ? ' · Exempt' : ''}
+                    <tr key={ts.id} style={{ borderBottom: '0.5px solid #f5f2ee', transition: 'background 0.15s ease' }} className="hover:bg-[#FDFCFB]">
+                      <td style={{ padding: '12px 20px' }}>
+                        <div style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>{formatName(emp)}</div>
+                        <div style={{ fontSize: 10.5, color: '#c0bab2' }}>
+                          {emp?.department || ''} {emp?.employee_type ? `\u00b7 ${emp.employee_type}` : ''}
+                          {isExempt ? ' \u00b7 Exempt' : ''}
                         </div>
                       </td>
-                      <td className="px-4 py-2" style={{ fontSize: 12.5, color: '#555' }}>{ts.week_ending}</td>
-                      <td className="px-4 py-2 text-right" style={{ fontSize: 12.5, color: '#555' }}>{regHrs.toFixed(2)}</td>
-                      <td className="px-4 py-2 text-right" style={{ fontSize: 12.5, color: '#555' }}>{otHrs.toFixed(2)}</td>
-                      <td className="px-4 py-2 text-right" style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>{(ts.total_hours || 0).toFixed(2)}</td>
-                      <td className="px-4 py-2 text-right" style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>${pay.toFixed(2)}</td>
-                      <td className="px-4 py-2 text-center">
-                        <span className={statusBadge(ts.status)}>{statusLabel(ts.status)}</span>
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#555' }}>{ts.week_ending}</td>
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#555', textAlign: 'right' }}>{regHrs.toFixed(2)}</td>
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, color: '#555', textAlign: 'right' }}>{otHrs.toFixed(2)}</td>
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, fontWeight: 500, color: '#1a1a1a', textAlign: 'right' }}>{(ts.total_hours || 0).toFixed(2)}</td>
+                      <td style={{ padding: '12px 20px', fontSize: 12.5, fontWeight: 500, color: '#1a1a1a', textAlign: 'right' }}>${pay.toFixed(2)}</td>
+                      <td style={{ padding: '12px 20px', textAlign: 'center' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 9, fontWeight: 500, borderRadius: 3, padding: '2px 8px', background: badge.bg, color: badge.text }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: badge.dot }} />
+                          {statusLabel(ts.status)}
+                        </span>
                       </td>
-                      <td className="px-4 py-2 text-center text-xs text-[#999]">
-                        {ts.approved_by ? approverMap[ts.approved_by] || '—' : '—'}
+                      <td style={{ padding: '12px 20px', textAlign: 'center', fontSize: 11, color: '#c0bab2' }}>
+                        {ts.approved_by ? approverMap[ts.approved_by] || '\u2014' : '\u2014'}
                       </td>
                     </tr>
                   )
                 })}
               </tbody>
               <tfoot style={{ borderTop: '0.5px solid #e8e4df' }}>
-                <tr style={{ fontWeight: 600, fontSize: 12.5 }}>
-                  <td className="px-4 py-2 text-[#1a1a1a]">Totals ({timesheets.length} timesheets)</td>
+                <tr>
+                  <td style={{ padding: '12px 20px', fontSize: 12.5, fontWeight: 600, color: '#1a1a1a' }}>Totals ({timesheets.length} timesheets)</td>
                   <td></td>
-                  <td className="px-4 py-2 text-right">
+                  <td style={{ padding: '12px 20px', fontSize: 12.5, fontWeight: 600, textAlign: 'right' }}>
                     {timesheets.reduce((s, t) => {
                       const isEx = t.employee?.is_exempt || false
                       return s + (isEx ? (t.total_hours || 0) : Math.min(t.total_hours || 0, 40))
                     }, 0).toFixed(2)}
                   </td>
-                  <td className="px-4 py-2 text-right">
+                  <td style={{ padding: '12px 20px', fontSize: 12.5, fontWeight: 600, textAlign: 'right' }}>
                     {timesheets.reduce((s, t) => {
                       const isEx = t.employee?.is_exempt || false
                       return s + (isEx ? 0 : (t.overtime_hours || Math.max(0, (t.total_hours || 0) - 40)))
                     }, 0).toFixed(2)}
                   </td>
-                  <td className="px-4 py-2 text-right">{totalHours.toFixed(2)}</td>
-                  <td className="px-4 py-2 text-right">
+                  <td style={{ padding: '12px 20px', fontSize: 12.5, fontWeight: 600, textAlign: 'right' }}>{totalHours.toFixed(2)}</td>
+                  <td style={{ padding: '12px 20px', fontSize: 12.5, fontWeight: 600, textAlign: 'right' }}>
                     ${timesheets.reduce((s, t) => {
                       const emp = t.employee
                       const rate = emp?.hourly_rate || 0

@@ -96,17 +96,26 @@ const formatCurrency = (amount: number | null | undefined) => {
 };
 
 const StatusBadge = ({ status }: { status: string }) => {
-  const colors: Record<string, string> = {
-    submitted: 'bg-amber-50 text-amber-700 border-amber-200',
-    approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    rejected: 'bg-red-50 text-red-700 border-red-200',
-    draft: 'bg-[#FAFAF8] text-[#777] border-[#e8e4df]',
+  const colorMap: Record<string, { bg: string; color: string; border: string }> = {
+    submitted: { bg: '#FFF8E1', color: '#c4983a', border: '#c4983a' },
+    approved: { bg: '#ecfdf5', color: '#2d9b6e', border: '#2d9b6e' },
+    rejected: { bg: '#fef2f2', color: '#b91c1c', border: '#b91c1c' },
+    draft: { bg: '#FAFAF8', color: '#777', border: '#e8e4df' },
   };
-  const cls = colors[status] || 'bg-[#FAFAF8] text-[#777] border-[#e8e4df]';
+  const c = colorMap[status] || { bg: '#FAFAF8', color: '#777', border: '#e8e4df' };
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 border font-medium ${cls}`}
-      style={{ fontSize: 9, borderRadius: 3 }}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '2px 8px',
+        fontSize: 9,
+        fontWeight: 500,
+        borderRadius: 3,
+        background: c.bg,
+        color: c.color,
+        border: `0.5px solid ${c.border}`,
+      }}
     >
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
@@ -484,15 +493,29 @@ export default function ManagerExpenseReportPage() {
   };
 
   if (isLoading) {
+    const shimmer: React.CSSProperties = {
+      background: 'linear-gradient(90deg, #f5f2ee 25%, #ece8e3 50%, #f5f2ee 75%)',
+      backgroundSize: '200% 100%',
+      animation: 'shimmer 1.5s infinite',
+      borderRadius: 4,
+    };
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="flex flex-col items-center gap-4">
-          <svg className="animate-spin" width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <circle cx="11" cy="11" r="8" stroke="rgba(227, 28, 121, 0.15)" strokeWidth="2" />
-            <path d="M19 11a8 8 0 00-8-8" stroke="#e31c79" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          <p className="text-[13px]" style={{ color: '#bbb' }}>Loading...</p>
+      <div style={{ padding: '36px 40px' }}>
+        <style dangerouslySetInnerHTML={{ __html: '@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }' }} />
+        <div style={{ ...shimmer, width: 120, height: 14, marginBottom: 24 }} />
+        <div style={{ ...shimmer, width: 280, height: 24 }} />
+        <div style={{ ...shimmer, width: 320, height: 13, marginTop: 8 }} />
+        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 20, marginTop: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+            <div style={{ ...shimmer, width: '100%', height: 36, borderRadius: 7 }} />
+            <div style={{ ...shimmer, width: '100%', height: 36, borderRadius: 7 }} />
+          </div>
         </div>
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 20, marginTop: 16 }}>
+            <div style={{ ...shimmer, width: '100%', height: 80, borderRadius: 8, animationDelay: `${i * 0.15}s` }} />
+          </div>
+        ))}
       </div>
     );
   }
@@ -500,9 +523,9 @@ export default function ManagerExpenseReportPage() {
   if (loadErrorMessage && !report) {
     return (
       <div style={{ padding: '36px 40px', maxWidth: 800 }}>
-        <div style={{ ...cardStyle, display: 'flex', gap: 10, alignItems: 'flex-start', borderColor: '#f5d0d0' }}>
-          <AlertCircle className="h-5 w-5" style={{ color: '#e05252', flexShrink: 0, marginTop: 1 }} />
-          <span style={{ fontSize: 12.5, color: '#c44' }}>{loadErrorMessage}</span>
+        <div style={{ ...cardStyle, display: 'flex', gap: 10, alignItems: 'flex-start', borderColor: '#b91c1c' }}>
+          <AlertCircle className="h-5 w-5" style={{ color: '#b91c1c', flexShrink: 0, marginTop: 1 }} />
+          <span style={{ fontSize: 12.5, color: '#b91c1c' }}>{loadErrorMessage}</span>
         </div>
       </div>
     );
@@ -540,7 +563,7 @@ export default function ManagerExpenseReportPage() {
           </h1>
           <StatusBadge status={report.status} />
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: '#bbb' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: '#999' }}>
           {employeeName && (
             <>
               <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -569,13 +592,13 @@ export default function ManagerExpenseReportPage() {
             display: 'flex',
             gap: 10,
             alignItems: 'flex-start',
-            borderColor: '#f5d0d0',
+            borderColor: '#b91c1c',
             marginBottom: 16,
-            background: '#fef8f8',
+            background: '#fef2f2',
           }}
         >
-          <AlertCircle className="h-4 w-4" style={{ color: '#e05252', flexShrink: 0, marginTop: 2 }} />
-          <div style={{ fontSize: 12, color: '#a33' }}>
+          <AlertCircle className="h-4 w-4" style={{ color: '#b91c1c', flexShrink: 0, marginTop: 2 }} />
+          <div style={{ fontSize: 12, color: '#b91c1c' }}>
             <p style={{ fontWeight: 600, margin: 0 }}>This report has rejected entries.</p>
             <p style={{ marginTop: 4, margin: 0 }}>
               The employee will see these lines highlighted with your rejection reason.
@@ -591,14 +614,14 @@ export default function ManagerExpenseReportPage() {
             display: 'flex',
             gap: 8,
             alignItems: 'center',
-            borderColor: '#f5d0d0',
+            borderColor: '#b91c1c',
             marginBottom: 16,
-            background: '#fef8f8',
+            background: '#fef2f2',
             padding: 12,
           }}
         >
-          <AlertCircle className="h-3.5 w-3.5" style={{ color: '#e05252' }} />
-          <span style={{ fontSize: 12, color: '#c44' }}>{actionError}</span>
+          <AlertCircle className="h-3.5 w-3.5" style={{ color: '#b91c1c' }} />
+          <span style={{ fontSize: 12, color: '#b91c1c' }}>{actionError}</span>
         </div>
       )}
       {actionMessage && (
@@ -610,12 +633,12 @@ export default function ManagerExpenseReportPage() {
             alignItems: 'center',
             borderColor: '#c3e6cb',
             marginBottom: 16,
-            background: '#f4faf5',
+            background: '#ecfdf5',
             padding: 12,
           }}
         >
-          <CheckCircle2 className="h-3.5 w-3.5" style={{ color: '#4aba70' }} />
-          <span style={{ fontSize: 12, color: '#2d7a3f' }}>{actionMessage}</span>
+          <CheckCircle2 className="h-3.5 w-3.5" style={{ color: '#2d9b6e' }} />
+          <span style={{ fontSize: 12, color: '#2d9b6e' }}>{actionMessage}</span>
         </div>
       )}
 
@@ -776,11 +799,11 @@ export default function ManagerExpenseReportPage() {
                           <span style={{ fontSize: 12, fontWeight: 600, color: '#555' }}>
                             Entry #{idx + 1}
                           </span>
-                          <span style={{ fontSize: 11, color: '#bbb', marginLeft: 8 }}>
+                          <span style={{ fontSize: 11, color: '#999', marginLeft: 8 }}>
                             {formatDate(line.expense_date)}
                           </span>
                           {isRejectedLine && (
-                            <p style={{ fontSize: 11, color: '#c44', marginTop: 2, margin: 0 }}>
+                            <p style={{ fontSize: 11, color: '#b91c1c', marginTop: 2, margin: 0 }}>
                               Rejection: {line.rejection_reason || 'No reason provided.'}
                             </p>
                           )}
@@ -799,9 +822,9 @@ export default function ManagerExpenseReportPage() {
                             padding: '4px 10px',
                             fontSize: 10,
                             borderRadius: 4,
-                            border: '0.5px solid #c3e6cb',
-                            background: '#f4faf5',
-                            color: '#2d7a3f',
+                            border: '0.5px solid #2d9b6e',
+                            background: '#ecfdf5',
+                            color: '#2d9b6e',
                             cursor: 'pointer',
                             opacity: isWorking || line.status === 'approved' ? 0.4 : 1,
                           }}
@@ -823,9 +846,9 @@ export default function ManagerExpenseReportPage() {
                             padding: '4px 10px',
                             fontSize: 10,
                             borderRadius: 4,
-                            border: '0.5px solid #f5d0d0',
-                            background: '#fef8f8',
-                            color: '#c44',
+                            border: '0.5px solid #b91c1c',
+                            background: '#fef2f2',
+                            color: '#b91c1c',
                             cursor: 'pointer',
                             opacity:
                               isWorking || (line.status !== 'submitted' && line.status !== 'rejected')
@@ -853,7 +876,7 @@ export default function ManagerExpenseReportPage() {
                             : '\u2014'}
                         </p>
                         {line.client_name && (
-                          <p style={{ fontSize: 10, color: '#bbb', marginTop: 1 }}>{line.client_name}</p>
+                          <p style={{ fontSize: 10, color: '#999', marginTop: 1 }}>{line.client_name}</p>
                         )}
                       </div>
                       <div>
@@ -914,7 +937,7 @@ export default function ManagerExpenseReportPage() {
                             )}
                           </div>
                         ) : (
-                          <p style={{ fontSize: 12, color: '#bbb', marginTop: 2 }}>No receipt attached.</p>
+                          <p style={{ fontSize: 12, color: '#999', marginTop: 2 }}>No receipt attached.</p>
                         )}
                       </div>
                     </div>

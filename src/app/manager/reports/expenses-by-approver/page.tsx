@@ -1,57 +1,37 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
-import { 
-  Clock, 
-  LogOut,
-  Calendar,
-  ChevronRight,
-  FileText,
-  Download
-} from 'lucide-react'
+import { Download } from 'lucide-react'
 
 interface ExpenseData {
-  id: string
-  employee_id: string
-  project_id?: string
-  expense_date: string
-  amount: number
-  category: string
-  description: string
-  receipt_url?: string
-  status: string
-  payment_method?: string
-  is_reimbursable: boolean
-  is_billable: boolean
-  submitted_at?: string
-  approved_at?: string
-  approved_by?: string
-  employees?: {
-    first_name: string
-    last_name: string
-    department?: string
-    email: string
+  id: string; employee_id: string; project_id?: string; expense_date: string; amount: number; category: string
+  description: string; receipt_url?: string; status: string; payment_method?: string; is_reimbursable: boolean
+  is_billable: boolean; submitted_at?: string; approved_at?: string; approved_by?: string
+  employees?: { first_name: string; last_name: string; department?: string; email: string }
+  projects?: { name: string; code: string }
+  approver?: { first_name: string; last_name: string; email: string } | null
+}
+
+const StatusBadge = ({ status }: { status: string }) => {
+  const m: Record<string, { bg: string; color: string; border: string }> = {
+    approved: { bg: '#ecfdf5', color: '#2d9b6e', border: '#2d9b6e' },
+    pending: { bg: '#FFF8E1', color: '#c4983a', border: '#c4983a' },
+    submitted: { bg: '#FFF8E1', color: '#c4983a', border: '#c4983a' },
+    rejected: { bg: '#fef2f2', color: '#b91c1c', border: '#b91c1c' },
   }
-  projects?: {
-    name: string
-    code: string
-  }
-  approver?: {
-    first_name: string
-    last_name: string
-    email: string
-  } | null
+  const c = m[status] || { bg: '#FAFAF8', color: '#777', border: '#e8e4df' }
+  return <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', fontSize: 9, fontWeight: 500, borderRadius: 3, background: c.bg, color: c.color, border: `0.5px solid ${c.border}` }}>{status}</span>
 }
 
 export default function ExpensesByApproverReport() {
   const router = useRouter()
   const { user } = useAuth()
   const supabase = createClient()
-  
+
   const [startDate, setStartDate] = useState('2025-09-01')
   const [endDate, setEndDate] = useState('2025-09-30')
   const [selectedUser, setSelectedUser] = useState('')
@@ -61,433 +41,122 @@ export default function ExpensesByApproverReport() {
 
   const handleRunReport = async () => {
     setIsLoading(true)
-    
     try {
-      // Build query
-      let query = supabase
-        .from('expenses')
-        .select(`
-          *,
-          employees!inner (
-            first_name,
-            last_name,
-            department,
-            email
-          ),
-          projects (
-            name,
-            code
-          )
-        `)
-        .gte('expense_date', startDate)
-        .lte('expense_date', endDate)
-
-      // Filter based on approval status
-      if (!includeUnapproved) {
-        query = query.eq('status', 'approved')
-      } else {
-        // Include all statuses
-        query = query.in('status', ['approved', 'pending', 'submitted', 'rejected'])
-      }
-
+      let query = supabase.from('expenses').select(`*, employees!inner (first_name, last_name, department, email), projects (name, code)`).gte('expense_date', startDate).lte('expense_date', endDate)
+      if (!includeUnapproved) { query = query.eq('status', 'approved') } else { query = query.in('status', ['approved', 'pending', 'submitted', 'rejected']) }
       const { data, error } = await query
-
-      if (error) {
-        console.error('Error fetching report data:', error)
-      } else if (data) {
-        // Fetch approver details if needed
-        const dataWithApprovers = await Promise.all(
-          (data as ExpenseData[]).map(async (expense) => {
-            if (expense.approved_by) {
-              const { data: approverData } = await supabase
-                .from('employees')
-                .select('first_name, last_name, email')
-                .eq('id', expense.approved_by)
-                .single()
-              
-              return { ...expense, approver: approverData }
-            }
-            return expense
-          })
-        )
+      if (error) { console.error('Error:', error) } else if (data) {
+        const dataWithApprovers = await Promise.all((data as ExpenseData[]).map(async (expense) => {
+          if (expense.approved_by) { const { data: a } = await supabase.from('employees').select('first_name, last_name, email').eq('id', expense.approved_by).single(); return { ...expense, approver: a } }
+          return expense
+        }))
         setReportData(dataWithApprovers)
       }
-    } catch (error) {
-      console.error('Error generating report:', error)
-    } finally {
-      setIsLoading(false)
-    }
+    } catch (error) { console.error('Error:', error) } finally { setIsLoading(false) }
   }
 
   const handleExportToExcel = () => {
-    if (reportData.length === 0) {
-      alert('No data to export. Please run the report first.')
-      return
-    }
-
-    // Format data for Excel
+    if (reportData.length === 0) { alert('No data to export.'); return }
     const exportData: any[] = []
-    
-    // Group by approver
-    const approverGroups: { [key: string]: ExpenseData[] } = {}
-    reportData.forEach(expense => {
-      const key = expense.approved_by || 'unapproved'
-      if (!approverGroups[key]) {
-        approverGroups[key] = []
-      }
-      approverGroups[key].push(expense)
-    })
-
-    // Create export rows
-    Object.entries(approverGroups).forEach(([approverId, expenses]) => {
+    const groups: { [key: string]: ExpenseData[] } = {}
+    reportData.forEach(e => { const k = e.approved_by || 'unapproved'; if (!groups[k]) groups[k] = []; groups[k].push(e) })
+    Object.entries(groups).forEach(([id, expenses]) => {
       const approver = expenses[0].approver
-      const approverName = approver 
-        ? `${approver.first_name} ${approver.last_name}`
-        : approverId === 'unapproved' ? 'Unapproved' : 'Unknown Approver'
-      
-      expenses.forEach(expense => {
-        exportData.push({
-          'Approver': approverName,
-          'Employee': expense.employees 
-            ? `${expense.employees.first_name} ${expense.employees.last_name}` 
-            : 'Unknown',
-          'Department': expense.employees?.department || '',
-          'Date': expense.expense_date,
-          'Category': expense.category,
-          'Description': expense.description,
-          'Amount': expense.amount.toFixed(2),
-          'Payment Method': expense.payment_method || '',
-          'Reimbursable': expense.is_reimbursable ? 'Yes' : 'No',
-          'Billable': expense.is_billable ? 'Yes' : 'No',
-          'Status': expense.status,
-          'Approved Date': expense.approved_at 
-            ? new Date(expense.approved_at).toLocaleDateString() 
-            : 'N/A'
-        })
-      })
+      const name = approver ? `${approver.first_name} ${approver.last_name}` : id === 'unapproved' ? 'Unapproved' : 'Unknown'
+      expenses.forEach(e => { exportData.push({ 'Approver': name, 'Employee': e.employees ? `${e.employees.first_name} ${e.employees.last_name}` : 'Unknown', 'Date': e.expense_date, 'Category': e.category, 'Amount': e.amount.toFixed(2), 'Status': e.status, 'Approved Date': e.approved_at ? new Date(e.approved_at).toLocaleDateString() : 'N/A' }) })
     })
-
-    // Create workbook
-    const wb = XLSX.utils.book_new()
-    const ws = XLSX.utils.json_to_sheet(exportData)
-    
-    // Auto-size columns
-    if (exportData.length > 0) {
-      const colWidths = Object.keys(exportData[0]).map(key => {
-        const maxLength = Math.max(
-          key.length,
-          ...exportData.map((row) => {
-            const value = row[key]
-            return value ? String(value).length : 0
-          })
-        )
-        return { wch: Math.min(maxLength + 2, 30) }
-      })
-      ws['!cols'] = colWidths
-    }
-    
-    // Add worksheet to workbook
-    XLSX.utils.book_append_sheet(wb, ws, 'Expenses by Approver')
-    
-    // Generate filename with date range
-    const fileName = `expenses_by_approver_${startDate}_to_${endDate}.xlsx`
-    
-    // Write the file
-    XLSX.writeFile(wb, fileName)
+    const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(exportData)
+    if (exportData.length > 0) { ws['!cols'] = Object.keys(exportData[0]).map(k => ({ wch: Math.min(Math.max(k.length, ...exportData.map(r => r[k] ? String(r[k]).length : 0)) + 2, 30) })) }
+    XLSX.utils.book_append_sheet(wb, ws, 'Expenses by Approver'); XLSX.writeFile(wb, `expenses_by_approver_${startDate}_to_${endDate}.xlsx`)
   }
 
-  // Calculate totals
-  const totals = reportData.reduce((acc, expense) => {
-    acc.totalAmount += expense.amount
-    acc.approved += expense.status === 'approved' ? expense.amount : 0
-    acc.pending += (expense.status === 'pending' || expense.status === 'submitted') ? expense.amount : 0
-    acc.approvedCount += expense.status === 'approved' ? 1 : 0
-    acc.pendingCount += (expense.status === 'pending' || expense.status === 'submitted') ? 1 : 0
+  const totals = reportData.reduce((acc, e) => {
+    acc.totalAmount += e.amount; acc.approved += e.status === 'approved' ? e.amount : 0
+    acc.pending += (e.status === 'pending' || e.status === 'submitted') ? e.amount : 0
+    acc.approvedCount += e.status === 'approved' ? 1 : 0; acc.pendingCount += (e.status === 'pending' || e.status === 'submitted') ? 1 : 0
     return acc
   }, { totalAmount: 0, approved: 0, pending: 0, approvedCount: 0, pendingCount: 0 })
 
+  const labelSt: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 600, color: '#c0bab2', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }
+  const inputSt: React.CSSProperties = { padding: '8px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, fontSize: 12, color: '#555', outline: 'none' }
+  const selectSt: React.CSSProperties = { ...inputSt, width: '100%' }
+  const checkSt: React.CSSProperties = { accentColor: '#e31c79' }
+  const spanSt: React.CSSProperties = { marginLeft: 8, fontSize: 12, color: '#555' }
+  const thSt: React.CSSProperties = { padding: '11px 20px', fontSize: 9, fontWeight: 500, letterSpacing: 1.2, color: '#c0bab2', textTransform: 'uppercase', borderBottom: '0.5px solid #f0ece7', textAlign: 'left' }
+  const tdSt: React.CSSProperties = { padding: '12px 20px', fontSize: 12.5, color: '#1a1a1a' }
+
   return (
-    <>
-      {/* Header */}
-      {/* Navigation */}
-      <div className="bg-[#FAFAF8] border-b">
-        <div className="max-w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
-            <button 
-              onClick={() => router.push('/manager')}
-              className="py-3 text-sm font-medium text-[#777] hover:text-[#1a1a1a]"
-            >
-              Review
-            </button>
-            <button className="py-3 text-sm font-medium text-[#1a1a1a] border-b-2 border-[#e31c79]">
-              Reports
-            </button>
-          </div>
-        </div>
+    <div style={{ padding: '36px 40px' }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', margin: 0, letterSpacing: -0.3 }}>Expenses by Approver</h1>
+        <p style={{ fontSize: 13, fontWeight: 400, color: '#999', marginTop: 4 }}>Generate expense reports grouped by approver</p>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex gap-6">
-          {/* Left Sidebar */}
-          <div className="w-64 bg-white rounded-lg p-4">
-            <h3 className="font-semibold text-[#1a1a1a] mb-4">Time Reports</h3>
-            <div className="space-y-1">
-              <a href="/manager/reports/time-by-project" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Project
-              </a>
-              <a href="/manager/reports/time-by-employee" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Employee
-              </a>
-              <a href="/manager/reports/time-by-class" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Class
-              </a>
-              <a href="/manager/reports/time-by-approver" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time by Approver
-              </a>
-              <a href="/manager/reports/time-missing" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Time Missing
-              </a>
-            </div>
-
-            <h3 className="font-semibold text-[#1a1a1a] mt-6 mb-4">Expense Reports</h3>
-            <div className="space-y-1">
-              <a href="/manager/reports/expenses-by-employee" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Expenses by Employee
-              </a>
-              <a href="/manager/reports/expenses-by-project" className="block px-3 py-2 text-sm text-[#555] hover:bg-[#FAFAF8] rounded">
-                Expenses by Project
-              </a>
-              <a href="/manager/reports/expenses-by-approver" className="flex items-center justify-between px-3 py-2 text-sm bg-[#FAFAF8] text-[#1a1a1a] rounded">
-                Expenses by Approver
-                <ChevronRight className="h-4 w-4" />
-              </a>
-            </div>
+      <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 24 }}>
+        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', margin: '0 0 16px 0' }}>Report Details</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div><label style={labelSt}>Date Start</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={inputSt} /></div>
+            <div><label style={labelSt}>Date Stop</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={inputSt} /></div>
+          </div>
+          <div><label style={labelSt}>User</label><select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} style={selectSt}><option value=""></option></select></div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <label style={{ display: 'flex', alignItems: 'center' }}><input type="checkbox" checked={includeUnapproved} onChange={e => setIncludeUnapproved(e.target.checked)} style={checkSt} /><span style={spanSt}>Include Unapproved</span></label>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+            {reportData.length > 0 && <button onClick={handleExportToExcel} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', background: '#fff', color: '#777', border: '0.5px solid #e0dcd7', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}><Download style={{ width: 16, height: 16 }} /> Export to Excel</button>}
+            <button onClick={handleRunReport} disabled={isLoading} style={{ padding: '8px 24px', borderRadius: 6, fontSize: 12, fontWeight: 500, border: 'none', cursor: isLoading ? 'not-allowed' : 'pointer', background: isLoading ? '#f5f2ee' : '#e31c79', color: isLoading ? '#999' : '#fff' }}>{isLoading ? 'Running...' : 'Run'}</button>
           </div>
 
-          {/* Report Configuration */}
-          <div className="flex-1 bg-white rounded-lg p-6">
-            <h2 className="text-[12px] font-semibold text-[#1a1a1a] mb-6">Report Details: Expenses by Approver</h2>
-
-            <div className="space-y-6">
-              {/* Date Range */}
-              <div className="flex items-center gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Date Start</label>
-                  <div className="flex items-center">
-                    <input 
-                      type="date" 
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">Date Stop</label>
-                  <div className="flex items-center">
-                    <input 
-                      type="date" 
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="px-3 py-2 border border-[#e8e4df] rounded-md"
-                    />
-                  </div>
-                </div>
+          {reportData.length > 0 && (
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 16 }}>
+                <div style={{ padding: 16, background: '#FDFCFB', borderRadius: 10, border: '0.5px solid #f5f2ee' }}><p style={{ fontSize: 12, color: '#999', margin: 0 }}>Total Expenses</p><p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', margin: '4px 0 0' }}>${totals.totalAmount.toFixed(2)}</p></div>
+                <div style={{ padding: 16, background: '#FDFCFB', borderRadius: 10, border: '0.5px solid #f5f2ee' }}><p style={{ fontSize: 12, color: '#999', margin: 0 }}>Approved</p><p style={{ fontSize: 14, fontWeight: 600, color: '#2d9b6e', margin: '4px 0 0' }}>${totals.approved.toFixed(2)} <span style={{ fontSize: 11, color: '#999' }}>({totals.approvedCount})</span></p></div>
+                <div style={{ padding: 16, background: '#FDFCFB', borderRadius: 10, border: '0.5px solid #f5f2ee' }}><p style={{ fontSize: 12, color: '#999', margin: 0 }}>Pending</p><p style={{ fontSize: 14, fontWeight: 600, color: '#c4983a', margin: '4px 0 0' }}>${totals.pending.toFixed(2)} <span style={{ fontSize: 11, color: '#999' }}>({totals.pendingCount})</span></p></div>
+                <div style={{ padding: 16, background: '#FDFCFB', borderRadius: 10, border: '0.5px solid #f5f2ee' }}><p style={{ fontSize: 12, color: '#999', margin: 0 }}>Total Count</p><p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', margin: '4px 0 0' }}>{reportData.length}</p></div>
               </div>
 
-              {/* User Filter */}
-              <div>
-                <label className="block text-sm font-medium text-[#555] mb-1">User</label>
-                <select 
-                  value={selectedUser}
-                  onChange={(e) => setSelectedUser(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#e8e4df] rounded-md"
-                >
-                  <option value=""></option>
-                </select>
-              </div>
-
-              {/* Options */}
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input 
-                    type="checkbox"
-                    checked={includeUnapproved}
-                    onChange={(e) => setIncludeUnapproved(e.target.checked)}
-                    className="rounded border-[#e8e4df] text-[#e31c79]"
-                  />
-                  <span className="ml-2 text-sm text-[#555]">Include Unapproved</span>
-                </label>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-4">
-                {reportData.length > 0 && (
-                  <button 
-                    onClick={handleExportToExcel}
-                    className="px-6 py-2 bg-white text-[#1a1a1a] rounded-md hover:bg-[#FAFAF8] font-medium flex items-center"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export to Excel
-                  </button>
-                )}
-                <button 
-                  onClick={handleRunReport}
-                  disabled={isLoading}
-                  className={`px-6 py-2 rounded-md font-medium ${
-                    isLoading 
-                      ? 'bg-[#FAFAF8] text-[#999] cursor-not-allowed' 
-                      : 'bg-green-600 text-white hover:bg-green-700'
-                  }`}
-                >
-                  {isLoading ? 'Running...' : 'Run'}
-                </button>
-              </div>
-
-              {/* Results */}
-              {reportData.length > 0 && (
-                <div className="mt-6">
-                  <div className="p-4 bg-[#FAFAF8] rounded mb-4">
-                    <div className="grid grid-cols-4 gap-4">
-                      <div>
-                        <p className="text-sm text-[#777]">Total Expenses</p>
-                        <p className="text-[14px] font-semibold">${totals.totalAmount.toFixed(2)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-[#777]">Approved</p>
-                        <p className="text-[14px] font-semibold text-green-600">
-                          ${totals.approved.toFixed(2)}
-                          <span className="text-sm text-[#777] ml-1">({totals.approvedCount})</span>
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-[#777]">Pending</p>
-                        <p className="text-[14px] font-semibold text-yellow-600">
-                          ${totals.pending.toFixed(2)}
-                          <span className="text-sm text-[#777] ml-1">({totals.pendingCount})</span>
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-[#777]">Total Count</p>
-                        <p className="text-[14px] font-semibold">{reportData.length}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Results Table */}
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-[#FAFAF8]">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Approver
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Employee
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Department
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Date
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Category
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Description
-                          </th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Amount
-                          </th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Status
-                          </th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-[#999] uppercase tracking-wider">
-                            Approved Date
-                          </th>
+              <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead><tr>
+                    {['Approver', 'Employee', 'Department', 'Date', 'Category', 'Description', 'Amount', 'Status', 'Approved Date'].map(h => (
+                      <th key={h} style={{ ...thSt, textAlign: h === 'Amount' ? 'right' : ['Status', 'Approved Date'].includes(h) ? 'center' : 'left' }}>{h}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody>
+                    {reportData
+                      .sort((a, b) => {
+                        const aName = a.approver ? `${a.approver.first_name} ${a.approver.last_name}` : 'zzz'
+                        const bName = b.approver ? `${b.approver.first_name} ${b.approver.last_name}` : 'zzz'
+                        if (aName !== bName) return aName.localeCompare(bName)
+                        return new Date(a.expense_date).getTime() - new Date(b.expense_date).getTime()
+                      })
+                      .map(e => (
+                        <tr key={e.id} style={{ borderBottom: '0.5px solid #f5f2ee' }} onMouseEnter={ev => ev.currentTarget.style.background='#FDFCFB'} onMouseLeave={ev => ev.currentTarget.style.background='transparent'}>
+                          <td style={tdSt}>{e.approver ? `${e.approver.first_name} ${e.approver.last_name}` : e.status === 'approved' ? 'Unknown Approver' : '-'}</td>
+                          <td style={tdSt}>{e.employees ? `${e.employees.first_name} ${e.employees.last_name}` : 'Unknown'}</td>
+                          <td style={tdSt}>{e.employees?.department || 'N/A'}</td>
+                          <td style={tdSt}>{new Date(e.expense_date).toLocaleDateString()}</td>
+                          <td style={tdSt}>{e.category}</td>
+                          <td style={tdSt}>{e.description}</td>
+                          <td style={{ ...tdSt, textAlign: 'right', fontWeight: 600 }}>${e.amount.toFixed(2)}</td>
+                          <td style={{ ...tdSt, textAlign: 'center' }}><StatusBadge status={e.status} /></td>
+                          <td style={{ ...tdSt, textAlign: 'center' }}>{e.approved_at ? new Date(e.approved_at).toLocaleDateString() : '-'}</td>
                         </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {reportData
-                          .sort((a, b) => {
-                            // Sort by approver name first, then by date
-                            const approverA = a.approver ? `${a.approver.first_name} ${a.approver.last_name}` : 'zzz'
-                            const approverB = b.approver ? `${b.approver.first_name} ${b.approver.last_name}` : 'zzz'
-                            if (approverA !== approverB) return approverA.localeCompare(approverB)
-                            return new Date(a.expense_date).getTime() - new Date(b.expense_date).getTime()
-                          })
-                          .map((expense) => (
-                            <tr key={expense.id} className="hover:bg-[#FAFAF8]">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                {expense.approver 
-                                  ? `${expense.approver.first_name} ${expense.approver.last_name}`
-                                  : expense.status === 'approved' 
-                                    ? 'Unknown Approver'
-                                    : '-'
-                                }
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                {expense.employees ? `${expense.employees.first_name} ${expense.employees.last_name}` : 'Unknown'}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                {expense.employees?.department || 'N/A'}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                {new Date(expense.expense_date).toLocaleDateString()}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a1a1a]">
-                                {expense.category}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-[#1a1a1a]">
-                                {expense.description}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-[#1a1a1a]">
-                                ${expense.amount.toFixed(2)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <span className={`px-2 inline-flex leading-5 rounded ${
-                                  expense.status === 'approved' 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : expense.status === 'pending' || expense.status === 'submitted'
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : expense.status === 'rejected'
-                                    ? 'bg-red-100 text-red-800'
-                                    : 'bg-[#FAFAF8] text-[#1a1a1a]'
-                                }`}>
-                                  {expense.status}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-[#1a1a1a]">
-                                {expense.approved_at 
-                                  ? new Date(expense.approved_at).toLocaleDateString()
-                                  : '-'
-                                }
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                      <tfoot className="bg-[#FAFAF8]">
-                        <tr>
-                          <td colSpan={6} className="px-6 py-3 text-left text-sm font-semibold text-[#1a1a1a]">
-                            Total
-                          </td>
-                          <td className="px-6 py-3 text-right text-sm font-semibold text-[#1a1a1a]">
-                            ${totals.totalAmount.toFixed(2)}
-                          </td>
-                          <td colSpan={2} className="px-6 py-3"></td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                </div>
-              )}
+                      ))}
+                  </tbody>
+                  <tfoot><tr style={{ background: '#FDFCFB' }}>
+                    <td colSpan={6} style={{ ...tdSt, fontWeight: 600 }}>Total</td>
+                    <td style={{ ...tdSt, textAlign: 'right', fontWeight: 600 }}>${totals.totalAmount.toFixed(2)}</td>
+                    <td colSpan={2} style={tdSt} />
+                  </tr></tfoot>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
-
-    </>
+    </div>
   )
 }
