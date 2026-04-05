@@ -8,11 +8,13 @@ import { syncPlacementsToTimekeeping } from '@/lib/trackerSync';
 
 export const maxDuration = 120;
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 /**
  * GET: Return last sync status
@@ -38,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get last sync info from company_settings
-    const { data: settings } = await supabaseAdmin
+    const { data: settings } = await getSupabaseAdmin()
       .from('company_settings')
       .select('tracker_rms_enabled, tracker_rms_config')
       .single();
@@ -78,7 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if integration is enabled
-    const { data: settings } = await supabaseAdmin
+    const { data: settings } = await getSupabaseAdmin()
       .from('company_settings')
       .select('tracker_rms_enabled')
       .single();
@@ -91,10 +93,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Run the sync with admin client (service role)
-    const result = await syncPlacementsToTimekeeping(supabaseAdmin);
+    const result = await syncPlacementsToTimekeeping(getSupabaseAdmin());
 
     // Log to audit
-    await supabaseAdmin.from('audit_logs').insert({
+    await getSupabaseAdmin().from('audit_logs').insert({
       user_id: user.id,
       action: 'admin.tracker_sync',
       timestamp: new Date().toISOString(),
@@ -105,7 +107,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Store last sync result
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from('company_settings')
       .update({
         tracker_rms_config: {
