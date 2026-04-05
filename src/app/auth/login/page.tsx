@@ -67,8 +67,8 @@ export default function LoginPage() {
       localStorage.setItem('userRole', emp.role);
       const r = emp.role?.toLowerCase();
       router.push(r === 'admin' ? '/admin' : r === 'manager' ? '/manager' : '/employee');
-    } catch {
-      setError('Connection error. Please try again.');
+    } catch (err: any) {
+      setError(`Connection error: ${err?.message || err || 'Unknown'}. Please try again.`);
       setLoading(false);
     }
   };
