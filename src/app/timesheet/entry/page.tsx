@@ -51,7 +51,8 @@ function TimesheetEntryInner() {
       const params = new URLSearchParams(window.location.search);
       const weekParam = params.get('week');
       if (weekParam) {
-        const parsed = new Date(weekParam);
+        // Use T12:00:00 to avoid timezone date-shift issues
+        const parsed = new Date(weekParam + 'T12:00:00');
         if (!isNaN(parsed.getTime())) return parsed;
       }
     }

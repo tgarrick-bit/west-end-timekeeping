@@ -358,9 +358,8 @@ export default function EmployeeDashboard() {
   const handleTimesheetClick = async (timecard: Timecard) => {
     // Draft and rejected — go straight to editing
     if (timecard.status === 'draft' || timecard.status === 'rejected') {
-      const weekDate = new Date(timecard.week_ending + 'T00:00:00');
-      // Navigate to entry page with the week set so it loads this timesheet
-      router.push(`/timesheet/entry?week=${weekDate.toISOString()}`);
+      // Pass the week_ending date directly — avoid timezone conversion issues
+      router.push(`/timesheet/entry?week=${timecard.week_ending}`);
       return;
     }
 

@@ -44,22 +44,12 @@ export default function NotificationBell() {
   }, [user?.id])
 
   const loadNotifications = async () => {
-    // Try notifications table first, fall back to in_app_notifications
-    let result = await supabase
-      .from('notifications')
+    const result = await supabase
+      .from('in_app_notifications')
       .select('*')
       .eq('user_id', user!.id)
       .order('created_at', { ascending: false })
       .limit(20)
-
-    if (result.error) {
-      result = await supabase
-        .from('in_app_notifications')
-        .select('*')
-        .eq('user_id', user!.id)
-        .order('created_at', { ascending: false })
-        .limit(20)
-    }
 
     if (result.data) {
       setNotifications(result.data as Notification[])
@@ -67,7 +57,7 @@ export default function NotificationBell() {
     }
   }
 
-  const tableName = 'notifications'
+  const tableName = 'in_app_notifications'
 
   const markAsRead = async (id: string) => {
     await supabase.from(tableName).update({ is_read: true }).eq('id', id)
