@@ -342,137 +342,46 @@ export async function PATCH(
 
     const managerRecipient = managerEmail || fallbackManagerEmail;
 
-    const year = new Date().getFullYear().toString();
-
-    const footerHtml = `
-      <tr>
-        <td class="footer" style="
-          text-align: center;
-          padding: 18px 20px 22px;
-          font-size: 12px;
-          color: #6b7280;
-          font-family: 'Montserrat', Arial, sans-serif;
-          line-height: 1.6;
-          background: #ffffff;
-          border-top: 1px solid #e31c79;
-        ">
-          <p style="margin: 0 0 6px;">
-            This notification is intended for internal use by authorized personnel only
-            and contains no sensitive information. Please sign into the portal
-            to view full timesheet details.
-          </p>
-
-          <p style="margin: 0 0 6px;">
-            West End Workforce · 800 Town &amp; Country Blvd, Suite 500 · Houston, TX 77024<br />
-            <a href="mailto:payroll@westendworkforce.com" style="color:#4b5563; text-decoration:none;">
-              payroll@westendworkforce.com
-            </a> ·
-            <a href="https://www.westendworkforce.com" style="color:#4b5563; text-decoration:none;">
-              westendworkforce.com
-            </a>
-          </p>
-
-          <p style="margin: 0;">
-            © ${year} West End Workforce. All rights reserved.
-          </p>
-        </td>
-      </tr>
-    `;
-
     // === MANAGER EMAIL: SUBMITTED ===
     if (nextStatus === 'submitted' && managerRecipient) {
+      const totalHours = updated.total_hours || 0;
+      const overtimeHours = updated.overtime_hours || 0;
+      const regularHours = totalHours - overtimeHours;
+
       const html = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <title>Timesheet Submitted</title>
-        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-      </head>
-      <body style="margin:0;padding:0;background:#f3f6f9;font-family:'Montserrat',Arial,sans-serif;">
-        <table role="presentation" width="100%" style="table-layout:fixed;background:#f3f6f9;padding:24px 0;">
-          <tr>
-            <td align="center">
-              <table role="presentation" width="100%" style="max-width:620px;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #e5e7eb;">
-      
-                <!-- HEADER -->
-                <tr>
-                  <td style="
-                    padding:18px 24px 14px;
-                    background:#33393c;
-                    border-bottom:3px solid #e31c79;
-                    text-align:center;
-                  ">
-                    <div style="
-                      font-family:'Montserrat',Arial,sans-serif;
-                      font-size:18px;
-                      font-weight:700;
-                      margin:0;
-                      color:#ffffff;
-                      letter-spacing:0.3px;
-                      line-height:1.25;
-                    ">
-                      West End Workforce
-                    </div>
-                    <img
-                      src="${logoUrl}"
-                      alt="West End Workforce Logo"
-                      width="48"
-                      style="display:block;margin:10px auto 0;"
-                    />
-                  </td>
-                </tr>
-      
-                <!-- BODY -->
-                <tr>
-                  <td style="
-                    padding:14px 28px 24px;
-                    font-size:12px;
-                    color:#374151;
-                    line-height:1.7;
-                    font-family:'Montserrat',Arial,sans-serif;
-                  ">
-                    <h2 style="
-                      margin:10px 0 20px;
-                      font-family:'Montserrat',Arial,sans-serif;
-                      font-size:14px;
-                      font-weight:700;
-                      line-height:1.3;
-                      color:#e31c79;
-                    ">
-                      New Timesheet Submitted
-                    </h2>
-
-              <p>Hello ${managerName || 'Manager'},</p>
-              <p><strong>${employeeName}</strong> has submitted a timesheet for the week ending <strong>${weekEnding}</strong>.</p>
-
-              <div style="text-align:center;margin:30px 0 10px;">
-                <a href="${appUrl}/manager"
-                   style="background:#e31c79;color:#ffffff !important;padding:14px 28px;border-radius:6px;font-size:14px;font-weight:600;text-decoration:none;display:inline-block;font-family:'Montserrat',Arial,sans-serif;">
-                  Open Manager Portal
-                </a>
-              </div>
-
-              <p style="margin:16px 0 0;font-size:12px;color:#6b7280;">
-                If the button does not work, copy and paste this link into your browser:<br/>
-                <a href="${appUrl}/manager" style="color:#e31c79;text-decoration:none;">${appUrl}/manager</a>
-              </p>
-            </td>
-          </tr>
-
-          ${footerHtml}
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+        <div style="max-width:600px;margin:0 auto;font-family:'Montserrat',Arial,sans-serif;">
+          <div style="background:#1a1a1a;padding:20px;text-align:center;">
+            <img src="${logoUrl}" alt="West End Workforce" style="height:40px;" />
+          </div>
+          <div style="padding:30px 20px;background:#ffffff;">
+            <h2 style="color:#e31c79;margin:0 0 16px;">Timesheet Submitted</h2>
+            <p style="color:#555;line-height:1.6;">Hi ${managerName || 'Manager'},</p>
+            <p style="color:#555;line-height:1.6;">
+              <strong>${employeeName}</strong> has submitted a timesheet for your review.
+            </p>
+            <div style="background:#FAFAF8;border:0.5px solid #e8e4df;border-radius:10px;padding:16px;margin:20px 0;">
+              <p style="margin:0 0 12px;color:#1a1a1a;font-weight:600;">Timesheet Details:</p>
+              <p style="margin:0 0 6px;color:#555;">Week Ending: <strong>${weekEnding}</strong></p>
+              <p style="margin:0 0 6px;color:#555;">Regular Hours: <strong>${regularHours.toFixed(1)}</strong></p>
+              ${overtimeHours > 0 ? `<p style="margin:0 0 6px;color:#555;">Overtime Hours: <strong>${overtimeHours.toFixed(1)}</strong></p>` : ''}
+              <p style="margin:0 0 6px;color:#555;">Total Hours: <strong>${totalHours.toFixed(1)}</strong></p>
+            </div>
+            <div style="text-align:center;margin:24px 0;">
+              <a href="${appUrl}/manager/pending"
+                 style="background:#e31c79;color:#ffffff;padding:12px 32px;border-radius:7px;text-decoration:none;font-weight:600;display:inline-block;">
+                Review & Approve
+              </a>
+            </div>
+          </div>
+          <div style="background:#FAFAF8;padding:16px;text-align:center;font-size:12px;color:#c0bab2;border-top:1px solid #e31c79;">
+            West End Workforce &middot; 800 Town &amp; Country Blvd, Suite 500 &middot; Houston, TX 77024
+          </div>
+        </div>
       `;
 
       await sendEmail({
         to: managerRecipient,
-        subject: `Timesheet submitted by ${employeeName}`,
+        subject: `Timesheet submitted by ${employeeName} — ${totalHours.toFixed(1)} hrs`,
         html,
       });
 
@@ -484,92 +393,37 @@ export async function PATCH(
     // === EMPLOYEE EMAIL: APPROVED ===
     if (nextStatus === 'approved' && employee?.email) {
       const html = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Timesheet Approved</title>
-  <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
-</head>
-<body style="margin:0;padding:0;background:#f3f6f9;font-family:'Montserrat',Arial,sans-serif;">
-  <table role="presentation" width="100%" style="table-layout:fixed;background:#f3f6f9;padding:24px 0;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="100%" style="max-width:620px;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #e5e7eb;">
-
-          <!-- HEADER -->
-          <tr>
-            <td style="
-              padding:18px 24px 14px;
-              background:#33393c;                /* 🔥 bring back dark header */
-              border-bottom:3px solid #e31c79;
-              text-align:center;
-            ">
-              <div style="
-                font-family:'Montserrat', Arial, sans-serif;
-                font-size:24px;
-                font-weight:700;
-                margin:0;
-                color:#ffffff;
-                line-height:1.25;
-                letter-spacing:0.3px;
-              ">
-                West End Workforce
-              </div>
-
-              <img
-                src="${logoUrl}"
-                alt="West End Workforce Logo"
-                width="48"
-                style="display:block;margin:10px auto 0;"
-              />
-            </td>
-          </tr>
-
-          <!-- BODY -->
-          <tr>
-            <td style="
-  padding:14px 28px 24px;
-  font-size:14px;
-  color:#374151;
-  line-height:1.7;
-  font-family:'Montserrat', Arial, sans-serif;
-">
-              <h2 style="
-font-family:'Montserrat', Arial, sans-serif;
-  font-size:22px;
-  font-weight:700;
-  line-height:1.3;
-  color:#33393c;
-              ">
-                Timesheet Approved
-              </h2>
-              <p>Hello ${employeeName},</p>
-              <p>Your timesheet for the week ending <strong>${weekEnding}</strong> has been <strong>approved</strong>.</p>
-              <p>No further action is required.</p>
-
-              <div style="text-align:center;margin:30px 0 10px;">
-                <a href="${appUrl}/employee"
-                   style="background:#e31c79;color:#ffffff !important;padding:14px 28px;border-radius:6px;font-size:14px;font-weight:600;text-decoration:none;display:inline-block;font-family:'Montserrat',Arial,sans-serif;">
-                  View Timesheet
-                </a>
-              </div>
-
-              <p style="margin:16px 0 0;font-size:12px;color:#6b7280;">
-                If the button does not work, copy and paste this link into your browser:<br/>
-                <a href="${appUrl}/employee" style="color:#e31c79;text-decoration:none;">${appUrl}/employee</a>
-              </p>
-            </td>
-          </tr>
-
-          ${footerHtml}
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+        <div style="max-width:600px;margin:0 auto;font-family:'Montserrat',Arial,sans-serif;">
+          <div style="background:#1a1a1a;padding:20px;text-align:center;">
+            <img src="${logoUrl}" alt="West End Workforce" style="height:40px;" />
+          </div>
+          <div style="padding:30px 20px;background:#ffffff;">
+            <h2 style="color:#2d9b6e;margin:0 0 16px;">Timesheet Approved</h2>
+            <p style="color:#555;line-height:1.6;">Hi ${employeeName},</p>
+            <p style="color:#555;line-height:1.6;">
+              Your timesheet for the week ending <strong>${weekEnding}</strong> has been approved.
+              No further action is needed.
+            </p>
+            <div style="background:#FAFAF8;border:0.5px solid #e8e4df;border-radius:10px;padding:16px;margin:20px 0;">
+              <p style="margin:0 0 6px;color:#555;">Week Ending: <strong>${weekEnding}</strong></p>
+              <p style="margin:0 0 6px;color:#555;">Total Hours: <strong>${(updated.total_hours || 0).toFixed(1)}</strong></p>
+              <p style="margin:0;color:#2d9b6e;font-weight:600;">Status: Approved</p>
+            </div>
+            <div style="text-align:center;margin:24px 0;">
+              <a href="${appUrl}/employee"
+                 style="background:#e31c79;color:#ffffff;padding:12px 32px;border-radius:7px;text-decoration:none;font-weight:600;display:inline-block;">
+                View Dashboard
+              </a>
+            </div>
+            <p style="color:#999;font-size:13px;line-height:1.5;">
+              If you have any questions, please email
+              <a href="mailto:payroll@westendworkforce.com" style="color:#e31c79;">payroll@westendworkforce.com</a>.
+            </p>
+          </div>
+          <div style="background:#FAFAF8;padding:16px;text-align:center;font-size:12px;color:#c0bab2;border-top:1px solid #e31c79;">
+            West End Workforce &middot; 800 Town &amp; Country Blvd, Suite 500 &middot; Houston, TX 77024
+          </div>
+        </div>
       `;
 
       await sendEmail({
@@ -584,100 +438,41 @@ font-family:'Montserrat', Arial, sans-serif;
       const reasonText =
         updates.rejection_reason || (updated as any).rejection_reason || '';
       const html = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Timesheet Rejected</title>
-</head>
-<body style="margin:0;padding:0;background:#f3f6f9;font-family:'Montserrat',Arial,sans-serif;">
-  <table role="presentation" width="100%" style="table-layout:fixed;background:#f3f6f9;padding:24px 0;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="100%" style="max-width:620px;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #e5e7eb;">
-
-          <!-- HEADER -->
-          <tr>
-            <td style="
-              padding:18px 24px 14px;
-              background:#33393c;
-              border-bottom:3px solid #e31c79;
-              text-align:center;
-            ">
-              <div style="
-                font-family:'Montserrat', Arial, sans-serif;
-                font-size:24px;
-                font-weight:700;
-                margin:0;
-                color:#ffffff;
-                line-height:1.25;
-                letter-spacing:0.3px;
-              ">
-                West End Workforce
-              </div>
-
-              <img
-                src="${logoUrl}"
-                alt="West End Workforce Logo"
-                width="48"
-                style="display:block;margin:10px auto 0;"
-              />
-            </td>
-          </tr>
-
-          <!-- BODY -->
-          <tr>
-            <td style="
-              padding:14px 28px 24px;
-              font-size:14px;
-              color:#374151;
-              line-height:1.7;
-              font-family:'Montserrat', Arial, sans-serif;
-            ">
-              <h2 style="
-                font-family:'Montserrat', Arial, sans-serif;
-                font-size:22px;
-                font-weight:700;
-                line-height:1.3;
-                color:#dc2626;
-              ">
-                Timesheet Rejected
-              </h2>
-              <p>Hello ${employeeName},</p>
-              <p>Your timesheet for the week ending <strong>${weekEnding}</strong> has been <strong>rejected</strong>.</p>
-              ${
-                reasonText
-                  ? `<p><strong>Reason:</strong> ${reasonText}</p>`
-                  : '<p>Please review and update your timesheet, then resubmit for approval.</p>'
-              }
-
-              <div style="text-align:center;margin:30px 0 10px;">
-                <a href="${appUrl}/employee"
-                   style="background:#e31c79;color:#ffffff !important;padding:14px 28px;border-radius:6px;font-size:14px;font-weight:600;text-decoration:none;display:inline-block;font-family:'Montserrat',Arial,sans-serif;">
-                  Update and Resubmit
-                </a>
-              </div>
-
-              <p style="margin:16px 0 0;font-size:12px;color:#6b7280;">
-                If the button does not work, copy and paste this link into your browser:<br/>
-                <a href="${appUrl}/employee" style="color:#e31c79;text-decoration:none;">${appUrl}/employee</a>
-              </p>
-            </td>
-          </tr>
-
-          ${footerHtml}
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+        <div style="max-width:600px;margin:0 auto;font-family:'Montserrat',Arial,sans-serif;">
+          <div style="background:#1a1a1a;padding:20px;text-align:center;">
+            <img src="${logoUrl}" alt="West End Workforce" style="height:40px;" />
+          </div>
+          <div style="padding:30px 20px;background:#ffffff;">
+            <h2 style="color:#b91c1c;margin:0 0 16px;">Timesheet Rejected</h2>
+            <p style="color:#555;line-height:1.6;">Hi ${employeeName},</p>
+            <p style="color:#555;line-height:1.6;">
+              Your timesheet for the week ending <strong>${weekEnding}</strong> has been rejected and needs your attention.
+            </p>
+            <div style="background:#FEF2F2;border:0.5px solid #FECACA;border-radius:10px;padding:16px;margin:20px 0;">
+              <p style="margin:0 0 6px;color:#555;">Week Ending: <strong>${weekEnding}</strong></p>
+              ${reasonText ? `<p style="margin:0 0 6px;color:#b91c1c;"><strong>Reason:</strong> ${reasonText}</p>` : ''}
+              <p style="margin:0;color:#b91c1c;font-weight:600;">Please update and resubmit.</p>
+            </div>
+            <div style="text-align:center;margin:24px 0;">
+              <a href="${appUrl}/timesheet/entry"
+                 style="background:#e31c79;color:#ffffff;padding:12px 32px;border-radius:7px;text-decoration:none;font-weight:600;display:inline-block;">
+                Fix &amp; Resubmit
+              </a>
+            </div>
+            <p style="color:#999;font-size:13px;line-height:1.5;">
+              If you have any questions, please email
+              <a href="mailto:payroll@westendworkforce.com" style="color:#e31c79;">payroll@westendworkforce.com</a>.
+            </p>
+          </div>
+          <div style="background:#FAFAF8;padding:16px;text-align:center;font-size:12px;color:#c0bab2;border-top:1px solid #e31c79;">
+            West End Workforce &middot; 800 Town &amp; Country Blvd, Suite 500 &middot; Houston, TX 77024
+          </div>
+        </div>
       `;
 
       await sendEmail({
         to: employee.email,
-        subject: `Your timesheet for ${weekEnding} was rejected`,
+        subject: `Your timesheet for ${weekEnding} was rejected — action required`,
         html,
       });
     }
@@ -685,43 +480,31 @@ font-family:'Montserrat', Arial, sans-serif;
     // === EMPLOYEE EMAIL: PAYROLL APPROVED (FINALIZED) ===
     if (nextStatus === 'payroll_approved' && employee?.email) {
       const html = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Timesheet Finalized</title>
-</head>
-<body style="margin:0;padding:0;background:#f3f6f9;font-family:'Montserrat',Arial,sans-serif;">
-  <table role="presentation" width="100%" style="table-layout:fixed;background:#f3f6f9;padding:24px 0;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="100%" style="max-width:620px;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #e5e7eb;">
-          <tr>
-            <td style="padding:18px 24px 14px;background:#33393c;border-bottom:3px solid #e31c79;text-align:center;">
-              <div style="font-family:'Montserrat',Arial,sans-serif;font-size:24px;font-weight:700;color:#ffffff;letter-spacing:0.3px;">
-                West End Workforce
-              </div>
-              <img src="${logoUrl}" alt="West End Workforce Logo" width="48" style="display:block;margin:10px auto 0;" />
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:14px 28px 24px;font-size:14px;color:#374151;line-height:1.7;font-family:'Montserrat',Arial,sans-serif;">
-              <h2 style="font-family:'Montserrat',Arial,sans-serif;font-size:22px;font-weight:700;line-height:1.3;color:#059669;">
-                Timesheet Finalized for Payroll
-              </h2>
-              <p>Hello ${employeeName},</p>
-              <p>Your timesheet for the week ending <strong>${weekEnding}</strong> has been <strong>finalized for payroll processing</strong>.</p>
-              <p>No further action is required. This timesheet is now locked.</p>
-            </td>
-          </tr>
-          ${footerHtml}
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+        <div style="max-width:600px;margin:0 auto;font-family:'Montserrat',Arial,sans-serif;">
+          <div style="background:#1a1a1a;padding:20px;text-align:center;">
+            <img src="${logoUrl}" alt="West End Workforce" style="height:40px;" />
+          </div>
+          <div style="padding:30px 20px;background:#ffffff;">
+            <h2 style="color:#2d9b6e;margin:0 0 16px;">Timesheet Finalized for Payroll</h2>
+            <p style="color:#555;line-height:1.6;">Hi ${employeeName},</p>
+            <p style="color:#555;line-height:1.6;">
+              Your timesheet for the week ending <strong>${weekEnding}</strong> has been finalized for payroll processing.
+              This timesheet is now locked and no further changes can be made.
+            </p>
+            <div style="background:#FAFAF8;border:0.5px solid #e8e4df;border-radius:10px;padding:16px;margin:20px 0;">
+              <p style="margin:0 0 6px;color:#555;">Week Ending: <strong>${weekEnding}</strong></p>
+              <p style="margin:0 0 6px;color:#555;">Total Hours: <strong>${(updated.total_hours || 0).toFixed(1)}</strong></p>
+              <p style="margin:0;color:#2d9b6e;font-weight:600;">Status: Finalized for Payroll</p>
+            </div>
+            <p style="color:#999;font-size:13px;line-height:1.5;">
+              If you have any questions, please email
+              <a href="mailto:payroll@westendworkforce.com" style="color:#e31c79;">payroll@westendworkforce.com</a>.
+            </p>
+          </div>
+          <div style="background:#FAFAF8;padding:16px;text-align:center;font-size:12px;color:#c0bab2;border-top:1px solid #e31c79;">
+            West End Workforce &middot; 800 Town &amp; Country Blvd, Suite 500 &middot; Houston, TX 77024
+          </div>
+        </div>
       `;
 
       await sendEmail({
