@@ -1101,30 +1101,27 @@ export default function AdminPage() {
 
     return (
       <div className="grid grid-cols-12 gap-4 anim-slide-up stagger-1" style={{ marginBottom: 16 }}>
-        {/* Hero: Company Hours */}
+        {/* Company Hours */}
         <div style={{
           gridColumn: 'span 5',
-          background: '#1a1a1a',
-          borderRadius: 12,
+          background: '#fff',
+          border: '0.5px solid #e8e4df',
+          borderRadius: 10,
           padding: '28px 30px',
-          position: 'relative',
-          overflow: 'hidden',
         }}>
-          <div style={{ position: 'absolute', top: -20, right: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(227,28,121,0.06)' }} />
-          <div style={{ position: 'absolute', bottom: -30, right: 40, width: 80, height: 80, borderRadius: '50%', background: 'rgba(227,28,121,0.04)' }} />
-          <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: 1.2, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' as const }}>Company Hours This Week</div>
-          <div style={{ fontSize: 48, fontWeight: 700, color: '#e31c79', lineHeight: 1.1, marginTop: 8 }}>{companyHoursThisWeek.toFixed(0)}<span style={{ fontSize: 18, fontWeight: 500, color: 'rgba(255,255,255,0.3)', marginLeft: 4 }}>hrs</span></div>
+          <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: 1.2, color: '#c0bab2', textTransform: 'uppercase' as const }}>Company Hours This Week</div>
+          <div style={{ fontSize: 48, fontWeight: 700, color: '#e31c79', lineHeight: 1.1, marginTop: 8 }}>{companyHoursThisWeek.toFixed(0)}<span style={{ fontSize: 18, fontWeight: 500, color: '#c0bab2', marginLeft: 4 }}>hrs</span></div>
           <div style={{ display: 'flex', gap: 24, marginTop: 16 }}>
             <div>
-              <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' as const }}>Employees</div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', marginTop: 2 }}>{employees.filter(e => e.role === 'employee').length}</div>
+              <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Employees</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a', marginTop: 2 }}>{employees.filter(e => e.role === 'employee').length}</div>
             </div>
             <div>
-              <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' as const }}>Approved</div>
+              <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Approved</div>
               <div style={{ fontSize: 16, fontWeight: 600, color: '#2d9b6e', marginTop: 2 }}>{approvedCount}</div>
             </div>
             <div>
-              <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' as const }}>Pending Hrs</div>
+              <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Pending Hrs</div>
               <div style={{ fontSize: 16, fontWeight: 600, color: '#c4983a', marginTop: 2 }}>{pendingHours.toFixed(0)}</div>
             </div>
           </div>

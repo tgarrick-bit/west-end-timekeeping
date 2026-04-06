@@ -1027,28 +1027,26 @@ export default function ManagerPage() {
 
           return (
             <div className="grid grid-cols-12 gap-4">
-              {/* Hero: Pending Approvals */}
+              {/* Pending Approvals */}
               <div style={{
                 gridColumn: 'span 4',
-                background: '#1a1a1a',
-                borderRadius: 12,
+                background: '#fff',
+                border: '0.5px solid #e8e4df',
+                borderRadius: 10,
                 padding: '24px 26px',
-                position: 'relative',
-                overflow: 'hidden',
               }}>
-                <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(227,28,121,0.06)' }} />
-                <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' as const }}>Pending Your Approval</div>
+                <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Pending Your Approval</div>
                 <div style={{ fontSize: 44, fontWeight: 700, color: totalPending > 0 ? '#e31c79' : '#2d9b6e', lineHeight: 1.1, marginTop: 6 }}>
                   {totalPending > 0 ? totalPending : '\u2713'}
                 </div>
                 <div style={{ display: 'flex', gap: 16, marginTop: 14 }}>
                   <div>
-                    <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' as const }}>Timesheets</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: timesheetPendingCount > 0 ? '#c4983a' : '#fff', marginTop: 2 }}>{timesheetPendingCount}</div>
+                    <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Timesheets</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: timesheetPendingCount > 0 ? '#c4983a' : '#1a1a1a', marginTop: 2 }}>{timesheetPendingCount}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' as const }}>Expenses</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: expensePendingCount > 0 ? '#c4983a' : '#fff', marginTop: 2 }}>{expensePendingCount}</div>
+                    <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Expenses</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: expensePendingCount > 0 ? '#c4983a' : '#1a1a1a', marginTop: 2 }}>{expensePendingCount}</div>
                   </div>
                 </div>
               </div>
