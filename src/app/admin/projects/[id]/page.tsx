@@ -796,21 +796,32 @@ export default function ProjectEditPage() {
                     <p style={{ fontSize: 10.5, color: '#c0bab2', marginTop: 2 }}>Controls whether hours can be coded here.</p>
                   </div>
                   <button
-                    onClick={() =>
-                      setFormData({ ...formData, track_time: !trackTime })
-                    }
+                    role="switch"
+                    aria-checked={trackTime}
+                    onClick={() => setFormData({ ...formData, track_time: !trackTime })}
                     style={{
-                      padding: '6px 16px',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      borderRadius: 7,
+                      position: 'relative',
+                      width: 44,
+                      height: 24,
+                      borderRadius: 12,
                       border: 'none',
-                      background: trackTime ? '#e31c79' : '#f5f2ee',
-                      color: trackTime ? '#fff' : '#555',
+                      background: trackTime ? '#e31c79' : '#d0cbc4',
                       cursor: 'pointer',
+                      transition: 'background 0.2s ease',
+                      flexShrink: 0,
                     }}
                   >
-                    {trackTime ? 'YES' : 'NO'}
+                    <span style={{
+                      position: 'absolute',
+                      top: 2,
+                      left: trackTime ? 22 : 2,
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      background: '#fff',
+                      transition: 'left 0.2s ease',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                    }} />
                   </button>
                 </div>
                 <div className="flex items-center justify-between" style={{ border: '0.5px solid #e8e4df', borderRadius: 10, padding: '12px 16px', background: '#FDFCFB' }}>
@@ -819,21 +830,32 @@ export default function ProjectEditPage() {
                     <p style={{ fontSize: 10.5, color: '#c0bab2', marginTop: 2 }}>Controls whether expenses can be submitted.</p>
                   </div>
                   <button
-                    onClick={() =>
-                      setFormData({ ...formData, track_expenses: !trackExpenses })
-                    }
+                    role="switch"
+                    aria-checked={trackExpenses}
+                    onClick={() => setFormData({ ...formData, track_expenses: !trackExpenses })}
                     style={{
-                      padding: '6px 16px',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      borderRadius: 7,
+                      position: 'relative',
+                      width: 44,
+                      height: 24,
+                      borderRadius: 12,
                       border: 'none',
-                      background: trackExpenses ? '#e31c79' : '#f5f2ee',
-                      color: trackExpenses ? '#fff' : '#555',
+                      background: trackExpenses ? '#e31c79' : '#d0cbc4',
                       cursor: 'pointer',
+                      transition: 'background 0.2s ease',
+                      flexShrink: 0,
                     }}
                   >
-                    {trackExpenses ? 'YES' : 'NO'}
+                    <span style={{
+                      position: 'absolute',
+                      top: 2,
+                      left: trackExpenses ? 22 : 2,
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      background: '#fff',
+                      transition: 'left 0.2s ease',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                    }} />
                   </button>
                 </div>
               </div>
