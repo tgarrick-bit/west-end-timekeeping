@@ -356,6 +356,15 @@ export default function EmployeeDashboard() {
   };
 
   const handleTimesheetClick = async (timecard: Timecard) => {
+    // Draft and rejected — go straight to editing
+    if (timecard.status === 'draft' || timecard.status === 'rejected') {
+      const weekDate = new Date(timecard.week_ending + 'T00:00:00');
+      // Navigate to entry page with the week set so it loads this timesheet
+      router.push(`/timesheet/entry?week=${weekDate.toISOString()}`);
+      return;
+    }
+
+    // Submitted/approved/payroll_approved — show read-only modal
     try {
       const { data: timesheetData, error: timesheetError } = await supabase
         .from('timesheets')

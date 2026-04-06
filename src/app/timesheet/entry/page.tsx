@@ -45,7 +45,18 @@ interface ActiveEmployee {
 }
 
 function TimesheetEntryInner() {
-  const [selectedWeek, setSelectedWeek] = useState<Date>(new Date());
+  const [selectedWeek, setSelectedWeek] = useState<Date>(() => {
+    // Check for week param in URL (from employee dashboard draft/rejected click)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const weekParam = params.get('week');
+      if (weekParam) {
+        const parsed = new Date(weekParam);
+        if (!isNaN(parsed.getTime())) return parsed;
+      }
+    }
+    return new Date();
+  });
   const [rows, setRows] = useState<TimesheetRow[]>([
     {
       id: '1',
