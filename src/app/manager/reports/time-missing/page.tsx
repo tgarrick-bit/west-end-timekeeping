@@ -48,8 +48,8 @@ export default function TimeMissingReport() {
       if (!authUser) return
       const { data: myEmps } = await supabase.from('employees').select('id, first_name, last_name').eq('manager_id', authUser.id).order('last_name')
       setEmployeeOptions((myEmps || []).map(e => ({ id: e.id, name: `${e.first_name} ${e.last_name}` })))
-      const { data: projects } = await supabase.from('projects').select('id, name').eq('status', 'active').order('name')
-      setProjectOptionsList((projects || []).map(p => ({ id: p.id, name: p.name })))
+      const { data: projs } = await supabase.from('projects').select('id, name').eq('status', 'active').order('name')
+      if (projs) setProjectOptionsList(projs.map(p => ({ id: p.id, name: p.name })))
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
