@@ -1070,9 +1070,9 @@ export default function AdminPage() {
 
       {/* Navigation tabs provided by AdminNav in layout */}
 
-{/* Quick Stats */}
+{/* Dashboard Overview */}
 <div style={{ padding: '24px 40px 0 40px' }}>
-  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
     <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Overview</div>
     <button
       onClick={loadSubmissions}
@@ -1084,58 +1084,116 @@ export default function AdminPage() {
       Refresh
     </button>
   </div>
-  {/* Enhanced Widget Row */}
-  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4" style={{ marginBottom: 16 }}>
-    {(() => {
-      const now = new Date();
-      const dayOfWeek = now.getDay();
-      const satDate = new Date(now);
-      satDate.setDate(now.getDate() + (6 - dayOfWeek));
-      const weekEndingStr = satDate.toISOString().split('T')[0];
-      const companyHoursThisWeek = submissions
-        .filter(s => s.type === 'timesheet' && s.date?.split('T')[0] === weekEndingStr)
-        .reduce((sum, s) => sum + (s.hours || 0), 0);
-      const pendingAll = submissions.filter(s => s.status === 'submitted').length;
-      const payrollReady = submissions.filter(s => s.status === 'approved' && s.type === 'timesheet').length;
-      return [
-        { label: 'Company Hours This Week', value: companyHoursThisWeek.toFixed(1), accent: true },
-        { label: 'Pending Approvals', value: pendingAll },
-        { label: 'Missing Timesheets', value: missingEmployees.length },
-        { label: 'Payroll Ready', value: payrollReady },
-      ] as { label: string; value: string | number; accent?: boolean }[];
-    })().map((card, i) => (
-      <div
-        key={card.label}
-        className={`anim-slide-up stagger-${i + 1}`}
-        style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px', cursor: 'default', transition: 'border-color 0.15s ease' }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = i === 0 ? '#e31c79' : '#d3ad6b' }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e4df' }}
-      >
-        <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: 1.2, color: '#c0bab2', marginBottom: 8 }}>{card.label}</div>
-        <div style={{ fontSize: 28, fontWeight: 700, color: card.accent ? '#e31c79' : '#1a1a1a' }}>{card.value}</div>
+
+  {/* Hero + Action Cards Row */}
+  {(() => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const satDate = new Date(now);
+    satDate.setDate(now.getDate() + (6 - dayOfWeek));
+    const weekEndingStr = satDate.toISOString().split('T')[0];
+    const companyHoursThisWeek = submissions
+      .filter(s => s.type === 'timesheet' && s.date?.split('T')[0] === weekEndingStr)
+      .reduce((sum, s) => sum + (s.hours || 0), 0);
+    const pendingAll = submissions.filter(s => s.status === 'submitted').length;
+    const payrollReady = submissions.filter(s => s.status === 'approved' && s.type === 'timesheet').length;
+    const pendingHours = submissions.filter(s => s.status === 'submitted' && s.type === 'timesheet').reduce((sum, s) => sum + (s.hours || 0), 0);
+
+    return (
+      <div className="grid grid-cols-12 gap-4 anim-slide-up stagger-1" style={{ marginBottom: 16 }}>
+        {/* Hero: Company Hours */}
+        <div style={{
+          gridColumn: 'span 5',
+          background: '#1a1a1a',
+          borderRadius: 12,
+          padding: '28px 30px',
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          <div style={{ position: 'absolute', top: -20, right: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(227,28,121,0.06)' }} />
+          <div style={{ position: 'absolute', bottom: -30, right: 40, width: 80, height: 80, borderRadius: '50%', background: 'rgba(227,28,121,0.04)' }} />
+          <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: 1.2, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' as const }}>Company Hours This Week</div>
+          <div style={{ fontSize: 48, fontWeight: 700, color: '#e31c79', lineHeight: 1.1, marginTop: 8 }}>{companyHoursThisWeek.toFixed(0)}<span style={{ fontSize: 18, fontWeight: 500, color: 'rgba(255,255,255,0.3)', marginLeft: 4 }}>hrs</span></div>
+          <div style={{ display: 'flex', gap: 24, marginTop: 16 }}>
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' as const }}>Employees</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', marginTop: 2 }}>{employees.filter(e => e.role === 'employee').length}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' as const }}>Approved</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#2d9b6e', marginTop: 2 }}>{approvedCount}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' as const }}>Pending Hrs</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#c4983a', marginTop: 2 }}>{pendingHours.toFixed(0)}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Cards Column */}
+        <div style={{ gridColumn: 'span 7', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+          {/* Pending Approvals */}
+          <div
+            onClick={() => setActiveTab('pending')}
+            style={{
+              background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 18px',
+              cursor: 'pointer', transition: 'border-color 0.15s ease',
+              display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#c4983a'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e4df'; }}
+          >
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Pending</div>
+              <div style={{ fontSize: 32, fontWeight: 700, color: pendingAll > 0 ? '#c4983a' : '#1a1a1a', lineHeight: 1.1, marginTop: 6 }}>{pendingAll}</div>
+            </div>
+            <div style={{ fontSize: 10, color: '#e31c79', fontWeight: 500, marginTop: 12 }}>Review &rarr;</div>
+          </div>
+
+          {/* Missing Timesheets */}
+          <div
+            style={{
+              background: missingEmployees.length > 0 ? '#fef8f8' : '#fff',
+              border: `0.5px solid ${missingEmployees.length > 0 ? '#f5d0d0' : '#e8e4df'}`,
+              borderRadius: 10, padding: '20px 18px',
+              display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Missing</div>
+              <div style={{ fontSize: 32, fontWeight: 700, color: missingEmployees.length > 0 ? '#b91c1c' : '#2d9b6e', lineHeight: 1.1, marginTop: 6 }}>
+                {missingEmployees.length > 0 ? missingEmployees.length : '\u2713'}
+              </div>
+            </div>
+            {missingEmployees.length > 0 && (
+              <div style={{ fontSize: 10, color: '#b91c1c', fontWeight: 500, marginTop: 12 }}>not submitted</div>
+            )}
+            {missingEmployees.length === 0 && (
+              <div style={{ fontSize: 10, color: '#2d9b6e', fontWeight: 500, marginTop: 12 }}>all submitted</div>
+            )}
+          </div>
+
+          {/* Payroll Ready */}
+          <div
+            onClick={() => router.push('/admin/payroll')}
+            style={{
+              background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 18px',
+              cursor: 'pointer', transition: 'border-color 0.15s ease',
+              display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#2d9b6e'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e4df'; }}
+          >
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Payroll Ready</div>
+              <div style={{ fontSize: 32, fontWeight: 700, color: payrollReady > 0 ? '#2d9b6e' : '#1a1a1a', lineHeight: 1.1, marginTop: 6 }}>{payrollReady}</div>
+            </div>
+            <div style={{ fontSize: 10, color: '#e31c79', fontWeight: 500, marginTop: 12 }}>Payroll &rarr;</div>
+          </div>
+        </div>
       </div>
-    ))}
-  </div>
-  {/* Original Summary Row */}
-  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-    {[
-      { label: 'Employees', value: employees.length, accent: true },
-      { label: 'Pending Hours', value: submissions.filter(s => s.status === 'submitted' && s.type === 'timesheet').reduce((sum, s) => sum + (s.hours || 0), 0).toFixed(2) },
-      { label: 'Pending Amount', value: '$' + submissions.filter(s => s.status === 'submitted').reduce((sum, s) => sum + s.amount, 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
-      { label: 'Approved', value: approvedCount },
-    ].map((card, i) => (
-      <div
-        key={card.label}
-        className={`anim-slide-up stagger-${i + 5}`}
-        style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px', cursor: 'default', transition: 'border-color 0.15s ease' }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = i === 0 ? '#e31c79' : '#d3ad6b' }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e4df' }}
-      >
-        <div style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: 1.2, color: '#c0bab2', marginBottom: 8 }}>{card.label}</div>
-        <div style={{ fontSize: 28, fontWeight: 700, color: card.accent ? '#e31c79' : '#1a1a1a' }}>{card.value}</div>
-      </div>
-    ))}
-  </div>
+    );
+  })()}
 </div>
 
       {/* Controls - filters line */}

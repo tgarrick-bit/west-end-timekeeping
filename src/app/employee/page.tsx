@@ -612,65 +612,124 @@ export default function EmployeeDashboard() {
           </div>
         </div>
 
-        {/* THIS WEEK WIDGETS */}
+        {/* OVERVIEW */}
         <div style={{ marginBottom: 28 }} className="anim-slide-up stagger-1">
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 14 }}>
-            This Week
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-            <StatCard label="Hours This Week" value={weeklyHours.toFixed(1)} desc="current period" color="pink" />
-            <StatCard label="Timesheet Due" value={daysUntilDue === 0 ? 'Today' : `${daysUntilDue}d`} desc={daysUntilDue === 0 ? 'submit now' : `day${daysUntilDue !== 1 ? 's' : ''} until Friday`} color={daysUntilDue <= 1 ? 'pink' : 'default'} />
-            <StatCard label="Pending Approvals" value={pendingApprovals} desc="awaiting review" color={pendingApprovals > 0 ? 'gold' : 'default'} />
-            <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              {hasDraftThisWeek ? (
-                <button
-                  onClick={() => router.push('/timesheet/entry')}
-                  style={{ fontSize: 12, fontWeight: 600, padding: '10px 18px', color: '#fff', background: '#e31c79', border: 'none', borderRadius: 7, cursor: 'pointer', width: '100%' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = '#cc1069')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = '#e31c79')}
-                >
-                  Submit This Week
-                </button>
-              ) : (
-                <>
-                  <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: 1.2, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 8 }}>Quick Action</div>
+          <div className="grid grid-cols-12 gap-4">
+            {/* Hero: Hours This Week */}
+            <div style={{
+              gridColumn: 'span 5',
+              background: '#1a1a1a',
+              borderRadius: 12,
+              padding: '28px 30px',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+              <div style={{ position: 'absolute', top: -20, right: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(227,28,121,0.06)' }} />
+              <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' as const }}>Hours This Week</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 8 }}>
+                <span style={{ fontSize: 48, fontWeight: 700, color: '#e31c79', lineHeight: 1 }}>{weeklyHours.toFixed(1)}</span>
+                <span style={{ fontSize: 14, fontWeight: 400, color: 'rgba(255,255,255,0.3)' }}>/ 40 hrs</span>
+              </div>
+              {/* Progress bar */}
+              <div style={{ marginTop: 16, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                <div style={{ height: '100%', borderRadius: 2, background: '#e31c79', width: `${Math.min(100, (weeklyHours / 40) * 100)}%`, transition: 'width 0.5s ease' }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{((weeklyHours / 40) * 100).toFixed(0)}% of target</span>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{Math.max(0, 40 - weeklyHours).toFixed(1)} remaining</span>
+              </div>
+            </div>
+
+            {/* Action cards */}
+            <div style={{ gridColumn: 'span 7', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              {/* Due Date */}
+              <div style={{
+                background: daysUntilDue <= 1 ? '#fef8f8' : '#fff',
+                border: `0.5px solid ${daysUntilDue <= 1 ? '#f5d0d0' : '#e8e4df'}`,
+                borderRadius: 10, padding: '20px 18px',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+              }}>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Due</div>
+                  <div style={{ fontSize: 32, fontWeight: 700, color: daysUntilDue <= 1 ? '#b91c1c' : '#1a1a1a', lineHeight: 1.1, marginTop: 6 }}>
+                    {daysUntilDue === 0 ? 'Now' : `${daysUntilDue}d`}
+                  </div>
+                </div>
+                <div style={{ fontSize: 10, color: daysUntilDue <= 1 ? '#b91c1c' : '#c0bab2', fontWeight: 500, marginTop: 12 }}>
+                  {daysUntilDue === 0 ? 'submit today' : `${daysUntilDue} day${daysUntilDue !== 1 ? 's' : ''} until Friday`}
+                </div>
+              </div>
+
+              {/* Pending / Status */}
+              <div style={{
+                background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 18px',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+              }}>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Awaiting Review</div>
+                  <div style={{ fontSize: 32, fontWeight: 700, color: pendingApprovals > 0 ? '#c4983a' : '#2d9b6e', lineHeight: 1.1, marginTop: 6 }}>
+                    {pendingApprovals > 0 ? pendingApprovals : '\u2713'}
+                  </div>
+                </div>
+                <div style={{ fontSize: 10, color: pendingApprovals > 0 ? '#c4983a' : '#2d9b6e', fontWeight: 500, marginTop: 12 }}>
+                  {pendingApprovals > 0 ? 'pending approval' : 'all approved'}
+                </div>
+              </div>
+
+              {/* Quick Action */}
+              <div style={{
+                background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 18px',
+                display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10,
+              }}>
+                {hasDraftThisWeek ? (
                   <button
                     onClick={() => router.push('/timesheet/entry')}
-                    style={{ fontSize: 11, fontWeight: 500, padding: '8px 14px', color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 7, cursor: 'pointer' }}
+                    style={{ fontSize: 12, fontWeight: 600, padding: '10px 0', color: '#fff', background: '#e31c79', border: 'none', borderRadius: 7, cursor: 'pointer', width: '100%' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#cc1069')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = '#e31c79')}
+                  >
+                    Submit This Week
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => router.push('/timesheet/entry')}
+                    style={{ fontSize: 12, fontWeight: 500, padding: '10px 0', color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 7, cursor: 'pointer', width: '100%' }}
                     onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#555'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#777'; }}
                   >
                     Enter Hours
                   </button>
-                </>
-              )}
+                )}
+                <button
+                  onClick={() => router.push('/expense/entry')}
+                  style={{ fontSize: 12, fontWeight: 500, padding: '10px 0', color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 7, cursor: 'pointer', width: '100%' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#555'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#777'; }}
+                >
+                  Submit Expense
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* TIMESHEET SUMMARY */}
-        <div style={{ marginBottom: 28 }} className="anim-slide-up stagger-2">
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 14 }}>
-            Timesheet Summary
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-            <StatCard label="Total Hours" value={stats.totalHours.toFixed(1)} desc="all time" color="pink" />
-            <StatCard label="Pending" value={stats.pendingTimecards} desc="awaiting review" color="pink" />
-            <StatCard label="Approved" value={stats.approvedTimecards} desc="approved" color="green" />
-            <StatCard label="Rejected" value={stats.rejectedTimecards} desc="need action" />
-          </div>
-        </div>
-
-        {/* EXPENSE SUMMARY */}
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 14 }}>
-            Expense Summary
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-            <StatCard label="Total Expenses" value={formatCurrencyLocal(stats.totalExpenses)} desc="all time" color="pink" />
-            <StatCard label="Pending" value={formatCurrencyLocal(stats.pendingExpenses)} desc="awaiting review" color="pink" />
-            <StatCard label="Approved" value={formatCurrencyLocal(stats.approvedExpenses)} desc="approved" color="green" />
-            <StatCard label="Rejected" value={stats.rejectedExpenses} desc="need action" />
+          {/* Compact data strip */}
+          <div style={{
+            marginTop: 12,
+            background: '#fff',
+            border: '0.5px solid #e8e4df',
+            borderRadius: 8,
+            padding: '10px 22px',
+            display: 'flex',
+            gap: 32,
+            fontSize: 11,
+            color: '#777',
+          }}>
+            <span>Total Hours: <strong style={{ color: '#1a1a1a' }}>{stats.totalHours.toFixed(1)}</strong></span>
+            <span>Approved: <strong style={{ color: '#2d9b6e' }}>{stats.approvedTimecards}</strong></span>
+            <span>Pending: <strong style={{ color: '#c4983a' }}>{stats.pendingTimecards}</strong></span>
+            {stats.rejectedTimecards > 0 && <span>Rejected: <strong style={{ color: '#b91c1c' }}>{stats.rejectedTimecards}</strong></span>}
+            <span style={{ borderLeft: '1px solid #f0ece7', paddingLeft: 32 }}>Expenses: <strong style={{ color: '#1a1a1a' }}>{formatCurrencyLocal(stats.totalExpenses)}</strong></span>
+            {stats.pendingExpenses > 0 && <span>Pending: <strong style={{ color: '#c4983a' }}>{formatCurrencyLocal(stats.pendingExpenses)}</strong></span>}
           </div>
         </div>
 

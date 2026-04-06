@@ -1012,51 +1012,94 @@ export default function ManagerPage() {
         </div>
       </div>
 
-      {/* SUMMARY CARDS — Enhanced Widgets */}
+      {/* OVERVIEW */}
       <div style={{ padding: '24px 40px 0 40px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>
-            Overview
-          </div>
-          <button
-            onClick={() => router.push('/manager/delegations')}
-            className="transition-colors duration-150"
-            style={{ fontSize: 11, fontWeight: 500, padding: '6px 14px', color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 7, cursor: 'pointer' }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#555'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#777'; }}
-          >
-            Manage Delegations
-          </button>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="Pending Your Approval" value={timesheetPendingCount + expensePendingCount} desc={`${timesheetPendingCount} timesheets, ${expensePendingCount} expenses`} color="pink" />
-          <StatCard label="Team Hours This Week" value={(() => {
-            const now = new Date();
-            const dayOfWeek = now.getDay();
-            const saturday = new Date(now);
-            saturday.setDate(now.getDate() + (6 - dayOfWeek));
-            const weekEndingStr = saturday.toISOString().split('T')[0];
-            return submissions.filter(s => s.date?.split('T')[0] === weekEndingStr).reduce((sum, s) => sum + (s.hours || 0), 0).toFixed(1);
-          })()} desc="current week total" color="default" />
-          <StatCard label="Overdue Submissions" value={(() => {
-            const now = new Date();
-            const dayOfWeek = now.getDay();
-            const saturday = new Date(now);
-            saturday.setDate(now.getDate() + (6 - dayOfWeek));
-            const weekEndingStr = saturday.toISOString().split('T')[0];
-            const employeesWithTs = new Set(submissions.filter(s => s.date?.split('T')[0] === weekEndingStr && s.status !== 'draft').map(s => s.employee?.id));
-            return employees.filter(e => e.id !== managerId && e.role !== 'admin' && !employeesWithTs.has(e.id)).length;
-          })()} desc="not submitted this week" color={(() => {
-            const now = new Date();
-            const dayOfWeek = now.getDay();
-            const saturday = new Date(now);
-            saturday.setDate(now.getDate() + (6 - dayOfWeek));
-            const weekEndingStr = saturday.toISOString().split('T')[0];
-            const employeesWithTs = new Set(submissions.filter(s => s.date?.split('T')[0] === weekEndingStr && s.status !== 'draft').map(s => s.employee?.id));
-            return employees.filter(e => e.id !== managerId && e.role !== 'admin' && !employeesWithTs.has(e.id)).length > 0 ? 'gold' : 'default';
-          })()} />
-          <StatCard label="Approved This Week" value={approvedTimesheetCount + approvedExpenseCount} desc={`${approvedTimesheetCount} timesheets, ${approvedExpenseCount} expenses`} color="green" />
-        </div>
+        {(() => {
+          const now = new Date();
+          const dayOfWeek = now.getDay();
+          const saturday = new Date(now);
+          saturday.setDate(now.getDate() + (6 - dayOfWeek));
+          const weekEndingStr = saturday.toISOString().split('T')[0];
+          const teamHoursThisWeek = submissions.filter(s => s.date?.split('T')[0] === weekEndingStr).reduce((sum, s) => sum + (s.hours || 0), 0);
+          const employeesWithTs = new Set(submissions.filter(s => s.date?.split('T')[0] === weekEndingStr && s.status !== 'draft').map(s => s.employee?.id));
+          const overdueCount = employees.filter(e => e.id !== managerId && e.role !== 'admin' && !employeesWithTs.has(e.id)).length;
+          const totalPending = timesheetPendingCount + expensePendingCount;
+
+          return (
+            <div className="grid grid-cols-12 gap-4">
+              {/* Hero: Pending Approvals */}
+              <div style={{
+                gridColumn: 'span 4',
+                background: '#1a1a1a',
+                borderRadius: 12,
+                padding: '24px 26px',
+                position: 'relative',
+                overflow: 'hidden',
+              }}>
+                <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(227,28,121,0.06)' }} />
+                <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' as const }}>Pending Your Approval</div>
+                <div style={{ fontSize: 44, fontWeight: 700, color: totalPending > 0 ? '#e31c79' : '#2d9b6e', lineHeight: 1.1, marginTop: 6 }}>
+                  {totalPending > 0 ? totalPending : '\u2713'}
+                </div>
+                <div style={{ display: 'flex', gap: 16, marginTop: 14 }}>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' as const }}>Timesheets</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: timesheetPendingCount > 0 ? '#c4983a' : '#fff', marginTop: 2 }}>{timesheetPendingCount}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' as const }}>Expenses</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: expensePendingCount > 0 ? '#c4983a' : '#fff', marginTop: 2 }}>{expensePendingCount}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Team Hours */}
+              <div style={{
+                gridColumn: 'span 3',
+                background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '24px 22px',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+              }}>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Team Hours</div>
+                  <div style={{ fontSize: 32, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.1, marginTop: 6 }}>{teamHoursThisWeek.toFixed(0)}<span style={{ fontSize: 14, fontWeight: 400, color: '#c0bab2', marginLeft: 4 }}>hrs</span></div>
+                </div>
+                <div style={{ fontSize: 10, color: '#c0bab2', marginTop: 10 }}>current week</div>
+              </div>
+
+              {/* Overdue */}
+              <div style={{
+                gridColumn: 'span 2',
+                background: overdueCount > 0 ? '#fef8f8' : '#fff',
+                border: `0.5px solid ${overdueCount > 0 ? '#f5d0d0' : '#e8e4df'}`,
+                borderRadius: 10, padding: '24px 22px',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+              }}>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Not Submitted</div>
+                  <div style={{ fontSize: 32, fontWeight: 700, color: overdueCount > 0 ? '#b91c1c' : '#2d9b6e', lineHeight: 1.1, marginTop: 6 }}>
+                    {overdueCount > 0 ? overdueCount : '\u2713'}
+                  </div>
+                </div>
+                <div style={{ fontSize: 10, color: overdueCount > 0 ? '#b91c1c' : '#2d9b6e', marginTop: 10 }}>
+                  {overdueCount > 0 ? 'this week' : 'all submitted'}
+                </div>
+              </div>
+
+              {/* Approved */}
+              <div style={{
+                gridColumn: 'span 3',
+                background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '24px 22px',
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+              }}>
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Approved</div>
+                  <div style={{ fontSize: 32, fontWeight: 700, color: '#2d9b6e', lineHeight: 1.1, marginTop: 6 }}>{approvedTimesheetCount + approvedExpenseCount}</div>
+                </div>
+                <div style={{ fontSize: 10, color: '#c0bab2', marginTop: 10 }}>{approvedTimesheetCount} timesheets, {approvedExpenseCount} expenses</div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* MAIN CONTENT */}
