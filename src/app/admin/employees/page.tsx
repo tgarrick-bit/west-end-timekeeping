@@ -453,6 +453,12 @@ export default function EmployeeManagement() {
       const updateData: any = { ...formData };
       delete updateData.password;
 
+      // Convert empty strings to null for UUID fields
+      const uuidFields = ['manager_id', 'client_id', 'department_id'];
+      for (const field of uuidFields) {
+        if (updateData[field] === '') updateData[field] = null;
+      }
+
       // Only keep pay rates, manager, client, and department for employees
       if (formData.role !== 'employee') {
         updateData.hourly_rate = null;
