@@ -7,8 +7,6 @@ import { getOTConfig, calculateOvertime } from '@/lib/overtime';
 import {
   ArrowLeft,
   Calendar,
-  ChevronLeft,
-  ChevronRight,
   Save,
   Send,
   AlertCircle,
@@ -18,7 +16,7 @@ import {
   Copy,
   UserCog,
 } from 'lucide-react';
-import TimeTimer from '@/components/TimeTimer';
+// TimeTimer removed per Tracy's request
 
 interface Project {
   id: string;
@@ -778,60 +776,71 @@ function TimesheetEntryInner() {
           </div>
         )}
 
-        {/* Week Selector + Timer */}
+        {/* Pay Period / Week Selector */}
         <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px', marginBottom: 16 }}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>
-                Week Ending: {getWeekEndingDate(selectedWeek)}
-              </span>
-              <TimeTimer
-                disabled={isLocked}
-                onStop={(hours) => {
-                  if (hours < 0.01) return;
-                  const today = formatDate(new Date());
-                  // Add hours to first row with a project, or first row
-                  const targetRow = rows.find(r => r.project_id) || rows[0];
-                  if (targetRow) {
-                    const existing = targetRow.hours[today] || 0;
-                    updateRowHours(targetRow.id, today, Math.round((existing + hours) * 100) / 100);
-                  }
-                  alert(`Added ${hours.toFixed(2)} hours to today (${today})`);
-                }}
-              />
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button onClick={() => navigateWeek(-1)} className="p-2 rounded-md transition-colors" style={{ color: '#999', border: '0.5px solid #e0dcd7' }}>
-                <ChevronLeft size={15} strokeWidth={1.5} />
-              </button>
-              <button
-                onClick={() => setSelectedWeek(new Date())}
-                className="transition-colors duration-150"
-                style={{ padding: '6px 14px', fontSize: 11, fontWeight: 600, color: '#fff', background: '#e31c79', borderRadius: 6, border: 'none' }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#cc1069')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = '#e31c79')}
-              >
-                Current Week
-              </button>
-              <button onClick={() => navigateWeek(1)} className="p-2 rounded-md transition-colors" style={{ color: '#999', border: '0.5px solid #e0dcd7' }}>
-                <ChevronRight size={15} strokeWidth={1.5} />
-              </button>
-            </div>
-          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div>
+                <label style={{ display: 'block', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 6 }}>
+                  Pay Period — Week Ending
+                </label>
+                <div className="flex items-center gap-2">
+                  <Calendar style={{ width: 14, height: 14, color: '#c0bab2' }} />
+                  <select
+                    value={getWeekEndingDate(selectedWeek)}
+                    onChange={(e) => {
+                      const d = new Date(e.target.value + 'T12:00:00');
+                      if (!isNaN(d.getTime())) setSelectedWeek(d);
+                    }}
+                    style={{
+                      border: '0.5px solid #e8e4df',
+                      borderRadius: 7,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      padding: '8px 12px',
+                      color: '#1a1a1a',
+                      background: '#fff',
+                      outline: 'none',
+                      minWidth: 200,
+                    }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)'; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none'; }}
+                  >
+                    {(() => {
+                      // Generate weeks: 26 weeks back + 4 weeks ahead
+                      const weeks: { value: string; label: string }[] = [];
+                      const now = new Date();
+                      const currentDay = now.getDay();
+                      const currentSat = new Date(now);
+                      currentSat.setDate(now.getDate() + (6 - currentDay));
 
-          {/* Week Date Range */}
-          <div className="text-center text-sm text-[#777]">
-            {getWeekDates()[0].toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            })}{' '}
-            -{' '}
-            {getWeekDates()[6].toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            })}
+                      for (let i = -26; i <= 4; i++) {
+                        const sat = new Date(currentSat);
+                        sat.setDate(currentSat.getDate() + i * 7);
+                        const sun = new Date(sat);
+                        sun.setDate(sat.getDate() - 6);
+                        const value = sat.toISOString().split('T')[0];
+                        const label = `${sun.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${sat.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+                        weeks.push({ value, label });
+                      }
+                      return weeks.reverse().map(w => (
+                        <option key={w.value} value={w.value}>{w.label}</option>
+                      ));
+                    })()}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setSelectedWeek(new Date())}
+              className="transition-colors duration-150"
+              style={{ padding: '8px 18px', fontSize: 11, fontWeight: 600, color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 7 }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#555'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#777'; }}
+            >
+              Current Week
+            </button>
           </div>
         </div>
 
