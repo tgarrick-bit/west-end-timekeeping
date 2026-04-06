@@ -627,9 +627,10 @@ export default function ClientManagement() {
               {filteredClients.map((client) => (
                 <tr
                   key={client.id}
+                  onClick={() => openEditModal(client)}
                   style={{
                     borderBottom: '0.5px solid #f5f2ee',
-                    cursor: 'default',
+                    cursor: 'pointer',
                     transition: 'background 0.15s ease',
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#FDFCFB')}
@@ -637,7 +638,7 @@ export default function ClientManagement() {
                 >
                   {/* Client name + code */}
                   <td style={{ padding: '12px 20px' }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 500, color: '#e31c79' }}>
                       {client.name}
                     </div>
                     <div style={{ fontSize: 10.5, color: '#c0bab2', marginTop: 2 }}>
@@ -704,7 +705,7 @@ export default function ClientManagement() {
                   </td>
 
                   {/* Actions */}
-                  <td style={{ padding: '12px 20px', textAlign: 'right' }}>
+                  <td style={{ padding: '12px 20px', textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => openDeptModal(client)}
