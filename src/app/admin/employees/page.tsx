@@ -750,7 +750,7 @@ export default function EmployeeManagement() {
                 {filteredEmployees.length} of {employees.length}
               </span>
               <button
-                onClick={() => setShowAddModal(true)}
+                onClick={() => { fetchManagers(); fetchClients(); setShowAddModal(true); }}
                 className="transition-all duration-150"
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 6,
