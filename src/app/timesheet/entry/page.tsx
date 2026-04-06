@@ -564,8 +564,8 @@ function TimesheetEntryInner() {
   
       let timesheetId = existingTimesheetId;
       const newStatus: TimesheetStatus = isDraft ? 'draft' : 'submitted';
-  
-      // 1) Upsert the timesheet HEADER (no deletes yet)
+
+      // 1) Upsert the timesheet HEADER as 'draft' first (RLS requires draft/rejected to insert entries)
       if (existingTimesheetId) {
         const updatePayload: any = {
           employee_id: employeeId,
@@ -574,21 +574,20 @@ function TimesheetEntryInner() {
           overtime_hours: overtimeHours,
           total_minutes: Math.round(weekTotal * 60),
           overtime_minutes: Math.round(overtimeHours * 60),
-          status: newStatus,
-          submitted_at: isDraft ? null : new Date().toISOString(),
+          status: 'draft',  // Always save as draft first so entries can be inserted
           updated_at: new Date().toISOString(),
         };
-  
+
         // If resubmitting a previously rejected sheet, clear rejection_reason
         if (!isDraft) {
-          updatePayload.rejection_reason = null; // <-- no 'comments' field here
+          updatePayload.rejection_reason = null;
         }
-  
+
         const { error: updateError } = await supabase
           .from('timesheets')
           .update(updatePayload)
           .eq('id', existingTimesheetId);
-  
+
         if (updateError) throw updateError;
       } else {
         const { data: newTimesheet, error: createError } = await supabase
@@ -600,8 +599,7 @@ function TimesheetEntryInner() {
             overtime_hours: overtimeHours,
             total_minutes: Math.round(weekTotal * 60),
             overtime_minutes: Math.round(overtimeHours * 60),
-            status: newStatus,
-            submitted_at: isDraft ? null : new Date().toISOString(),
+            status: 'draft',  // Always create as draft first
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
