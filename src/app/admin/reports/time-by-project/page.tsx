@@ -21,12 +21,15 @@ interface ReportData {
     last_name: string
     department: string
     hourly_rate: number
+    bill_rate?: number
+    employee_type?: string
     client_id?: string
     department_id?: string
   }
   projects?: {
     name: string
     code: string
+    billing_rate?: number
   }
 }
 
@@ -101,12 +104,15 @@ export default function TimeByProjectReport() {
             last_name,
             department,
             hourly_rate,
+            bill_rate,
+            employee_type,
             client_id,
             department_id
           ),
           projects (
             name,
-            code
+            code,
+            billing_rate
           )
         `)
         .gte('week_ending', startDate)
@@ -210,9 +216,15 @@ export default function TimeByProjectReport() {
       }
 
       if (includeBillRates) {
-        rowData['Bill Rate'] = 'N/A'
-        rowData['Billed Amount'] = 'N/A'
+        const billRate = row.employees?.bill_rate || (row.projects as any)?.billing_rate || 0
+        const billedAmount = (row.total_hours || 0) * billRate
+        rowData['Bill Rate'] = `$${billRate.toFixed(2)}`
+        rowData['Billed Amount'] = `$${billedAmount.toFixed(2)}`
       }
+
+      // Always include employee type and description
+      rowData['Employee Type'] = row.employees?.employee_type || ''
+      rowData['Description'] = (row as any).description || ''
 
       return rowData
     })

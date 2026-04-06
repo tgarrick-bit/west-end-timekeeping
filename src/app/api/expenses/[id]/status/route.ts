@@ -3,6 +3,7 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { writeAuditLog } from '@/lib/auditLog';
+import { createNotification } from '@/lib/notify';
 import nodemailer from 'nodemailer';
 import { buildFinalRejectionEmailHtml } from '@/lib/email-templates/employee';
 
@@ -193,7 +194,68 @@ export async function PATCH(
       },
     });
 
-    // 4) If this was a REJECT, notify the employee (line-level or whole report)
+    // 4) Notify employee of approval or rejection
+    try {
+      const { data: empRecord } = await supabase
+        .from('employees')
+        .select('email, first_name, last_name')
+        .eq('id', report.employee_id)
+        .single();
+
+      const empName = empRecord ? [empRecord.first_name, empRecord.last_name].filter(Boolean).join(' ') : 'Employee';
+      const reportTitle = report.title || 'Expense Report';
+
+      if (action === 'approve') {
+        // In-app notification
+        await createNotification(supabase, {
+          user_id: report.employee_id,
+          title: 'Expense approved',
+          message: `Your expense on "${reportTitle}" has been approved`,
+          type: 'success',
+          link: `/expense/${reportId}`,
+        });
+
+        // Approval email
+        if (empRecord?.email) {
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+          await sendEmployeeEmail({
+            to: empRecord.email,
+            subject: `Expense approved: ${reportTitle}`,
+            html: `
+              <div style="max-width:600px;margin:0 auto;font-family:'Montserrat',Arial,sans-serif;">
+                <div style="background:#1a1a1a;padding:20px;text-align:center;">
+                  <img src="https://westendworkforce.com/wp-content/uploads/2025/11/WE-logo-SEPT2024v3-WHT.png" alt="West End Workforce" style="height:40px;" />
+                </div>
+                <div style="padding:30px 20px;background:#ffffff;">
+                  <h2 style="color:#059669;margin:0 0 16px;">Expense Approved</h2>
+                  <p style="color:#555;line-height:1.6;">Hi ${empName},</p>
+                  <p style="color:#555;line-height:1.6;">Your expense report <strong>"${reportTitle}"</strong> has been approved. No further action is needed.</p>
+                  <div style="text-align:center;margin:24px 0;">
+                    <a href="${appUrl}/expense/${reportId}" style="background:#e31c79;color:#fff;padding:12px 32px;border-radius:7px;text-decoration:none;font-weight:600;display:inline-block;">View Expense Report</a>
+                  </div>
+                </div>
+                <div style="background:#FAFAF8;padding:16px;text-align:center;font-size:12px;color:#c0bab2;border-top:1px solid #e31c79;">
+                  West End Workforce &middot; 800 Town &amp; Country Blvd, Suite 500 &middot; Houston, TX 77024
+                </div>
+              </div>
+            `,
+          });
+        }
+      } else {
+        // Rejection in-app notification
+        await createNotification(supabase, {
+          user_id: report.employee_id,
+          title: 'Expense rejected',
+          message: `Your expense on "${reportTitle}" was rejected: ${rejectionReason || 'No reason provided'}`,
+          type: 'error',
+          link: `/expense/${reportId}`,
+        });
+      }
+    } catch (notifErr) {
+      console.error('[EXPENSE STATUS] Error sending notification:', notifErr);
+    }
+
+    // 5) If this was a REJECT, also send rejection email
     if (action === 'reject') {
       try {
         console.log(

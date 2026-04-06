@@ -662,8 +662,30 @@ function TimesheetEntryInner() {
               await callTimesheetStatusApi(timesheetId, action);
             }      
   
+      // Audit trail: admin entering time on behalf of employee
+      if (isAdmin && selectedEmployeeId) {
+        try {
+          const { data: { user: adminUser } } = await supabase.auth.getUser();
+          if (adminUser) {
+            await supabase.from('audit_logs').insert({
+              user_id: adminUser.id,
+              action: isDraft ? 'timesheet.admin_save_draft' : 'timesheet.admin_submit',
+              metadata: {
+                entity_type: 'timesheet',
+                entity_id: timesheetId,
+                on_behalf_of: selectedEmployeeId,
+                week_ending: getWeekEndingDate(selectedWeek),
+                total_hours: weekTotal,
+              },
+            });
+          }
+        } catch (auditErr) {
+          console.error('Audit log error:', auditErr);
+        }
+      }
+
       setTimesheetStatus(newStatus);
-  
+
       setSuccessMessage(
         existingTimesheetId
           ? isDraft

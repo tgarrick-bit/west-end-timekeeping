@@ -3,6 +3,7 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { writeAuditLog } from '@/lib/auditLog';
+import { createNotification } from '@/lib/notify';
 import nodemailer from 'nodemailer';
 import { buildManagerSubmissionEmailHtml } from '@/lib/email-templates/manager';
 
@@ -322,6 +323,17 @@ export async function POST(
           '[EXPENSE SUBMIT] Manager expense submission email sent to',
           to
         );
+      }
+      // In-app notification to manager
+      if (employee?.manager_id) {
+        const employeeName = [employee.first_name, employee.last_name].filter(Boolean).join(' ') || 'Employee';
+        await createNotification(supabase, {
+          user_id: employee.manager_id,
+          title: 'Expense report submitted',
+          message: `${employeeName} submitted expense report "${report.title || 'Expense Report'}"`,
+          type: 'info',
+          link: `/manager/expenses`,
+        });
       }
     } catch (emailErr) {
       console.error(
