@@ -123,6 +123,7 @@ export default function ExpenseEntryPage() {
   const [hasLoadedExisting, setHasLoadedExisting] = useState(false);
   const [scanningReceipt, setScanningReceipt] = useState<string | null>(null);
   const [scanMessage, setScanMessage] = useState<Record<string, string>>({});
+  const [pendingReports, setPendingReports] = useState<{ id: string; title: string; status: string; period_month: string | null; total_amount: number; created_at: string }[]>([]);
 
   useEffect(() => {
     checkAuth();
@@ -171,6 +172,22 @@ export default function ExpenseEntryPage() {
     const active = all.filter((p) => p.is_active === true);
     setProjects(active.length > 0 ? active : all);
   };
+
+  // Load draft/rejected reports for the resume picker
+  useEffect(() => {
+    if (!userId) return;
+    const loadPendingReports = async () => {
+      const { data } = await supabase
+        .from('expense_reports')
+        .select('id, title, status, period_month, total_amount, created_at')
+        .eq('employee_id', userId)
+        .in('status', ['draft', 'rejected'])
+        .order('created_at', { ascending: false });
+      if (data) setPendingReports(data);
+    };
+    loadPendingReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   // Load an existing report + lines when ?id=<reportId> or ?reportId=<reportId> present
   useEffect(() => {
@@ -656,6 +673,53 @@ export default function ExpenseEntryPage() {
 
       {/* Main Content */}
       <div>
+        {/* Resume existing report picker */}
+        {pendingReports.length > 0 && !reportId && (
+          <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '16px 22px', marginBottom: 16 }}>
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <label style={{ display: 'block', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 6 }}>
+                  Resume an existing report
+                </label>
+                <select
+                  defaultValue=""
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      router.push(`/expense/entry?id=${e.target.value}`);
+                    }
+                  }}
+                  style={{
+                    border: '0.5px solid #e8e4df',
+                    borderRadius: 7,
+                    fontSize: 12,
+                    padding: '8px 12px',
+                    color: '#1a1a1a',
+                    background: '#fff',
+                    outline: 'none',
+                    width: '100%',
+                    maxWidth: 480,
+                  }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                  <option value="">Start a new report...</option>
+                  {pendingReports.map((r) => {
+                    const dateLabel = r.period_month
+                      ? new Date(r.period_month + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    const tag = r.status === 'rejected' ? 'Rejected' : 'Draft';
+                    return (
+                      <option key={r.id} value={r.id}>
+                        {r.title || 'Untitled'} — {dateLabel} ({tag})
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Report Title + Expense Report Date */}
         <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '22px 24px', marginBottom: 16 }}>
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
