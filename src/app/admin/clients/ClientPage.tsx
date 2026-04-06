@@ -638,7 +638,7 @@ export default function ClientManagement() {
                 >
                   {/* Client name + code */}
                   <td style={{ padding: '12px 20px' }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 500, color: '#e31c79' }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
                       {client.name}
                     </div>
                     <div style={{ fontSize: 10.5, color: '#c0bab2', marginTop: 2 }}>
