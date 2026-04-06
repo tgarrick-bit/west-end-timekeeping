@@ -379,7 +379,6 @@ export default function EmployeeDashboard() {
         .eq('timesheet_id', timecard.id)
         .order('date', { ascending: true });
 
-      console.log('Timesheet entries:', entriesData);
 
       let formattedEntries = entriesData || [];
 
@@ -396,7 +395,6 @@ export default function EmployeeDashboard() {
             .select('id, name, client_name, project_code')
             .in('id', projectIds);
 
-          console.log('Projects data:', projectsData);
 
           if (projectsData) {
             formattedEntries = formattedEntries.map((entry: any) => ({
@@ -418,12 +416,11 @@ export default function EmployeeDashboard() {
         employee_name:
           profile?.first_name && profile?.last_name
             ? `${profile.first_name} ${profile.last_name}`
-            : 'John Employee',
+            : 'Employee',
         employee_email: profile?.email || '',
         entries: formattedEntries,
       };
 
-      console.log('Final formatted timesheet:', formattedTimesheet);
       setSelectedTimesheet(formattedTimesheet);
       setIsModalOpen(true);
     } catch (error) {
@@ -433,7 +430,7 @@ export default function EmployeeDashboard() {
         employee_name:
           profile?.first_name && profile?.last_name
             ? `${profile.first_name} ${profile.last_name}`
-            : 'John Employee',
+            : 'Employee',
         employee_email: profile?.email || '',
         entries: [],
       };

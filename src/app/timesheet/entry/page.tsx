@@ -16,7 +16,7 @@ import {
   Copy,
   UserCog,
 } from 'lucide-react';
-// TimeTimer removed per Tracy's request
+import { useToast } from '@/components/ui/Toast';
 
 interface Project {
   id: string;
@@ -87,6 +87,7 @@ function TimesheetEntryInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createSupabaseClient();
+  const { toast } = useToast();
 
   // Check admin role on mount
   useEffect(() => {
@@ -435,7 +436,7 @@ function TimesheetEntryInner() {
         .single();
 
       if (!prevTs) {
-        alert('No timesheet found for the previous week.');
+        toast('warning', 'No timesheet found for the previous week.');
         return;
       }
 
@@ -446,7 +447,7 @@ function TimesheetEntryInner() {
         .eq('timesheet_id', prevTs.id);
 
       if (!prevEntries || prevEntries.length === 0) {
-        alert('Previous week timesheet has no entries to copy.');
+        toast('warning', 'Previous week timesheet has no entries to copy.');
         return;
       }
 
@@ -454,7 +455,7 @@ function TimesheetEntryInner() {
       const uniqueProjectIds = [...new Set(prevEntries.map(e => e.project_id).filter(Boolean))];
 
       if (uniqueProjectIds.length === 0) {
-        alert('No projects found in previous week.');
+        toast('warning', 'No projects found in previous week.');
         return;
       }
 
@@ -470,7 +471,7 @@ function TimesheetEntryInner() {
       setRows(newRows);
     } catch (err) {
       console.error('Error copying previous week:', err);
-      alert('Failed to copy previous week');
+      toast('error', 'Failed to copy previous week.');
     }
   };
 

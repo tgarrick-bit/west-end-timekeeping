@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
+import { useToast } from '@/components/ui/Toast';
 import {
   ArrowLeft,
   Plus,
@@ -96,6 +97,7 @@ export default function ExpenseEntryPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createSupabaseClient();
+  const { toast } = useToast();
 
   const [reportId, setReportId] = useState<string | null>(null);
 
@@ -198,7 +200,6 @@ export default function ExpenseEntryPage() {
 
     const loadExistingReport = async (existingId: string) => {
       try {
-        console.log('🧾 Loading existing expense report:', existingId);
 
         const { data: report, error: reportError } = await supabase
           .from('expense_reports')
@@ -264,10 +265,6 @@ export default function ExpenseEntryPage() {
         }
 
         setHasLoadedExisting(true);
-        console.log(
-          '🧾 Existing report + lines loaded for editing:',
-          existingId
-        );
       } catch (err) {
         console.error('🧾 Unexpected error loading existing report:', err);
       }
@@ -310,7 +307,7 @@ export default function ExpenseEntryPage() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB');
+        toast('warning', 'File size must be less than 5MB.');
         return;
       }
       updateEntry(entryId, 'receipt_file', file);
@@ -437,15 +434,12 @@ export default function ExpenseEntryPage() {
 
   // 🔥 Helper to call the server route that sends manager email
   const callSubmitRoute = async (reportId: string) => {
-    console.log('🔥 calling submit API for report:', reportId);
     try {
       const res = await fetch(`/api/expense-reports/${reportId}/submit`, {
         method: 'POST',
       });
 
       const text = await res.text();
-      console.log('🔥 submit API response status:', res.status);
-      console.log('🔥 submit API response body:', text);
 
       if (!res.ok) {
         throw new Error(
@@ -453,7 +447,6 @@ export default function ExpenseEntryPage() {
         );
       }
 
-      console.log('🔥 Expense submit route succeeded for report:', reportId);
     } catch (err) {
       console.error('🔥 Error calling expense submit route:', err);
       throw err;
@@ -464,14 +457,12 @@ export default function ExpenseEntryPage() {
     setIsLoading(true);
     try {
       if (!userId) {
-        alert('Please login to submit expenses');
+        toast('error', 'Please login to submit expenses.');
         return;
       }
 
       if (!reportTitle.trim()) {
-        alert(
-          'Please provide a title for this expense submission (e.g., "Trip to HQ").'
-        );
+        toast('warning', 'Please provide a title for this expense report.');
         return;
       }
 
@@ -479,7 +470,7 @@ export default function ExpenseEntryPage() {
         (e) => e.project_id && e.amount > 0 && e.category
       );
       if (validEntries.length === 0) {
-        alert('Please complete at least one expense entry');
+        toast('warning', 'Please complete at least one expense entry.');
         return;
       }
 
@@ -487,7 +478,7 @@ export default function ExpenseEntryPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        alert('Please login to submit expenses');
+        toast('error', 'Please login to submit expenses.');
         return;
       }
 
@@ -501,7 +492,7 @@ export default function ExpenseEntryPage() {
         .single();
 
       if (!employee) {
-        alert('Your account is not set up yet. Please contact your administrator.');
+        toast('error', 'Your account is not set up yet. Please contact your administrator.');
         setIsLoading(false);
         return;
       }
@@ -536,9 +527,7 @@ export default function ExpenseEntryPage() {
 
         currentReportId = report.id;
         setReportId(report.id);
-        console.log('🔥 created expense report:', report.id);
       } else {
-        console.log('🧾 Updating existing expense report:', currentReportId);
 
         const { error: updateReportError } = await supabase
           .from('expense_reports')
@@ -565,7 +554,6 @@ export default function ExpenseEntryPage() {
       }
 
       // 2) Replace existing lines with current entries
-      console.log('🧾 Replacing lines for report:', currentReportId);
 
       const { error: deleteLinesError } = await supabase
         .from('expenses')
@@ -616,23 +604,15 @@ export default function ExpenseEntryPage() {
 
       // 3) If this is a real submission, trigger the server route for manager email
       if (!isDraft && currentReportId) {
-        console.log(
-          '🔥 triggering submit route for expense report:',
-          currentReportId
-        );
         await callSubmitRoute(currentReportId);
       }
 
-      alert(
-        isDraft
-          ? 'Expense report saved as draft!'
-          : 'Expense report submitted successfully!'
-      );
+      toast('success', isDraft ? 'Expense report saved as draft.' : 'Expense report submitted successfully.');
 
       router.push('/employee');
     } catch (error: any) {
       console.error('Error submitting expenses:', error);
-      alert(error?.message || 'Error submitting expenses. Please try again.');
+      toast('error', error?.message || 'Error submitting expenses. Please try again.');
     } finally {
       setIsLoading(false);
     }
