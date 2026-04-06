@@ -531,6 +531,73 @@ export default function PayrollPage() {
     XLSX.writeFile(wb, `Payroll_Detail_${periodLabel}.xlsx`)
   }
 
+  // Tracker ATS format (replaces SpringAhead export)
+  const handleTrackerExport = async () => {
+    if (!selectedPeriod) return
+
+    const exportable = timesheets.filter(t =>
+      t.status === 'payroll_approved' || t.status === 'approved' || t.status === 'client_approved'
+    )
+    if (exportable.length === 0) {
+      alert('No approved/finalized timesheets to export')
+      return
+    }
+
+    setGenerating(true)
+    try {
+      const tsIds = exportable.map(t => t.id)
+      const { data: entries } = await supabase
+        .from('timesheet_entries')
+        .select('timesheet_id, date, hours')
+        .in('timesheet_id', tsIds)
+        .order('date', { ascending: true })
+
+      if (!entries || entries.length === 0) {
+        alert('No timesheet entries found')
+        return
+      }
+
+      const tsMap = new Map(exportable.map(t => [t.id, t]))
+
+      const rows = entries.map((entry: any) => {
+        const ts = tsMap.get(entry.timesheet_id)
+        const emp = ts?.employee
+        return {
+          'Candidate Last Name': emp?.last_name || '',
+          'Candidate First Name': emp?.first_name || '',
+          'Regular Hours': (entry.hours || 0).toFixed(2),
+          'Date': entry.date,
+          'Weekending Date': ts?.week_ending || '',
+        }
+      })
+
+      const headers = Object.keys(rows[0])
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row =>
+          headers.map(h => {
+            const val = (row as any)[h]
+            if (typeof val === 'string' && (val.includes(',') || val.includes('"'))) {
+              return `"${val.replace(/"/g, '""')}"`
+            }
+            return val
+          }).join(',')
+        ),
+      ].join('\n')
+
+      const periodLabel = selectedPeriod ? getPeriodLabel(selectedPeriod).replace(/[^a-zA-Z0-9]/g, '_') : 'export'
+      const blob = new Blob([csvContent], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Tracker_ATS_${periodLabel}.csv`
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   const formatName = (emp: TimesheetRow['employee']) =>
     emp ? `${emp.last_name}, ${emp.first_name}` : 'Unknown'
 
@@ -763,6 +830,17 @@ export default function PayrollPage() {
           >
             <Download className="h-4 w-4" />
             Export for ADP/Paychex
+          </button>
+          <button
+            onClick={handleTrackerExport}
+            disabled={generating || (finalized.length === 0 && approved.length === 0)}
+            className="flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            style={{ padding: '8px 18px', background: '#e31c79', border: 'none', color: '#fff', borderRadius: 7, fontSize: 12, fontWeight: 600 }}
+            onMouseEnter={(e) => { if (!generating) { e.currentTarget.style.background = '#cc1069'; } }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#e31c79'; }}
+          >
+            <Download className="h-4 w-4" />
+            {generating ? 'Generating...' : 'Export for Tracker ATS'}
           </button>
         </div>
 
