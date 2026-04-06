@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAdminFilter } from '@/contexts/AdminFilterContext'
 import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
 import { Download } from 'lucide-react'
@@ -21,6 +22,8 @@ interface ReportData {
     department: string
     hourly_rate: number
     employee_type?: string
+    client_id?: string
+    department_id?: string
   }
   projects?: {
     name: string
@@ -31,6 +34,7 @@ interface ReportData {
 export default function TimeByEmployeeReport() {
   const router = useRouter()
   const { user } = useAuth()
+  const { selectedClientId, selectedDepartmentId } = useAdminFilter()
   const supabase = createClient()
 
   const now = new Date()
@@ -93,7 +97,9 @@ export default function TimeByEmployeeReport() {
             last_name,
             department,
             hourly_rate,
-            employee_type
+            employee_type,
+            client_id,
+            department_id
           ),
           projects (
             name,
@@ -140,10 +146,16 @@ export default function TimeByEmployeeReport() {
             )
           }
         }
-        const enriched = (data as any[]).map(r => ({
+        let enriched = (data as any[]).map(r => ({
           ...r,
           approved_by_name: r.approved_by ? (approverMap[r.approved_by] || '') : ''
         }))
+        if (selectedClientId) {
+          enriched = enriched.filter(r => r.employees?.client_id === selectedClientId)
+        }
+        if (selectedDepartmentId) {
+          enriched = enriched.filter(r => r.employees?.department_id === selectedDepartmentId)
+        }
         setReportData(enriched as ReportData[])
       }
     } catch (error) {

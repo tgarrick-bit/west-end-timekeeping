@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useAdminFilter } from '@/contexts/AdminFilterContext';
 import { useRouter } from 'next/navigation';
 import * as XLSX from 'xlsx';
 import {
@@ -13,6 +14,7 @@ interface BillingRow {
   client_name: string;
   employee_id: string;
   employee_name: string;
+  department_id?: string;
   project_id: string;
   project_name: string;
   project_code: string;
@@ -33,6 +35,7 @@ interface ClientGroup {
 export default function BillingPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { selectedClientId, selectedDepartmentId } = useAdminFilter();
 
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(
@@ -47,7 +50,7 @@ export default function BillingPage() {
 
   useEffect(() => {
     fetchBillingData();
-  }, [selectedMonth]);
+  }, [selectedMonth, selectedClientId, selectedDepartmentId]);
 
   const fetchBillingData = async () => {
     setLoading(true);
@@ -73,6 +76,7 @@ export default function BillingPage() {
             first_name,
             last_name,
             client_id,
+            department_id,
             bill_rate
           ),
           projects (
@@ -133,6 +137,7 @@ export default function BillingPage() {
           client_name: clientName,
           employee_id: ts.employee_id,
           employee_name: empName,
+          department_id: emp?.department_id || undefined,
           project_id: ts.project_id || '',
           project_name: proj?.name || 'No Project',
           project_code: proj?.code || '',
@@ -160,7 +165,23 @@ export default function BillingPage() {
         groupMap[row.client_id].rows.push(row);
       });
 
-      const groups = Object.values(groupMap).sort((a, b) => b.total_amount - a.total_amount);
+      let groups = Object.values(groupMap).sort((a, b) => b.total_amount - a.total_amount);
+
+      // Apply admin context filters
+      if (selectedClientId) {
+        groups = groups.filter(g => g.client_id === selectedClientId);
+      }
+      if (selectedDepartmentId) {
+        groups = groups.map(g => {
+          const filteredRows = g.rows.filter(r => r.department_id === selectedDepartmentId);
+          return {
+            ...g,
+            rows: filteredRows,
+            total_hours: filteredRows.reduce((s, r) => s + r.total_hours, 0),
+            total_amount: filteredRows.reduce((s, r) => s + r.billable_amount, 0),
+          };
+        }).filter(g => g.rows.length > 0);
+      }
 
       const grandTotalAmount = groups.reduce((s, g) => s + g.total_amount, 0);
       const grandTotalHours = groups.reduce((s, g) => s + g.total_hours, 0);

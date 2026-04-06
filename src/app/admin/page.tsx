@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
+import { useAdminFilter } from '@/contexts/AdminFilterContext'
 import TimesheetModal from '@/components/TimesheetModal'
 import { AppShell } from '@/components/layout'
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton'
@@ -62,6 +63,8 @@ interface Employee {
   email: string
   employee_id: string
   department: string | null
+  client_id: string | null
+  department_id: string | null
   hourly_rate: number
   bill_rate: number | null
   manager_id: string | null
@@ -118,7 +121,8 @@ export default function AdminPage() {
   const router = useRouter()
   const { employee } = useAuth()
   const supabase = createClient()
-  
+  const { selectedClientId: ctxClientId, selectedDepartmentId: ctxDepartmentId } = useAdminFilter()
+
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -874,8 +878,16 @@ export default function AdminPage() {
       })
     }
 
+    // Apply admin context filters (from AdminNav bar)
+    if (ctxClientId) {
+      filtered = filtered.filter(s => s.employee?.client_id === ctxClientId)
+    }
+    if (ctxDepartmentId) {
+      filtered = filtered.filter(s => s.employee?.department_id === ctxDepartmentId)
+    }
+
     return filtered
-  })()  
+  })()
 
   const pendingTimesheets = filteredSubmissions.filter(
     s => s.type === 'timesheet' && s.status === 'submitted'
@@ -915,6 +927,13 @@ export default function AdminPage() {
     }
     if (clientFilter && clientFilter !== 'all') {
       filtered = filtered.filter(s => (s.employee as any)?.client_id === clientFilter)
+    }
+    // Apply admin context filters (from AdminNav bar)
+    if (ctxClientId) {
+      filtered = filtered.filter(s => s.employee?.client_id === ctxClientId)
+    }
+    if (ctxDepartmentId) {
+      filtered = filtered.filter(s => s.employee?.department_id === ctxDepartmentId)
     }
     return filtered
   })()

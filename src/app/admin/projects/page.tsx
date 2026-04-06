@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useAdminFilter } from '@/contexts/AdminFilterContext'
 import { useRouter } from 'next/navigation'
 import { Plus, Search, Filter } from 'lucide-react'
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton'
@@ -12,6 +13,7 @@ interface ProjectRow {
   short_name?: string
   project_number?: string
   client_id: string
+  department_id?: string
   is_active: boolean
   track_time: boolean
   track_expenses: boolean
@@ -28,6 +30,7 @@ interface ClientRow {
 export default function AdminProjectsPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { selectedClientId, selectedDepartmentId } = useAdminFilter()
 
   const [projects, setProjects] = useState<ProjectRow[]>([])
   const [clients, setClients] = useState<ClientRow[]>([])
@@ -66,7 +69,7 @@ export default function AdminProjectsPage() {
     const { data, error } = await supabase
       .from('projects')
       .select(
-        'id, name, short_name, project_number, client_id, is_active, track_time, track_expenses, is_billable, created_at'
+        'id, name, short_name, project_number, client_id, department_id, is_active, track_time, track_expenses, is_billable, created_at'
       )
       .order('name')
 
@@ -91,6 +94,11 @@ export default function AdminProjectsPage() {
     return projects
       .filter((p) => (showActiveOnly ? p.is_active : true))
       .filter((p) => {
+        if (selectedClientId && p.client_id !== selectedClientId) return false
+        if (selectedDepartmentId && p.department_id !== selectedDepartmentId) return false
+        return true
+      })
+      .filter((p) => {
         if (!term) return true
         const client = clientLookup[p.client_id]
         const haystack = [
@@ -106,7 +114,7 @@ export default function AdminProjectsPage() {
 
         return haystack.includes(term)
       })
-  }, [projects, clientLookup, search, showActiveOnly])
+  }, [projects, clientLookup, search, showActiveOnly, selectedClientId, selectedDepartmentId])
 
   const handleOpen = (id: string) => {
     router.push(`/admin/projects/${id}`)

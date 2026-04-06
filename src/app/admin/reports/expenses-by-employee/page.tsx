@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAdminFilter } from '@/contexts/AdminFilterContext'
 import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
 import { Download } from 'lucide-react'
@@ -28,6 +29,8 @@ interface ExpenseData {
     department?: string
     employee_type?: string
     email: string
+    client_id?: string
+    department_id?: string
   }
   projects?: {
     name: string
@@ -56,6 +59,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function ExpensesByEmployeeReport() {
   const router = useRouter()
   const { user } = useAuth()
+  const { selectedClientId, selectedDepartmentId } = useAdminFilter()
   const supabase = createClient()
 
   const now = new Date()
@@ -98,7 +102,7 @@ export default function ExpensesByEmployeeReport() {
     try {
       let query = supabase
         .from('expenses')
-        .select(`*, employees!inner (first_name, last_name, department, employee_type, email), projects (name, code)`)
+        .select(`*, employees!inner (first_name, last_name, department, employee_type, email, client_id, department_id), projects (name, code)`)
         .gte('expense_date', startDate)
         .lte('expense_date', endDate)
       if (selectedUser !== '-All-') { query = query.eq('employee_id', selectedUser) }
@@ -111,7 +115,12 @@ export default function ExpensesByEmployeeReport() {
       else if (nonBillableOnly) { query = query.eq('is_billable', false) }
       const { data, error } = await query
       if (error) { console.error('Error fetching report data:', error) }
-      else if (data) { setReportData(data as ExpenseData[]) }
+      else if (data) {
+        let filtered = data as any[]
+        if (selectedClientId) { filtered = filtered.filter(r => r.employees?.client_id === selectedClientId) }
+        if (selectedDepartmentId) { filtered = filtered.filter(r => r.employees?.department_id === selectedDepartmentId) }
+        setReportData(filtered as ExpenseData[])
+      }
     } catch (error) { console.error('Error generating report:', error) }
     finally { setIsLoading(false) }
   }

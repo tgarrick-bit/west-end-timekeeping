@@ -98,7 +98,7 @@ export default function ClientExpenses() {
 
       if (projectIds.length > 0) {
         const { data: assignments } = await supabase
-          .from('project_assignments')
+          .from('project_employees')
           .select('employee_id, employees!inner(id, first_name, last_name, email)')
           .in('project_id', projectIds);
 

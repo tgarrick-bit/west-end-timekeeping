@@ -12,6 +12,7 @@ import {
   X,
   Mail,
   Phone,
+  GitBranch,
 } from 'lucide-react';
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton';
 
@@ -51,6 +52,14 @@ interface ClientFormData {
   is_active: boolean;
 }
 
+interface Department {
+  id: string;
+  client_id: string;
+  name: string;
+  code: string | null;
+  is_active: boolean;
+}
+
 export default function ClientManagement() {
   const [clients, setClients] = useState<Client[]>([]);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
@@ -59,6 +68,15 @@ export default function ClientManagement() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+
+  // Department management state
+  const [showDeptModal, setShowDeptModal] = useState(false);
+  const [deptClient, setDeptClient] = useState<Client | null>(null);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [deptLoading, setDeptLoading] = useState(false);
+  const [deptFormName, setDeptFormName] = useState('');
+  const [deptFormCode, setDeptFormCode] = useState('');
+  const [editingDept, setEditingDept] = useState<Department | null>(null);
 
   const supabase = createClient();
   const router = useRouter();
@@ -294,6 +312,94 @@ export default function ClientManagement() {
       is_active: client.is_active
     });
     setShowEditModal(true);
+  };
+
+  // --- Department CRUD ---
+  const openDeptModal = async (client: Client) => {
+    setDeptClient(client);
+    setShowDeptModal(true);
+    setDeptFormName('');
+    setDeptFormCode('');
+    setEditingDept(null);
+    await fetchDepartments(client.id);
+  };
+
+  const fetchDepartments = async (clientId: string) => {
+    setDeptLoading(true);
+    const { data, error } = await supabase
+      .from('departments')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('name');
+    if (!error && data) setDepartments(data);
+    setDeptLoading(false);
+  };
+
+  const handleAddDept = async () => {
+    if (!deptClient || !deptFormName.trim()) return;
+    const { error } = await supabase.from('departments').insert([{
+      client_id: deptClient.id,
+      name: deptFormName.trim(),
+      code: deptFormCode.trim() || null,
+      is_active: true,
+    }]);
+    if (error) {
+      alert(error.message.includes('unique') ? 'A department with this name already exists for this client.' : `Error: ${error.message}`);
+      return;
+    }
+    setDeptFormName('');
+    setDeptFormCode('');
+    await fetchDepartments(deptClient.id);
+  };
+
+  const handleUpdateDept = async () => {
+    if (!editingDept || !deptFormName.trim()) return;
+    const { error } = await supabase
+      .from('departments')
+      .update({ name: deptFormName.trim(), code: deptFormCode.trim() || null })
+      .eq('id', editingDept.id);
+    if (error) {
+      alert(`Error: ${error.message}`);
+      return;
+    }
+    setEditingDept(null);
+    setDeptFormName('');
+    setDeptFormCode('');
+    if (deptClient) await fetchDepartments(deptClient.id);
+  };
+
+  const handleToggleDeptActive = async (dept: Department) => {
+    const { error } = await supabase
+      .from('departments')
+      .update({ is_active: !dept.is_active })
+      .eq('id', dept.id);
+    if (error) {
+      alert(`Error: ${error.message}`);
+      return;
+    }
+    if (deptClient) await fetchDepartments(deptClient.id);
+  };
+
+  const handleDeleteDept = async (dept: Department) => {
+    if (!confirm(`Delete department "${dept.name}"? This cannot be undone.`)) return;
+    const { error } = await supabase.from('departments').delete().eq('id', dept.id);
+    if (error) {
+      alert(error.message.includes('violates foreign key') ? 'Cannot delete — employees or projects are still assigned to this department. Deactivate it instead.' : `Error: ${error.message}`);
+      return;
+    }
+    if (deptClient) await fetchDepartments(deptClient.id);
+  };
+
+  const startEditDept = (dept: Department) => {
+    setEditingDept(dept);
+    setDeptFormName(dept.name);
+    setDeptFormCode(dept.code || '');
+  };
+
+  const cancelEditDept = () => {
+    setEditingDept(null);
+    setDeptFormName('');
+    setDeptFormCode('');
   };
 
   // Stats
@@ -601,6 +707,29 @@ export default function ClientManagement() {
                   <td style={{ padding: '12px 20px', textAlign: 'right' }}>
                     <div className="flex items-center justify-end gap-2">
                       <button
+                        onClick={() => openDeptModal(client)}
+                        style={{
+                          background: '#fff',
+                          border: '0.5px solid #e0dcd7',
+                          borderRadius: 5,
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          fontSize: 10,
+                          fontWeight: 500,
+                          color: '#777',
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.color = '#555'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#777'; }}
+                        title="Manage Departments"
+                      >
+                        <GitBranch style={{ width: 11, height: 11 }} />
+                        Depts
+                      </button>
+                      <button
                         onClick={() => openEditModal(client)}
                         style={{
                           background: '#fff',
@@ -691,6 +820,155 @@ export default function ClientManagement() {
       </div>
 
       {/* Add/Edit Modal */}
+      {/* Department Management Modal */}
+      {showDeptModal && deptClient && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }} onClick={() => setShowDeptModal(false)} />
+          <div style={{ position: 'relative', background: '#fff', borderRadius: 12, border: '0.5px solid #e8e4df', width: '100%', maxWidth: 520, maxHeight: '80vh', overflow: 'auto', padding: 0 }}>
+            {/* Header */}
+            <div style={{ padding: '18px 24px', borderBottom: '0.5px solid #f0ece7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>
+                  Departments
+                </div>
+                <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+                  {deptClient.name} ({deptClient.code})
+                </div>
+              </div>
+              <button onClick={() => setShowDeptModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                <X style={{ width: 16, height: 16, color: '#999' }} />
+              </button>
+            </div>
+
+            {/* Add / Edit form */}
+            <div style={{ padding: '16px 24px', borderBottom: '0.5px solid #f0ece7', background: '#FDFCFB' }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                <div style={{ flex: 2 }}>
+                  <label style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>
+                    Department Name {!editingDept && <span style={{ color: '#e31c79' }}>*</span>}
+                  </label>
+                  <input
+                    type="text"
+                    value={deptFormName}
+                    onChange={(e) => setDeptFormName(e.target.value)}
+                    placeholder="e.g. Department of Commerce"
+                    style={{ width: '100%', fontSize: 12, padding: '7px 10px', border: '0.5px solid #e8e4df', borderRadius: 6, outline: 'none' }}
+                    onFocus={e => { e.currentTarget.style.borderColor = '#d3ad6b'; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = '#e8e4df'; }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>
+                    Code
+                  </label>
+                  <input
+                    type="text"
+                    value={deptFormCode}
+                    onChange={(e) => setDeptFormCode(e.target.value)}
+                    placeholder="e.g. DOC"
+                    style={{ width: '100%', fontSize: 12, padding: '7px 10px', border: '0.5px solid #e8e4df', borderRadius: 6, outline: 'none' }}
+                    onFocus={e => { e.currentTarget.style.borderColor = '#d3ad6b'; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = '#e8e4df'; }}
+                  />
+                </div>
+                {editingDept ? (
+                  <>
+                    <button
+                      onClick={handleUpdateDept}
+                      disabled={!deptFormName.trim()}
+                      style={{ fontSize: 11, fontWeight: 600, color: '#fff', background: '#e31c79', border: 'none', borderRadius: 6, padding: '7px 14px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: deptFormName.trim() ? 1 : 0.5 }}
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={cancelEditDept}
+                      style={{ fontSize: 11, color: '#999', background: 'none', border: '0.5px solid #e8e4df', borderRadius: 6, padding: '7px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleAddDept}
+                    disabled={!deptFormName.trim()}
+                    style={{ fontSize: 11, fontWeight: 600, color: '#fff', background: '#e31c79', border: 'none', borderRadius: 6, padding: '7px 14px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: deptFormName.trim() ? 1 : 0.5, display: 'flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <Plus style={{ width: 12, height: 12 }} />
+                    Add
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Department list */}
+            <div style={{ padding: '0' }}>
+              {deptLoading ? (
+                <div style={{ padding: '32px 24px', textAlign: 'center', fontSize: 12, color: '#999' }}>Loading…</div>
+              ) : departments.length === 0 ? (
+                <div style={{ padding: '32px 24px', textAlign: 'center' }}>
+                  <GitBranch style={{ width: 20, height: 20, color: '#d0cbc4', margin: '0 auto 8px' }} />
+                  <p style={{ fontSize: 12, color: '#999', margin: 0 }}>No departments yet</p>
+                  <p style={{ fontSize: 11, color: '#ccc', marginTop: 4 }}>Add departments above to organize employees and projects.</p>
+                </div>
+              ) : (
+                departments.map((dept) => (
+                  <div
+                    key={dept.id}
+                    style={{
+                      padding: '12px 24px',
+                      borderBottom: '0.5px solid #f5f2ee',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      opacity: dept.is_active ? 1 : 0.5,
+                    }}
+                  >
+                    <div>
+                      <span style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>{dept.name}</span>
+                      {dept.code && (
+                        <span style={{ fontSize: 10.5, color: '#c0bab2', marginLeft: 8 }}>{dept.code}</span>
+                      )}
+                      {!dept.is_active && (
+                        <span style={{ fontSize: 9, color: '#b91c1c', marginLeft: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Inactive</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => startEditDept(dept)}
+                        style={{ background: 'none', border: '0.5px solid #e0dcd7', borderRadius: 4, padding: '3px 5px', cursor: 'pointer' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#d3ad6b'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0dcd7'; }}
+                        title="Edit"
+                      >
+                        <Edit style={{ width: 11, height: 11, color: '#777' }} />
+                      </button>
+                      <button
+                        onClick={() => handleToggleDeptActive(dept)}
+                        style={{ background: 'none', border: '0.5px solid #e0dcd7', borderRadius: 4, padding: '3px 7px', cursor: 'pointer', fontSize: 10, color: '#777' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = dept.is_active ? '#b91c1c' : '#2d9b6e'; e.currentTarget.style.color = dept.is_active ? '#b91c1c' : '#2d9b6e'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0dcd7'; e.currentTarget.style.color = '#777'; }}
+                        title={dept.is_active ? 'Deactivate' : 'Reactivate'}
+                      >
+                        {dept.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteDept(dept)}
+                        style={{ background: 'none', border: '0.5px solid #e0dcd7', borderRadius: 4, padding: '3px 5px', cursor: 'pointer' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#b91c1c'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0dcd7'; }}
+                        title="Delete"
+                      >
+                        <Trash2 style={{ width: 11, height: 11, color: '#777' }} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {(showAddModal || showEditModal) && (
         <div
           className="fixed inset-0 flex items-center justify-center p-4"

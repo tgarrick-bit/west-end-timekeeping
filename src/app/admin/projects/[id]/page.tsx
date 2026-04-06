@@ -16,6 +16,7 @@ interface Project {
   start_date?: string
   end_date?: string
   department?: string
+  department_id?: string
   track_time: boolean
   track_expenses: boolean
   is_billable: boolean
@@ -93,6 +94,7 @@ const buildProjectPayload = (data: Partial<Project>) => {
     start_date: data.start_date ?? null,
     end_date: data.end_date ?? null,
     department: data.department ?? null,
+    department_id: data.department_id ?? null,
 
     // toggles
     is_active: data.is_active ?? true,
@@ -165,6 +167,7 @@ export default function ProjectEditPage() {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [project, setProject] = useState<Project | null>(null)
   const [clients, setClients] = useState<any[]>([])
+  const [projectDepartments, setProjectDepartments] = useState<{ id: string; name: string; code: string | null }[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [projectEmployees, setProjectEmployees] = useState<any[]>([])
   const [approvers, setApprovers] = useState<TimeApprover[]>([])
@@ -226,6 +229,17 @@ export default function ProjectEditPage() {
     setClients(data || [])
   }
 
+  const loadDepartments = async (clientId: string) => {
+    if (!clientId) { setProjectDepartments([]); return }
+    const { data } = await supabase
+      .from('departments')
+      .select('id, name, code')
+      .eq('client_id', clientId)
+      .eq('is_active', true)
+      .order('name')
+    setProjectDepartments(data || [])
+  }
+
   const loadEmployees = async () => {
     const { data, error } = await supabase
       .from('employees')
@@ -252,6 +266,7 @@ export default function ProjectEditPage() {
 
       setProject(data as Project)
       setFormData((prev) => ({ ...prev, ...(data as Project) }))
+      if (data.client_id) loadDepartments(data.client_id)
 
       const { data: empData, error: empError } = await supabase
         .from('project_employees')
@@ -571,7 +586,7 @@ export default function ProjectEditPage() {
               { label: 'Client', value: formData.client_name || 'Not set' },
               { label: 'Status', value: isActive ? 'Active' : 'Inactive' },
               { label: 'Dates', value: `${formData.start_date || 'Not set'} \u2192 ${formData.end_date || 'Forever'}` },
-              { label: 'Department / Class', value: formData.department || 'None' },
+              { label: 'Department', value: (formData.department_id && projectDepartments.find(d => d.id === formData.department_id)?.name) || formData.department || 'None' },
               { label: 'Tracking', value: `${trackTime ? 'Time' : ''}${trackTime && trackExpenses ? ' + ' : ''}${trackExpenses ? 'Expenses' : !trackTime ? 'None' : ''}` },
               { label: 'People / Approvers', value: `${projectEmployees.length} people \u00b7 ${approvers.length} approver(s)` },
             ].map(item => (
@@ -707,24 +722,29 @@ export default function ProjectEditPage() {
             <div style={{ borderTop: '0.5px solid #f0ece7', paddingTop: 24 }} className="space-y-4">
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label style={labelStyle}>Department / class</label>
-                  <select
-                    value={formData.department || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, department: e.target.value })
-                    }
-                    style={inputStyle}
-                    onFocus={focusHandler}
-                    onBlur={blurHandler}
-                  >
-                    <option value="">None</option>
-                    <option value="IT/Commerce">IT/Commerce</option>
-                    <option value="Healthcare">Healthcare</option>
-                    <option value="Finance">Finance</option>
-                    <option value="Operations">Operations</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="HR">Human Resources</option>
-                  </select>
+                  <label style={labelStyle}>Department</label>
+                  {projectDepartments.length > 0 ? (
+                    <select
+                      value={formData.department_id || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, department_id: e.target.value || undefined })
+                      }
+                      style={inputStyle}
+                      onFocus={focusHandler}
+                      onBlur={blurHandler}
+                    >
+                      <option value="">None</option>
+                      {projectDepartments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}{dept.code ? ` (${dept.code})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
+                      No departments configured for this client
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label style={labelStyle}>Project status</label>

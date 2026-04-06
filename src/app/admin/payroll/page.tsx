@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useAdminFilter } from '@/contexts/AdminFilterContext'
 import * as XLSX from 'xlsx'
 import {
   Lock,
@@ -35,6 +36,8 @@ interface TimesheetRow {
     middle_name?: string
     email: string
     department?: string
+    client_id?: string
+    department_id?: string
     hourly_rate: number
     bill_rate?: number
     employee_id?: string
@@ -46,6 +49,7 @@ interface TimesheetRow {
 export default function PayrollPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { selectedClientId, selectedDepartmentId } = useAdminFilter()
 
   const [periods, setPeriods] = useState<PayPeriod[]>([])
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null)
@@ -121,7 +125,7 @@ export default function PayrollPage() {
         *,
         employee:employees!timesheets_employee_id_fkey (
           first_name, last_name, middle_name, email, department,
-          hourly_rate, bill_rate, employee_id, employee_type, is_exempt
+          client_id, department_id, hourly_rate, bill_rate, employee_id, employee_type, is_exempt
         )
       `)
       .gte('week_ending', selectedPeriod.start_date)
@@ -150,14 +154,21 @@ export default function PayrollPage() {
     setLoading(false)
   }
 
-  // Stats
-  const approved = timesheets.filter(t => t.status === 'approved' || t.status === 'client_approved')
-  const finalized = timesheets.filter(t => t.status === 'payroll_approved')
-  const submitted = timesheets.filter(t => t.status === 'submitted')
-  const draft = timesheets.filter(t => t.status === 'draft')
-  const rejected = timesheets.filter(t => t.status === 'rejected')
+  // Apply admin context filters
+  const filteredTimesheets = timesheets.filter(t => {
+    if (selectedClientId && t.employee?.client_id !== selectedClientId) return false
+    if (selectedDepartmentId && t.employee?.department_id !== selectedDepartmentId) return false
+    return true
+  })
 
-  const totalHours = timesheets.reduce((sum, t) => sum + (t.total_hours || 0), 0)
+  // Stats
+  const approved = filteredTimesheets.filter(t => t.status === 'approved' || t.status === 'client_approved')
+  const finalized = filteredTimesheets.filter(t => t.status === 'payroll_approved')
+  const submitted = filteredTimesheets.filter(t => t.status === 'submitted')
+  const draft = filteredTimesheets.filter(t => t.status === 'draft')
+  const rejected = filteredTimesheets.filter(t => t.status === 'rejected')
+
+  const totalHours = filteredTimesheets.reduce((sum, t) => sum + (t.total_hours || 0), 0)
   const approvedHours = approved.reduce((sum, t) => sum + (t.total_hours || 0), 0)
   const finalizedHours = finalized.reduce((sum, t) => sum + (t.total_hours || 0), 0)
 
@@ -666,7 +677,7 @@ export default function PayrollPage() {
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           {[
-            { label: 'Total', value: timesheets.length, sub: `${totalHours.toFixed(1)} hrs`, accent: true },
+            { label: 'Total', value: filteredTimesheets.length, sub: `${totalHours.toFixed(1)} hrs`, accent: true },
             { label: 'Approved', value: approved.length, sub: `${approvedHours.toFixed(1)} hrs` },
             { label: 'Finalized', value: finalized.length, sub: `${finalizedHours.toFixed(1)} hrs` },
             { label: 'Pending', value: submitted.length, pink: true },
@@ -774,7 +785,7 @@ export default function PayrollPage() {
                 </div>
               ))}
             </div>
-          ) : timesheets.length === 0 ? (
+          ) : filteredTimesheets.length === 0 ? (
             <div className="p-8 text-center">
               <Clock className="h-8 w-8 mx-auto mb-2" style={{ color: '#c0bab2' }} />
               <p style={{ fontSize: 13, color: '#999' }}>No timesheets found for this pay period.</p>
@@ -796,7 +807,7 @@ export default function PayrollPage() {
                 </tr>
               </thead>
               <tbody>
-                {timesheets.map((ts) => {
+                {filteredTimesheets.map((ts) => {
                   const emp = ts.employee
                   const isExempt = emp?.is_exempt || false
                   const rate = emp?.hourly_rate || 0
@@ -834,23 +845,23 @@ export default function PayrollPage() {
               </tbody>
               <tfoot style={{ borderTop: '0.5px solid #e8e4df' }}>
                 <tr>
-                  <td style={{ padding: '12px 20px', fontSize: 12.5, fontWeight: 600, color: '#1a1a1a' }}>Totals ({timesheets.length} timesheets)</td>
+                  <td style={{ padding: '12px 20px', fontSize: 12.5, fontWeight: 600, color: '#1a1a1a' }}>Totals ({filteredTimesheets.length} timesheets)</td>
                   <td></td>
                   <td style={{ padding: '12px 20px', fontSize: 12.5, fontWeight: 600, textAlign: 'right' }}>
-                    {timesheets.reduce((s, t) => {
+                    {filteredTimesheets.reduce((s, t) => {
                       const isEx = t.employee?.is_exempt || false
                       return s + (isEx ? (t.total_hours || 0) : Math.min(t.total_hours || 0, 40))
                     }, 0).toFixed(2)}
                   </td>
                   <td style={{ padding: '12px 20px', fontSize: 12.5, fontWeight: 600, textAlign: 'right' }}>
-                    {timesheets.reduce((s, t) => {
+                    {filteredTimesheets.reduce((s, t) => {
                       const isEx = t.employee?.is_exempt || false
                       return s + (isEx ? 0 : (t.overtime_hours || Math.max(0, (t.total_hours || 0) - 40)))
                     }, 0).toFixed(2)}
                   </td>
                   <td style={{ padding: '12px 20px', fontSize: 12.5, fontWeight: 600, textAlign: 'right' }}>{totalHours.toFixed(2)}</td>
                   <td style={{ padding: '12px 20px', fontSize: 12.5, fontWeight: 600, textAlign: 'right' }}>
-                    ${timesheets.reduce((s, t) => {
+                    ${filteredTimesheets.reduce((s, t) => {
                       const emp = t.employee
                       const rate = emp?.hourly_rate || 0
                       const isEx = emp?.is_exempt || false

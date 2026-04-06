@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAdminFilter } from '@/contexts/AdminFilterContext'
 import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
 import { Download } from 'lucide-react'
@@ -23,7 +24,7 @@ interface ExpenseData {
   submitted_at?: string
   approved_at?: string
   approved_by?: string
-  employees?: { first_name: string; last_name: string; department?: string; email: string }
+  employees?: { first_name: string; last_name: string; department?: string; email: string; client_id?: string; department_id?: string }
   projects?: { name: string; code: string; client_name?: string }
 }
 
@@ -48,6 +49,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function ExpensesByProjectReport() {
   const router = useRouter()
   const { user } = useAuth()
+  const { selectedClientId, selectedDepartmentId } = useAdminFilter()
   const supabase = createClient()
 
   const now = new Date()
@@ -88,7 +90,7 @@ export default function ExpensesByProjectReport() {
     try {
       let query = supabase
         .from('expenses')
-        .select(`*, employees!inner (first_name, last_name, department, email), projects (name, code, client_name)`)
+        .select(`*, employees!inner (first_name, last_name, department, email, client_id, department_id), projects (name, code, client_name)`)
         .gte('expense_date', startDate)
         .lte('expense_date', endDate)
       if (selectedProject !== '-All-') { query = query.eq('project_id', selectedProject) }
@@ -97,7 +99,12 @@ export default function ExpensesByProjectReport() {
       if (reimbursableOnly) { query = query.eq('is_reimbursable', true) } else if (nonReimbursableOnly) { query = query.eq('is_reimbursable', false) }
       if (billableOnly) { query = query.eq('is_billable', true) } else if (nonBillableOnly) { query = query.eq('is_billable', false) }
       const { data, error } = await query
-      if (error) { console.error('Error fetching report data:', error) } else if (data) { setReportData(data as ExpenseData[]) }
+      if (error) { console.error('Error fetching report data:', error) } else if (data) {
+        let filtered = data as any[]
+        if (selectedClientId) { filtered = filtered.filter(r => r.employees?.client_id === selectedClientId) }
+        if (selectedDepartmentId) { filtered = filtered.filter(r => r.employees?.department_id === selectedDepartmentId) }
+        setReportData(filtered as ExpenseData[])
+      }
     } catch (error) { console.error('Error generating report:', error) }
     finally { setIsLoading(false) }
   }

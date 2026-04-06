@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
+import { useAdminFilter } from '@/contexts/AdminFilterContext';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import {
   Plus,
@@ -98,6 +99,7 @@ interface Employee {
   phone?: string;
   role: string;
   department?: string;
+  department_id?: string;
   hire_date?: string;
   hourly_rate?: number;
   bill_rate?: number | null;
@@ -109,6 +111,18 @@ interface Employee {
   manager_id?: string;
   mybase_payroll_id?: string;
   employee_type?: string;
+}
+
+interface ClientOption {
+  id: string;
+  name: string;
+  code: string;
+}
+
+interface DepartmentOption {
+  id: string;
+  name: string;
+  code: string | null;
 }
 
 interface Manager {
@@ -124,6 +138,8 @@ type RoleFilter = 'all' | 'employee' | 'manager' | 'admin';
 export default function EmployeeManagement() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [managers, setManagers] = useState<Manager[]>([]);
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [formDepartments, setFormDepartments] = useState<DepartmentOption[]>([]);
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -145,6 +161,7 @@ export default function EmployeeManagement() {
   const { toast } = useToast();
   const supabase = createClient();
   const router = useRouter();
+  const { selectedClientId, selectedDepartmentId } = useAdminFilter();
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -154,6 +171,7 @@ export default function EmployeeManagement() {
     phone: '',
     role: 'employee', // 'employee' | 'manager' | 'admin'
     department: '',
+    department_id: '',
     hire_date: new Date().toISOString().split('T')[0],
     hourly_rate: 0,
     bill_rate: 0,
@@ -163,6 +181,7 @@ export default function EmployeeManagement() {
     employee_id: '',
     mybase_payroll_id: '',
     manager_id: '',
+    client_id: '',
     password: '',
     employee_type: '',
   });
@@ -173,7 +192,7 @@ export default function EmployeeManagement() {
 
   useEffect(() => {
     filterEmployees();
-  }, [employees, searchTerm, roleFilter, managerFilter, activeFilter]);
+  }, [employees, searchTerm, roleFilter, managerFilter, activeFilter, selectedClientId, selectedDepartmentId]);
 
   const checkAuthAndFetch = async () => {
     try {
@@ -200,6 +219,7 @@ export default function EmployeeManagement() {
 
       await fetchEmployees();
       await fetchManagers();
+      await fetchClients();
     } catch (err) {
       console.error('Error:', err);
       setError('Failed to load data');
@@ -241,6 +261,32 @@ export default function EmployeeManagement() {
     }
   };
 
+  const fetchClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, name, code')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setClients(data || []);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+    }
+  };
+
+  const fetchFormDepartments = async (clientId: string) => {
+    const { data, error } = await supabase
+      .from('departments')
+      .select('id, name, code')
+      .eq('client_id', clientId)
+      .eq('is_active', true)
+      .order('name');
+    if (!error && data) setFormDepartments(data);
+    else setFormDepartments([]);
+  };
+
   const filterEmployees = () => {
     let filtered = [...employees];
 
@@ -275,6 +321,16 @@ export default function EmployeeManagement() {
         (emp) =>
           emp.role === 'employee' && emp.manager_id === managerFilter
       );
+    }
+
+    // Admin nav client filter
+    if (selectedClientId) {
+      filtered = filtered.filter((emp) => emp.client_id === selectedClientId);
+    }
+
+    // Admin nav department filter
+    if (selectedDepartmentId) {
+      filtered = filtered.filter((emp) => emp.department_id === selectedDepartmentId);
     }
 
     // Always sort alphabetically by last, then first, then middle
@@ -346,6 +402,8 @@ export default function EmployeeManagement() {
           role: formData.role || 'employee',
           department: formData.department || null,
           managerId: isEmployee ? formData.manager_id : null,
+          clientId: isEmployee ? formData.client_id || null : null,
+          departmentId: isEmployee ? formData.department_id || null : null,
           hourlyRate: isEmployee ? formData.hourly_rate || null : null,
           billRate: isEmployee ? formData.bill_rate || null : null,
           employeeId: formData.employee_id || null,
@@ -395,11 +453,13 @@ export default function EmployeeManagement() {
       const updateData: any = { ...formData };
       delete updateData.password;
 
-      // Only keep pay rates and manager for employees
+      // Only keep pay rates, manager, client, and department for employees
       if (formData.role !== 'employee') {
         updateData.hourly_rate = null;
         updateData.bill_rate = null;
         updateData.manager_id = null;
+        updateData.client_id = null;
+        updateData.department_id = null;
       }
 
       const { error } = await supabase
@@ -481,6 +541,7 @@ export default function EmployeeManagement() {
       phone: employee.phone || '',
       role: employee.role || 'employee',
       department: employee.department || '',
+      department_id: employee.department_id || '',
       hire_date: employee.hire_date || '',
       hourly_rate: employee.hourly_rate || 0,
       bill_rate: employee.bill_rate || 0,
@@ -490,9 +551,12 @@ export default function EmployeeManagement() {
       employee_id: employee.employee_id || '',
       mybase_payroll_id: employee.mybase_payroll_id || '',
       manager_id: employee.manager_id || '',
+      client_id: employee.client_id || '',
       password: '',
       employee_type: employee.employee_type || '',
     });
+    if (employee.client_id) fetchFormDepartments(employee.client_id);
+    else setFormDepartments([]);
     setShowEditModal(true);
   };
 
@@ -505,6 +569,7 @@ export default function EmployeeManagement() {
       phone: '',
       role: 'employee',
       department: '',
+      department_id: '',
       hire_date: new Date().toISOString().split('T')[0],
       hourly_rate: 0,
       bill_rate: 0,
@@ -514,6 +579,7 @@ export default function EmployeeManagement() {
       employee_id: '',
       mybase_payroll_id: '',
       manager_id: '',
+      client_id: '',
       password: '',
       employee_type: '',
     });
@@ -1058,6 +1124,65 @@ export default function EmployeeManagement() {
                     <p className="text-xs text-[#999] mt-1">
                       Timesheets will appear on this approver&apos;s dashboard
                     </p>
+                  </div>
+                )}
+
+                {/* Client – ONLY for employees */}
+                {formData.role === 'employee' && (
+                  <div>
+                    <label className="block text-sm font-medium text-[#555] mb-1">
+                      Client
+                    </label>
+                    <select
+                      value={formData.client_id}
+                      onChange={(e) => {
+                        const newClientId = e.target.value;
+                        setFormData({
+                          ...formData,
+                          client_id: newClientId,
+                          department_id: '', // Reset department when client changes
+                        });
+                        if (newClientId) fetchFormDepartments(newClientId);
+                        else setFormDepartments([]);
+                      }}
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
+                    >
+                      <option value="">No Client Assigned</option>
+                      {clients.map((client) => (
+                        <option key={client.id} value={client.id}>
+                          {client.name} ({client.code})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-[#999] mt-1">
+                      Which client company this employee works for
+                    </p>
+                  </div>
+                )}
+
+                {/* Department – ONLY for employees with a client that has departments */}
+                {formData.role === 'employee' && formData.client_id && formDepartments.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-[#555] mb-1">
+                      Department
+                    </label>
+                    <select
+                      value={formData.department_id}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          department_id: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
+                    >
+                      <option value="">No Department</option>
+                      {formDepartments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}{dept.code ? ` (${dept.code})` : ''}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
 

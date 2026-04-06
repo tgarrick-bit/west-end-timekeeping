@@ -108,7 +108,7 @@ export default function ClientDashboard() {
       let allEmpIds = [...empIds];
       if (projectIds.length > 0) {
         const { data: assignments } = await supabase
-          .from('project_assignments')
+          .from('project_employees')
           .select('employee_id, employees!inner(id, first_name, last_name)')
           .in('project_id', projectIds);
 

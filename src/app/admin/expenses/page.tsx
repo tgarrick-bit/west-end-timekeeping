@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useAdminFilter } from '@/contexts/AdminFilterContext';
 import { useRouter } from 'next/navigation';
 import ExpenseModal from '@/components/ExpenseModal';
 import { useToast } from '@/components/ui/Toast';
@@ -34,6 +35,7 @@ interface Expense {
     email: string;
     department?: string;
     client_id?: string;
+    department_id?: string;
   };
   expense_date: string;
   amount: number;
@@ -129,11 +131,12 @@ export default function AdminExpenses() {
   const { toast } = useToast();
   const supabase = createClient();
   const router = useRouter();
+  const { selectedClientId, selectedDepartmentId } = useAdminFilter();
 
   useEffect(() => {
     fetchExpenses();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMonth, filterStatus, categoryFilter]);
+  }, [selectedMonth, filterStatus, categoryFilter, selectedClientId, selectedDepartmentId]);
 
   const getMonthDateRange = (date: Date) => {
     const year = date.getFullYear();
@@ -165,7 +168,8 @@ export default function AdminExpenses() {
           last_name,
           email,
           department,
-          client_id
+          client_id,
+          department_id
         `
         )
         .eq('is_active', true);
@@ -181,7 +185,8 @@ export default function AdminExpenses() {
             last_name,
             email,
             department,
-            client_id
+            client_id,
+            department_id
           ),
           project:projects!expenses_project_id_fkey (
             id,
@@ -333,7 +338,26 @@ export default function AdminExpenses() {
         }
       }
 
-      setClientGroups(groups);
+      // Apply admin context filters
+      let filteredGroups = groups;
+      if (selectedClientId) {
+        filteredGroups = filteredGroups.filter(g => g.client_id === selectedClientId);
+      }
+      if (selectedDepartmentId) {
+        filteredGroups = filteredGroups.map(g => {
+          const filteredEmployees = g.expenses.filter(ee => {
+            const emp = employees?.find(e => e.id === ee.employee_id);
+            return (emp as any)?.department_id === selectedDepartmentId;
+          });
+          const totalAmount = filteredEmployees.reduce((s, ee) => s + ee.totalAmount, 0);
+          const totalPending = filteredEmployees.reduce((s, ee) => s + ee.pendingCount, 0);
+          const totalApproved = filteredEmployees.reduce((s, ee) => s + ee.expenses.filter(exp => exp.status === 'approved').length, 0);
+          const pendingAmount = filteredEmployees.reduce((s, ee) => s + ee.expenses.filter(exp => exp.status === 'submitted').reduce((sum, exp) => sum + (exp.amount || 0), 0), 0);
+          return { ...g, expenses: filteredEmployees, totalAmount, totalPending, totalApproved, pendingAmount };
+        }).filter(g => g.expenses.length > 0);
+      }
+
+      setClientGroups(filteredGroups);
     } catch (error) {
       console.error('Error fetching expenses:', error);
     } finally {

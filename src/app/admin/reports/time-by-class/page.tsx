@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAdminFilter } from '@/contexts/AdminFilterContext'
 import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
 import { Download } from 'lucide-react'
@@ -20,6 +21,8 @@ interface ReportData {
     last_name: string
     department: string
     hourly_rate: number
+    client_id?: string
+    department_id?: string
   }
   projects?: {
     name: string
@@ -48,6 +51,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function TimeByClassReport() {
   const router = useRouter()
   const { user } = useAuth()
+  const { selectedClientId, selectedDepartmentId } = useAdminFilter()
   const supabase = createClient()
 
   const now = new Date()
@@ -88,7 +92,7 @@ export default function TimeByClassReport() {
     try {
       let query = supabase
         .from('timesheets')
-        .select(`*, employees!inner (first_name, last_name, department, hourly_rate), projects (name, code)`)
+        .select(`*, employees!inner (first_name, last_name, department, hourly_rate, client_id, department_id), projects (name, code)`)
         .gte('week_ending', startDate)
         .lte('week_ending', endDate)
 
@@ -96,7 +100,16 @@ export default function TimeByClassReport() {
       if (selectedClass !== '-All-') { query = query.eq('project_id', selectedClass) }
       const { data, error } = await query
       if (error) { console.error('Error fetching report data:', error) }
-      else if (data) { setReportData(data as ReportData[]) }
+      else if (data) {
+        let filtered = data as any[]
+        if (selectedClientId) {
+          filtered = filtered.filter(r => r.employees?.client_id === selectedClientId)
+        }
+        if (selectedDepartmentId) {
+          filtered = filtered.filter(r => r.employees?.department_id === selectedDepartmentId)
+        }
+        setReportData(filtered as ReportData[])
+      }
     } catch (error) { console.error('Error generating report:', error) }
     finally { setIsLoading(false) }
   }

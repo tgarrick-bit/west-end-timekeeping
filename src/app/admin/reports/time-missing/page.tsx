@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAdminFilter } from '@/contexts/AdminFilterContext'
 import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
 import { Download } from 'lucide-react'
@@ -16,6 +17,8 @@ interface Employee {
   email: string
   hourly_rate?: number | null
   status?: string | null
+  client_id?: string | null
+  department_id?: string | null
 }
 
 interface MissingTimeData {
@@ -37,6 +40,7 @@ function focusOut(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) { e
 export default function TimeMissingReport() {
   const router = useRouter()
   const { user } = useAuth()
+  const { selectedClientId, selectedDepartmentId } = useAdminFilter()
   const supabase = createClient()
 
   const now = new Date()
@@ -81,8 +85,16 @@ export default function TimeMissingReport() {
       const { data: employees, error: empError } = await employeeQuery
       if (empError) { console.error('Error fetching employees:', empError); setIsLoading(false); return }
 
+      let filteredEmployees = employees || []
+      if (selectedClientId) {
+        filteredEmployees = filteredEmployees.filter(e => e.client_id === selectedClientId)
+      }
+      if (selectedDepartmentId) {
+        filteredEmployees = filteredEmployees.filter(e => e.department_id === selectedDepartmentId)
+      }
+
       const missingTimeData: MissingTimeData[] = []
-      for (const employee of employees || []) {
+      for (const employee of filteredEmployees) {
         const { data: timesheets } = await supabase
           .from('timesheets')
           .select('week_ending')

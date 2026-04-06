@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useAdminFilter } from '@/contexts/AdminFilterContext';
 import { useRouter } from 'next/navigation';
 import TimesheetModal from '@/components/TimesheetModal';
 import { useToast } from '@/components/ui/Toast';
@@ -39,6 +40,7 @@ interface Timesheet {
     email: string;
     department?: string;
     client_id?: string;
+    department_id?: string;
     hourly_rate?: number;
     manager_id?: string;
   };
@@ -95,6 +97,7 @@ export default function AdminTimesheets() {
   const { toast } = useToast();
   const supabase = createClient();
   const router = useRouter();
+  const { selectedClientId, selectedDepartmentId } = useAdminFilter();
 
   useEffect(() => {
     fetchAllData();
@@ -127,6 +130,8 @@ export default function AdminTimesheets() {
             last_name,
             email,
             department,
+            client_id,
+            department_id,
             hourly_rate,
             manager_id
           )
@@ -292,6 +297,14 @@ export default function AdminTimesheets() {
   // Get fully filtered timesheets based on all filters
   const getFullyFilteredTimesheets = () => {
     let filtered = [...allTimesheets];
+
+    // Filter by admin context (client + department)
+    if (selectedClientId) {
+      filtered = filtered.filter(ts => ts.employee?.client_id === selectedClientId);
+    }
+    if (selectedDepartmentId) {
+      filtered = filtered.filter(ts => ts.employee?.department_id === selectedDepartmentId);
+    }
 
     // Filter by manager
     if (filterManager !== 'all') {

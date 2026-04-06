@@ -86,6 +86,8 @@ export async function POST(request: NextRequest) {
       managerId,
       hourlyRate,
       billRate,         // NEW: from frontend
+      clientId,
+      departmentId,
       employeeId,
       mybasePayrollId,
       hireDate,
@@ -175,6 +177,8 @@ export async function POST(request: NextRequest) {
           role: effectiveRole,
           department: department || null,
           manager_id: isEmployee ? (managerId || null) : null,        // only for employees
+          client_id: isEmployee ? (clientId || null) : null,          // only for employees
+          department_id: isEmployee ? (departmentId || null) : null,  // only for employees
           mybase_payroll_id: mybasePayrollId || null,
           employee_id: employeeId || null,
           hourly_rate: isEmployee ? (hourlyRate ?? null) : null,      // only for employees

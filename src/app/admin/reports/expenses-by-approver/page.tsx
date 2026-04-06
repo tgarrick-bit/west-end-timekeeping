@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAdminFilter } from '@/contexts/AdminFilterContext'
 import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
 import { Download } from 'lucide-react'
@@ -23,7 +24,7 @@ interface ExpenseData {
   submitted_at?: string
   approved_at?: string
   approved_by?: string
-  employees?: { first_name: string; last_name: string; department?: string; email: string }
+  employees?: { first_name: string; last_name: string; department?: string; email: string; client_id?: string; department_id?: string }
   projects?: { name: string; code: string }
   approver?: { first_name: string; last_name: string; email: string } | null
 }
@@ -49,6 +50,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function ExpensesByApproverReport() {
   const router = useRouter()
   const { user } = useAuth()
+  const { selectedClientId, selectedDepartmentId } = useAdminFilter()
   const supabase = createClient()
 
   const now = new Date()
@@ -79,7 +81,7 @@ export default function ExpensesByApproverReport() {
     try {
       let query = supabase
         .from('expenses')
-        .select(`*, employees!inner (first_name, last_name, department, email), projects (name, code)`)
+        .select(`*, employees!inner (first_name, last_name, department, email, client_id, department_id), projects (name, code)`)
         .gte('expense_date', startDate)
         .lte('expense_date', endDate)
       if (!includeUnapproved) { query = query.eq('status', 'approved') }
@@ -88,8 +90,11 @@ export default function ExpensesByApproverReport() {
       const { data, error } = await query
       if (error) { console.error('Error fetching report data:', error) }
       else if (data) {
+        let filtered = data as any[]
+        if (selectedClientId) { filtered = filtered.filter(r => r.employees?.client_id === selectedClientId) }
+        if (selectedDepartmentId) { filtered = filtered.filter(r => r.employees?.department_id === selectedDepartmentId) }
         const dataWithApprovers = await Promise.all(
-          (data as ExpenseData[]).map(async (expense) => {
+          (filtered as ExpenseData[]).map(async (expense) => {
             if (expense.approved_by) {
               const { data: approverData } = await supabase
                 .from('employees')
