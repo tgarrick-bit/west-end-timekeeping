@@ -74,6 +74,8 @@ function TimesheetEntryInner() {
   const [timesheetStatus, setTimesheetStatus] = useState<TimesheetStatus | null>(null);
   const [isExempt, setIsExempt] = useState(false);
   const [employeeState, setEmployeeState] = useState<string | null>(null);
+  const [employeeStartDate, setEmployeeStartDate] = useState<string | null>(null);
+  const [allTimesheets, setAllTimesheets] = useState<{ week_ending: string; status: string }[]>([]);
   const isLocked = timesheetStatus === 'approved' || timesheetStatus === 'submitted' || timesheetStatus === 'payroll_approved';
 
   // Admin mode state
@@ -129,6 +131,34 @@ function TimesheetEntryInner() {
     const { data: { user } } = await supabase.auth.getUser();
     return user?.id || null;
   };
+
+  // Load all timesheets for the week picker
+  useEffect(() => {
+    const loadWeekPickerData = async () => {
+      const effectiveId = isAdmin && selectedEmployeeId ? selectedEmployeeId : (await supabase.auth.getUser()).data.user?.id;
+      if (!effectiveId) return;
+
+      const { data: emp } = await supabase
+        .from('employees')
+        .select('start_date, created_at')
+        .eq('id', effectiveId)
+        .single();
+
+      if (emp) {
+        setEmployeeStartDate(emp.start_date || emp.created_at?.split('T')[0] || null);
+      }
+
+      const { data: ts } = await supabase
+        .from('timesheets')
+        .select('week_ending, status')
+        .eq('employee_id', effectiveId)
+        .order('week_ending', { ascending: false });
+
+      if (ts) setAllTimesheets(ts);
+    };
+    loadWeekPickerData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEmployeeId]);
 
   useEffect(() => {
     loadProjects();
@@ -197,6 +227,7 @@ function TimesheetEntryInner() {
 
       if (employee?.is_exempt) setIsExempt(true);
       if (employee?.state) setEmployeeState(employee.state);
+      if ((employee as any)?.start_date) setEmployeeStartDate((employee as any).start_date);
 
       if (!employee) {
         // No employee yet – start blank
@@ -807,23 +838,67 @@ function TimesheetEntryInner() {
                     onBlur={(e) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none'; }}
                   >
                     {(() => {
-                      // Generate weeks: 26 weeks back + 4 weeks ahead
-                      const weeks: { value: string; label: string }[] = [];
                       const now = new Date();
                       const currentDay = now.getDay();
                       const currentSat = new Date(now);
                       currentSat.setDate(now.getDate() + (6 - currentDay));
+                      const currentWeekStr = currentSat.toISOString().split('T')[0];
 
-                      for (let i = -26; i <= 4; i++) {
-                        const sat = new Date(currentSat);
-                        sat.setDate(currentSat.getDate() + i * 7);
+                      // Build a map of week_ending -> status
+                      const tsMap = new Map(allTimesheets.map(t => [t.week_ending, t.status]));
+
+                      // Generate candidate weeks: from employee start date (or 26 weeks back) to next week
+                      const startLimit = employeeStartDate
+                        ? new Date(employeeStartDate + 'T12:00:00')
+                        : (() => { const d = new Date(currentSat); d.setDate(d.getDate() - 26 * 7); return d; })();
+
+                      const weeks: { value: string; label: string; tag: string }[] = [];
+
+                      // Next week
+                      const nextSat = new Date(currentSat);
+                      nextSat.setDate(currentSat.getDate() + 7);
+
+                      for (let sat = new Date(nextSat); sat >= startLimit; sat.setDate(sat.getDate() - 7)) {
+                        const value = sat.toISOString().split('T')[0];
                         const sun = new Date(sat);
                         sun.setDate(sat.getDate() - 6);
-                        const value = sat.toISOString().split('T')[0];
                         const label = `${sun.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${sat.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-                        weeks.push({ value, label });
+                        const status = tsMap.get(value);
+                        const isCurrentWeek = value === currentWeekStr;
+
+                        // Determine what to show
+                        let tag = '';
+                        if (isCurrentWeek) {
+                          tag = status === 'draft' ? '(Draft)' : status === 'submitted' ? '(Submitted)' : status === 'rejected' ? '(Rejected)' : status ? '' : '(Current)';
+                        } else if (!status) {
+                          tag = '(No timesheet)';
+                        } else if (status === 'draft') {
+                          tag = '(Draft)';
+                        } else if (status === 'rejected') {
+                          tag = '(Rejected)';
+                        } else if (status === 'submitted') {
+                          tag = '(Submitted)';
+                        } else {
+                          // approved / payroll_approved / client_approved — skip
+                          continue;
+                        }
+
+                        weeks.push({ value, label: `${label}  ${tag}`, tag });
                       }
-                      return weeks.reverse().map(w => (
+
+                      // Always ensure the currently selected week is in the list (e.g. if navigated from dashboard to an approved one)
+                      const selectedValue = getWeekEndingDate(selectedWeek);
+                      if (!weeks.find(w => w.value === selectedValue)) {
+                        const sat = new Date(selectedValue + 'T12:00:00');
+                        const sun = new Date(sat);
+                        sun.setDate(sat.getDate() - 6);
+                        const label = `${sun.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${sat.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+                        const status = tsMap.get(selectedValue);
+                        const tag = status ? `(${status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')})` : '';
+                        weeks.unshift({ value: selectedValue, label: `${label}  ${tag}`, tag });
+                      }
+
+                      return weeks.map(w => (
                         <option key={w.value} value={w.value}>{w.label}</option>
                       ));
                     })()}
