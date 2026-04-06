@@ -215,9 +215,6 @@ export default function AdminTimesheets() {
   };
 
   const openTimecardDetail = async (timesheet: Timesheet) => {
-    console.log('Opening timecard for timesheet:', timesheet.id);
-    console.log('Employee ID:', timesheet.employee_id);
-
     // Fetch entries for this specific timesheet with project information
     const { data: entries, error } = await supabase
       .from('timesheet_entries')
@@ -237,9 +234,6 @@ export default function AdminTimesheets() {
       return;
     }
 
-    console.log('Raw entries from database:', entries);
-    console.log('Number of entries:', entries?.length || 0);
-
     // Calculate overtime if not already set
     const totalHours = timesheet.total_hours || 0;
     const overtimeHours = timesheet.overtime_hours ?? Math.max(0, totalHours - 40);
@@ -251,9 +245,6 @@ export default function AdminTimesheets() {
       overtime_hours: overtimeHours,
       entries: entries || []
     };
-
-    console.log('Final timesheet with entries:', timesheetWithEntries);
-    console.log('Entries in timesheet:', timesheetWithEntries.entries);
 
     setSelectedTimesheet(timesheetWithEntries);
     setIsModalOpen(true);

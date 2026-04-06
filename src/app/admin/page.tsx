@@ -131,6 +131,8 @@ export default function AdminPage() {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<'all' | 'approved' | 'pending' | 'rejected' | 'unsubmitted'>('pending')
   const [managerFilter, setManagerFilter] = useState<string>('all')
+  const [departmentFilter, setDepartmentFilter] = useState<string>('all')
+  const [projectFilter, setProjectFilter] = useState<string>('all')
   const [employeeFilter, setEmployeeFilter] = useState<string>('all')
   const [clientFilter, setClientFilter] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState<string>('')
@@ -1200,12 +1202,17 @@ export default function AdminPage() {
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
                 <span style={{ fontSize: 11, color: '#c0bab2' }}>Department:</span>
-                <select style={{ fontSize: 12, padding: '6px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, background: '#fff', outline: 'none' }}
-                onFocus={(e: any) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)' }}
-                onBlur={(e: any) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }}>
+                <select
+                  value={departmentFilter}
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                  style={{ fontSize: 12, padding: '6px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, background: '#fff', outline: 'none' }}
+                  onFocus={(e: any) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)' }}
+                  onBlur={(e: any) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }}
+                >
                   <option value="all">All</option>
-                  <option value="engineering">Commerce</option>
-                  <option value="sales">Healthcare</option>
+                  {[...new Set(employees.map(e => e.department).filter(Boolean))].sort().map(dept => (
+                    <option key={dept} value={dept!}>{dept}</option>
+                  ))}
                 </select>
               </div>
 
@@ -1239,11 +1246,16 @@ export default function AdminPage() {
               <div className="flex items-center space-x-2">
                 <span style={{ fontSize: 11, color: '#c0bab2' }}>Project:</span>
                 <select
+                  value={projectFilter}
+                  onChange={(e) => setProjectFilter(e.target.value)}
                   style={{ fontSize: 12, padding: '6px 12px', border: '0.5px solid #e8e4df', borderRadius: 7, background: '#fff', outline: 'none' }}
-                onFocus={(e: any) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)' }}
-                onBlur={(e: any) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }}
+                  onFocus={(e: any) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)' }}
+                  onBlur={(e: any) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none' }}
                 >
                   <option value="all">All</option>
+                  {[...new Set(submissions.filter(s => s.type === 'timesheet').map(s => (s as any).project_name).filter(Boolean))].sort().map(proj => (
+                    <option key={proj} value={proj!}>{proj}</option>
+                  ))}
                 </select>
               </div>
 
