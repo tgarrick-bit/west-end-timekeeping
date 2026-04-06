@@ -218,27 +218,20 @@ export async function PATCH(
         // Approval email
         if (empRecord?.email) {
           const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+          const { buildFinalApprovalEmailHtml } = await import('@/lib/email-templates/employee');
+          const approvalHtml = buildFinalApprovalEmailHtml({
+            employeeName: empName,
+            reportTitle,
+            period: report.period_month
+              ? new Date(report.period_month).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+              : 'Recent period',
+            reportUrl: `${appUrl}/expense/${reportId}`,
+            year: new Date().getFullYear().toString(),
+          });
           await sendEmployeeEmail({
             to: empRecord.email,
             subject: `Expense approved: ${reportTitle}`,
-            html: `
-              <div style="max-width:600px;margin:0 auto;font-family:'Montserrat',Arial,sans-serif;">
-                <div style="background:#1a1a1a;padding:20px;text-align:center;">
-                  <img src="https://westendworkforce.com/wp-content/uploads/2025/11/WE-logo-SEPT2024v3-WHT.png" alt="West End Workforce" style="height:40px;" />
-                </div>
-                <div style="padding:30px 20px;background:#ffffff;">
-                  <h2 style="color:#059669;margin:0 0 16px;">Expense Approved</h2>
-                  <p style="color:#555;line-height:1.6;">Hi ${empName},</p>
-                  <p style="color:#555;line-height:1.6;">Your expense report <strong>"${reportTitle}"</strong> has been approved. No further action is needed.</p>
-                  <div style="text-align:center;margin:24px 0;">
-                    <a href="${appUrl}/expense/${reportId}" style="background:#e31c79;color:#fff;padding:12px 32px;border-radius:7px;text-decoration:none;font-weight:600;display:inline-block;">View Expense Report</a>
-                  </div>
-                </div>
-                <div style="background:#FAFAF8;padding:16px;text-align:center;font-size:12px;color:#c0bab2;border-top:1px solid #e31c79;">
-                  West End Workforce &middot; 800 Town &amp; Country Blvd, Suite 500 &middot; Houston, TX 77024
-                </div>
-              </div>
-            `,
+            html: approvalHtml,
           });
         }
       } else {

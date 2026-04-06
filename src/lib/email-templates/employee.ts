@@ -1,5 +1,7 @@
 // src/lib/email-templates/employee.ts
 
+const logoUrl = 'https://westendworkforce.com/wp-content/uploads/2025/11/WE-logo-SEPT2024v3-WHT.png';
+
 export function buildFinalApprovalEmailHtml(args: {
   employeeName: string;
   reportTitle: string;
@@ -7,176 +9,41 @@ export function buildFinalApprovalEmailHtml(args: {
   reportUrl: string;
   year: string;
 }): string {
-  const { employeeName, reportTitle, period, reportUrl, year } = args;
-
-  const logoUrl =
-    'https://westendworkforce.com/wp-content/uploads/2025/11/WE-logo-SEPT2024v3-WHT.png';
+  const { employeeName, reportTitle, period, reportUrl } = args;
 
   return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Expense Report Approved</title>
-
-  <!-- Montserrat only -->
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-  <style>
-    body { margin: 0; padding: 0; background: #f3f6f9; font-family: 'Montserrat', Arial, sans-serif; }
-    .wrapper { width: 100%; table-layout: fixed; background: #f3f6f9; padding: 24px 0; }
-    .main { background: #ffffff; margin: 0 auto; width: 100%; max-width: 620px;
-            border-radius: 10px; overflow: hidden; border: 1px solid #e5e7eb; }
-
-    /* HEADER */
-    .header {
-      padding: 18px 24px 14px;
-      background: #33393c;
-      border-bottom: 3px solid #e31c79;
-      text-align: center;
-    }
-    .header-title {
-      font-family: 'Montserrat', Arial, sans-serif;
-      font-size: 24px;
-      margin: 0;
-      color: #ffffff;
-      font-weight: 700;
-      letter-spacing: 0.3px;
-      line-height: 1.25;
-    }
-    .logo { margin-top: 10px; }
-
-    /* BODY */
-    .content {
-      padding: 14px 28px 24px;
-      font-size: 14px;
-      color: #374151;
-      line-height: 1.7;
-      font-family: 'Montserrat', Arial, sans-serif;
-    }
-    .content h2 {
-      margin: 8px 0 10px;
-      font-family: 'Montserrat', Arial, sans-serif;
-      font-size: 20px;
-      font-weight: 700;
-      color: #33393c;
-      line-height: 1.3;
-    }
-
-    /* BUTTON */
-    .button-wrapper { text-align: center; margin-top: 24px; margin-bottom: 10px; }
-    .button {
-      background: #e31c79;
-      color: #ffffff !important;
-      padding: 14px 30px;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 600;
-      text-decoration: none;
-      display: inline-block;
-      font-family: 'Montserrat', Arial, sans-serif;
-    }
-
-    /* FALLBACK LINK */
-    .link-fallback { margin-top: 14px; font-size: 12px; color: #6b7280; word-break: break-all; }
-
-    /* FOOTER */
-    .footer {
-      text-align: center;
-      padding: 18px 20px 22px;
-      font-size: 12px;
-      color: #6b7280;
-      background: #ffffff;
-      border-top: 1px solid #e31c79;
-      line-height: 1.6;
-    }
-
-    /* MOBILE */
-    @media only screen and (max-width: 600px) {
-      .main { width: 100% !important; border-radius: 0 !important; }
-      .content { padding: 18px 18px 24px !important; font-size: 14px !important; }
-      .header-title { font-size: 20px !important; }
-      .content h2 { font-size: 18px !important; }
-      .button { width: 100% !important; box-sizing: border-box !important; }
-    }
-
-    /* DARK MODE */
-    @media (prefers-color-scheme: dark) {
-      body { background: #020617; }
-      .wrapper { background: #020617; }
-      .main { background: #020617; border-color: #1f2937; }
-      .content { color: #e5e7eb; }
-      .footer { background: #020617; color: #9fa6b2; }
-    }
-  </style>
-</head>
-
-<body>
-  <table role="presentation" class="wrapper">
-    <tr><td align="center">
-      <table role="presentation" class="main">
-
-        <!-- HEADER -->
-        <tr>
-          <td class="header">
-            <div class="header-title">West End Workforce</div>
-            <img src="${logoUrl}" alt="West End Workforce Logo" width="48" class="logo" />
-          </td>
-        </tr>
-
-        <!-- BODY -->
-        <tr>
-          <td class="content">
-            <h2>Expense Report Approved</h2>
-
-            <p>Hello ${employeeName},</p>
-
-            <p>Your expense report <strong>${reportTitle}</strong> for
-               <strong>${period}</strong> has been approved.</p>
-
-            <p>No further action is required.</p>
-
-            <div class="button-wrapper">
-              <a href="${reportUrl}" class="button">View Expense Report</a>
-            </div>
-
-            <p class="link-fallback">
-              If the button does not work, copy and paste this link into your browser:<br />
-              <a href="${reportUrl}" style="color:#e31c79;text-decoration:none;">${reportUrl}</a>
-            </p>
-          </td>
-        </tr>
-
-        <!-- FOOTER -->
-        <tr>
-          <td class="footer">
-            <p>You are receiving this notification because you submitted an expense report in the Workforce Portal.</p>
-
-            <p>This notification is intended for internal use by authorized personnel only
-               and contains no sensitive information. Please sign into the portal
-               to view full details.</p>
-
-            <p>
-              West End Workforce · 800 Town & Country Blvd, Suite 500 · Houston, TX 77024<br />
-              <a href="mailto:payroll@westendworkforce.com" style="color:#4b5563;text-decoration:none;">
-                payroll@westendworkforce.com
-              </a> ·
-              <a href="https://www.westendworkforce.com" style="color:#4b5563;text-decoration:none;">
-                westendworkforce.com
-              </a>
-            </p>
-
-            <p>© ${year} West End Workforce. All rights reserved.</p>
-          </td>
-        </tr>
-
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>
-`;
+    <div style="max-width:600px;margin:0 auto;font-family:'Montserrat',Arial,sans-serif;">
+      <div style="background:#1a1a1a;padding:20px;text-align:center;">
+        <img src="${logoUrl}" alt="West End Workforce" style="height:40px;" />
+      </div>
+      <div style="padding:30px 20px;background:#ffffff;">
+        <h2 style="color:#2d9b6e;margin:0 0 16px;">Expense Report Approved</h2>
+        <p style="color:#555;line-height:1.6;">Hi ${employeeName},</p>
+        <p style="color:#555;line-height:1.6;">
+          Your expense report <strong>"${reportTitle}"</strong> for <strong>${period}</strong> has been approved.
+          No further action is needed.
+        </p>
+        <div style="background:#FAFAF8;border:0.5px solid #e8e4df;border-radius:10px;padding:16px;margin:20px 0;">
+          <p style="margin:0 0 6px;color:#555;">Report: <strong>${reportTitle}</strong></p>
+          <p style="margin:0 0 6px;color:#555;">Period: <strong>${period}</strong></p>
+          <p style="margin:0;color:#2d9b6e;font-weight:600;">Status: Approved</p>
+        </div>
+        <div style="text-align:center;margin:24px 0;">
+          <a href="${reportUrl}"
+             style="background:#e31c79;color:#ffffff;padding:12px 32px;border-radius:7px;text-decoration:none;font-weight:600;display:inline-block;">
+            View Expense Report
+          </a>
+        </div>
+        <p style="color:#999;font-size:13px;line-height:1.5;">
+          If you have any questions, please email
+          <a href="mailto:payroll@westendworkforce.com" style="color:#e31c79;">payroll@westendworkforce.com</a>.
+        </p>
+      </div>
+      <div style="background:#FAFAF8;padding:16px;text-align:center;font-size:12px;color:#c0bab2;border-top:1px solid #e31c79;">
+        West End Workforce &middot; 800 Town &amp; Country Blvd, Suite 500 &middot; Houston, TX 77024
+      </div>
+    </div>
+  `;
 }
 
 /**
@@ -190,193 +57,39 @@ export function buildFinalRejectionEmailHtml(args: {
   year: string;
   reason: string;
 }): string {
-  const { employeeName, reportTitle, period, reportUrl, year, reason } = args;
-
-  const logoUrl =
-    'https://westendworkforce.com/wp-content/uploads/2025/11/WE-logo-SEPT2024v3-WHT.png';
+  const { employeeName, reportTitle, period, reportUrl, reason } = args;
 
   return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Expense Report Rejected</title>
-
-  <!-- Montserrat only -->
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-  <style>
-    body { margin: 0; padding: 0; background: #f3f6f9; font-family: 'Montserrat', Arial, sans-serif; }
-    .wrapper { width: 100%; table-layout: fixed; background: #f3f6f9; padding: 24px 0; }
-    .main { background: #ffffff; margin: 0 auto; width: 100%; max-width: 620px;
-            border-radius: 10px; overflow: hidden; border: 1px solid #e5e7eb; }
-
-    /* HEADER */
-    .header {
-      padding: 18px 24px 14px;
-      background: #33393c;
-      border-bottom: 3px solid #e31c79;
-      text-align: center;
-    }
-    .header-title {
-      font-family: 'Montserrat', Arial, sans-serif;
-      font-size: 24px;
-      margin: 0;
-      color: #ffffff;
-      font-weight: 700;
-      letter-spacing: 0.3px;
-      line-height: 1.25;
-    }
-    .logo { margin-top: 10px; }
-
-    /* BODY */
-    .content {
-      padding: 14px 28px 24px;
-      font-size: 14px;
-      color: #374151;
-      line-height: 1.7;
-      font-family: 'Montserrat', Arial, sans-serif;
-    }
-    .content h2 {
-      margin: 8px 0 10px;
-      font-family: 'Montserrat', Arial, sans-serif;
-      font-size: 20px;
-      font-weight: 700;
-      color: #b91c1c;
-      line-height: 1.3;
-    }
-
-    .reason-box {
-      border-left: 4px solid #f97316;
-      background: #fff7ed;
-      padding: 12px 14px;
-      margin: 18px 0 6px;
-      font-size: 14px;
-      color: #7c2d12;
-    }
-
-    /* BUTTON */
-    .button-wrapper { text-align: center; margin-top: 24px; margin-bottom: 10px; }
-    .button {
-      background: #e31c79;
-      color: #ffffff !important;
-      padding: 14px 30px;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 600;
-      text-decoration: none;
-      display: inline-block;
-      font-family: 'Montserrat', Arial, sans-serif;
-    }
-
-    /* FALLBACK LINK */
-    .link-fallback { margin-top: 14px; font-size: 12px; color:#6b7280; word-break: break-all; }
-
-    /* FOOTER */
-    .footer {
-      text-align: center;
-      padding: 18px 20px 22px;
-      font-size: 12px;
-      color: #6b7280;
-      background: #ffffff;
-      border-top: 1px solid #e31c79;
-      line-height: 1.6;
-    }
-
-    /* MOBILE */
-    @media only screen and (max-width: 600px) {
-      .main { width: 100% !important; border-radius: 0 !important; }
-      .content { padding: 18px 18px 24px !important; font-size: 14px !important; }
-      .header-title { font-size: 20px !important; }
-      .content h2 { font-size: 18px !important; }
-      .button {
-        width: 100% !important;
-        box-sizing: border-box !important;
-      }
-    }
-
-    /* DARK MODE */
-    @media (prefers-color-scheme: dark) {
-      body { background:#020617; }
-      .wrapper { background:#020617; }
-      .main { background:#020617; border-color:#1f2937; }
-      .content { color:#e5e7eb; }
-      .reason-box { background:#451a03; border-color:#f97316; color:#fed7aa; }
-      .footer { background:#020617; color:#9fa6b2; }
-    }
-  </style>
-</head>
-
-<body>
-  <table role="presentation" class="wrapper">
-    <tr><td align="center">
-      <table role="presentation" class="main">
-
-        <!-- HEADER -->
-        <tr>
-          <td class="header">
-            <div class="header-title">West End Workforce</div>
-            <img src="${logoUrl}" alt="West End Workforce Logo" width="48" class="logo"/>
-          </td>
-        </tr>
-
-        <!-- BODY -->
-        <tr>
-          <td class="content">
-            <h2>Expense Report Rejected</h2>
-
-            <p>Hello ${employeeName},</p>
-
-            <p>Your expense report <strong>${reportTitle}</strong> for
-               <strong>${period}</strong> has been reviewed and
-               <strong>rejected</strong>.</p>
-
-            <div class="reason-box">
-              <strong>Reason provided:</strong><br />
-              ${reason}
-            </div>
-
-            <div class="button-wrapper">
-              <a href="${reportUrl}" class="button">Review Expense Report</a>
-            </div>
-
-            <p class="link-fallback">
-              If the button does not work,<br />
-              <a href="${reportUrl}" style="color:#e31c79;text-decoration:none;">
-                ${reportUrl}
-              </a>
-            </p>
-          </td>
-        </tr>
-
-        <!-- FOOTER -->
-        <tr>
-          <td class="footer">
-            <p>You are receiving this notification because you submitted an expense report in the Workforce Portal.</p>
-
-            <p>This notification is intended for internal use by authorized personnel only
-               and contains no sensitive information. Please sign into the portal
-               to view full details.</p>
-
-            <p>
-              West End Workforce · 800 Town & Country Blvd, Suite 500 · Houston, TX 77024<br />
-              <a href="mailto:payroll@westendworkforce.com" style="color:#4b5563;text-decoration:none;">
-                payroll@westendworkforce.com
-              </a> ·
-              <a href="https://www.westendworkforce.com" style="color:#4b5563;text-decoration:none;">
-                westendworkforce.com
-              </a>
-            </p>
-
-            <p>© ${year} West End Workforce. All rights reserved.</p>
-          </td>
-        </tr>
-
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>
-`;
+    <div style="max-width:600px;margin:0 auto;font-family:'Montserrat',Arial,sans-serif;">
+      <div style="background:#1a1a1a;padding:20px;text-align:center;">
+        <img src="${logoUrl}" alt="West End Workforce" style="height:40px;" />
+      </div>
+      <div style="padding:30px 20px;background:#ffffff;">
+        <h2 style="color:#b91c1c;margin:0 0 16px;">Expense Report Rejected</h2>
+        <p style="color:#555;line-height:1.6;">Hi ${employeeName},</p>
+        <p style="color:#555;line-height:1.6;">
+          Your expense report <strong>"${reportTitle}"</strong> for <strong>${period}</strong> has been rejected and needs your attention.
+        </p>
+        <div style="background:#FEF2F2;border:0.5px solid #FECACA;border-radius:10px;padding:16px;margin:20px 0;">
+          <p style="margin:0 0 6px;color:#555;">Report: <strong>${reportTitle}</strong></p>
+          <p style="margin:0 0 6px;color:#555;">Period: <strong>${period}</strong></p>
+          <p style="margin:0 0 6px;color:#b91c1c;"><strong>Reason:</strong> ${reason}</p>
+          <p style="margin:0;color:#b91c1c;font-weight:600;">Please update and resubmit.</p>
+        </div>
+        <div style="text-align:center;margin:24px 0;">
+          <a href="${reportUrl}"
+             style="background:#e31c79;color:#ffffff;padding:12px 32px;border-radius:7px;text-decoration:none;font-weight:600;display:inline-block;">
+            Fix &amp; Resubmit
+          </a>
+        </div>
+        <p style="color:#999;font-size:13px;line-height:1.5;">
+          If you have any questions, please email
+          <a href="mailto:payroll@westendworkforce.com" style="color:#e31c79;">payroll@westendworkforce.com</a>.
+        </p>
+      </div>
+      <div style="background:#FAFAF8;padding:16px;text-align:center;font-size:12px;color:#c0bab2;border-top:1px solid #e31c79;">
+        West End Workforce &middot; 800 Town &amp; Country Blvd, Suite 500 &middot; Houston, TX 77024
+      </div>
+    </div>
+  `;
 }
