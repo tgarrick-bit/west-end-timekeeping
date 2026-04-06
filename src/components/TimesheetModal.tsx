@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { X, Calendar, Clock, User, Building2, Check } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { X, Calendar, Clock, User, Building2, Check, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
 
@@ -57,6 +58,7 @@ export default function TimesheetModal({
   processing = false,
   isEmployeeView = false,
 }: TimesheetModalProps) {
+  const router = useRouter();
   const [entries, setEntries] = useState<TimesheetEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [approverName, setApproverName] = useState<string | null>(null);
@@ -186,55 +188,52 @@ export default function TimesheetModal({
       ? new Date(timesheet.approved_at)
       : null;
 
+  const statusStyles: Record<string, { dot: string; bg: string; text: string; label: string }> = {
+    draft: { dot: '#c0bab2', bg: 'rgba(192,186,178,0.08)', text: '#999', label: 'Draft' },
+    submitted: { dot: '#c4983a', bg: 'rgba(196,152,58,0.08)', text: '#c4983a', label: 'Submitted' },
+    approved: { dot: '#2d9b6e', bg: 'rgba(45,155,110,0.08)', text: '#2d9b6e', label: 'Approved' },
+    payroll_approved: { dot: '#2d9b6e', bg: 'rgba(45,155,110,0.08)', text: '#2d9b6e', label: 'Finalized' },
+    rejected: { dot: '#b91c1c', bg: 'rgba(185,28,28,0.08)', text: '#b91c1c', label: 'Rejected' },
+  };
+  const st = statusStyles[timesheet.status] || statusStyles.draft;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }} onClick={onClose} />
+      <div style={{ position: 'relative', background: '#fff', borderRadius: 12, border: '0.5px solid #e8e4df', width: '100%', maxWidth: 800, maxHeight: '90vh', overflow: 'auto' }}>
         {/* Header */}
-        <div className="sticky top-0 bg-[#05202e] text-white px-6 py-4 z-10">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <h2 className="text-xl font-bold text-white">Timecard Details</h2>
-              <span
-                className={`inline-flex mt-2 px-2 py-1 text-xs font-semibold rounded ${getStatusColor()}`}
-              >
-                {timesheet.status.charAt(0).toUpperCase() +
-                  timesheet.status.slice(1)}
-              </span>
+        <div style={{ position: 'sticky', top: 0, zIndex: 10, background: '#1a1a1a', padding: '18px 24px', borderRadius: '12px 12px 0 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Timecard Details</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8, padding: '3px 10px', borderRadius: 20, background: st.bg }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: st.dot }} />
+                <span style={{ fontSize: 10.5, fontWeight: 600, color: st.text }}>{st.label}</span>
+              </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              <X className="h-5 w-5 text-white" />
+            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+              <X style={{ width: 18, height: 18, color: '#999' }} />
             </button>
           </div>
 
           {/* Employee Info */}
-          <div className="mt-4 flex flex-wrap gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-white/70" />
-              <span className="font-medium text-lg text-white">
-                {timesheet.employee_name}
-              </span>
+          <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <User style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.5)' }} />
+              <span style={{ fontSize: 13, fontWeight: 500, color: '#fff' }}>{timesheet.employee_name}</span>
             </div>
             {timesheet.employee_department && (
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-white/70" />
-                <span className="text-white/90">
-                  {timesheet.employee_department}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Building2 style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.5)' }} />
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>{timesheet.employee_department}</span>
               </div>
             )}
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-white/70" />
-              <span className="text-white/90">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Calendar style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.5)' }} />
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>
                 Week ending{' '}
-                {timesheet.week_ending &&
-                isValid(new Date(timesheet.week_ending))
-                  ? format(
-                      new Date(timesheet.week_ending),
-                      'EEE, MMM dd, yyyy'
-                    )
+                {timesheet.week_ending && isValid(new Date(timesheet.week_ending))
+                  ? format(new Date(timesheet.week_ending), 'EEE, MMM dd, yyyy')
                   : timesheet.week_ending}
               </span>
             </div>
@@ -445,7 +444,23 @@ export default function TimesheetModal({
         </div>
 
         {/* Action Buttons */}
-        <div className="sticky bottom-0 bg-gray-50 px-6 py-4 border-t flex justify-end gap-3">
+        <div style={{ position: 'sticky', bottom: 0, background: '#FAFAF8', padding: '14px 24px', borderTop: '0.5px solid #e8e4df', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+          {/* Edit button for employees with draft or rejected timesheets */}
+          {isEmployeeView && (timesheet.status === 'draft' || timesheet.status === 'rejected') && (
+            <button
+              onClick={() => {
+                onClose();
+                router.push('/timesheet/entry');
+              }}
+              style={{ padding: '8px 18px', background: '#e31c79', color: '#fff', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#cc1069'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#e31c79'; }}
+            >
+              <Pencil style={{ width: 13, height: 13 }} />
+              {timesheet.status === 'draft' ? 'Continue Editing' : 'Fix & Resubmit'}
+            </button>
+          )}
+          {/* Manager approve/reject buttons */}
           {timesheet.status === 'submitted' &&
             onApprove &&
             onReject &&
@@ -454,24 +469,26 @@ export default function TimesheetModal({
                 <button
                   onClick={onReject}
                   disabled={processing}
-                  className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  style={{ padding: '8px 18px', background: '#fff', border: '0.5px solid #b91c1c', color: '#b91c1c', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, opacity: processing ? 0.5 : 1 }}
                 >
-                  <X className="w-4 w-4" />
+                  <X style={{ width: 13, height: 13 }} />
                   Reject
                 </button>
                 <button
                   onClick={onApprove}
                   disabled={processing}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  style={{ padding: '8px 18px', background: '#2d9b6e', color: '#fff', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, opacity: processing ? 0.5 : 1 }}
                 >
-                  <Check className="w-4 h-4" />
+                  <Check style={{ width: 13, height: 13 }} />
                   Approve
                 </button>
               </>
             )}
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            style={{ padding: '8px 18px', background: '#fff', border: '0.5px solid #e0dcd7', color: '#777', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ccc'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; }}
           >
             Close
           </button>
