@@ -862,8 +862,9 @@ if (mode === 'submitted') {
                   <input
                     type="text"
                     value={report.title}
-                    disabled
-                    className="w-full rounded-md border border-[#e8e4df] bg-[#FAFAF8] text-sm px-3 py-2 text-[#555]"
+                    disabled={!isEditable}
+                    onChange={(e) => isEditable && setReport({ ...report, title: e.target.value })}
+                    className={`w-full rounded-md border border-[#e8e4df] text-sm px-3 py-2 ${isEditable ? 'bg-white text-[#1a1a1a] focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]' : 'bg-[#FAFAF8] text-[#555]'}`}
                   />
                   <p className="mt-1 text-[11px] text-[#999]">
                     This title appears in your Recent Expenses list as a single
@@ -1472,6 +1473,24 @@ if (mode === 'submitted') {
 
                   {isEditable ? (
                     <div className="flex flex-col sm:flex-row gap-2 sm:justify-end w-full sm:w-auto">
+                      {report.status === 'draft' && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!confirm('Delete this draft expense report? This cannot be undone.')) return;
+                            try {
+                              await supabase.from('expenses').delete().eq('report_id', report.id);
+                              await supabase.from('expense_reports').delete().eq('id', report.id);
+                              router.push('/employee');
+                            } catch (err) {
+                              console.error('Error deleting report:', err);
+                            }
+                          }}
+                          className="w-full sm:w-auto px-4 py-2 text-xs font-medium rounded-md border border-[#b91c1c] text-[#b91c1c] bg-white hover:bg-[#fef2f2]"
+                        >
+                          Delete Draft
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => router.push('/employee')}

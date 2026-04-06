@@ -161,6 +161,19 @@ function TimesheetEntryInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEmployeeId]);
 
+  // Warn before navigating away with unsaved changes
+  useEffect(() => {
+    const hasHours = rows.some(r => Object.values(r.hours).some(h => h > 0));
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasHours && !isLocked) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [rows, isLocked]);
+
   useEffect(() => {
     loadProjects();
     checkExistingTimesheet();
@@ -736,9 +749,8 @@ function TimesheetEntryInner() {
           : 'Timesheet submitted successfully!'
       );
   
-      setTimeout(() => {
-        router.push(isAdmin ? '/admin' : '/employee');
-      }, 1500);
+      // Don't auto-redirect — let the employee review the success message
+      // They can navigate back via the back button or sidebar
     } catch (error: any) {
       console.error('Error in handleSubmit:', error);
       setErrorMessage(error.message || 'Error submitting timesheet. Please try again.');

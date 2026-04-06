@@ -127,6 +127,19 @@ export default function ExpenseEntryPage() {
   const [scanMessage, setScanMessage] = useState<Record<string, string>>({});
   const [pendingReports, setPendingReports] = useState<{ id: string; title: string; status: string; period_month: string | null; total_amount: number; created_at: string }[]>([]);
 
+  // Warn before navigating away with unsaved changes
+  useEffect(() => {
+    const hasData = entries.some(e => e.amount > 0 || e.vendor || e.description);
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasData && !isLoading) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [entries, isLoading]);
+
   useEffect(() => {
     checkAuth();
     loadProjects();

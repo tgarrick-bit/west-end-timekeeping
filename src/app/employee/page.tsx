@@ -80,6 +80,8 @@ export default function EmployeeDashboard() {
   const [weeklyHours, setWeeklyHours] = useState(0);
   const [daysUntilDue, setDaysUntilDue] = useState(0);
   const [pendingApprovals, setPendingApprovals] = useState(0);
+  const [showAllTimesheets, setShowAllTimesheets] = useState(false);
+  const [showAllExpenses, setShowAllExpenses] = useState(false);
   const [hasDraftThisWeek, setHasDraftThisWeek] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -710,7 +712,7 @@ export default function EmployeeDashboard() {
                 <EmptyState icon={FileText} title="No timesheets yet" description="Submit your first timesheet" action={{ label: 'Access Timesheet', onClick: () => router.push('/timesheet/entry') }} />
               ) : (
                 <div>
-                  {timecards.map((tc) => {
+                  {timecards.slice(0, showAllTimesheets ? undefined : 8).map((tc) => {
                     const { title, rangeLabel } = getFiscalWeekInfo(tc.week_ending, tc.total_hours || 0);
                     return (
                       <div
@@ -732,6 +734,14 @@ export default function EmployeeDashboard() {
                       </div>
                     );
                   })}
+                  {timecards.length > 8 && !showAllTimesheets && (
+                    <button
+                      onClick={() => setShowAllTimesheets(true)}
+                      style={{ fontSize: 11, fontWeight: 500, color: '#e31c79', background: 'none', border: 'none', cursor: 'pointer', padding: '12px 0', width: '100%', textAlign: 'center' }}
+                    >
+                      Show all {timecards.length} timesheets
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -747,7 +757,7 @@ export default function EmployeeDashboard() {
                 <EmptyState icon={Receipt} title="No expense reports yet" description="Submit your first expense" action={{ label: 'Submit Expense', onClick: () => router.push('/expense/entry') }} />
               ) : (
                 <div>
-                  {expenseReports.map((r) => (
+                  {expenseReports.slice(0, showAllExpenses ? undefined : 8).map((r) => (
                     <div
                       key={r.id}
                       onClick={() => router.push(`/expense/${r.id}`)}
@@ -765,6 +775,14 @@ export default function EmployeeDashboard() {
                       <StatusBadge status={r.status} />
                     </div>
                   ))}
+                  {expenseReports.length > 8 && !showAllExpenses && (
+                    <button
+                      onClick={() => setShowAllExpenses(true)}
+                      style={{ fontSize: 11, fontWeight: 500, color: '#e31c79', background: 'none', border: 'none', cursor: 'pointer', padding: '12px 0', width: '100%', textAlign: 'center' }}
+                    >
+                      Show all {expenseReports.length} reports
+                    </button>
+                  )}
                 </div>
               )}
             </div>
