@@ -687,11 +687,31 @@ export default function EmployeeDashboard() {
             borderRadius: 8,
             padding: '10px 22px',
             display: 'flex',
+            alignItems: 'center',
             gap: 32,
             fontSize: 11,
             color: '#777',
+            flexWrap: 'wrap',
           }}>
-            <span>Total Hours: <strong style={{ color: '#1a1a1a' }}>{stats.totalHours.toFixed(1)}</strong></span>
+            {/* Current period status */}
+            {(() => {
+              const currentTs = timecards.find(tc => {
+                const now = new Date();
+                const sat = new Date(now);
+                sat.setDate(now.getDate() + (6 - now.getDay()));
+                return tc.week_ending === sat.toISOString().split('T')[0];
+              });
+              const status = currentTs?.status;
+              const statusLabel = status === 'submitted' ? 'Submitted' : status === 'approved' ? 'Approved' : status === 'rejected' ? 'Rejected' : status === 'draft' ? 'Draft' : 'Not started';
+              const dotColor = status === 'submitted' ? '#c4983a' : status === 'approved' ? '#2d9b6e' : status === 'rejected' ? '#b91c1c' : status === 'draft' ? '#c0bab2' : '#c0bab2';
+              return (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor }} />
+                  This Week: <strong style={{ color: dotColor }}>{statusLabel}</strong>
+                </span>
+              );
+            })()}
+            <span style={{ borderLeft: '1px solid #f0ece7', paddingLeft: 32 }}>Total Hours: <strong style={{ color: '#1a1a1a' }}>{stats.totalHours.toFixed(1)}</strong></span>
             <span>Approved: <strong style={{ color: '#2d9b6e' }}>{stats.approvedTimecards}</strong></span>
             <span>Pending: <strong style={{ color: '#c4983a' }}>{stats.pendingTimecards}</strong></span>
             {stats.rejectedTimecards > 0 && <span>Rejected: <strong style={{ color: '#b91c1c' }}>{stats.rejectedTimecards}</strong></span>}

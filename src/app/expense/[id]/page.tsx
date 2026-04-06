@@ -1365,15 +1365,27 @@ if (mode === 'submitted') {
                                 </label>
                                 <div className="space-y-1">
                                   {line.receipt_url ? (
-                                    <a
-                                      href={line.receipt_url}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="inline-flex items-center gap-1 text-xs text-[#e31c79] hover:underline"
-                                    >
-                                      <Receipt className="h-3 w-3" />
-                                      <span>Open current receipt</span>
-                                    </a>
+                                    <div>
+                                      {/\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(line.receipt_url) ? (
+                                        <a href={line.receipt_url} target="_blank" rel="noreferrer">
+                                          <img
+                                            src={line.receipt_url}
+                                            alt="Receipt"
+                                            style={{ maxWidth: 160, maxHeight: 120, borderRadius: 6, border: '0.5px solid #e8e4df', objectFit: 'cover', cursor: 'zoom-in' }}
+                                          />
+                                        </a>
+                                      ) : (
+                                        <a
+                                          href={line.receipt_url}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="inline-flex items-center gap-1 text-xs text-[#e31c79] hover:underline"
+                                        >
+                                          <Receipt className="h-3 w-3" />
+                                          <span>View receipt (PDF)</span>
+                                        </a>
+                                      )}
+                                    </div>
                                   ) : (
                                     <p className="text-[11px] text-[#999]">
                                       No receipt currently attached.

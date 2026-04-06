@@ -1055,7 +1055,7 @@ function TimesheetEntryInner() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => {
+                {rows.map((row, rowIndex) => {
                   const rowTotal = Object.values(row.hours).reduce((sum, h) => sum + h, 0);
                   return (
                     <tr key={row.id} className="border-b border-[#f5f2ee]">
@@ -1080,13 +1080,16 @@ function TimesheetEntryInner() {
                       </td>
                       {getWeekDates().map((date) => {
                         const dateStr = formatDate(date);
+                        const hasNote = !!row.notes[dateStr];
                         return (
-                          <td key={dateStr} className="px-2 py-3">
+                          <td key={dateStr} className="px-2 py-2">
                             <input
                               type="number"
                               min="0"
                               max="24"
                               step="0.5"
+                              data-row={rowIndex}
+                              data-col={getWeekDates().indexOf(date)}
                               value={row.hours[dateStr] || ''}
                               onChange={(e) =>
                                 updateRowHours(
@@ -1095,9 +1098,30 @@ function TimesheetEntryInner() {
                                   parseFloat(e.target.value) || 0,
                                 )
                               }
+                              onKeyDown={(e) => {
+                                const col = getWeekDates().indexOf(date);
+                                let nextRow = rowIndex;
+                                let nextCol = col;
+                                if (e.key === 'Enter' || e.key === 'ArrowDown') { nextRow = rowIndex + 1; e.preventDefault(); }
+                                else if (e.key === 'ArrowUp') { nextRow = rowIndex - 1; e.preventDefault(); }
+                                else if (e.key === 'ArrowRight' && e.currentTarget.selectionStart === e.currentTarget.value.length) { nextCol = col + 1; e.preventDefault(); }
+                                else if (e.key === 'ArrowLeft' && e.currentTarget.selectionStart === 0) { nextCol = col - 1; e.preventDefault(); }
+                                else return;
+                                const target = document.querySelector<HTMLInputElement>(`input[data-row="${nextRow}"][data-col="${nextCol}"]`);
+                                if (target) { target.focus(); target.select(); }
+                              }}
                               disabled={isLocked}
                               className="w-full px-2 py-1 text-center border border-[#e8e4df] rounded focus:ring-2 focus:ring-[#d3ad6b] focus:border-[#d3ad6b] disabled:bg-[#FAFAF8] disabled:text-[#999]"
                               placeholder="0"
+                            />
+                            <input
+                              type="text"
+                              value={row.notes[dateStr] || ''}
+                              onChange={(e) => setRows(prev => prev.map(r => r.id === row.id ? { ...r, notes: { ...r.notes, [dateStr]: e.target.value } } : r))}
+                              disabled={isLocked}
+                              placeholder="note"
+                              className="w-full mt-1 px-1.5 py-0.5 text-center border border-transparent rounded text-[10px] text-[#999] focus:border-[#e8e4df] focus:ring-1 focus:ring-[#d3ad6b] focus:outline-none disabled:bg-transparent hover:border-[#e8e4df]"
+                              style={{ background: hasNote ? '#FDFCFB' : 'transparent', color: hasNote ? '#555' : '#c0bab2' }}
                             />
                           </td>
                         );
