@@ -395,23 +395,27 @@ export default function ProjectEditPage() {
       const payRate = newPayRate ? Number(newPayRate) : 0
       const billRate = newBillRate ? Number(newBillRate) : 0
 
-      const { error } = await supabase.from('project_employees').insert({
+      const { data: inserted, error } = await supabase.from('project_employees').insert({
         project_id: projectId,
         employee_id: selectedEmployeeId,
         pay_rate: payRate,
         bill_rate: billRate,
         is_active: true,
-      })
+      }).select()
 
       if (error) throw error
+      if (!inserted || inserted.length === 0) {
+        alert('Assignment failed — you may not have permission. Try refreshing the page and logging in again.')
+        return
+      }
 
       setSelectedEmployeeId('')
       setNewPayRate('')
       setNewBillRate('')
       await loadProject()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error adding employee:', err)
-      alert('Error adding employee to project')
+      alert(`Error adding employee to project: ${err?.message || 'Unknown error'}`)
     }
   }
 
@@ -441,19 +445,23 @@ export default function ProjectEditPage() {
     }
 
     try {
-      const { error } = await supabase.from('time_approvers').insert({
+      const { data: inserted, error } = await supabase.from('time_approvers').insert({
         project_id: projectId,
         employee_id: selectedApproverId,
         can_approve: true,
-      })
+      }).select()
 
       if (error) throw error
+      if (!inserted || inserted.length === 0) {
+        alert('Approver assignment failed — you may not have permission. Try refreshing the page and logging in again.')
+        return
+      }
 
       setSelectedApproverId('')
       await loadProject()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error adding approver:', err)
-      alert('Error adding time approver')
+      alert(`Error adding time approver: ${err?.message || 'Unknown error'}`)
     }
   }
 
