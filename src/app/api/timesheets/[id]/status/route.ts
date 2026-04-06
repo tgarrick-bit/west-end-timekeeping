@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { TimesheetStatus } from '@/lib/status';
 import { writeAuditLog } from '@/lib/auditLog';
 import { createNotification } from '@/lib/notify';
 import { sendEmail } from '@/lib/sendEmail';
+
+// Service role client for notification lookups (bypasses RLS)
+const getAdminClient = () => createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
 
 type Action = 'save' | 'submit' | 'approve' | 'reject' | 'finalize' | 'client_approve';
 
@@ -228,13 +236,15 @@ export async function PATCH(
     },
   });
 
-  // === IN-APP NOTIFICATIONS ===
+  // === IN-APP NOTIFICATIONS + EMAILS ===
+  // Use service role client for all lookups (employee can't see manager records via RLS)
+  const adminClient = getAdminClient();
   const weekLabel = updated.week_ending || 'this period';
   if (nextStatus === 'submitted' && existing.employee_id) {
     // Notify manager that employee submitted
-    const { data: emp } = await supabase.from('employees').select('manager_id, first_name, last_name').eq('id', existing.employee_id).single();
+    const { data: emp } = await adminClient.from('employees').select('manager_id, first_name, last_name').eq('id', existing.employee_id).single();
     if (emp?.manager_id) {
-      await createNotification(supabase, {
+      await createNotification(adminClient, {
         user_id: emp.manager_id,
         title: 'Timesheet submitted',
         message: `${emp.first_name} ${emp.last_name} submitted their timesheet for week ending ${weekLabel}`,
@@ -286,7 +296,7 @@ export async function PATCH(
     const {
       data: employee,
       error: employeeError,
-    } = await supabase
+    } = await adminClient
       .from('employees')
       .select('id, first_name, last_name, email, manager_id')
       .eq('id', updated.employee_id)
@@ -309,7 +319,7 @@ export async function PATCH(
     let managerName: string | null = null;
 
     if (employee?.manager_id) {
-      const { data: manager, error: managerError } = await supabase
+      const { data: manager, error: managerError } = await adminClient
         .from('employees')
         .select('id, first_name, last_name, email')
         .eq('id', employee.manager_id)
