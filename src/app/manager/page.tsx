@@ -1100,6 +1100,43 @@ export default function ManagerPage() {
         })()}
       </div>
 
+      {/* NOT SUBMITTED THIS WEEK */}
+      {(() => {
+        const now = new Date();
+        const dayOfWeek = now.getDay();
+        const saturday = new Date(now);
+        saturday.setDate(now.getDate() + (6 - dayOfWeek));
+        const weekEndingStr = saturday.toISOString().split('T')[0];
+        const employeesWithTs = new Set(
+          submissions
+            .filter(s => s.date?.split('T')[0] === weekEndingStr && s.status !== 'draft')
+            .map(s => s.employee?.id)
+            .filter(Boolean)
+        );
+        const missing = employees.filter(e =>
+          e.id !== managerId && e.role === 'employee' && !employeesWithTs.has(e.id)
+        );
+        if (missing.length === 0) return null;
+        return (
+          <div style={{ padding: '0 40px', marginTop: 16 }}>
+            <div style={{ background: '#fef8f8', border: '0.5px solid #f5d0d0', borderRadius: 10, padding: '16px 22px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#b91c1c' }}>
+                  {missing.length} team member{missing.length !== 1 ? 's have' : ' has'} not submitted this week
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {missing.map(emp => (
+                  <span key={emp.id} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 4, background: '#fff', border: '0.5px solid #f5d0d0', color: '#555' }}>
+                    {emp.first_name} {emp.last_name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* MAIN CONTENT */}
       <div style={{ padding: '24px 40px 40px 40px' }}>
         {/* search */}
