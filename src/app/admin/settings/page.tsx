@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ui/Toast';
 import {
   Settings, Globe, Clock, CreditCard, Receipt,
   FileText, Users, Save, Bell,
@@ -473,6 +474,7 @@ export default function AdminSettingsPage() {
 
   const router = useRouter();
   const supabase = createClient();
+  const { toast } = useToast();
 
   useEffect(() => {
     loadSettings();
@@ -1133,12 +1135,12 @@ export default function AdminSettingsPage() {
                           })
                           const data = await res.json()
                           if (res.ok) {
-                            alert(`Generated ${data.generated} pay periods`)
+                            toast('success', `Generated ${data.generated} pay periods`)
                           } else {
-                            alert(data.error || 'Failed to generate periods')
+                            toast('error', data.error || 'Failed to generate periods')
                           }
                         } catch (err) {
-                          alert('Error generating pay periods')
+                          toast('error', 'Error generating pay periods')
                         }
                       }}
                       style={{ padding: '8px 18px', fontSize: 12, fontWeight: 600, background: '#e31c79', color: '#fff', borderRadius: 7 }}

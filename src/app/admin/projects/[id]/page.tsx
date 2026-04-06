@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, Trash2 } from 'lucide-react'
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton'
+import { useToast } from '@/components/ui/Toast'
 
 interface Project {
   id: string
@@ -163,6 +164,7 @@ export default function ProjectEditPage() {
   const params = useParams()
   const projectId = params?.id as string
   const supabase = createClient()
+  const { toast } = useToast()
 
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [project, setProject] = useState<Project | null>(null)
@@ -308,11 +310,11 @@ export default function ProjectEditPage() {
 
   const saveProject = async () => {
     if (!formData.client_id) {
-      alert('Please select a client.')
+      toast('warning', 'Please select a client.')
       return null
     }
     if (!formData.name || !formData.name.trim()) {
-      alert('Please enter a project name.')
+      toast('warning', 'Please enter a project name.')
       return null
     }
 
@@ -334,7 +336,7 @@ export default function ProjectEditPage() {
         // keep any local-only fields (like client_name)
         setFormData((prev) => ({ ...prev, ...created }))
 
-        alert('Project created successfully!')
+        toast('success', 'Project created successfully.')
         return created.id as string
       } else {
         const { error } = await supabase
@@ -344,12 +346,12 @@ export default function ProjectEditPage() {
 
         if (error) throw error
 
-        alert('Project saved successfully!')
+        toast('success', 'Project saved successfully.')
         return projectId
       }
     } catch (err: any) {
       console.error('Error saving project:', err)
-      alert(`Error saving project: ${err.message || 'Unknown error'}`)
+      toast('error', `Error saving project: ${err.message || 'Unknown error'}`)
       return null
     } finally {
       setSaving(false)
@@ -383,11 +385,11 @@ export default function ProjectEditPage() {
 
   const handleAddEmployee = async () => {
     if (!projectId || projectId === 'new') {
-      alert('Please save the project before adding people.')
+      toast('warning', 'Please save the project before adding people.')
       return
     }
     if (!selectedEmployeeId) {
-      alert('Please select an employee to add.')
+      toast('warning', 'Please select an employee to add.')
       return
     }
 
@@ -405,7 +407,7 @@ export default function ProjectEditPage() {
 
       if (error) throw error
       if (!inserted || inserted.length === 0) {
-        alert('Assignment failed — you may not have permission. Try refreshing the page and logging in again.')
+        toast('error', 'Assignment failed — you may not have permission. Try refreshing the page and logging in again.')
         return
       }
 
@@ -415,7 +417,7 @@ export default function ProjectEditPage() {
       await loadProject()
     } catch (err: any) {
       console.error('Error adding employee:', err)
-      alert(`Error adding employee to project: ${err?.message || 'Unknown error'}`)
+      toast('error', `Error adding employee to project: ${err?.message || 'Unknown error'}`)
     }
   }
 
@@ -430,17 +432,17 @@ export default function ProjectEditPage() {
       await loadProject()
     } catch (err) {
       console.error('Error removing employee:', err)
-      alert('Error removing employee from project')
+      toast('error', 'Error removing employee from project.')
     }
   }
 
   const handleAddApprover = async () => {
     if (!projectId || projectId === 'new') {
-      alert('Please save the project before adding approvers.')
+      toast('warning', 'Please save the project before adding approvers.')
       return
     }
     if (!selectedApproverId) {
-      alert('Please select a manager to add as approver.')
+      toast('warning', 'Please select a manager to add as approver.')
       return
     }
 
@@ -453,7 +455,7 @@ export default function ProjectEditPage() {
 
       if (error) throw error
       if (!inserted || inserted.length === 0) {
-        alert('Approver assignment failed — you may not have permission. Try refreshing the page and logging in again.')
+        toast('error', 'Approver assignment failed — you may not have permission. Try refreshing the page and logging in again.')
         return
       }
 
@@ -461,7 +463,7 @@ export default function ProjectEditPage() {
       await loadProject()
     } catch (err: any) {
       console.error('Error adding approver:', err)
-      alert(`Error adding time approver: ${err?.message || 'Unknown error'}`)
+      toast('error', `Error adding time approver: ${err?.message || 'Unknown error'}`)
     }
   }
 

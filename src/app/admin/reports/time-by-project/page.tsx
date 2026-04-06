@@ -7,6 +7,7 @@ import { useAdminFilter } from '@/contexts/AdminFilterContext'
 import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
 import { Download } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 
 interface ReportData {
   id: string
@@ -38,6 +39,7 @@ export default function TimeByProjectReport() {
   const { user } = useAuth()
   const { selectedClientId, selectedDepartmentId } = useAdminFilter()
   const supabase = createClient()
+  const { toast } = useToast()
 
   // Default to current month
   const now = new Date()
@@ -173,7 +175,7 @@ export default function TimeByProjectReport() {
 
   const handleExportToExcel = () => {
     if (reportData.length === 0) {
-      alert('No data to export. Please run the report first.')
+      toast('warning', 'No data to export. Please run the report first.')
       return
     }
 

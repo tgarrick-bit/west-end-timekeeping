@@ -7,6 +7,7 @@ import { useAdminFilter } from '@/contexts/AdminFilterContext'
 import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
 import { Download } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 
 interface ExpenseData {
   id: string
@@ -52,6 +53,7 @@ export default function ExpensesByApproverReport() {
   const { user } = useAuth()
   const { selectedClientId, selectedDepartmentId } = useAdminFilter()
   const supabase = createClient()
+  const { toast } = useToast()
 
   const now = new Date()
   const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
@@ -113,7 +115,7 @@ export default function ExpensesByApproverReport() {
   }
 
   const handleExportToExcel = () => {
-    if (reportData.length === 0) { alert('No data to export. Please run the report first.'); return }
+    if (reportData.length === 0) { toast('warning', 'No data to export. Please run the report first.'); return }
     const exportData: any[] = []
     const approverGroups: { [key: string]: ExpenseData[] } = {}
     reportData.forEach(expense => { const key = expense.approved_by || 'unapproved'; if (!approverGroups[key]) { approverGroups[key] = [] }; approverGroups[key].push(expense) })

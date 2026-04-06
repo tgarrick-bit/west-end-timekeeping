@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ui/Toast';
 import {
   Building2,
   Plus,
@@ -80,6 +81,7 @@ export default function ClientManagement() {
 
   const supabase = createClient();
   const router = useRouter();
+  const { toast } = useToast();
 
   const initialFormData: ClientFormData = {
     name: '',
@@ -170,7 +172,7 @@ export default function ClientManagement() {
   const handleAddClient = async () => {
     try {
       if (!formData.name.trim() || !formData.code.trim()) {
-        alert('Please enter at least a client name and code.');
+        toast('warning', 'Please enter at least a client name and code.');
         return;
       }
 
@@ -201,7 +203,7 @@ export default function ClientManagement() {
           hint: error.hint,
           code: error.code,
         });
-        alert(`Error adding client: ${error.message}`);
+        toast('error', `Error adding client: ${error.message}`);
         return;
       }
 
@@ -210,7 +212,7 @@ export default function ClientManagement() {
       fetchClients();
     } catch (error) {
       console.error('Unexpected error adding client:', error);
-      alert('Unexpected error adding client. Check console for details.');
+      toast('error', 'Unexpected error adding client.');
     }
   };
 
@@ -246,7 +248,7 @@ export default function ClientManagement() {
           hint: error.hint,
           code: error.code,
         });
-        alert(`Error updating client: ${error.message}`);
+        toast('error', `Error updating client: ${error.message}`);
         return;
       }
 
@@ -256,7 +258,7 @@ export default function ClientManagement() {
       fetchClients();
     } catch (error) {
       console.error('Unexpected error updating client:', error);
-      alert('Unexpected error updating client. Check console for details.');
+      toast('error', 'Unexpected error updating client.');
     }
   };
 
@@ -273,7 +275,7 @@ export default function ClientManagement() {
       fetchClients();
     } catch (error) {
       console.error('Error deactivating client:', error);
-      alert('Error deactivating client');
+      toast('error', 'Error deactivating client');
     }
   };
 
@@ -290,7 +292,7 @@ export default function ClientManagement() {
       fetchClients();
     } catch (error) {
       console.error('Error reactivating client:', error);
-      alert('Error reactivating client');
+      toast('error', 'Error reactivating client');
     }
   };
 
@@ -344,7 +346,7 @@ export default function ClientManagement() {
       is_active: true,
     }]);
     if (error) {
-      alert(error.message.includes('unique') ? 'A department with this name already exists for this client.' : `Error: ${error.message}`);
+      toast('error', error.message.includes('unique') ? 'A department with this name already exists for this client.' : `Error: ${error.message}`);
       return;
     }
     setDeptFormName('');
@@ -359,7 +361,7 @@ export default function ClientManagement() {
       .update({ name: deptFormName.trim(), code: deptFormCode.trim() || null })
       .eq('id', editingDept.id);
     if (error) {
-      alert(`Error: ${error.message}`);
+      toast('error', `Error: ${error.message}`);
       return;
     }
     setEditingDept(null);
@@ -374,7 +376,7 @@ export default function ClientManagement() {
       .update({ is_active: !dept.is_active })
       .eq('id', dept.id);
     if (error) {
-      alert(`Error: ${error.message}`);
+      toast('error', `Error: ${error.message}`);
       return;
     }
     if (deptClient) await fetchDepartments(deptClient.id);
@@ -384,7 +386,7 @@ export default function ClientManagement() {
     if (!confirm(`Delete department "${dept.name}"? This cannot be undone.`)) return;
     const { error } = await supabase.from('departments').delete().eq('id', dept.id);
     if (error) {
-      alert(error.message.includes('violates foreign key') ? 'Cannot delete — employees or projects are still assigned to this department. Deactivate it instead.' : `Error: ${error.message}`);
+      toast('error', error.message.includes('violates foreign key') ? 'Cannot delete — employees or projects are still assigned to this department. Deactivate it instead.' : `Error: ${error.message}`);
       return;
     }
     if (deptClient) await fetchDepartments(deptClient.id);

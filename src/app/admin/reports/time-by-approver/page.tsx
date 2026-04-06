@@ -7,6 +7,7 @@ import { useAdminFilter } from '@/contexts/AdminFilterContext'
 import { createClient } from '@/lib/supabase/client'
 import * as XLSX from 'xlsx'
 import { Download } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 
 interface ReportData {
   id: string
@@ -59,6 +60,7 @@ export default function TimeByApproverReport() {
   const { user } = useAuth()
   const { selectedClientId, selectedDepartmentId } = useAdminFilter()
   const supabase = createClient()
+  const { toast } = useToast()
 
   const now = new Date()
   const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
@@ -138,7 +140,7 @@ export default function TimeByApproverReport() {
   }
 
   const handleExportToExcel = () => {
-    if (reportData.length === 0) { alert('No data to export. Please run the report first.'); return }
+    if (reportData.length === 0) { toast('warning', 'No data to export. Please run the report first.'); return }
     const exportData = reportData.map(row => {
       const regularHours = Math.min(row.total_hours || 0, 40)
       const overtimeHours = row.overtime_hours || Math.max(0, (row.total_hours || 0) - 40)

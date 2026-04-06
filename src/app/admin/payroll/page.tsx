@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useAdminFilter } from '@/contexts/AdminFilterContext'
+import { useToast } from '@/components/ui/Toast'
 import * as XLSX from 'xlsx'
 import {
   Lock,
@@ -58,6 +59,7 @@ export default function PayrollPage() {
   const [processing, setProcessing] = useState(false)
   const [approverMap, setApproverMap] = useState<Record<string, string>>({})
   const [generating, setGenerating] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     loadPeriods()
@@ -102,14 +104,14 @@ export default function PayrollPage() {
 
       const data = await res.json()
       if (res.ok) {
-        alert(`Generated ${data.generated || 0} pay period(s) (past year through next 3 months).`)
+        toast('success', `Generated ${data.generated || 0} pay period(s) (past year through next 3 months).`)
         await loadPeriods()
       } else {
-        alert(data.error || 'Failed to generate pay periods')
+        toast('error', data.error || 'Failed to generate pay periods')
       }
     } catch (err) {
       console.error('Error generating pay periods:', err)
-      alert('Error generating pay periods')
+      toast('error', 'Error generating pay periods')
     } finally {
       setGenerating(false)
     }
@@ -177,7 +179,7 @@ export default function PayrollPage() {
   // Bulk finalize all approved timesheets
   const handleBulkFinalize = async () => {
     if (approved.length === 0) {
-      alert('No approved timesheets to finalize')
+      toast('warning', 'No approved timesheets to finalize')
       return
     }
     const confirmed = confirm(
@@ -205,7 +207,7 @@ export default function PayrollPage() {
       }
     }
 
-    alert(`Finalized: ${success} succeeded, ${failed} failed`)
+    toast(failed === 0 ? 'success' : 'warning', `Finalized: ${success} succeeded, ${failed} failed`)
     await loadTimesheets()
     setProcessing(false)
   }
@@ -235,7 +237,7 @@ export default function PayrollPage() {
       t.status === 'payroll_approved' || t.status === 'approved'
     )
     if (exportable.length === 0) {
-      alert('No approved/finalized timesheets to export')
+      toast('warning', 'No approved/finalized timesheets to export')
       return
     }
 
@@ -308,7 +310,7 @@ export default function PayrollPage() {
       t.status === 'payroll_approved' || t.status === 'approved' || t.status === 'client_approved'
     )
     if (exportable.length === 0) {
-      alert('No approved/finalized timesheets to export')
+      toast('warning', 'No approved/finalized timesheets to export')
       return
     }
 
@@ -370,7 +372,7 @@ export default function PayrollPage() {
       t.status === 'payroll_approved' || t.status === 'approved' || t.status === 'client_approved'
     )
     if (exportable.length === 0) {
-      alert('No approved/finalized timesheets to export')
+      toast('warning', 'No approved/finalized timesheets to export')
       return
     }
 
@@ -407,7 +409,7 @@ export default function PayrollPage() {
     })
 
     if (rows.length === 0) {
-      alert('No hours to export')
+      toast('warning', 'No hours to export')
       return
     }
 
@@ -437,7 +439,7 @@ export default function PayrollPage() {
       t.status === 'payroll_approved' || t.status === 'approved' || t.status === 'client_approved'
     )
     if (exportable.length === 0) {
-      alert('No approved/finalized timesheets to export')
+      toast('warning', 'No approved/finalized timesheets to export')
       return
     }
 
@@ -456,7 +458,7 @@ export default function PayrollPage() {
       .order('date', { ascending: true })
 
     if (!entries || entries.length === 0) {
-      alert('No timesheet entries found')
+      toast('warning', 'No timesheet entries found')
       return
     }
 
@@ -541,7 +543,7 @@ export default function PayrollPage() {
       t.status === 'payroll_approved' || t.status === 'approved' || t.status === 'client_approved'
     )
     if (exportable.length === 0) {
-      alert('No approved/finalized timesheets to export')
+      toast('warning', 'No approved/finalized timesheets to export')
       return
     }
 
@@ -555,7 +557,7 @@ export default function PayrollPage() {
         .order('date', { ascending: true })
 
       if (!entries || entries.length === 0) {
-        alert('No timesheet entries found')
+        toast('warning', 'No timesheet entries found')
         return
       }
 
