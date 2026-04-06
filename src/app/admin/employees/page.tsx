@@ -1063,81 +1063,7 @@ export default function EmployeeManagement() {
                   </p>
                 </div>
 
-                {/* Employee ID */}
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">
-                    Employee ID
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.employee_id}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        employee_id: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
-                  />
-                </div>
-
-                {/* MyBase Payroll ID */}
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">
-                    MyBase Payroll ID{' '}
-                    <span className="text-[#bbb]">(Optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.mybase_payroll_id || ''}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        mybase_payroll_id: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
-                    placeholder="Leave blank if not needed"
-                  />
-                  <p className="text-xs text-[#777] mt-1">
-                    For payroll exports (can be added later)
-                  </p>
-                </div>
-
-                {/* Time Approver – ONLY for employees */}
-                {formData.role === 'employee' && (
-                  <div>
-                    <label className="block text-sm font-medium text-[#555] mb-1">
-                      Time Approver <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={formData.manager_id}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          manager_id: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
-                      required={formData.role === 'employee'}
-                    >
-                      <option value="">Select Time Approver</option>
-                      {managers.map((manager) => (
-                        <option key={manager.id} value={manager.id}>
-                          {formatName(
-                            manager.first_name,
-                            manager.middle_name,
-                            manager.last_name
-                          )}
-                          {manager.department ? ` - ${manager.department}` : ''}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-[#999] mt-1">
-                      Timesheets will appear on this approver&apos;s dashboard
-                    </p>
-                  </div>
-                )}
+                {/* --- ORGANIZATIONAL --- */}
 
                 {/* Client – for employees and managers */}
                 {formData.role !== 'admin' && (
@@ -1198,9 +1124,125 @@ export default function EmployeeManagement() {
                   </div>
                 )}
 
-                {/* Hourly & Bill Rate – only for employees */}
+                {/* --- REPORTING --- */}
+
+                {/* Time Approver – employees only */}
+                {formData.role === 'employee' && (
+                  <div>
+                    <label className="block text-sm font-medium text-[#555] mb-1">
+                      Time Approver <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.manager_id}
+                      onChange={(e) =>
+                        setFormData({ ...formData, manager_id: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
+                      required
+                    >
+                      <option value="">Select Time Approver</option>
+                      {managers.map((manager) => (
+                        <option key={manager.id} value={manager.id}>
+                          {formatName(manager.first_name, manager.middle_name, manager.last_name)}
+                          {manager.department ? ` - ${manager.department}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-[#999] mt-1">
+                      Timesheets will appear on this approver&apos;s dashboard
+                    </p>
+                  </div>
+                )}
+
+                {/* --- EMPLOYMENT DETAILS --- */}
+
+                {/* Employee Type – employees and managers */}
+                {formData.role !== 'admin' && (
+                  <div>
+                    <label className="block text-sm font-medium text-[#555] mb-1">
+                      Employee Type
+                    </label>
+                    <select
+                      value={formData.employee_type}
+                      onChange={(e) =>
+                        setFormData({ ...formData, employee_type: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
+                    >
+                      <option value="">Select type...</option>
+                      <option value="WE">WE (West End)</option>
+                      <option value="MBP">MBP</option>
+                      <option value="CNDH">CNDH</option>
+                      <option value="CNDC">CNDC</option>
+                    </select>
+                    <p className="text-xs text-[#999] mt-1">
+                      Used for reporting and consultant stratification
+                    </p>
+                  </div>
+                )}
+
+                {/* Employee ID – employees only */}
+                {formData.role === 'employee' && (
+                  <div>
+                    <label className="block text-sm font-medium text-[#555] mb-1">
+                      Employee ID
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.employee_id}
+                      onChange={(e) =>
+                        setFormData({ ...formData, employee_id: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
+                      placeholder="Badge or ID number"
+                    />
+                  </div>
+                )}
+
+                {/* Hire Date – employees and managers */}
+                {formData.role !== 'admin' && (
+                  <div>
+                    <label className="block text-sm font-medium text-[#555] mb-1">
+                      Hire Date
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.hire_date}
+                      onChange={(e) =>
+                        setFormData({ ...formData, hire_date: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
+                    />
+                  </div>
+                )}
+
+                {/* --- COMPENSATION (employees only) --- */}
                 {formData.role === 'employee' && (
                   <>
+                    {/* State – for OT rules */}
+                    <div>
+                      <label className="block text-sm font-medium text-[#555] mb-1">
+                        State
+                      </label>
+                      <select
+                        value={formData.state}
+                        onChange={(e) =>
+                          setFormData({ ...formData, state: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
+                      >
+                        <option value="">Select State</option>
+                        {US_STATES.map((state) => (
+                          <option key={state.value} value={state.value}>
+                            {state.label}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-[#999] mt-1">
+                        Used for overtime calculation rules
+                      </p>
+                    </div>
+
                     {/* Hourly Rate */}
                     <div>
                       <label className="block text-sm font-medium text-[#555] mb-1">
@@ -1214,8 +1256,7 @@ export default function EmployeeManagement() {
                           const value = e.target.value;
                           setFormData({
                             ...formData,
-                            hourly_rate:
-                              value === '' ? 0 : parseFloat(value),
+                            hourly_rate: value === '' ? 0 : parseFloat(value),
                           });
                         }}
                         className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
@@ -1235,86 +1276,33 @@ export default function EmployeeManagement() {
                           const value = e.target.value;
                           setFormData({
                             ...formData,
-                            bill_rate:
-                              value === '' ? 0 : parseFloat(value),
+                            bill_rate: value === '' ? 0 : parseFloat(value),
                           });
                         }}
                         className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                       />
                       <p className="text-xs text-[#777] mt-1">
-                        Optional. Used for billing and margin calculations.
+                        Rate charged to client for this employee
                       </p>
+                    </div>
+
+                    {/* MyBase Payroll ID */}
+                    <div>
+                      <label className="block text-sm font-medium text-[#555] mb-1">
+                        MyBase Payroll ID <span className="text-[#bbb]">(Optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.mybase_payroll_id || ''}
+                        onChange={(e) =>
+                          setFormData({ ...formData, mybase_payroll_id: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
+                        placeholder="For payroll exports"
+                      />
                     </div>
                   </>
                 )}
-
-                {/* Employee Type */}
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">
-                    Employee Type
-                  </label>
-                  <select
-                    value={formData.employee_type}
-                    onChange={(e) =>
-                      setFormData({ ...formData, employee_type: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
-                  >
-                    <option value="">Select type...</option>
-                    <option value="WE">WE (West End)</option>
-                    <option value="MBP">MBP</option>
-                    <option value="CNDH">CNDH</option>
-                    <option value="CNDC">CNDC</option>
-                  </select>
-                  <p className="text-xs text-[#999] mt-1">
-                    Used for reporting and consultant stratification
-                  </p>
-                </div>
-
-                {/* Hire Date */}
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">
-                    Hire Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.hire_date}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        hire_date: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
-                  />
-                </div>
-
-                {/* State */}
-                <div>
-                  <label className="block text-sm font-medium text-[#555] mb-1">
-                    State
-                  </label>
-                  <select
-                    value={formData.state}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        state: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
-                  >
-                    <option value="">Select State</option>
-                    {US_STATES.map((state) => (
-                      <option
-                        key={state.value}
-                        value={state.value}
-                      >
-                        {state.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
 
                 {/* Temp Password (add mode only) */}
                 {showAddModal && (
@@ -1355,22 +1343,24 @@ export default function EmployeeManagement() {
                       Active
                     </span>
                   </label>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.is_exempt}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          is_exempt: e.target.checked,
-                        })
-                      }
-                      className="mr-2 text-[#e31c79]"
-                    />
-                    <span className="text-sm text-[#555]">
-                      Exempt (Salary)
-                    </span>
-                  </label>
+                  {formData.role === 'employee' && (
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.is_exempt}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            is_exempt: e.target.checked,
+                          })
+                        }
+                        className="mr-2 text-[#e31c79]"
+                      />
+                      <span className="text-sm text-[#555]">
+                        Exempt (Salary — no overtime)
+                      </span>
+                    </label>
+                  )}
                 </div>
               </div>
 
