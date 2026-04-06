@@ -177,8 +177,8 @@ export async function POST(request: NextRequest) {
           role: effectiveRole,
           department: department || null,
           manager_id: isEmployee ? (managerId || null) : null,        // only for employees
-          client_id: isEmployee ? (clientId || null) : null,          // only for employees
-          department_id: isEmployee ? (departmentId || null) : null,  // only for employees
+          client_id: effectiveRole !== 'admin' ? (clientId || null) : null,  // employees + managers
+          department_id: effectiveRole !== 'admin' ? (departmentId || null) : null,  // employees + managers
           mybase_payroll_id: mybasePayrollId || null,
           employee_id: employeeId || null,
           hourly_rate: isEmployee ? (hourlyRate ?? null) : null,      // only for employees

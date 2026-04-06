@@ -402,8 +402,8 @@ export default function EmployeeManagement() {
           role: formData.role || 'employee',
           department: formData.department || null,
           managerId: isEmployee ? formData.manager_id : null,
-          clientId: isEmployee ? formData.client_id || null : null,
-          departmentId: isEmployee ? formData.department_id || null : null,
+          clientId: formData.role !== 'admin' ? formData.client_id || null : null,
+          departmentId: formData.role !== 'admin' ? formData.department_id || null : null,
           hourlyRate: isEmployee ? formData.hourly_rate || null : null,
           billRate: isEmployee ? formData.bill_rate || null : null,
           employeeId: formData.employee_id || null,
@@ -459,13 +459,19 @@ export default function EmployeeManagement() {
         if (updateData[field] === '') updateData[field] = null;
       }
 
-      // Only keep pay rates, manager, client, and department for employees
-      if (formData.role !== 'employee') {
+      // Admins don't get client/department/manager/rates
+      if (formData.role === 'admin') {
         updateData.hourly_rate = null;
         updateData.bill_rate = null;
         updateData.manager_id = null;
         updateData.client_id = null;
         updateData.department_id = null;
+      }
+      // Managers get client + department but not manager_id or rates
+      if (formData.role === 'manager' || formData.role === 'time_approver') {
+        updateData.hourly_rate = null;
+        updateData.bill_rate = null;
+        updateData.manager_id = null;
       }
 
       const { error } = await supabase
@@ -1133,8 +1139,8 @@ export default function EmployeeManagement() {
                   </div>
                 )}
 
-                {/* Client – ONLY for employees */}
-                {formData.role === 'employee' && (
+                {/* Client – for employees and managers */}
+                {formData.role !== 'admin' && (
                   <div>
                     <label className="block text-sm font-medium text-[#555] mb-1">
                       Client
@@ -1166,8 +1172,8 @@ export default function EmployeeManagement() {
                   </div>
                 )}
 
-                {/* Department – ONLY for employees with a client that has departments */}
-                {formData.role === 'employee' && formData.client_id && formDepartments.length > 0 && (
+                {/* Department – for employees and managers with a client that has departments */}
+                {formData.role !== 'admin' && formData.client_id && formDepartments.length > 0 && (
                   <div>
                     <label className="block text-sm font-medium text-[#555] mb-1">
                       Department
