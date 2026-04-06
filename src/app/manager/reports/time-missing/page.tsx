@@ -1,5 +1,6 @@
 'use client'
 
+import { useToast } from '@/components/ui/Toast';
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -14,6 +15,7 @@ export default function TimeMissingReport() {
   const router = useRouter()
   const { user } = useAuth()
   const supabase = createClient()
+  const { toast } = useToast();
 
   const now = new Date()
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
@@ -116,7 +118,7 @@ export default function TimeMissingReport() {
   }
 
   const handleExportToExcel = () => {
-    if (reportData.length === 0) { alert('No data to export.'); return }
+    if (reportData.length === 0) { toast('warning', 'No data to export.'); return }
     let exportData: any[] = []
     if (byDay) {
       reportData.forEach(row => { row.missing_dates.forEach(date => { exportData.push({ 'Employee': `${row.employee.first_name} ${row.employee.last_name}`, 'Department': row.employee.department || '', 'Employee Type': row.employee.employee_type || '', 'Email': row.employee.email, 'Missing Date': date, 'Last Submission': row.last_submission || 'Never', 'Status': 'Missing' }) }) })

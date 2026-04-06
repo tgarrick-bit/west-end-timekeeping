@@ -1,5 +1,6 @@
 'use client'
 
+import { useToast } from '@/components/ui/Toast';
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -31,6 +32,7 @@ export default function ExpensesByApproverReport() {
   const router = useRouter()
   const { user } = useAuth()
   const supabase = createClient()
+  const { toast } = useToast();
 
   const now = new Date()
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
@@ -87,7 +89,7 @@ export default function ExpensesByApproverReport() {
   }
 
   const handleExportToExcel = () => {
-    if (reportData.length === 0) { alert('No data to export.'); return }
+    if (reportData.length === 0) { toast('warning', 'No data to export.'); return }
     const exportData: any[] = []
     const groups: { [key: string]: ExpenseData[] } = {}
     reportData.forEach(e => { const k = e.approved_by || 'unapproved'; if (!groups[k]) groups[k] = []; groups[k].push(e) })

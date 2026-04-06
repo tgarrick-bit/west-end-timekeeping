@@ -12,6 +12,7 @@ import {
   CheckCircle,
   X
 } from 'lucide-react';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 
 interface PendingItem {
   id: string;
@@ -80,6 +81,7 @@ export default function SupervisorPendingView() {
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [selectedItemDetail, setSelectedItemDetail] = useState<PendingItem | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [rejectModal, setRejectModal] = useState<{ open: boolean; item: PendingItem | null }>({ open: false, item: null });
   const [stats, setStats] = useState({
     pendingTimesheets: 0,
     pendingExpenses: 0,
@@ -293,9 +295,14 @@ export default function SupervisorPendingView() {
     await fetchPendingItems();
   };
 
-  const rejectSingleItem = async (item: PendingItem) => {
-    const reason = prompt('Please provide a reason for rejection:');
-    if (!reason || reason.trim() === '') return;
+  const rejectSingleItem = (item: PendingItem) => {
+    setRejectModal({ open: true, item });
+  };
+
+  const handleRejectConfirm = async (reason: string) => {
+    const item = rejectModal.item;
+    setRejectModal({ open: false, item: null });
+    if (!item || !reason || !reason.trim()) return;
     const ok = await rejectItem(item, reason.trim());
     setShowDetailModal(false);
     if (ok) {
@@ -632,6 +639,18 @@ export default function SupervisorPendingView() {
           </div>
         </div>
       )}
+      <ConfirmModal
+        open={rejectModal.open}
+        title="Reject Item"
+        message={`Reject ${rejectModal.item?.type || 'item'} for ${rejectModal.item?.employeeName || 'employee'}?`}
+        confirmLabel="Reject"
+        variant="danger"
+        inputLabel="Rejection Reason"
+        inputPlaceholder="Enter the reason for rejection..."
+        inputRequired
+        onConfirm={(reason) => handleRejectConfirm(reason || '')}
+        onCancel={() => setRejectModal({ open: false, item: null })}
+      />
     </div>
   );
 }

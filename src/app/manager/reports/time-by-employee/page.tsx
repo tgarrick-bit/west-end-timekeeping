@@ -1,5 +1,6 @@
 'use client'
 
+import { useToast } from '@/components/ui/Toast';
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -38,6 +39,7 @@ export default function TimeByEmployeeReport() {
   const router = useRouter()
   const { user } = useAuth()
   const supabase = createClient()
+  const { toast } = useToast();
   
   const now = new Date()
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
@@ -175,7 +177,7 @@ export default function TimeByEmployeeReport() {
 
   const handleExportToExcel = () => {
     if (reportData.length === 0) {
-      alert('No data to export. Please run the report first.')
+      toast('warning', 'No data to export. Please run the report first.')
       return
     }
 

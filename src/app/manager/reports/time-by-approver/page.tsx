@@ -1,5 +1,6 @@
 'use client'
 
+import { useToast } from '@/components/ui/Toast';
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -29,6 +30,7 @@ export default function TimeByApproverReport() {
   const router = useRouter()
   const { user } = useAuth()
   const supabase = createClient()
+  const { toast } = useToast();
 
   const now = new Date()
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
@@ -91,7 +93,7 @@ export default function TimeByApproverReport() {
   }
 
   const handleExportToExcel = () => {
-    if (reportData.length === 0) { alert('No data to export.'); return }
+    if (reportData.length === 0) { toast('warning', 'No data to export.'); return }
     const exportData = reportData.map(row => {
       const regularHours = Math.min(row.total_hours || 0, 40); const overtimeHours = row.overtime_hours || Math.max(0, (row.total_hours || 0) - 40)
       const rowData: any = { 'Employee': `${row.employees?.first_name} ${row.employees?.last_name}`, 'Department': row.employees?.department || '', 'Week Ending': row.week_ending, 'Approver': row.approver ? `${row.approver.first_name} ${row.approver.last_name}` : 'Not Approved', 'Regular Hours': regularHours.toFixed(2), 'Overtime Hours': overtimeHours.toFixed(2), 'Total Hours': row.total_hours?.toFixed(2) || '0.00', 'Status': row.status.charAt(0).toUpperCase() + row.status.slice(1), 'Approved Date': row.approved_at ? new Date(row.approved_at).toLocaleDateString() : 'N/A' }

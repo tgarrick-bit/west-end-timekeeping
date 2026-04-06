@@ -1,5 +1,6 @@
 'use client'
 
+import { useToast } from '@/components/ui/Toast';
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -44,6 +45,7 @@ export default function TimeByClassReport() {
   const router = useRouter()
   const { user } = useAuth()
   const supabase = createClient()
+  const { toast } = useToast();
 
   const now = new Date()
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
@@ -96,7 +98,7 @@ export default function TimeByClassReport() {
   }
 
   const handleExportToExcel = () => {
-    if (reportData.length === 0) { alert('No data to export. Please run the report first.'); return }
+    if (reportData.length === 0) { toast('warning', 'No data to export. Please run the report first.'); return }
     const exportData = reportData.map(row => {
       const regularHours = Math.min(row.total_hours || 0, 40)
       const overtimeHours = row.overtime_hours || Math.max(0, (row.total_hours || 0) - 40)
