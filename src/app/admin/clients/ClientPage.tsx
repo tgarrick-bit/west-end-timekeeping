@@ -457,7 +457,7 @@ export default function ClientManagement() {
             </p>
           </div>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => router.push('/admin/clients/new')}
             className="flex items-center gap-2"
             style={{
               backgroundColor: '#e31c79',
@@ -627,7 +627,7 @@ export default function ClientManagement() {
               {filteredClients.map((client) => (
                 <tr
                   key={client.id}
-                  onClick={() => openEditModal(client)}
+                  onClick={() => router.push('/admin/clients/' + client.id)}
                   style={{
                     borderBottom: '0.5px solid #f5f2ee',
                     cursor: 'pointer',
