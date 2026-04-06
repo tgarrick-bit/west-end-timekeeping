@@ -35,7 +35,7 @@ export async function GET(request: Request) {
       .from('employees')
       .select('id, email, first_name, last_name, manager_id')
       .eq('is_active', true)
-      .in('role', ['employee', 'manager'])
+      .eq('role', 'employee')
 
     if (empError || !employees) {
       console.error('Cron: Failed to load employees:', empError)

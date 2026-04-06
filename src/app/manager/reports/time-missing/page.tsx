@@ -59,7 +59,7 @@ export default function TimeMissingReport() {
       if (!authUser) { setIsLoading(false); return }
 
       // Scope to manager's team
-      let employeeQuery = supabase.from('employees').select('*').eq('manager_id', authUser.id).eq('status', 'active')
+      let employeeQuery = supabase.from('employees').select('*').eq('manager_id', authUser.id).eq('status', 'active').eq('role', 'employee')
       if (selectedEmployeeType !== '-All-') { employeeQuery = employeeQuery.eq('employee_type', selectedEmployeeType) }
       if (selectedUser !== '-All-') { employeeQuery = employeeQuery.eq('id', selectedUser) }
       const { data: employees, error: empError } = await employeeQuery

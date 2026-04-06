@@ -97,7 +97,6 @@ export async function PATCH(
     if (action === 'approve') {
       updatePayload.status = 'approved';
       updatePayload.rejection_reason = null;
-      updatePayload.rejected_at = null;
       updatePayload.approved_at = new Date().toISOString();
     } else {
       // reject
@@ -109,7 +108,6 @@ export async function PATCH(
       }
       updatePayload.status = 'rejected';
       updatePayload.rejection_reason = rejectionReason.trim();
-      updatePayload.rejected_at = new Date().toISOString();
       updatePayload.approved_at = null;
     }
 

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import { useToast } from '@/components/ui/Toast';
 import {
   ArrowLeft,
   Calendar,
@@ -126,6 +128,7 @@ export default function ManagerExpenseReportPage() {
   const params = useParams();
   const router = useRouter();
   const supabase = createSupabaseClient();
+  const { toast } = useToast();
 
   const [report, setReport] = useState<ExpenseReport | null>(null);
   const [lines, setLines] = useState<ExpenseLine[]>([]);
@@ -137,6 +140,14 @@ export default function ManagerExpenseReportPage() {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isWorking, setIsWorking] = useState(false);
+
+  const [rejectModal, setRejectModal] = useState({
+    open: false,
+    title: '',
+    message: '',
+    defaultValue: '',
+    onConfirm: (_reason: string) => {},
+  });
 
   const reportId = params?.id as string | undefined;
 
@@ -302,14 +313,6 @@ export default function ManagerExpenseReportPage() {
   const approveReport = async () => {
     if (!report) return;
 
-    if (
-      !window.confirm(
-        'Approve this entire expense report? This will finalize all approved/submitted lines.'
-      )
-    ) {
-      return;
-    }
-
     try {
       setIsWorking(true);
       setActionError(null);
@@ -370,45 +373,49 @@ export default function ManagerExpenseReportPage() {
     }
   };
 
-  const rejectLine = async (line: ExpenseLine) => {
-    const reason = window.prompt(
-      `Enter a reason for rejecting this line (e.g., "Missing project" or "Amount too high").`,
-      line.rejection_reason || ''
-    );
+  const rejectLine = (line: ExpenseLine) => {
+    setRejectModal({
+      open: true,
+      title: 'Reject Expense Line',
+      message: `Entry #${lines.indexOf(line) + 1} — ${getCategoryLabel(line.category)} — ${formatCurrency(line.amount)}`,
+      defaultValue: line.rejection_reason || '',
+      onConfirm: async (reason: string) => {
+        setRejectModal((prev) => ({ ...prev, open: false }));
+        if (!reason || !reason.trim()) {
+          toast('warning', 'A rejection reason is required.');
+          return;
+        }
+        try {
+          setIsWorking(true);
+          setActionError(null);
+          setActionMessage(null);
 
-    if (!reason || !reason.trim()) {
-      return;
-    }
+          const res = await fetch(`/api/expenses/${line.id}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'reject',
+              rejectionReason: reason.trim(),
+            }),
+          });
 
-    try {
-      setIsWorking(true);
-      setActionError(null);
-      setActionMessage(null);
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            console.error('Error rejecting line:', body);
+            setActionError(body.error || 'Failed to reject this expense line.');
+            return;
+          }
 
-      const res = await fetch(`/api/expenses/${line.id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'reject',
-          rejectionReason: reason.trim(),
-        }),
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        console.error('Error rejecting line:', body);
-        setActionError(body.error || 'Failed to reject this expense line.');
-        return;
-      }
-
-      setActionMessage('Expense line rejected.');
-      await loadReport();
-    } catch (err) {
-      console.error('Reject line error:', err);
-      setActionError('Network error rejecting this line.');
-    } finally {
-      setIsWorking(false);
-    }
+          setActionMessage('Expense line rejected.');
+          await loadReport();
+        } catch (err) {
+          console.error('Reject line error:', err);
+          setActionError('Network error rejecting this line.');
+        } finally {
+          setIsWorking(false);
+        }
+      },
+    });
   };
 
   const approveAllSubmitted = async () => {
@@ -416,14 +423,6 @@ export default function ManagerExpenseReportPage() {
     const toApprove = lines.filter((l) => l.status === 'submitted');
     if (toApprove.length === 0) {
       setActionError('No submitted lines to approve.');
-      return;
-    }
-
-    if (
-      !window.confirm(
-        `Approve ${toApprove.length} submitted line(s) on this report?`
-      )
-    ) {
       return;
     }
 
@@ -1026,6 +1025,20 @@ export default function ManagerExpenseReportPage() {
           </div>
         </div>
       </div>
+
+      {/* Reject reason modal */}
+      <ConfirmModal
+        open={rejectModal.open}
+        title={rejectModal.title}
+        message={rejectModal.message}
+        confirmLabel="Reject"
+        variant="danger"
+        inputLabel="Rejection Reason"
+        inputPlaceholder="Enter the reason for rejection..."
+        inputRequired
+        onConfirm={(reason) => rejectModal.onConfirm(reason || '')}
+        onCancel={() => setRejectModal((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }

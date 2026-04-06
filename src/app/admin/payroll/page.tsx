@@ -84,8 +84,10 @@ export default function PayrollPage() {
   const handleGeneratePayPeriods = async () => {
     setGenerating(true)
     try {
-      const today = new Date()
-      const threeMonthsOut = new Date(today)
+      // Generate from 1 year ago through 3 months ahead
+      const oneYearAgo = new Date()
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+      const threeMonthsOut = new Date()
       threeMonthsOut.setMonth(threeMonthsOut.getMonth() + 3)
 
       const res = await fetch('/api/pay-periods', {
@@ -93,14 +95,14 @@ export default function PayrollPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'generate',
-          from: today.toISOString().split('T')[0],
+          from: oneYearAgo.toISOString().split('T')[0],
           to: threeMonthsOut.toISOString().split('T')[0],
         }),
       })
 
       const data = await res.json()
       if (res.ok) {
-        alert(`Generated ${data.generated || 0} pay period(s) for the next 3 months.`)
+        alert(`Generated ${data.generated || 0} pay period(s) (past year through next 3 months).`)
         await loadPeriods()
       } else {
         alert(data.error || 'Failed to generate pay periods')
@@ -725,7 +727,7 @@ export default function PayrollPage() {
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7'; }}
               >
                 <Calendar className="h-4 w-4" />
-                {generating ? 'Generating...' : 'Generate Pay Periods'}
+                {generating ? 'Generating...' : 'Generate / Sync Periods'}
               </button>
               {selectedPeriod && (
                 <button

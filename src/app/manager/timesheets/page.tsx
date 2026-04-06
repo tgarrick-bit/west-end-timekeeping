@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Toast';
 import ConfirmModal from '@/components/ui/ConfirmModal';
-import { Clock, CheckCircle, XCircle, Eye, AlertCircle } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 interface Employee {
   id: string;
@@ -304,9 +304,10 @@ export default function ManagerTimesheets() {
             {timesheets.map((timesheet) => (
               <tr
                 key={timesheet.id}
-                style={{ borderBottom: '0.5px solid #f5f2ee', cursor: 'default' }}
+                style={{ borderBottom: '0.5px solid #f5f2ee', cursor: 'pointer' }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = '#FDFCFB')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                onClick={() => router.push(`/manager/timesheet/${timesheet.id}`)}
               >
                 <td style={{ padding: '14px 20px' }}>
                   <div style={{ fontSize: 12.5, fontWeight: 400, color: '#555' }}>
@@ -334,23 +335,10 @@ export default function ManagerTimesheets() {
                 </td>
                 <td style={{ padding: '14px 20px' }}>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button
-                      onClick={() => handleViewTimesheet(timesheet)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#999',
-                        cursor: 'pointer',
-                        padding: 4,
-                      }}
-                      title="View Details"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
                     {timesheet.status === 'submitted' && (
                       <>
                         <button
-                          onClick={() => handleApproveTimesheet(timesheet.id)}
+                          onClick={(e) => { e.stopPropagation(); handleApproveTimesheet(timesheet.id); }}
                           style={{
                             background: 'none',
                             border: 'none',
@@ -363,7 +351,7 @@ export default function ManagerTimesheets() {
                           <CheckCircle className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => promptRejectTimesheet(timesheet.id)}
+                          onClick={(e) => { e.stopPropagation(); promptRejectTimesheet(timesheet.id); }}
                           style={{
                             background: 'none',
                             border: 'none',

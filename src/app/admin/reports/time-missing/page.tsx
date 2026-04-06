@@ -66,7 +66,7 @@ export default function TimeMissingReport() {
   useEffect(() => {
     const loadFilters = async () => {
       const [empRes, projRes] = await Promise.all([
-        supabase.from('employees').select('id, first_name, last_name').eq('is_active', true).order('last_name'),
+        supabase.from('employees').select('id, first_name, last_name').eq('is_active', true).eq('role', 'employee').order('last_name'),
         supabase.from('projects').select('id, name, code').eq('status', 'active').order('name'),
       ])
       if (empRes.data) setEmployeeList(empRes.data)
@@ -79,7 +79,7 @@ export default function TimeMissingReport() {
   const handleRunReport = async () => {
     setIsLoading(true)
     try {
-      let employeeQuery = supabase.from('employees').select('*').eq('is_active', true)
+      let employeeQuery = supabase.from('employees').select('*').eq('is_active', true).eq('role', 'employee')
       if (selectedEmployeeType !== '-All-') { employeeQuery = employeeQuery.eq('employee_type', selectedEmployeeType) }
       if (selectedUser !== '-All-') { employeeQuery = employeeQuery.eq('id', selectedUser) }
       const { data: employees, error: empError } = await employeeQuery

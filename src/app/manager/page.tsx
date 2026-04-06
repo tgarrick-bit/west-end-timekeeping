@@ -6,7 +6,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
-import TimesheetModal from '@/components/TimesheetModal';
 import { SkeletonStats, SkeletonList } from '@/components/ui/Skeleton';
 import { StatCard } from '@/components/ui/StatCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -17,7 +16,6 @@ import {
   CheckCircle,
   XCircle,
   ChevronDown,
-  Eye,
   RefreshCw,
   Search,
 } from 'lucide-react';
@@ -1183,20 +1181,17 @@ export default function ManagerPage() {
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = '#FDFCFB'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }}
+                  onClick={() => router.push(`/manager/timesheet/${submission.id}`)}
                 >
                   <div style={{ width: 32 }} />
                   <div style={{ flex: 1 }}>
-                    <button
-                      type="button"
-                      onClick={() => handleViewTimesheet(submission)}
-                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 12.5, fontWeight: 500, color: '#1a1a1a', textAlign: 'left' }}
-                    >
+                    <span style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
                       {formatName(
                         submission.employee?.first_name,
                         submission.employee?.middle_name || undefined,
                         submission.employee?.last_name
                       )}
-                    </button>
+                    </span>
                   </div>
                   <div style={{ width: 160, fontSize: 12.5, color: '#555' }}>
                     {submission.week_range}
@@ -1226,14 +1221,6 @@ export default function ManagerPage() {
                         </button>
                       </>
                     )}
-                    <button
-                      onClick={() => handleViewTimesheet(submission)}
-                      style={{ padding: 4, color: '#999', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 4 }}
-                      disabled={processingId === submission.id}
-                      title="View timesheet"
-                    >
-                      <Eye style={{ width: 16, height: 16 }} />
-                    </button>
                   </div>
                 </div>
               ))}
@@ -1362,13 +1349,6 @@ export default function ManagerPage() {
                         </button>
                       </>
                     )}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); router.push(`/manager/expense/${report.id}`); }}
-                      style={{ padding: 4, color: '#999', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 4 }}
-                      title="View details"
-                    >
-                      <Eye style={{ width: 16, height: 16 }} />
-                    </button>
                   </div>
                 </div>
               ))}
@@ -1384,19 +1364,7 @@ export default function ManagerPage() {
         </div>
       </div>
 
-      {/* Timesheet Modal */}
-      {selectedTimesheet && (
-        <TimesheetModal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedTimesheet(null);
-          }}
-          timesheet={selectedTimesheet}
-          onApprove={handleModalApprove}
-          onReject={handleModalReject}
-        />
-      )}
+      {/* Timesheet review is now a full page at /manager/timesheet/[id] */}
 
       {/* Reject reason modal */}
       <ConfirmModal

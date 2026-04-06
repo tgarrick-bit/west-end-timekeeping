@@ -19,7 +19,6 @@ import {
   Building2,
   DollarSign,
   Download,
-  Eye,
   MapPin,
   CreditCard,
   Briefcase,
@@ -965,18 +964,6 @@ export default function AdminExpenses() {
                                         <span style={{ width: 5, height: 5, borderRadius: '50%', background: badge.dot }} />
                                         {badge.label}
                                       </span>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          openExpenseDetail(exp, employee);
-                                        }}
-                                        className="ml-auto p-1 rounded transition-colors"
-                                        style={{ color: '#777' }}
-                                        onMouseEnter={(e) => { e.currentTarget.style.background = '#FDFCFB'; }}
-                                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                                      >
-                                        <Eye className="h-3 w-3" />
-                                      </button>
                                     </div>
                                   );
                                 })}

@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAdminFilter } from '@/contexts/AdminFilterContext';
 import { useRouter } from 'next/navigation';
-import TimesheetModal from '@/components/TimesheetModal';
 import { useToast } from '@/components/ui/Toast';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import {
@@ -14,8 +13,7 @@ import {
   X,
   Users,
   Download,
-  Upload,
-  Eye
+  Upload
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -619,7 +617,7 @@ export default function AdminTimesheets() {
                           const managerName = getManagerName(timesheet.employee?.manager_id || '');
                           const badge = statusConfig[timesheet.status] || statusConfig.draft;
                           return (
-                            <tr key={timesheet.id} className="hover:bg-[#FDFCFB]" style={{ borderBottom: '0.5px solid #f5f2ee', transition: 'background 0.15s ease' }}>
+                            <tr key={timesheet.id} className="hover:bg-[#FDFCFB]" style={{ borderBottom: '0.5px solid #f5f2ee', transition: 'background 0.15s ease', cursor: 'pointer' }} onClick={() => router.push(`/manager/timesheet/${timesheet.id}`)}>
                               <td style={{ padding: '12px 20px' }} className="whitespace-nowrap">
                                 <div>
                                   <p style={{ fontSize: 12.5, fontWeight: 500, color: '#1a1a1a' }}>
@@ -656,17 +654,10 @@ export default function AdminTimesheets() {
                               </td>
                               <td style={{ padding: '12px 20px' }} className="whitespace-nowrap">
                                 <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => openTimecardDetail(timesheet)}
-                                    className="p-1 hover:bg-[#FDFCFB] rounded transition-colors"
-                                    style={{ color: '#777' }}
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </button>
                                   {timesheet.status === 'submitted' && (
                                     <>
                                       <button
-                                        onClick={() => handleApproveTimesheet(timesheet.id)}
+                                        onClick={(e) => { e.stopPropagation(); handleApproveTimesheet(timesheet.id); }}
                                         disabled={processing}
                                         className="p-1 rounded disabled:opacity-50 transition-colors"
                                         style={{ color: '#2d9b6e' }}
@@ -676,7 +667,7 @@ export default function AdminTimesheets() {
                                         <Check className="h-4 w-4" />
                                       </button>
                                       <button
-                                        onClick={() => promptRejectTimesheet(timesheet.id)}
+                                        onClick={(e) => { e.stopPropagation(); promptRejectTimesheet(timesheet.id); }}
                                         disabled={processing}
                                         className="p-1 rounded disabled:opacity-50 transition-colors"
                                         style={{ color: '#b91c1c' }}
@@ -701,24 +692,6 @@ export default function AdminTimesheets() {
           )}
         </div>
       </div>
-
-      {/* Timesheet Modal - Updated with correct props */}
-      {selectedTimesheet && (
-        <TimesheetModal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedTimesheet(null);
-          }}
-          timesheet={selectedTimesheet}
-          onApprove={() => {
-            handleApproveTimesheet(selectedTimesheet.id);
-          }}
-          onReject={() => {
-            promptRejectTimesheet(selectedTimesheet.id);
-          }}
-        />
-      )}
 
       {/* Reject reason modal */}
       <ConfirmModal

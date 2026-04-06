@@ -306,7 +306,7 @@ export default function AdminPage() {
         const weekEnding = currentSaturday.toISOString().split('T')[0]
 
         const activeEmployees = (allEmployees as Employee[]).filter(e =>
-          e.is_active !== false && (e.role === 'employee' || e.role === 'manager')
+          e.is_active !== false && e.role === 'employee'
         )
         const employeesWithTimesheets = new Set(
           allSubmissions

@@ -347,6 +347,8 @@ export async function PATCH(
       const totalHours = updated.total_hours || 0;
       const overtimeHours = updated.overtime_hours || 0;
       const regularHours = totalHours - overtimeHours;
+      const isResubmission = currentStatus === 'rejected';
+      const previousReason = isResubmission ? (existing.rejection_reason || '') : '';
 
       const html = `
         <div style="max-width:600px;margin:0 auto;font-family:'Montserrat',Arial,sans-serif;">
@@ -354,11 +356,15 @@ export async function PATCH(
             <img src="${logoUrl}" alt="West End Workforce" style="height:40px;" />
           </div>
           <div style="padding:30px 20px;background:#ffffff;">
-            <h2 style="color:#e31c79;margin:0 0 16px;">Timesheet Submitted</h2>
+            <h2 style="color:#e31c79;margin:0 0 16px;">${isResubmission ? 'Timesheet Resubmitted' : 'Timesheet Submitted'}</h2>
             <p style="color:#555;line-height:1.6;">Hi ${managerName || 'Manager'},</p>
             <p style="color:#555;line-height:1.6;">
-              <strong>${employeeName}</strong> has submitted a timesheet for your review.
+              <strong>${employeeName}</strong> has ${isResubmission ? 'revised and resubmitted' : 'submitted'} a timesheet for your review.
             </p>
+            ${isResubmission && previousReason ? `
+            <div style="background:#FEF2F2;border:0.5px solid #FECACA;border-radius:10px;padding:14px;margin:0 0 16px;">
+              <p style="margin:0;color:#b91c1c;font-size:13px;"><strong>Previously rejected:</strong> ${previousReason}</p>
+            </div>` : ''}
             <div style="background:#FAFAF8;border:0.5px solid #e8e4df;border-radius:10px;padding:16px;margin:20px 0;">
               <p style="margin:0 0 12px;color:#1a1a1a;font-weight:600;">Timesheet Details:</p>
               <p style="margin:0 0 6px;color:#555;">Week Ending: <strong>${weekEnding}</strong></p>
@@ -381,7 +387,7 @@ export async function PATCH(
 
       await sendEmail({
         to: managerRecipient,
-        subject: `Timesheet submitted by ${employeeName} — ${totalHours.toFixed(1)} hrs`,
+        subject: `Timesheet ${isResubmission ? 'resubmitted' : 'submitted'} by ${employeeName} — ${totalHours.toFixed(1)} hrs`,
         html,
       });
 
