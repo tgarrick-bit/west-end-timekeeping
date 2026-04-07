@@ -34,9 +34,6 @@ export async function POST(request: NextRequest) {
 
     const to = body.to as string;
 
-    // Debug: make sure env vars are present
-    console.log('SMTP_USER present?', !!process.env.SMTP_USER);
-    console.log('SMTP_PASS present?', !!process.env.SMTP_PASS);
 
     // Create SMTP transporter using env vars only
     // Supports both authenticated (Gmail App Password) and relay (Google Workspace SMTP Relay) modes

@@ -286,12 +286,6 @@ export async function PATCH(
     const weekEnding =
       (updated as any).week_ended_on ?? updated.week_ending ?? 'this period';
 
-    console.log('TIMESHEET EMAIL: env snapshot', {
-      appUrl,
-      nextStatus,
-      timesheetId,
-    });
-
     // Employee record
     const {
       data: employee,
@@ -391,9 +385,6 @@ export async function PATCH(
         html,
       });
 
-      console.log(
-        `TIMESHEET → manager email SENT to ${managerRecipient}`
-      );
     }
 
     // === EMPLOYEE EMAIL: APPROVED ===

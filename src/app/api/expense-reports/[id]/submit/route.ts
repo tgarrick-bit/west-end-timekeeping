@@ -14,7 +14,6 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> } // ✅ Next.js 15 async params
 ) {
   const { id: reportId } = await params;
-  console.log('[EXPENSE SUBMIT] Route hit for report:', reportId);
 
   // ✅ Use route handler client so auth + RLS work on the server
   const supabase = await createServerClient();
@@ -63,15 +62,6 @@ export async function POST(
       );
     }
 
-    console.log(
-      '[EXPENSE SUBMIT] Loaded report:',
-      report.id,
-      'employee_id:',
-      report.employee_id,
-      'current user:',
-      user.id
-    );
-
     if (report.employee_id !== user.id) {
       console.warn(
         '[EXPENSE SUBMIT] User is not allowed to submit this report.',
@@ -108,13 +98,6 @@ export async function POST(
       );
     }
 
-    console.log(
-      '[EXPENSE SUBMIT] Loaded',
-      lines.length,
-      'lines for report',
-      reportId
-    );
-
     // 3) Basic validation
     for (const [idx, line] of lines.entries()) {
       if (
@@ -145,11 +128,6 @@ export async function POST(
     );
 
     if (updatableLines.length > 0) {
-      console.log(
-        '[EXPENSE SUBMIT] Updating',
-        updatableLines.length,
-        'lines to submitted.'
-      );
       const { error: updateError } = await supabase
         .from('expenses')
         .update({ status: 'submitted' })
@@ -169,20 +147,12 @@ export async function POST(
         );
       }
     } else {
-      console.log(
-        '[EXPENSE SUBMIT] No draft/rejected lines to update; all already submitted/approved.'
-      );
     }
 
     // 5) Update report status + timestamps + total
     const totalAmount = lines.reduce(
       (sum, l) => sum + (l.amount || 0),
       0
-    );
-
-    console.log(
-      '[EXPENSE SUBMIT] Updating report status to submitted. Total amount:',
-      totalAmount
     );
 
     const { error: reportUpdateError } = await supabase
@@ -207,11 +177,6 @@ export async function POST(
 
     // 6) Notify manager (dynamic, with fallback)
     try {
-      console.log(
-        '[EXPENSE SUBMIT] Loading employee + manager for employee_id:',
-        report.employee_id
-      );
-
       // Load employee with manager_id
       const { data: employee, error: employeeError } = await supabase
         .from('employees')
@@ -225,13 +190,6 @@ export async function POST(
           employeeError
         );
       } else {
-        console.log(
-          '[EXPENSE SUBMIT] Employee:',
-          employee.first_name,
-          employee.last_name,
-          'manager_id:',
-          employee.manager_id
-        );
       }
 
       let managerEmail: string | null = null;
@@ -254,11 +212,6 @@ export async function POST(
           managerName = `${manager.first_name ?? ''} ${
             manager.last_name ?? ''
           }`.trim() || 'Manager';
-          console.log(
-            '[EXPENSE SUBMIT] Manager resolved:',
-            managerName,
-            managerEmail
-          );
         } else {
           console.warn(
             '[EXPENSE SUBMIT] Manager record found but no email set.'
@@ -293,13 +246,6 @@ export async function POST(
           process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
         const managerUrl = `${appUrl}/manager/expense/${reportId}`;
 
-        console.log(
-          '[EXPENSE SUBMIT] Building manager email HTML for:',
-          to,
-          'managerUrl:',
-          managerUrl
-        );
-
         const html = buildManagerSubmissionEmailHtml({
           managerUrl,
           employeeName,
@@ -319,10 +265,6 @@ export async function POST(
           html,
         });
 
-        console.log(
-          '[EXPENSE SUBMIT] Manager expense submission email sent to',
-          to
-        );
       }
       // In-app notification to manager
       if (employee?.manager_id) {
@@ -355,10 +297,6 @@ export async function POST(
       },
     });
 
-    console.log(
-      '[EXPENSE SUBMIT] Completed successfully for report:',
-      reportId
-    );
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[EXPENSE SUBMIT] Unexpected error submitting report:', err);
@@ -407,13 +345,6 @@ async function sendManagerEmail(params: {
   const fromAddress = EMAIL_FROM || 'no-reply@westendworkforce.com';
   const fromName = EMAIL_FROM_NAME || 'West End Workforce';
   const replyTo = EMAIL_REPLY_TO || fromAddress;
-
-  console.log(
-    '[EXPENSE SUBMIT] Sending email via SMTP to',
-    params.to,
-    'subject:',
-    params.subject
-  );
 
   await transporter.sendMail({
     from: `"${fromName}" <${fromAddress}>`,
