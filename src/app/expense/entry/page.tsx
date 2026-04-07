@@ -174,20 +174,56 @@ export default function ExpenseEntryPage() {
   };
 
   const loadProjects = async () => {
-    const { data, error } = await supabase
-      .from('projects')
-      .select('id, name, is_active')
-      .order('name');
+    try {
+      // Load all active projects
+      const { data: allProjects, error } = await supabase
+        .from('projects')
+        .select('id, name, is_active')
+        .eq('is_active', true)
+        .order('name');
 
-    if (error) {
+      if (error || !allProjects) {
+        console.error('Error loading projects:', error);
+        setProjects([]);
+        return;
+      }
+
+      // Load ALL project_employee assignments to determine visibility
+      const { data: allAssignments } = await supabase
+        .from('project_employees')
+        .select('project_id, employee_id')
+        .eq('is_active', true);
+
+      const projectAssignments = new Map<string, Set<string>>();
+      (allAssignments || []).forEach(a => {
+        if (!projectAssignments.has(a.project_id)) {
+          projectAssignments.set(a.project_id, new Set());
+        }
+        projectAssignments.get(a.project_id)!.add(a.employee_id);
+      });
+
+      // Show: projects assigned to this employee + projects with no assignments (open)
+      const myProjects: typeof allProjects = [];
+      const openProjects: typeof allProjects = [];
+
+      for (const project of allProjects) {
+        const assignees = projectAssignments.get(project.id);
+        if (!assignees || assignees.size === 0) {
+          openProjects.push(project);
+        } else if (userId && assignees.has(userId)) {
+          myProjects.push(project);
+        }
+      }
+
+      if (myProjects.length > 0 && openProjects.length > 0) {
+        setProjects([...myProjects, { id: '__separator', name: '── Open Projects ──', is_active: true }, ...openProjects]);
+      } else {
+        setProjects([...myProjects, ...openProjects]);
+      }
+    } catch (error) {
       console.error('Error loading projects:', error);
       setProjects([]);
-      return;
     }
-
-    const all = data || [];
-    const active = all.filter((p) => p.is_active === true);
-    setProjects(active.length > 0 ? active : all);
   };
 
   // Load draft/rejected reports for the resume picker
@@ -970,11 +1006,15 @@ export default function ExpenseEntryPage() {
                         className="w-full px-3 py-2 border border-[#e8e4df] rounded-md focus:outline-none focus:ring-1 focus:ring-[#d3ad6b] focus:border-[#d3ad6b]"
                       >
                         <option value="">Select a project...</option>
-                        {projects.map((project) => (
-                          <option key={project.id} value={project.id}>
-                            {project.name}
-                          </option>
-                        ))}
+                        {projects.map((project) =>
+                          project.id === '__separator' ? (
+                            <option key="__sep" disabled>──────────────</option>
+                          ) : (
+                            <option key={project.id} value={project.id}>
+                              {project.name}
+                            </option>
+                          )
+                        )}
                       </select>
                     </div>
 

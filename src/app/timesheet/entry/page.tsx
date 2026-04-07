@@ -199,26 +199,45 @@ function TimesheetEntryInner() {
         return;
       }
 
-      // Load the effective employee's assigned projects for prioritization
-      if (effectiveId) {
-        const { data: assignments } = await supabase
-          .from('project_employees')
-          .select('project_id')
-          .eq('employee_id', effectiveId)
-          .eq('is_active', true);
+      // Load ALL project_employee assignments to determine which projects are restricted
+      const { data: allAssignments } = await supabase
+        .from('project_employees')
+        .select('project_id, employee_id')
+        .eq('is_active', true);
 
-        const assignedIds = new Set((assignments || []).map(a => a.project_id));
-
-        if (assignedIds.size > 0) {
-          // Assigned projects first, then the rest
-          const assigned = allProjects.filter(p => assignedIds.has(p.id));
-          const other = allProjects.filter(p => !assignedIds.has(p.id));
-          setProjects([...assigned, { id: '__separator', name: '── Other Projects ──', code: '' }, ...other]);
-          return;
+      // Build a map: projectId -> set of assigned employee IDs
+      const projectAssignments = new Map<string, Set<string>>();
+      (allAssignments || []).forEach(a => {
+        if (!projectAssignments.has(a.project_id)) {
+          projectAssignments.set(a.project_id, new Set());
         }
+        projectAssignments.get(a.project_id)!.add(a.employee_id);
+      });
+
+      // Categorize projects for this employee:
+      // 1. Assigned to this employee (show first)
+      // 2. No assignments at all (open to everyone)
+      // 3. Assigned to OTHER employees only (hidden)
+      const myProjects: typeof allProjects = [];
+      const openProjects: typeof allProjects = [];
+
+      for (const project of allProjects) {
+        const assignees = projectAssignments.get(project.id);
+        if (!assignees || assignees.size === 0) {
+          // No assignments — open to all
+          openProjects.push(project);
+        } else if (effectiveId && assignees.has(effectiveId)) {
+          // Assigned to this employee
+          myProjects.push(project);
+        }
+        // else: assigned to others only — don't show
       }
 
-      setProjects(allProjects);
+      if (myProjects.length > 0 && openProjects.length > 0) {
+        setProjects([...myProjects, { id: '__separator', name: '── Open Projects ──', code: '' }, ...openProjects]);
+      } else {
+        setProjects([...myProjects, ...openProjects]);
+      }
     } catch (error) {
       console.error('Error loading projects:', error);
     }
