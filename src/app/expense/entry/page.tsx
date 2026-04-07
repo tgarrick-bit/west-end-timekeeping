@@ -351,7 +351,7 @@ export default function ExpenseEntryPage() {
     );
   };
 
-  const handleFileChange = (
+  const handleFileChange = async (
     entryId: string,
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -362,8 +362,14 @@ export default function ExpenseEntryPage() {
         return;
       }
       updateEntry(entryId, 'receipt_file', file);
-      // Auto-trigger receipt scan after upload
-      setTimeout(() => handleScanReceipt(entryId, file), 100);
+
+      // Always upload the file to storage first so receipt is attached
+      const uploaded = await uploadReceipt(file);
+      if (uploaded) {
+        updateEntry(entryId, 'receipt_url', uploaded);
+        // Then attempt OCR scan (optional — receipt is already saved)
+        handleScanReceipt(entryId, file);
+      }
     }
   };
 
@@ -384,9 +390,9 @@ export default function ExpenseEntryPage() {
     setScanMessage(prev => ({ ...prev, [entryId]: 'Scanning receipt...' }));
 
     try {
-      // Upload the file first to get a URL
+      // Use existing URL if already uploaded, otherwise upload now
       let imageUrl = entry.receipt_url || '';
-      if (file && !imageUrl) {
+      if (!imageUrl && file) {
         const uploaded = await uploadReceipt(file);
         if (uploaded) {
           imageUrl = uploaded;
@@ -395,7 +401,7 @@ export default function ExpenseEntryPage() {
       }
 
       if (!imageUrl) {
-        setScanMessage(prev => ({ ...prev, [entryId]: 'Could not upload receipt. Please enter details manually.' }));
+        setScanMessage(prev => ({ ...prev, [entryId]: 'Receipt saved. Enter details manually below.' }));
         return;
       }
 
@@ -851,7 +857,7 @@ export default function ExpenseEntryPage() {
                         }}
                         onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.background = '#fdf9f3'; }}
                         onDragLeave={(e) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.background = '#FAFAF8'; }}
-                        onDrop={(e) => {
+                        onDrop={async (e) => {
                           e.preventDefault();
                           e.currentTarget.style.borderColor = '#e8e4df';
                           e.currentTarget.style.background = '#FAFAF8';
@@ -859,7 +865,11 @@ export default function ExpenseEntryPage() {
                           if (file) {
                             if (file.size > 5 * 1024 * 1024) { toast('warning', 'File size must be less than 5MB.'); return; }
                             updateEntry(entry.id, 'receipt_file', file);
-                            setTimeout(() => handleScanReceipt(entry.id, file), 100);
+                            const uploaded = await uploadReceipt(file);
+                            if (uploaded) {
+                              updateEntry(entry.id, 'receipt_url', uploaded);
+                              handleScanReceipt(entry.id, file);
+                            }
                           }
                         }}
                       >
