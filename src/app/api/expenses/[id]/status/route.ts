@@ -204,124 +204,26 @@ export async function PATCH(
       const reportTitle = report.title || 'Expense Report';
 
       if (action === 'approve') {
-        // In-app notification
+        // In-app notification only (email sent at report-level finalize)
         await createNotification(supabase, {
           user_id: report.employee_id,
-          title: 'Expense approved',
-          message: `Your expense on "${reportTitle}" has been approved`,
-          type: 'success',
+          title: 'Expense line approved',
+          message: `A line on "${reportTitle}" has been approved`,
+          type: 'info',
           link: `/expense/${reportId}`,
         });
-
-        // Approval email
-        if (empRecord?.email) {
-          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-          const { buildFinalApprovalEmailHtml } = await import('@/lib/email-templates/employee');
-          const approvalHtml = buildFinalApprovalEmailHtml({
-            employeeName: empName,
-            reportTitle,
-            period: report.period_month
-              ? new Date(report.period_month).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-              : 'Recent period',
-            reportUrl: `${appUrl}/expense/${reportId}`,
-            year: new Date().getFullYear().toString(),
-          });
-          await sendEmployeeEmail({
-            to: empRecord.email,
-            subject: `Expense approved: ${reportTitle}`,
-            html: approvalHtml,
-          });
-        }
       } else {
-        // Rejection in-app notification
+        // In-app notification only (email sent at report-level finalize)
         await createNotification(supabase, {
           user_id: report.employee_id,
-          title: 'Expense rejected',
-          message: `Your expense on "${reportTitle}" was rejected: ${rejectionReason || 'No reason provided'}`,
-          type: 'error',
+          title: 'Expense line rejected',
+          message: `A line on "${reportTitle}" was rejected: ${rejectionReason || 'No reason provided'}`,
+          type: 'warning',
           link: `/expense/${reportId}`,
         });
       }
     } catch (notifErr) {
       console.error('[EXPENSE STATUS] Error sending notification:', notifErr);
-    }
-
-    // 5) If this was a REJECT, also send rejection email
-    if (action === 'reject') {
-      try {
-        console.log(
-          '[EXPENSE STATUS] Line rejected; preparing rejection email for employee:',
-          report.employee_id
-        );
-
-        // Load the employee to get their email + name
-        const { data: employee, error: employeeError } = await supabase
-          .from('employees')
-          .select('email, first_name, last_name')
-          .eq('id', report.employee_id)
-          .single();
-
-        if (employeeError || !employee) {
-          console.warn(
-            '[EXPENSE STATUS] Employee record not found for rejection email:',
-            employeeError
-          );
-        } else if (!employee.email) {
-          console.warn(
-            '[EXPENSE STATUS] Employee has no email set; skipping rejection email.'
-          );
-        } else {
-          const employeeName =
-            (employee.first_name || employee.last_name)
-              ? [employee.first_name, employee.last_name]
-                  .filter(Boolean)
-                  .join(' ')
-              : 'Team Member';
-
-          const periodLabel = report.period_month
-            ? new Date(report.period_month).toLocaleDateString('en-US', {
-                month: 'short',
-                year: 'numeric',
-              })
-            : 'Recent period';
-
-          const appUrl =
-            process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-          const reportUrl = `${appUrl}/expense/${reportId}`; // uses your existing employee-view route
-
-          const year = new Date().getFullYear().toString();
-
-          const html = buildFinalRejectionEmailHtml({
-            employeeName,
-            reportTitle: report.title || 'Expense Report',
-            period: periodLabel,
-            reportUrl,
-            year,
-            reason: rejectionReason?.trim() || 'No reason provided.',
-          });
-
-          const subject = `Expense report updated: line rejected on ${
-            report.title || 'Expense Report'
-          }`;
-
-          await sendEmployeeEmail({
-            to: employee.email,
-            subject,
-            html,
-          });
-
-          console.log(
-            '[EXPENSE STATUS] Rejection email sent to employee:',
-            employee.email
-          );
-        }
-      } catch (emailErr) {
-        console.error(
-          '[EXPENSE STATUS] Error sending employee rejection email:',
-          emailErr
-        );
-        // Do not fail the PATCH just because email failed
-      }
     }
 
     return NextResponse.json({

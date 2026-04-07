@@ -221,12 +221,11 @@ export default function ManagerTimesheetDetailPage() {
         throw new Error(data.error || 'Failed to approve timesheet.');
       }
 
-      setActionMessage('Timesheet approved.');
-      await loadTimesheet();
+      toast('success', 'Timesheet approved.');
+      router.push('/manager');
     } catch (err: any) {
       console.error('Approve error:', err);
       setActionError(err?.message || 'Error approving timesheet.');
-    } finally {
       setIsWorking(false);
     }
   };
@@ -259,12 +258,11 @@ export default function ManagerTimesheetDetailPage() {
             throw new Error(data.error || 'Failed to reject timesheet.');
           }
 
-          setActionMessage('Timesheet rejected.');
-          await loadTimesheet();
+          toast('success', 'Timesheet rejected.');
+          router.push('/manager');
         } catch (err: any) {
           console.error('Reject error:', err);
           setActionError(err?.message || 'Error rejecting timesheet.');
-        } finally {
           setIsWorking(false);
         }
       },

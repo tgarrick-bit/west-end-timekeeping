@@ -1279,6 +1279,11 @@ export default function ManagerPage() {
                   </div>
                   <div style={{ width: 96, textAlign: 'right', fontWeight: 500, color: '#1a1a1a' }}>
                     {submission.hours?.toFixed(2) || '0.00'}
+                    {(submission.overtime_hours || 0) > 0 && (
+                      <div style={{ fontSize: 10, color: '#c4983a', fontWeight: 500 }}>
+                        +{submission.overtime_hours?.toFixed(1)} OT
+                      </div>
+                    )}
                   </div>
                   <div style={{ width: 128, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6 }}>
                     {submission.status === 'submitted' && (

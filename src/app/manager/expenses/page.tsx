@@ -326,9 +326,10 @@ export default function ExpenseApprovalPage() {
                 return (
                   <tr
                     key={report.id}
-                    style={{ borderBottom: '0.5px solid #f5f2ee', cursor: 'default' }}
+                    style={{ borderBottom: '0.5px solid #f5f2ee', cursor: 'pointer' }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = '#FDFCFB')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    onClick={() => handleViewExpenseReport(report.id)}
                   >
                     <td style={{ padding: '14px 20px' }}>
                       <div style={{ fontSize: 12.5, fontWeight: 400, color: '#555' }}>

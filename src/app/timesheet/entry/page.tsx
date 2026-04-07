@@ -72,6 +72,7 @@ function TimesheetEntryInner() {
   const [attestation, setAttestation] = useState(false);
   const [existingTimesheetId, setExistingTimesheetId] = useState<string | null>(null);
   const [timesheetStatus, setTimesheetStatus] = useState<TimesheetStatus | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [isExempt, setIsExempt] = useState(false);
   const [employeeState, setEmployeeState] = useState<string | null>(null);
   const [employeeStartDate, setEmployeeStartDate] = useState<string | null>(null);
@@ -261,7 +262,7 @@ function TimesheetEntryInner() {
 
       const { data: existing, error: existingError } = await supabase
         .from('timesheets')
-        .select('id, status')
+        .select('id, status, rejection_reason')
         .eq('employee_id', employee.id)
         .eq('week_ending', weekEndingDate)
         .maybeSingle();
@@ -273,6 +274,7 @@ function TimesheetEntryInner() {
       if (existing) {
         setExistingTimesheetId(existing.id);
         setTimesheetStatus(existing.status as TimesheetStatus);
+        setRejectionReason(existing.rejection_reason || null);
 
         if (existing.status === 'approved') {
           setErrorMessage('This timesheet has been approved and cannot be edited.');
@@ -930,6 +932,18 @@ function TimesheetEntryInner() {
             </button>
           </div>
         </div>
+
+        {/* Rejection reason banner */}
+        {timesheetStatus === 'rejected' && rejectionReason && (
+          <div style={{ marginBottom: 16, padding: 16, background: '#fef2f2', border: '0.5px solid #FECACA', borderRadius: 10, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <AlertCircle style={{ width: 16, height: 16, color: '#b91c1c', flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <p style={{ fontSize: 12.5, fontWeight: 600, color: '#b91c1c', margin: 0 }}>This timesheet was rejected</p>
+              <p style={{ fontSize: 12, color: '#b91c1c', margin: '4px 0 0' }}><strong>Reason:</strong> {rejectionReason}</p>
+              <p style={{ fontSize: 11, color: '#999', margin: '6px 0 0' }}>Please update your hours and resubmit.</p>
+            </div>
+          </div>
+        )}
 
         {/* Messages */}
         {errorMessage && (
