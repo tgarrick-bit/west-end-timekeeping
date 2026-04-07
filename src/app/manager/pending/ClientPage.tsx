@@ -93,8 +93,8 @@ export default function SupervisorPendingView() {
   const [filterType, setFilterType] = useState<'all' | 'timesheets' | 'expenses'>('all');
 
   useEffect(() => {
-    fetchPendingItems();
-  }, []);
+    if (user) fetchPendingItems();
+  }, [user]);
 
   useEffect(() => {
     groupItemsByWeek();

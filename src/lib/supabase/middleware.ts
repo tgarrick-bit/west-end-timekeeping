@@ -96,7 +96,7 @@ function getDashboardForRole(role: string): string {
       return '/admin'
     case 'manager':
     case 'time_approver':
-      return '/manager/pending'
+      return '/manager'
     case 'client_approver':
       return '/client'
     default:
