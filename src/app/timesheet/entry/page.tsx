@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase';
 import { getOTConfig, calculateOvertime } from '@/lib/overtime';
+import { getBreakLawConfig, requiresBreakAttestation } from '@/lib/break-laws';
 import {
   ArrowLeft,
   Calendar,
@@ -70,6 +71,7 @@ function TimesheetEntryInner() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [attestation, setAttestation] = useState(false);
+  const [mealBreakAttestation, setMealBreakAttestation] = useState(false);
   const [existingTimesheetId, setExistingTimesheetId] = useState<string | null>(null);
   const [timesheetStatus, setTimesheetStatus] = useState<TimesheetStatus | null>(null);
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
@@ -229,6 +231,7 @@ function TimesheetEntryInner() {
       setSuccessMessage('');
       setExistingTimesheetId(null);
       setTimesheetStatus(null);
+      setMealBreakAttestation(false);
 
       const effectiveId = await getEffectiveEmployeeId();
       if (!effectiveId) return;
@@ -262,7 +265,7 @@ function TimesheetEntryInner() {
 
       const { data: existing, error: existingError } = await supabase
         .from('timesheets')
-        .select('id, status, rejection_reason')
+        .select('id, status, rejection_reason, meal_break_attestation')
         .eq('employee_id', employee.id)
         .eq('week_ending', weekEndingDate)
         .maybeSingle();
@@ -275,6 +278,7 @@ function TimesheetEntryInner() {
         setExistingTimesheetId(existing.id);
         setTimesheetStatus(existing.status as TimesheetStatus);
         setRejectionReason(existing.rejection_reason || null);
+        if ((existing as any).meal_break_attestation) setMealBreakAttestation(true);
 
         if (existing.status === 'approved') {
           setErrorMessage('This timesheet has been approved and cannot be edited.');
@@ -631,6 +635,7 @@ function TimesheetEntryInner() {
           overtime_hours: overtimeHours,
           total_minutes: Math.round(weekTotal * 60),
           overtime_minutes: Math.round(overtimeHours * 60),
+          meal_break_attestation: requiresBreakAttestation(employeeState) ? mealBreakAttestation : false,
           status: 'draft',  // Always save as draft first so entries can be inserted
           updated_at: new Date().toISOString(),
         };
@@ -656,6 +661,7 @@ function TimesheetEntryInner() {
             overtime_hours: overtimeHours,
             total_minutes: Math.round(weekTotal * 60),
             overtime_minutes: Math.round(overtimeHours * 60),
+            meal_break_attestation: requiresBreakAttestation(employeeState) ? mealBreakAttestation : false,
             status: 'draft',  // Always create as draft first
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -1265,35 +1271,38 @@ function TimesheetEntryInner() {
             </span>
           </label>
 
-          {/* California Meal & Rest Break Compliance */}
-          {employeeState?.toUpperCase() === 'CA' && (
-            <div style={{ marginTop: 12, padding: 16, background: '#FAFAF8', border: '0.5px solid #e8e4df', borderRadius: 8 }}>
-              <p style={{ fontSize: 11, fontWeight: 600, color: '#1a1a1a', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                California Meal &amp; Rest Break Certification
+        </div>
+
+        {/* Meal & Rest Break Attestation — state-specific (CA, OR, WA, CO) */}
+        {(() => {
+          const breakConfig = getBreakLawConfig(employeeState);
+          if (!breakConfig) return null;
+          return (
+            <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px', marginBottom: 16 }}>
+              <h3 style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
+                Meal &amp; Rest Break Attestation
+              </h3>
+              <p style={{ fontSize: 10.5, fontWeight: 500, color: '#c0bab2', marginBottom: 12, letterSpacing: 0.3 }}>
+                Required for {breakConfig.stateName} employees &bull; {breakConfig.lawReference}
               </p>
-              <label className="flex items-start gap-3 cursor-pointer" style={{ marginBottom: 8 }}>
+              <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={attestation}
+                  checked={mealBreakAttestation}
+                  onChange={(e) => setMealBreakAttestation(e.target.checked)}
                   disabled={isLocked}
-                  readOnly
-                  className="mt-0.5 h-4 w-4 text-[#e31c79] border-[#e8e4df] rounded focus:ring-[#e31c79]"
+                  className="mt-1 h-5 w-5 text-[#e31c79] border-[#e8e4df] rounded focus:ring-[#e31c79]"
                 />
-                <span style={{ fontSize: 11, color: '#555', lineHeight: 1.5 }}>
-                  I certify that during this pay period I was provided with and took all meal periods and rest breaks
-                  to which I am entitled under California law, <strong>or</strong> I voluntarily waived a meal period
-                  in accordance with the law (shifts of 6 hours or less).
+                <span style={{ fontSize: 12, color: '#555', lineHeight: 1.5 }}>
+                  {breakConfig.attestationText}
                 </span>
               </label>
-              <p style={{ fontSize: 10, color: '#999', margin: '8px 0 0', lineHeight: 1.5 }}>
-                California Labor Code requires a 30-minute meal break for shifts over 5 hours
-                and a second meal break for shifts over 10 hours. Paid 10-minute rest breaks
-                are required for every 4 hours worked. If you were denied a meal or rest break,
-                please contact your manager or payroll@westendworkforce.com immediately.
+              <p style={{ fontSize: 10.5, color: '#999', marginTop: 10, paddingLeft: 32 }}>
+                If you were unable to take a required meal period or rest break, contact your supervisor or payroll@westendworkforce.com immediately.
               </p>
             </div>
-          )}
-        </div>
+          );
+        })()}
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-2">
@@ -1310,7 +1319,7 @@ function TimesheetEntryInner() {
           </button>
           <button
             onClick={() => handleSubmit(false)}
-            disabled={isLoading || !attestation || isLocked}
+            disabled={isLoading || !attestation || (requiresBreakAttestation(employeeState) && !mealBreakAttestation) || isLocked}
             className="flex items-center gap-2 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ padding: '9px 20px', fontSize: 12, fontWeight: 600, color: '#fff', background: '#e31c79', border: 'none', borderRadius: 7 }}
             onMouseEnter={(e) => (e.currentTarget.style.background = '#cc1069')}
