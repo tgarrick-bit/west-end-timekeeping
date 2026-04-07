@@ -1252,7 +1252,7 @@ function TimesheetEntryInner() {
           <h3 style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', marginBottom: 12 }}>
             Timesheet Attestation
           </h3>
-          <label className="flex items-start gap-3 cursor-pointer">
+          <label className="flex items-start gap-3 cursor-pointer" style={{ marginBottom: 10 }}>
             <input
               type="checkbox"
               checked={attestation}
@@ -1260,10 +1260,39 @@ function TimesheetEntryInner() {
               disabled={isLocked}
               className="mt-1 h-5 w-5 text-[#e31c79] border-[#e8e4df] rounded focus:ring-[#e31c79]"
             />
-            <span className="text-[#555]">
-              I certify that the hours recorded above are accurate and complete
+            <span style={{ fontSize: 12, color: '#555', lineHeight: 1.5 }}>
+              I certify that the hours recorded above are accurate and complete.
             </span>
           </label>
+
+          {/* California Meal & Rest Break Compliance */}
+          {employeeState?.toUpperCase() === 'CA' && (
+            <div style={{ marginTop: 12, padding: 16, background: '#FAFAF8', border: '0.5px solid #e8e4df', borderRadius: 8 }}>
+              <p style={{ fontSize: 11, fontWeight: 600, color: '#1a1a1a', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                California Meal &amp; Rest Break Certification
+              </p>
+              <label className="flex items-start gap-3 cursor-pointer" style={{ marginBottom: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={attestation}
+                  disabled={isLocked}
+                  readOnly
+                  className="mt-0.5 h-4 w-4 text-[#e31c79] border-[#e8e4df] rounded focus:ring-[#e31c79]"
+                />
+                <span style={{ fontSize: 11, color: '#555', lineHeight: 1.5 }}>
+                  I certify that during this pay period I was provided with and took all meal periods and rest breaks
+                  to which I am entitled under California law, <strong>or</strong> I voluntarily waived a meal period
+                  in accordance with the law (shifts of 6 hours or less).
+                </span>
+              </label>
+              <p style={{ fontSize: 10, color: '#999', margin: '8px 0 0', lineHeight: 1.5 }}>
+                California Labor Code requires a 30-minute meal break for shifts over 5 hours
+                and a second meal break for shifts over 10 hours. Paid 10-minute rest breaks
+                are required for every 4 hours worked. If you were denied a meal or rest break,
+                please contact your manager or payroll@westendworkforce.com immediately.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}
