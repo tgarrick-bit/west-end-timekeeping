@@ -1100,43 +1100,6 @@ export default function ManagerPage() {
         })()}
       </div>
 
-      {/* NOT SUBMITTED THIS WEEK */}
-      {(() => {
-        const now = new Date();
-        const dayOfWeek = now.getDay();
-        const saturday = new Date(now);
-        saturday.setDate(now.getDate() + (6 - dayOfWeek));
-        const weekEndingStr = saturday.toISOString().split('T')[0];
-        const employeesWithTs = new Set(
-          submissions
-            .filter(s => s.date?.split('T')[0] === weekEndingStr && s.status !== 'draft')
-            .map(s => s.employee?.id)
-            .filter(Boolean)
-        );
-        const missing = employees.filter(e =>
-          e.id !== managerId && e.role === 'employee' && !employeesWithTs.has(e.id)
-        );
-        if (missing.length === 0) return null;
-        return (
-          <div style={{ padding: '0 40px', marginTop: 16 }}>
-            <div style={{ background: '#fef8f8', border: '0.5px solid #f5d0d0', borderRadius: 10, padding: '16px 22px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: '#b91c1c' }}>
-                  {missing.length} team member{missing.length !== 1 ? 's have' : ' has'} not submitted this week
-                </span>
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {missing.map(emp => (
-                  <span key={emp.id} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 4, background: '#fff', border: '0.5px solid #f5d0d0', color: '#555' }}>
-                    {emp.first_name} {emp.last_name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
       {/* MAIN CONTENT */}
       <div style={{ padding: '24px 40px 40px 40px' }}>
         {/* search */}
@@ -1445,6 +1408,70 @@ export default function ManagerPage() {
             </>
           )}
         </div>
+
+        {/* NOT SUBMITTED THIS WEEK */}
+        {(() => {
+          const now = new Date();
+          const dayOfWeek = now.getDay();
+          const saturday = new Date(now);
+          saturday.setDate(now.getDate() + (6 - dayOfWeek));
+          const weekEndingStr = saturday.toISOString().split('T')[0];
+          const employeesWithTs = new Set(
+            submissions
+              .filter(s => s.date?.split('T')[0] === weekEndingStr && s.status !== 'draft')
+              .map(s => s.employee?.id)
+              .filter(Boolean)
+          );
+          const missing = employees
+            .filter(e => e.id !== managerId && e.role === 'employee' && !employeesWithTs.has(e.id))
+            .sort((a, b) => (a.last_name || '').localeCompare(b.last_name || ''));
+          if (missing.length === 0) return null;
+          return (
+            <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden', marginTop: 24 }}>
+              <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
+                  Not Submitted This Week
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 500, color: '#b91c1c', background: '#fef8f8', padding: '2px 10px', borderRadius: 10 }}>
+                  {missing.length} employee{missing.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+                {missing.map((emp, i) => (
+                  <div
+                    key={emp.id}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '10px 22px',
+                      borderBottom: i < missing.length - 1 ? '0.5px solid #f0ece7' : 'none',
+                      fontSize: 12,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{
+                        width: 28, height: 28, borderRadius: '50%',
+                        background: '#fef8f8', border: '0.5px solid #f5d0d0',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 10, fontWeight: 600, color: '#b91c1c',
+                      }}>
+                        {(emp.first_name?.[0] || '')}{(emp.last_name?.[0] || '')}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 500, color: '#1a1a1a' }}>
+                          {formatName(emp.first_name, emp.middle_name || undefined, emp.last_name, 'firstLast')}
+                        </div>
+                        {emp.email && (
+                          <div style={{ fontSize: 10.5, color: '#999', marginTop: 1 }}>{emp.email}</div>
+                        )}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: 500, color: '#b91c1c' }}>Missing</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Timesheet review is now a full page at /manager/timesheet/[id] */}
