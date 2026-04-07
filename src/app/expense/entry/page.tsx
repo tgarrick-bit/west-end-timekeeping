@@ -895,45 +895,89 @@ export default function ExpenseEntryPage() {
                         />
                       </label>
                     ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#FAFAF8', border: '0.5px solid #e8e4df', borderRadius: 8 }}>
-                        <ScanLine style={{ width: 16, height: 16, color: isScanning ? '#e31c79' : '#2d9b6e', flexShrink: 0 }} className={isScanning ? 'animate-pulse' : ''} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {entry.receipt_file?.name || 'Receipt uploaded'}
+                      <div>
+                        {/* File info bar */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#FAFAF8', border: '0.5px solid #e8e4df', borderRadius: '8px 8px 0 0' }}>
+                          <ScanLine style={{ width: 16, height: 16, color: isScanning ? '#e31c79' : '#2d9b6e', flexShrink: 0 }} className={isScanning ? 'animate-pulse' : ''} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {entry.receipt_file?.name || 'Receipt uploaded'}
+                            </div>
+                            {scanMessage[entry.id] && (
+                              <div style={{ fontSize: 11, color: scanMessage[entry.id].includes('review') || scanMessage[entry.id].includes('success') ? '#2d9b6e' : '#c4983a', marginTop: 2 }}>
+                                {scanMessage[entry.id]}
+                              </div>
+                            )}
+                            {isScanning && (
+                              <div style={{ fontSize: 11, color: '#e31c79', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#e31c79]" />
+                                Reading receipt...
+                              </div>
+                            )}
                           </div>
-                          {scanMessage[entry.id] && (
-                            <div style={{ fontSize: 11, color: scanMessage[entry.id].includes('review') || scanMessage[entry.id].includes('success') ? '#2d9b6e' : '#c4983a', marginTop: 2 }}>
-                              {scanMessage[entry.id]}
-                            </div>
-                          )}
-                          {isScanning && (
-                            <div style={{ fontSize: 11, color: '#e31c79', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#e31c79]" />
-                              Reading receipt...
-                            </div>
-                          )}
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <label
+                              className="cursor-pointer transition-colors"
+                              style={{ padding: '5px 10px', fontSize: 11, fontWeight: 500, color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 6 }}
+                            >
+                              Replace
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                capture="environment"
+                                onChange={(e) => handleFileChange(entry.id, e)}
+                                className="hidden"
+                              />
+                            </label>
+                            <button
+                              onClick={() => { updateEntry(entry.id, 'receipt_file', null); updateEntry(entry.id, 'receipt_url', undefined); }}
+                              style={{ padding: '5px 10px', fontSize: 11, fontWeight: 500, color: '#b91c1c', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 6 }}
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <label
-                            className="cursor-pointer transition-colors"
-                            style={{ padding: '5px 10px', fontSize: 11, fontWeight: 500, color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 6 }}
-                          >
-                            Replace
-                            <input
-                              type="file"
-                              accept="image/*,application/pdf"
-                              capture="environment"
-                              onChange={(e) => handleFileChange(entry.id, e)}
-                              className="hidden"
-                            />
-                          </label>
-                          <button
-                            onClick={() => { updateEntry(entry.id, 'receipt_file', null); updateEntry(entry.id, 'receipt_url', undefined); }}
-                            style={{ padding: '5px 10px', fontSize: 11, fontWeight: 500, color: '#b91c1c', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 6 }}
-                          >
-                            Remove
-                          </button>
-                        </div>
+                        {/* Receipt image preview */}
+                        {(() => {
+                          const previewUrl = entry.receipt_url || (entry.receipt_file ? URL.createObjectURL(entry.receipt_file) : null);
+                          const isPdf = entry.receipt_file?.name?.toLowerCase().endsWith('.pdf') || entry.receipt_url?.toLowerCase().includes('.pdf');
+                          if (!previewUrl) return null;
+                          if (isPdf) {
+                            return (
+                              <a
+                                href={previewUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                  padding: '16px 14px',
+                                  background: '#fff', border: '0.5px solid #e8e4df', borderTop: 'none', borderRadius: '0 0 8px 8px',
+                                  fontSize: 12, fontWeight: 500, color: '#e31c79', textDecoration: 'none',
+                                }}
+                              >
+                                Open PDF receipt in new tab
+                              </a>
+                            );
+                          }
+                          return (
+                            <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderTop: 'none', borderRadius: '0 0 8px 8px', padding: 12 }}>
+                              <a href={previewUrl} target="_blank" rel="noreferrer" title="Click to view full size">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={previewUrl}
+                                  alt="Receipt preview"
+                                  style={{
+                                    width: '100%', maxHeight: 240, objectFit: 'contain',
+                                    borderRadius: 6, cursor: 'pointer',
+                                  }}
+                                />
+                              </a>
+                              <p style={{ fontSize: 10, color: '#c0bab2', textAlign: 'center', marginTop: 6 }}>
+                                Click image to view full size
+                              </p>
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                     {!hasReceipt && (
