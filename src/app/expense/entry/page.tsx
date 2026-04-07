@@ -18,6 +18,8 @@ import {
   AlertCircle,
   RotateCw,
   ScanLine,
+  Camera,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface ExpenseEntry {
@@ -324,28 +326,32 @@ export default function ExpenseEntryPage() {
         return;
       }
       updateEntry(entryId, 'receipt_file', file);
+      // Auto-trigger receipt scan after upload
+      setTimeout(() => handleScanReceipt(entryId, file), 100);
     }
   };
 
-  const handleScanReceipt = async (entryId: string) => {
+  const handleScanReceipt = async (entryId: string, fileOverride?: File) => {
     const entry = entries.find(e => e.id === entryId);
     if (!entry) return;
 
+    const file = fileOverride || entry.receipt_file;
+
     // Need either a file or existing URL
-    if (!entry.receipt_file && !entry.receipt_url) {
+    if (!file && !entry.receipt_url) {
       setScanMessage(prev => ({ ...prev, [entryId]: 'Please upload a receipt image first.' }));
       setTimeout(() => setScanMessage(prev => { const next = { ...prev }; delete next[entryId]; return next; }), 3000);
       return;
     }
 
     setScanningReceipt(entryId);
-    setScanMessage(prev => { const next = { ...prev }; delete next[entryId]; return next; });
+    setScanMessage(prev => ({ ...prev, [entryId]: 'Scanning receipt...' }));
 
     try {
-      // If we have a file but no URL yet, upload it first
+      // Upload the file first to get a URL
       let imageUrl = entry.receipt_url || '';
-      if (entry.receipt_file && !imageUrl) {
-        const uploaded = await uploadReceipt(entry.receipt_file);
+      if (file && !imageUrl) {
+        const uploaded = await uploadReceipt(file);
         if (uploaded) {
           imageUrl = uploaded;
           updateEntry(entryId, 'receipt_url', uploaded);
@@ -353,7 +359,7 @@ export default function ExpenseEntryPage() {
       }
 
       if (!imageUrl) {
-        setScanMessage(prev => ({ ...prev, [entryId]: 'Could not upload receipt for scanning.' }));
+        setScanMessage(prev => ({ ...prev, [entryId]: 'Could not upload receipt. Please enter details manually.' }));
         return;
       }
 
@@ -371,19 +377,19 @@ export default function ExpenseEntryPage() {
         if (result.data.amount) updateEntry(entryId, 'amount', result.data.amount);
         if (result.data.date) updateEntry(entryId, 'date', result.data.date);
         if (result.data.description) updateEntry(entryId, 'description', result.data.description);
-        setScanMessage(prev => ({ ...prev, [entryId]: 'Receipt data extracted successfully.' }));
+        setScanMessage(prev => ({ ...prev, [entryId]: 'Receipt scanned — review the details below and correct anything that looks off.' }));
       } else {
-        setScanMessage(prev => ({ ...prev, [entryId]: result.message || 'Receipt scanning coming soon -- please enter details manually.' }));
+        setScanMessage(prev => ({ ...prev, [entryId]: 'Could not read receipt. Please enter details manually below.' }));
       }
     } catch (err: any) {
       console.error('Receipt scan error:', err);
-      setScanMessage(prev => ({ ...prev, [entryId]: 'Receipt scanning coming soon -- please enter details manually.' }));
+      setScanMessage(prev => ({ ...prev, [entryId]: 'Could not read receipt. Please enter details manually below.' }));
     } finally {
       setScanningReceipt(null);
-      // Clear message after 4 seconds
+      // Clear success message after 6 seconds, keep error messages longer
       setTimeout(() => {
         setScanMessage(prev => { const next = { ...prev }; delete next[entryId]; return next; });
-      }, 4000);
+      }, 6000);
     }
   };
 
@@ -749,50 +755,145 @@ export default function ExpenseEntryPage() {
           </div>
         </div>
 
-        {/* Expense Entries */}
-        <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
-          <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7' }}>
-            <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const }}>Expense Entry</h2>
-          </div>
-          <div className="p-6">
-            {entries.map((entry, index) => {
-              const isMileage = entry.category === 'mileage';
-              const gsaMealLimit = getGsaMealLimit(entry.category);
+        {/* Expense Entries — Receipt-First Layout */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
+          {entries.map((entry, index) => {
+            const isMileage = entry.category === 'mileage';
+            const gsaMealLimit = getGsaMealLimit(entry.category);
+            const isScanning = scanningReceipt === entry.id;
+            const hasReceipt = !!(entry.receipt_file || entry.receipt_url);
 
-              const milesInput =
-                mileageInputs[entry.id] ??
-                (isMileage && entry.amount
-                  ? (entry.amount / GSA_MILEAGE_RATE).toFixed(2)
-                  : '');
+            const milesInput =
+              mileageInputs[entry.id] ??
+              (isMileage && entry.amount
+                ? (entry.amount / GSA_MILEAGE_RATE).toFixed(2)
+                : '');
 
-              return (
-                <div
-                  key={entry.id}
-                  className={index > 0 ? 'border-t border-[#e8e4df] pt-6 mt-6' : ''}
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-3">
-                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#e31c79', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600 }}>
-                        {index + 1}
-                      </div>
-                      <div>
-                        <h3 style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
-                          Entry #{index + 1}
-                        </h3>
-                        <p style={{ fontSize: 11, color: '#c0bab2' }}>
-                          Edit details for this expense line, then save or submit
-                          your report.
-                        </p>
-                      </div>
+            return (
+              <div
+                key={entry.id}
+                style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}
+              >
+                {/* Entry Header */}
+                <div style={{ padding: '14px 22px', borderBottom: '0.5px solid #f0ece7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="flex items-center gap-3">
+                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#e31c79', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600 }}>
+                      {index + 1}
                     </div>
-                    {entries.length > 1 && (
-                      <button
-                        onClick={() => removeRow(entry.id)}
-                        className="p-2 rounded-lg transition-colors"
-                        style={{ color: '#b91c1c' }}
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
+                      Expense #{index + 1}
+                    </span>
+                    {hasReceipt && !isScanning && scanMessage[entry.id]?.includes('review') && (
+                      <span style={{ fontSize: 10, fontWeight: 500, color: '#2d9b6e', background: 'rgba(45,155,110,0.06)', padding: '2px 8px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <CheckCircle2 style={{ width: 11, height: 11 }} /> Scanned
+                      </span>
+                    )}
+                  </div>
+                  {entries.length > 1 && (
+                    <button
+                      onClick={() => removeRow(entry.id)}
+                      className="p-2 rounded-lg transition-colors"
+                      style={{ color: '#b91c1c' }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="p-6">
+                  {/* STEP 1: Receipt Upload — prominent, at the top */}
+                  <div style={{ marginBottom: hasReceipt ? 20 : 0 }}>
+                    {!hasReceipt ? (
+                      <label
+                        className="flex flex-col items-center justify-center cursor-pointer transition-colors"
+                        style={{
+                          padding: '32px 20px',
+                          border: '2px dashed #e8e4df',
+                          borderRadius: 10,
+                          background: '#FAFAF8',
+                          textAlign: 'center',
+                        }}
+                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.background = '#fdf9f3'; }}
+                        onDragLeave={(e) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.background = '#FAFAF8'; }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.style.borderColor = '#e8e4df';
+                          e.currentTarget.style.background = '#FAFAF8';
+                          const file = e.dataTransfer.files?.[0];
+                          if (file) {
+                            if (file.size > 5 * 1024 * 1024) { toast('warning', 'File size must be less than 5MB.'); return; }
+                            updateEntry(entry.id, 'receipt_file', file);
+                            setTimeout(() => handleScanReceipt(entry.id, file), 100);
+                          }
+                        }}
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                          <Camera style={{ width: 24, height: 24, color: '#c0bab2' }} />
+                          <Upload style={{ width: 20, height: 20, color: '#c0bab2' }} />
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: '#777' }}>
+                          Take a photo or upload your receipt
+                        </span>
+                        <span style={{ fontSize: 11, color: '#c0bab2', marginTop: 4 }}>
+                          We'll auto-fill the details for you
+                        </span>
+                        <span style={{ fontSize: 10, color: '#c0bab2', marginTop: 8 }}>
+                          Max 5MB &bull; JPG, PNG, GIF, or PDF &bull; or drag &amp; drop
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          capture="environment"
+                          onChange={(e) => handleFileChange(entry.id, e)}
+                          className="hidden"
+                        />
+                      </label>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#FAFAF8', border: '0.5px solid #e8e4df', borderRadius: 8 }}>
+                        <ScanLine style={{ width: 16, height: 16, color: isScanning ? '#e31c79' : '#2d9b6e', flexShrink: 0 }} className={isScanning ? 'animate-pulse' : ''} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 500, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {entry.receipt_file?.name || 'Receipt uploaded'}
+                          </div>
+                          {scanMessage[entry.id] && (
+                            <div style={{ fontSize: 11, color: scanMessage[entry.id].includes('review') || scanMessage[entry.id].includes('success') ? '#2d9b6e' : '#c4983a', marginTop: 2 }}>
+                              {scanMessage[entry.id]}
+                            </div>
+                          )}
+                          {isScanning && (
+                            <div style={{ fontSize: 11, color: '#e31c79', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#e31c79]" />
+                              Reading receipt...
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <label
+                            className="cursor-pointer transition-colors"
+                            style={{ padding: '5px 10px', fontSize: 11, fontWeight: 500, color: '#777', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 6 }}
+                          >
+                            Replace
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              capture="environment"
+                              onChange={(e) => handleFileChange(entry.id, e)}
+                              className="hidden"
+                            />
+                          </label>
+                          <button
+                            onClick={() => { updateEntry(entry.id, 'receipt_file', null); updateEntry(entry.id, 'receipt_url', undefined); }}
+                            style={{ padding: '5px 10px', fontSize: 11, fontWeight: 500, color: '#b91c1c', background: '#fff', border: '0.5px solid #e0dcd7', borderRadius: 6 }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {!hasReceipt && (
+                      <p style={{ fontSize: 11, color: '#c0bab2', marginTop: 8, textAlign: 'center' }}>
+                        No receipt? <span style={{ color: '#777', fontWeight: 500 }}>Fill in the details manually below</span>
+                      </p>
                     )}
                   </div>
 
@@ -1038,90 +1139,6 @@ export default function ExpenseEntryPage() {
                       )}
                     </div>
 
-                    {/* Receipt Upload */}
-                    <div>
-                      <label className="block text-[10px] font-medium tracking-[1px] text-[#c0bab2] uppercase mb-1">
-                        Receipt
-                      </label>
-                      <div className="flex items-center gap-3">
-                        <label className="flex-1 flex items-center justify-center px-4 py-2 bg-[#FAFAF8] border-2 border-dashed border-[#e8e4df] rounded-md hover:bg-[#FAFAF8] hover:border-[#e8e4df] cursor-pointer transition-colors">
-                          <Upload className="h-5 w-5 mr-2 text-[#999]" />
-                          <span className="text-[#777] text-sm">
-                            {entry.receipt_file
-                              ? entry.receipt_file.name
-                              : 'Choose file'}
-                          </span>
-                          <input
-                            type="file"
-                            accept="image/*,application/pdf"
-                            onChange={(e) => handleFileChange(entry.id, e)}
-                            className="hidden"
-                          />
-                        </label>
-                        {entry.receipt_file && (
-                          <button
-                            onClick={() =>
-                              updateEntry(entry.id, 'receipt_file', null)
-                            }
-                            className="p-2 rounded-lg transition-colors"
-                            style={{ color: '#b91c1c' }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <p className="text-xs text-[#999] flex-1">
-                          Max 5MB • JPG, PNG, GIF, or PDF
-                        </p>
-                        {(entry.receipt_file || entry.receipt_url) && (
-                          <button
-                            type="button"
-                            onClick={() => handleScanReceipt(entry.id)}
-                            disabled={scanningReceipt === entry.id}
-                            className="flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                            style={{
-                              padding: '5px 12px',
-                              fontSize: 11,
-                              fontWeight: 600,
-                              color: '#777',
-                              background: '#fff',
-                              border: '0.5px solid #e0dcd7',
-                              borderRadius: 6,
-                            }}
-                            onMouseEnter={(e) => { if (scanningReceipt !== entry.id) e.currentTarget.style.borderColor = '#d3ad6b' }}
-                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e0dcd7' }}
-                          >
-                            {scanningReceipt === entry.id ? (
-                              <>
-                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#e31c79]" />
-                                <span>Scanning...</span>
-                              </>
-                            ) : (
-                              <>
-                                <ScanLine className="h-3.5 w-3.5" />
-                                <span>Scan Receipt</span>
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </div>
-                      {scanMessage[entry.id] && (
-                        <div
-                          className="mt-2 flex items-start gap-2 rounded-md px-3 py-2"
-                          style={{
-                            background: scanMessage[entry.id].includes('successfully') ? 'rgba(45,155,110,0.06)' : 'rgba(196,152,58,0.06)',
-                            border: `0.5px solid ${scanMessage[entry.id].includes('successfully') ? 'rgba(45,155,110,0.2)' : 'rgba(196,152,58,0.2)'}`,
-                          }}
-                        >
-                          <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" style={{ color: scanMessage[entry.id].includes('successfully') ? '#2d9b6e' : '#c4983a' }} />
-                          <p className="text-[11px]" style={{ color: scanMessage[entry.id].includes('successfully') ? '#2d9b6e' : '#c4983a' }}>
-                            {scanMessage[entry.id]}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
                     {/* Description (non-mileage) */}
                     {!isMileage && (
                       <div className="lg:col-span-3">
@@ -1141,9 +1158,9 @@ export default function ExpenseEntryPage() {
                     )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Add Button */}
