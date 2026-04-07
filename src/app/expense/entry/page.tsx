@@ -1109,8 +1109,7 @@ export default function ExpenseEntryPage() {
                               min="0"
                               inputMode="decimal"
                               value={
-                                entry.amount !== null &&
-                                entry.amount !== undefined
+                                entry.amount
                                   ? entry.amount.toString()
                                   : ''
                               }
