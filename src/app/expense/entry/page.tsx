@@ -646,7 +646,7 @@ export default function ExpenseEntryPage() {
   };
 
   return (
-    <div style={{ padding: '36px 40px' }}>
+    <div className="px-4 py-5 md:px-10 md:py-9">
       {/* Page Header */}
       <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
         <button
@@ -1196,7 +1196,7 @@ export default function ExpenseEntryPage() {
         )}
 
         {/* Action Buttons */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-between items-stretch sm:items-center gap-3">
           <button
             onClick={() => router.push('/employee')}
             className="transition-colors duration-150"

@@ -306,7 +306,7 @@ export default function ManagerTimesheetDetailPage() {
       borderRadius: 4,
     };
     return (
-      <div style={{ padding: '36px 40px' }}>
+      <div className="px-4 py-5 md:px-10 md:py-9">
         <style dangerouslySetInnerHTML={{ __html: '@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }' }} />
         <div style={{ ...shimmer, width: 120, height: 14, marginBottom: 24 }} />
         <div style={{ ...shimmer, width: 280, height: 24 }} />
@@ -346,7 +346,7 @@ export default function ManagerTimesheetDetailPage() {
     : timesheet.week_ending;
 
   return (
-    <div style={{ padding: '36px 40px' }}>
+    <div className="px-4 py-5 md:px-10 md:py-9">
       {/* Back link */}
       <button
         onClick={() => router.push('/manager')}

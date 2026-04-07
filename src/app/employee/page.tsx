@@ -574,7 +574,7 @@ export default function EmployeeDashboard() {
 
   if (isLoading) {
     return (
-      <div style={{ padding: '36px 40px' }}>
+      <div className="px-4 py-5 md:px-10 md:py-9">
         <SkeletonStats count={4} />
         <div style={{ marginTop: 24 }}><SkeletonList rows={3} /></div>
       </div>
@@ -583,7 +583,7 @@ export default function EmployeeDashboard() {
 
   return (
     <>
-      <div style={{ padding: '36px 40px' }}>
+      <div className="px-4 py-5 md:px-10 md:py-9">
         {/* Greeting */}
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>
@@ -593,10 +593,9 @@ export default function EmployeeDashboard() {
 
         {/* OVERVIEW */}
         <div style={{ marginBottom: 28 }} className="anim-slide-up stagger-1">
-          <div className="grid grid-cols-12 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Quick Actions — first card */}
             <div style={{
-              gridColumn: 'span 3',
               background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '24px 22px',
               display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10,
             }}>
@@ -621,7 +620,6 @@ export default function EmployeeDashboard() {
 
             {/* Hours This Week */}
             <div style={{
-              gridColumn: 'span 3',
               background: '#fff',
               border: '0.5px solid #e8e4df',
               borderRadius: 10,
@@ -644,7 +642,6 @@ export default function EmployeeDashboard() {
 
             {/* Due Date */}
             <div style={{
-              gridColumn: 'span 3',
               background: daysUntilDue <= 1 ? '#fef8f8' : '#fff',
               border: `0.5px solid ${daysUntilDue <= 1 ? '#f5d0d0' : '#e8e4df'}`,
               borderRadius: 10, padding: '24px 22px',
@@ -663,7 +660,6 @@ export default function EmployeeDashboard() {
 
             {/* Awaiting Review */}
             <div style={{
-              gridColumn: 'span 3',
               background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '24px 22px',
               display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
             }}>
@@ -685,10 +681,10 @@ export default function EmployeeDashboard() {
             background: '#fff',
             border: '0.5px solid #e8e4df',
             borderRadius: 8,
-            padding: '10px 22px',
+            padding: '10px 16px',
             display: 'flex',
             alignItems: 'center',
-            gap: 32,
+            gap: 16,
             fontSize: 11,
             color: '#777',
             flexWrap: 'wrap',
@@ -711,11 +707,11 @@ export default function EmployeeDashboard() {
                 </span>
               );
             })()}
-            <span style={{ borderLeft: '1px solid #f0ece7', paddingLeft: 32 }}>Total Hours: <strong style={{ color: '#1a1a1a' }}>{stats.totalHours.toFixed(1)}</strong></span>
+            <span style={{ opacity: 0.6 }}>Total Hours: <strong style={{ color: '#1a1a1a' }}>{stats.totalHours.toFixed(1)}</strong></span>
             <span>Approved: <strong style={{ color: '#2d9b6e' }}>{stats.approvedTimecards}</strong></span>
             <span>Pending: <strong style={{ color: '#c4983a' }}>{stats.pendingTimecards}</strong></span>
             {stats.rejectedTimecards > 0 && <span>Rejected: <strong style={{ color: '#b91c1c' }}>{stats.rejectedTimecards}</strong></span>}
-            <span style={{ borderLeft: '1px solid #f0ece7', paddingLeft: 32 }}>Expenses: <strong style={{ color: '#1a1a1a' }}>{formatCurrencyLocal(stats.totalExpenses)}</strong></span>
+            <span style={{ opacity: 0.6 }}>Expenses: <strong style={{ color: '#1a1a1a' }}>{formatCurrencyLocal(stats.totalExpenses)}</strong></span>
             {stats.pendingExpenses > 0 && <span>Pending: <strong style={{ color: '#c4983a' }}>{formatCurrencyLocal(stats.pendingExpenses)}</strong></span>}
           </div>
         </div>

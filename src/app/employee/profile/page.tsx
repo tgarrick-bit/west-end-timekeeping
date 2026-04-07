@@ -128,7 +128,7 @@ export default function EmployeeProfilePage() {
 
   if (isLoading) {
     return (
-      <div style={{ padding: '36px 40px' }}>
+      <div className="px-4 py-5 md:px-10 md:py-9">
         <div style={{ marginBottom: 24 }}>
           <div className="anim-shimmer" style={{ width: 140, height: 24, borderRadius: 3, marginBottom: 8 }} />
           <div className="anim-shimmer" style={{ width: 220, height: 12, borderRadius: 3 }} />
@@ -143,7 +143,7 @@ export default function EmployeeProfilePage() {
 
   if (!profile) {
     return (
-      <div style={{ padding: '36px 40px' }}>
+      <div className="px-4 py-5 md:px-10 md:py-9">
         <p style={{ fontSize: 13, color: '#999' }}>Unable to load profile. Please contact your administrator.</p>
       </div>
     );
@@ -159,7 +159,7 @@ export default function EmployeeProfilePage() {
   ];
 
   return (
-    <div style={{ padding: '36px 40px' }}>
+    <div className="px-4 py-5 md:px-10 md:py-9">
       {/* Header */}
       <div className="anim-fade-in stagger-1" style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a1a1a', letterSpacing: -0.3 }}>My Profile</h1>
@@ -179,7 +179,7 @@ export default function EmployeeProfilePage() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="max-lg:grid-cols-1">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Personal Information Card */}
         <div className="anim-fade-in stagger-2" style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10 }}>
           <div style={{ padding: '18px 22px', borderBottom: '0.5px solid #f5f2ee' }}>

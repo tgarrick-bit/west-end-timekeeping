@@ -120,7 +120,7 @@ export default function PayHistoryPage() {
   };
 
   return (
-    <div style={{ padding: '36px 40px' }}>
+    <div className="px-4 py-5 md:px-10 md:py-9">
       {/* Header */}
       <div className="anim-fade-in stagger-1" style={{ marginBottom: 24, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
@@ -171,7 +171,7 @@ export default function PayHistoryPage() {
       {isLoading ? (
         <div className="mb-4"><SkeletonStats count={3} /></div>
       ) : (
-        <div className="anim-fade-in stagger-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 16 }}>
+        <div className="anim-fade-in stagger-3 grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-4">
           <StatCard label="Total Hours YTD" value={stats.totalHours.toFixed(1)} desc="Approved hours" color="pink" />
           <StatCard label="Weeks Submitted" value={stats.totalWeeks} desc="Finalized timesheets" color="gold" />
           <StatCard label="Avg Hours / Week" value={stats.avgHours.toFixed(1)} desc="Based on finalized" color="green" />

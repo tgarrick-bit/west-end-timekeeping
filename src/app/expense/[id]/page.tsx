@@ -739,7 +739,7 @@ if (mode === 'submitted') {
 
   if (isLoading) {
     return (
-      <div style={{ padding: '36px 40px' }}>
+      <div className="px-4 py-5 md:px-10 md:py-9">
         {/* Skeleton loading */}
         <div style={{ marginBottom: 24 }}>
           <div className="anim-shimmer" style={{ width: 200, height: 24, background: '#f0ece7', borderRadius: 6, marginBottom: 8 }} />
@@ -758,7 +758,7 @@ if (mode === 'submitted') {
 
   if (loadErrorMessage && !report) {
     return (
-      <div style={{ padding: '36px 40px' }}>
+      <div className="px-4 py-5 md:px-10 md:py-9">
         <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: 16, display: 'flex', gap: 8 }}>
           <AlertCircle style={{ width: 16, height: 16, color: '#b91c1c', flexShrink: 0, marginTop: 2 }} />
           <span style={{ fontSize: 12.5, fontWeight: 500, color: '#b91c1c' }}>{loadErrorMessage}</span>
@@ -774,7 +774,7 @@ if (mode === 'submitted') {
     : 'bg-[#FAFAF8] border-[#e8e4df]';
 
   return (
-    <div style={{ padding: '36px 40px' }}>
+    <div className="px-4 py-5 md:px-10 md:py-9">
       <div>
         <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, overflow: 'hidden' }}>
           {/* header */}

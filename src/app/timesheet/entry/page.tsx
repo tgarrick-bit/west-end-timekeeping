@@ -768,7 +768,7 @@ function TimesheetEntryInner() {
   const { dailyTotals, weekTotal, regularHours, overtimeHours, doubleTimeHours } = calculateTotals();
 
   return (
-    <div style={{ padding: '36px 40px' }}>
+    <div className="px-4 py-5 md:px-10 md:py-9">
       {/* Page Header */}
       <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
         <button
@@ -822,7 +822,7 @@ function TimesheetEntryInner() {
 
         {/* Pay Period / Week Selector */}
         <div style={{ background: '#fff', border: '0.5px solid #e8e4df', borderRadius: 10, padding: '20px 22px', marginBottom: 16 }}>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-4">
               <div>
                 <label style={{ display: 'block', fontSize: 9, fontWeight: 500, letterSpacing: 1, color: '#c0bab2', textTransform: 'uppercase' as const, marginBottom: 6 }}>
@@ -845,7 +845,6 @@ function TimesheetEntryInner() {
                       color: '#1a1a1a',
                       background: '#fff',
                       outline: 'none',
-                      minWidth: 200,
                     }}
                     onFocus={(e) => { e.currentTarget.style.borderColor = '#d3ad6b'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(211,173,107,0.08)'; }}
                     onBlur={(e) => { e.currentTarget.style.borderColor = '#e8e4df'; e.currentTarget.style.boxShadow = 'none'; }}
