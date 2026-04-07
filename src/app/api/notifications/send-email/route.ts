@@ -103,341 +103,118 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Helper function to get email template
+// Branded email template wrapper — matches the WE design system
 function getEmailTemplate(
   type: string,
   customData?: Record<string, any>,
 ): { subject: string; htmlBody: string; textBody: string } {
-  // use `any`-ish base so TS doesn’t complain about flexible keys
-  const baseData: { [key: string]: any } = {
-    companyName: 'West End Workforce',
-    logoUrl: 'https://westendworkforce.com/logo.png',
-    supportEmail: 'payroll@westendworkforce.com',
-    ...customData,
-  };
+  const d = { ...customData };
+  const logoUrl = 'https://westendworkforce.com/wp-content/uploads/2025/11/WE-logo-SEPT2024v3-WHT.png';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const year = new Date().getFullYear();
+
+  const wrap = (heading: string, headingColor: string, body: string, cta?: { label: string; url: string }) => `
+    <div style="max-width:600px;margin:0 auto;font-family:'Montserrat',Arial,sans-serif;">
+      <div style="background:#1a1a1a;padding:20px;text-align:center;">
+        <img src="${logoUrl}" alt="West End Workforce" style="height:40px;" />
+      </div>
+      <div style="padding:30px 20px;background:#ffffff;">
+        <h2 style="color:${headingColor};margin:0 0 16px;">${heading}</h2>
+        ${body}
+        ${cta ? `<div style="text-align:center;margin:24px 0;"><a href="${cta.url}" style="background:#e31c79;color:#ffffff;padding:12px 32px;border-radius:7px;text-decoration:none;font-weight:600;display:inline-block;">${cta.label}</a></div>` : ''}
+        <p style="color:#999;font-size:13px;line-height:1.5;">If you have any questions, please email <a href="mailto:payroll@westendworkforce.com" style="color:#e31c79;">payroll@westendworkforce.com</a>.</p>
+      </div>
+      <div style="background:#FAFAF8;padding:16px;text-align:center;font-size:12px;color:#c0bab2;border-top:1px solid #e31c79;">
+        West End Workforce &middot; 800 Town &amp; Country Blvd, Suite 500 &middot; Houston, TX 77024
+      </div>
+    </div>`;
+
+  const info = (label: string, value: string) => `<p style="margin:0 0 6px;color:#555;">${label}: <strong>${value}</strong></p>`;
 
   switch (type) {
-    /* -------------------------------------------------
-     * TIMESHEET SUBMITTED
-     * ------------------------------------------------- */
     case 'timesheet_submitted':
       return {
-        subject: `Timesheet Submitted - ${baseData.employeeName || 'Employee'}`,
-        htmlBody: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #f8f9fa; padding: 20px; text-align: center;">
-              <h2 style="color: #333; margin: 0;">${baseData.companyName}</h2>
-              <p style="color: #666; margin: 10px 0 0 0;">Timesheet & Expense Management</p>
-            </div>
-            <div style="padding: 30px 20px; background: white;">
-              <h3 style="color: #333; margin-bottom: 20px;">Timesheet Submitted for Approval</h3>
-              <p>Hello ${baseData.managerName || 'Manager'},</p>
-              <p>A new timesheet has been submitted and requires your approval:</p>
-              <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <p><strong>Employee:</strong> ${baseData.employeeName || 'Employee'}</p>
-                <p><strong>Period:</strong> ${baseData.period || 'Current Period'}</p>
-                <p><strong>Total Hours:</strong> ${baseData.totalHours || 'N/A'}</p>
-                <p><strong>Submitted:</strong> ${new Date().toLocaleDateString()}</p>
-              </div>
-              <p>Please review and approve or reject this timesheet as soon as possible.</p>
-              <p>Best regards,<br>${baseData.companyName} Team</p>
-            </div>
-            <div style="background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666;">
-              <p>This is an automated notification from the West End Workforce system.</p>
-            </div>
-          </div>
-        `,
-        textBody: `
-Timesheet Submitted - ${baseData.employeeName || 'Employee'}
-
-Hello ${baseData.managerName || 'Manager'},
-
-A new timesheet has been submitted and requires your approval:
-
-Employee: ${baseData.employeeName || 'Employee'}
-Period: ${baseData.period || 'Current Period'}
-Total Hours: ${baseData.totalHours || 'N/A'}
-Submitted: ${new Date().toLocaleDateString()}
-
-Please review and approve or reject this timesheet as soon as possible.
-
-Best regards,
-${baseData.companyName} Team
-        `,
+        subject: `Timesheet submitted by ${d.employeeName || 'Employee'}`,
+        htmlBody: wrap('Timesheet Submitted', '#e31c79',
+          `<p style="color:#555;line-height:1.6;">Hi ${d.managerName || 'Manager'},</p>
+           <p style="color:#555;line-height:1.6;"><strong>${d.employeeName || 'Employee'}</strong> has submitted a timesheet for your review.</p>
+           <div style="background:#FAFAF8;border:0.5px solid #e8e4df;border-radius:10px;padding:16px;margin:20px 0;">
+             ${info('Period', d.period || 'Current Period')}
+             ${info('Total Hours', d.totalHours || 'N/A')}
+           </div>`,
+          { label: 'Review & Approve', url: `${appUrl}/manager` }),
+        textBody: `Timesheet submitted by ${d.employeeName || 'Employee'} for ${d.period || 'current period'}. Total hours: ${d.totalHours || 'N/A'}.`,
       };
-
-    /* -------------------------------------------------
-     * EXPENSE SUBMITTED
-     * ------------------------------------------------- */
     case 'expense_submitted':
       return {
-        subject: `Expense Submitted - $${baseData.amount || 0}`,
-        htmlBody: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #f8f9fa; padding: 20px; text-align: center;">
-              <h2 style="color: #333; margin: 0;">${baseData.companyName}</h2>
-              <p style="color: #666; margin: 10px 0 0 0;">Timesheet & Expense Management</p>
-            </div>
-            <div style="padding: 30px 20px; background: white;">
-              <h3 style="color: #333; margin-bottom: 20px;">💰 Expense Submitted for Approval</h3>
-              <p>Hello ${baseData.managerName || 'Manager'},</p>
-              <p>A new expense has been submitted and requires your approval:</p>
-              <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <p><strong>Employee:</strong> ${baseData.employeeName || 'Employee'}</p>
-                <p><strong>Amount:</strong> $${baseData.amount || 0}</p>
-                <p><strong>Description:</strong> ${baseData.description || 'N/A'}</p>
-                <p><strong>Submitted:</strong> ${new Date().toLocaleDateString()}</p>
-              </div>
-              <p>Please review and approve or reject this expense as soon as possible.</p>
-              <p>Best regards,<br>${baseData.companyName} Team</p>
-            </div>
-            <div style="background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666;">
-              <p>This is an automated notification from the West End Workforce system.</p>
-            </div>
-          </div>
-        `,
-        textBody: `
-Expense Submitted - $${baseData.amount || 0}
-
-Hello ${baseData.managerName || 'Manager'},
-
-A new expense has been submitted and requires your approval:
-
-Employee: ${baseData.employeeName || 'Employee'}
-Amount: $${baseData.amount || 0}
-Description: ${baseData.description || 'N/A'}
-Submitted: ${new Date().toLocaleDateString()}
-
-Please review and approve or reject this expense as soon as possible.
-
-Best regards,
-${baseData.companyName} Team
-        `,
+        subject: `Expense submitted — $${d.amount || 0}`,
+        htmlBody: wrap('Expense Submitted', '#e31c79',
+          `<p style="color:#555;line-height:1.6;">Hi ${d.managerName || 'Manager'},</p>
+           <p style="color:#555;line-height:1.6;">A new expense has been submitted for your review.</p>
+           <div style="background:#FAFAF8;border:0.5px solid #e8e4df;border-radius:10px;padding:16px;margin:20px 0;">
+             ${info('Employee', d.employeeName || 'Employee')}
+             ${info('Amount', '$' + (d.amount || 0))}
+             ${d.description ? info('Description', d.description) : ''}
+           </div>`,
+          { label: 'Review Expenses', url: `${appUrl}/manager` }),
+        textBody: `Expense submitted by ${d.employeeName || 'Employee'} for $${d.amount || 0}.`,
       };
-
-    /* -------------------------------------------------
-     * TIMESHEET APPROVED
-     * ------------------------------------------------- */
     case 'timesheet_approved':
       return {
-        subject: 'Timesheet Approved',
-        htmlBody: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #d4edda; padding: 20px; text-align: center;">
-              <h2 style="color: #155724; margin: 0;">${baseData.companyName}</h2>
-              <p style="color: #155724; margin: 10px 0 0 0;">Timesheet & Expense Management</p>
-            </div>
-            <div style="padding: 30px 20px; background: white;">
-              <h3 style="color: #333; margin-bottom: 20px;">✅ Timesheet Approved</h3>
-              <p>Hello ${baseData.employeeName || 'Employee'},</p>
-              <p>Great news! Your timesheet has been approved:</p>
-              <div style="background: #d4edda; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <p><strong>Period:</strong> ${baseData.period || 'Current Period'}</p>
-                <p><strong>Total Hours:</strong> ${baseData.totalHours || 'N/A'}</p>
-                <p><strong>Approved:</strong> ${new Date().toLocaleDateString()}</p>
-              </div>
-              <p>Your timesheet is now complete for this period. Thank you for your timely submission!</p>
-              <p>Best regards,<br>${baseData.companyName} Team</p>
-            </div>
-            <div style="background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666;">
-              <p>This is an automated notification from the West End Workforce system.</p>
-            </div>
-          </div>
-        `,
-        textBody: `
-Timesheet Approved
-
-Hello ${baseData.employeeName || 'Employee'},
-
-Great news! Your timesheet has been approved:
-
-Period: ${baseData.period || 'Current Period'}
-Total Hours: ${baseData.totalHours || 'N/A'}
-Approved: ${new Date().toLocaleDateString()}
-
-Your timesheet is now complete for this period. Thank you for your timely submission!
-
-Best regards,
-${baseData.companyName} Team
-        `,
+        subject: 'Your timesheet was approved',
+        htmlBody: wrap('Timesheet Approved', '#2d9b6e',
+          `<p style="color:#555;line-height:1.6;">Hi ${d.employeeName || 'Employee'},</p>
+           <p style="color:#555;line-height:1.6;">Your timesheet has been approved. No further action is needed.</p>
+           <div style="background:#FAFAF8;border:0.5px solid #e8e4df;border-radius:10px;padding:16px;margin:20px 0;">
+             ${info('Period', d.period || 'Current Period')}
+             ${info('Total Hours', d.totalHours || 'N/A')}
+             <p style="margin:0;color:#2d9b6e;font-weight:600;">Status: Approved</p>
+           </div>`,
+          { label: 'View Dashboard', url: `${appUrl}/employee` }),
+        textBody: `Your timesheet for ${d.period || 'current period'} was approved.`,
       };
-
-    /* -------------------------------------------------
-     * TIMESHEET REJECTED
-     * ------------------------------------------------- */
     case 'timesheet_rejected':
       return {
-        subject: 'Timesheet Rejected - Action Required',
-        htmlBody: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #f8d7da; padding: 20px; text-align: center;">
-              <h2 style="color: #721c24; margin: 0;">${baseData.companyName}</h2>
-              <p style="color: #721c24; margin: 10px 0 0 0;">Timesheet & Expense Management</p>
-            </div>
-            <div style="padding: 30px 20px; background: white;">
-              <h3 style="color: #721c24; margin-bottom: 20px;">❌ Timesheet Rejected</h3>
-              <p>Hello ${baseData.employeeName || 'Employee'},</p>
-              <p>Your timesheet has been rejected and requires your attention:</p>
-              <div style="background: #f8d7da; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <p><strong>Period:</strong> ${baseData.period || 'Current Period'}</p>
-                <p><strong>Reason:</strong> ${baseData.reason || 'Please review and correct issues'}</p>
-                <p><strong>Rejected:</strong> ${new Date().toLocaleDateString()}</p>
-              </div>
-              <p>Please review the feedback, make necessary corrections, and resubmit your timesheet.</p>
-              <p>Best regards,<br>${baseData.companyName} Team</p>
-            </div>
-            <div style="background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666;">
-              <p>This is an automated notification from the West End Workforce system.</p>
-            </div>
-          </div>
-        `,
-        textBody: `
-Timesheet Rejected - Action Required
-
-Hello ${baseData.employeeName || 'Employee'},
-
-Your timesheet has been rejected and requires your attention:
-
-Period: ${baseData.period || 'Current Period'}
-Reason: ${baseData.reason || 'Please review and correct issues'}
-Rejected: ${new Date().toLocaleDateString()}
-
-Please review the feedback, make necessary corrections, and resubmit your timesheet.
-
-Best regards,
-${baseData.companyName} Team
-        `,
+        subject: 'Your timesheet was rejected — action required',
+        htmlBody: wrap('Timesheet Rejected', '#b91c1c',
+          `<p style="color:#555;line-height:1.6;">Hi ${d.employeeName || 'Employee'},</p>
+           <p style="color:#555;line-height:1.6;">Your timesheet has been rejected and needs your attention.</p>
+           <div style="background:#FEF2F2;border:0.5px solid #FECACA;border-radius:10px;padding:16px;margin:20px 0;">
+             ${info('Period', d.period || 'Current Period')}
+             ${d.reason ? `<p style="margin:0 0 6px;color:#b91c1c;"><strong>Reason:</strong> ${d.reason}</p>` : ''}
+             <p style="margin:0;color:#b91c1c;font-weight:600;">Please update and resubmit.</p>
+           </div>`,
+          { label: 'Fix & Resubmit', url: `${appUrl}/timesheet/entry` }),
+        textBody: `Your timesheet for ${d.period || 'current period'} was rejected. Reason: ${d.reason || 'Please review'}.`,
       };
-
-    /* -------------------------------------------------
-     * EXPENSE APPROVED
-     * ------------------------------------------------- */
     case 'expense_approved':
       return {
-        subject: 'Expense Approved',
-        htmlBody: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #d4edda; padding: 20px; text-align: center;">
-              <h2 style="color: #155724; margin: 0;">${baseData.companyName}</h2>
-              <p style="color: #155724; margin: 10px 0 0 0;">Timesheet & Expense Management</p>
-            </div>
-            <div style="padding: 30px 20px; background: white;">
-              <h3 style="color: #333; margin-bottom: 20px;">✅ Expense Approved</h3>
-              <p>Hello ${baseData.employeeName || 'Employee'},</p>
-              <p>Great news! Your expense has been approved:</p>
-              <div style="background: #d4edda; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <p><strong>Amount:</strong> $${baseData.amount || 0}</p>
-                <p><strong>Description:</strong> ${baseData.description || 'N/A'}</p>
-                <p><strong>Approved:</strong> ${new Date().toLocaleDateString()}</p>
-              </div>
-              <p>Your expense is now approved and will be processed for reimbursement.</p>
-              <p>Best regards,<br>${baseData.companyName} Team</p>
-            </div>
-            <div style="background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666;">
-              <p>This is an automated notification from the West End Workforce system.</p>
-            </div>
-          </div>
-        `,
-        textBody: `
-Expense Approved
-
-Hello ${baseData.employeeName || 'Employee'},
-
-Great news! Your expense has been approved:
-
-Amount: $${baseData.amount || 0}
-Description: ${baseData.description || 'N/A'}
-Approved: ${new Date().toLocaleDateString()}
-
-Your expense is now approved and will be processed for reimbursement.
-
-Best regards,
-${baseData.companyName} Team
-        `,
+        subject: 'Your expense was approved',
+        htmlBody: wrap('Expense Approved', '#2d9b6e',
+          `<p style="color:#555;line-height:1.6;">Hi ${d.employeeName || 'Employee'},</p>
+           <p style="color:#555;line-height:1.6;">Your expense has been approved and will be processed.</p>
+           <div style="background:#FAFAF8;border:0.5px solid #e8e4df;border-radius:10px;padding:16px;margin:20px 0;">
+             ${info('Amount', '$' + (d.amount || 0))}
+             <p style="margin:0;color:#2d9b6e;font-weight:600;">Status: Approved</p>
+           </div>`,
+          { label: 'View Dashboard', url: `${appUrl}/employee` }),
+        textBody: `Your expense for $${d.amount || 0} was approved.`,
       };
-
-    /* -------------------------------------------------
-     * TIME ENTRY REMINDER (timecard_reminder)
-     * ------------------------------------------------- */
     case 'timecard_reminder':
       return {
-        subject: 'Timecard Submission Reminder',
-        htmlBody: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background-color: #e31c79; padding: 24px; text-align: center;">
-              <h1 style="color:white; margin: 0;">West End Workforce</h1>
-            </div>
-            <div style="padding: 24px; background:#f9fafb;">
-              <h2 style="color:#33393c;">Timecard Submission Reminder</h2>
-              <p>Hello ${baseData.employee_name || 'Employee'},</p>
-              <p>
-                This is a reminder that your timecard for the week ending
-                <strong>${baseData.week_ending}</strong> has not been submitted yet.
-              </p>
-              <p>Your timecard is currently in <strong>draft</strong> status.</p>
-
-              <div style="text-align:center; margin: 30px 0;">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard"
-                  style="display:inline-block; background:#e31c79; color:white; padding:12px 30px; text-decoration:none; border-radius:6px;">
-                  Submit Timecard
-                </a>
-              </div>
-
-              <p>Thank you,<br/>West End Workforce</p>
-            </div>
-            <div style="background-color:#33393c; padding:12px; text-align:center;">
-              <p style="color:white; font-size:12px; margin:0;">© ${new Date().getFullYear()} West End Workforce</p>
-            </div>
-          </div>
-        `,
-        textBody: `
-Timecard Submission Reminder
-
-Hello ${baseData.employee_name || 'Employee'},
-
-This is a reminder that your timecard for the week ending ${baseData.week_ending} has not been submitted yet.
-Your timecard is currently in draft status.
-
-Please log in and submit your timecard as soon as possible.
-        `,
+        subject: `Timecard reminder — week ending ${d.week_ending || 'this week'}`,
+        htmlBody: wrap('Timesheet Reminder', '#e31c79',
+          `<p style="color:#555;line-height:1.6;">Hi ${d.employee_name || 'Employee'},</p>
+           <p style="color:#555;line-height:1.6;">Your timesheet for the week ending <strong>${d.week_ending || 'this week'}</strong> has not been submitted yet.</p>`,
+          { label: 'Submit Timesheet', url: `${appUrl}/timesheet/entry` }),
+        textBody: `Reminder: Your timesheet for week ending ${d.week_ending || 'this week'} has not been submitted.`,
       };
-
-    /* -------------------------------------------------
-     * DEFAULT TEMPLATE
-     * ------------------------------------------------- */
     default:
       return {
         subject: 'Notification from West End Workforce',
-        htmlBody: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #f8f9fa; padding: 20px; text-align: center;">
-              <h2 style="color: #333; margin: 0;">${baseData.companyName}</h2>
-              <p style="color: #666; margin: 10px 0 0 0;">Timesheet & Expense Management</p>
-            </div>
-            <div style="padding: 30px 20px; background: white;">
-              <h3 style="color: #333; margin-bottom: 20px;">System Notification</h3>
-              <p>Hello,</p>
-              <p>You have received a notification from the West End Workforce system.</p>
-              <p>If you have any questions, please contact support at ${baseData.supportEmail}.</p>
-              <p>Best regards,<br>${baseData.companyName} Team</p>
-            </div>
-            <div style="background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #666;">
-              <p>This is an automated notification from the West End Workforce system.</p>
-            </div>
-          </div>
-        `,
-        textBody: `
-Notification from West End Workforce
-
-Hello,
-
-You have received a notification from the West End Workforce system.
-
-If you have any questions, please contact support at ${baseData.supportEmail}.
-
-Best regards,
-${baseData.companyName} Team
-        `,
+        htmlBody: wrap('System Notification', '#1a1a1a',
+          `<p style="color:#555;line-height:1.6;">You have received a notification from the West End Workforce system.</p>`),
+        textBody: 'You have received a notification from the West End Workforce system.',
       };
   }
 }

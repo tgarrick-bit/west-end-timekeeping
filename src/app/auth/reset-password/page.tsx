@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
     try {
       const { error: err } = await supabase.auth.resetPasswordForEmail(
         email.toLowerCase().trim(),
-        { redirectTo: `${window.location.origin}/auth/reset-password` }
+        { redirectTo: `${window.location.origin}/auth/update-password` }
       );
       if (err) { setError(err.message.includes('rate') ? 'Too many requests' : 'Failed to send email'); }
       else { setSubmitted(true); setResendCooldown(60); }
