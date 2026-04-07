@@ -33,7 +33,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Fetch employee data
   const fetchEmployee = async (userId: string) => {
     try {
-      console.log('Fetching employee data for user:', userId);
       
       const { data, error } = await supabase
         .from('employees')
@@ -61,7 +60,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
 
-      console.log('Employee data fetched:', data);
       setEmployee(data);
       return data;
     } catch (err) {
@@ -94,7 +92,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
       
       if (session?.user) {
         setUser(session.user);
@@ -115,7 +112,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       setLoading(true);
       
-      console.log('Attempting sign in for:', email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -140,7 +136,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Route based on role
       const role = employeeData.role.toLowerCase() as UserRole;
-      console.log('User role:', role);
       
       switch (role) {
         case 'admin':

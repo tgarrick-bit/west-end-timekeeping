@@ -154,16 +154,8 @@ export default function ClientTimesheets() {
         body: JSON.stringify({ action: 'client_approve' }),
       });
       if (!res.ok) {
-        // Fallback to standard approve
-        const res2 = await fetch(`/api/timesheets/${id}/status`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'approve' }),
-        });
-        if (!res2.ok) {
-          const body = await res2.json().catch(() => ({}));
-          throw new Error(body.error || 'Failed to approve');
-        }
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to approve. The timesheet may need manager approval first.');
       }
       toast('success', 'Timesheet approved.');
       await fetchTimesheets();

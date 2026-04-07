@@ -78,10 +78,10 @@ export async function POST(request: NextRequest) {
 
     const mailOptions = {
       from: `${process.env.EMAIL_FROM_NAME || 'West End Workforce'} <${
-        process.env.EMAIL_FROM || 'notifications@westendworkforce.com'
+        process.env.EMAIL_FROM || 'payroll@westendworkforce.com'
       }>`,
       to,
-      replyTo: process.env.EMAIL_REPLY_TO || 'support@westendworkforce.com',
+      replyTo: process.env.EMAIL_REPLY_TO || 'payroll@westendworkforce.com',
       subject,
       html: htmlBody,
       text: textBody,
@@ -112,7 +112,7 @@ function getEmailTemplate(
   const baseData: { [key: string]: any } = {
     companyName: 'West End Workforce',
     logoUrl: 'https://westendworkforce.com/logo.png',
-    supportEmail: 'support@westendworkforce.com',
+    supportEmail: 'payroll@westendworkforce.com',
     ...customData,
   };
 

@@ -32,9 +32,9 @@ export class EmailService {
       smtpHost: process.env.SMTP_HOST,
       smtpPort: parseInt(process.env.SMTP_PORT || '587', 10),
       smtpUser: process.env.SMTP_USER,
-      smtpPassword: process.env.SMTP_PASSWORD,
-      fromEmail: process.env.FROM_EMAIL || 'noreply@westendworkforce.com',
-      fromName: process.env.FROM_NAME || 'West End Workforce',
+      smtpPassword: process.env.SMTP_PASS || process.env.SMTP_PASSWORD,
+      fromEmail: process.env.EMAIL_FROM || process.env.FROM_EMAIL || 'payroll@westendworkforce.com',
+      fromName: process.env.EMAIL_FROM_NAME || process.env.FROM_NAME || 'West End Workforce',
       ...config,
     };
   }

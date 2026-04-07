@@ -370,7 +370,7 @@ async function sendEmployeeEmail(params: {
     },
   });
 
-  const fromAddress = EMAIL_FROM || 'no-reply@westendworkforce.com';
+  const fromAddress = EMAIL_FROM || 'payroll@westendworkforce.com';
   const fromName = EMAIL_FROM_NAME || 'West End Workforce';
   const replyTo = EMAIL_REPLY_TO || fromAddress;
 
